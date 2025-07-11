@@ -1,0 +1,29 @@
+# Performance Monitoring Configuration for medinovai-canary-rollout-orchestrator
+monitoring:
+  metrics:
+    - response_time
+    - throughput
+    - error_rate
+    - memory_usage
+    - cpu_usage
+    
+  thresholds:
+    response_time_p95: 1000ms
+    error_rate: 0.01
+    memory_usage: 80%
+    cpu_usage: 70%
+    
+  alerts:
+    enabled: true
+    channels:
+      - slack
+      - email
+      
+  dashboards:
+    - name: "medinovai-canary-rollout-orchestrator Performance"
+      url: "https://grafana.example.com/d/medinovai-canary-rollout-orchestrator"
+      
+  profiling:
+    enabled: true
+    sampling_rate: 0.1
+    retention_days: 30

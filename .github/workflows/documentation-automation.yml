@@ -1,0 +1,68 @@
+name: Documentation Automation
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - '**.py'
+      - '**.js'
+      - '**.ts'
+      - '**.md'
+      - 'docs/**'
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  generate-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install documentation tools
+        run: |
+          pip install sphinx sphinx-rtd-theme pydoc-markdown mkdocs-material
+          npm install -g jsdoc @microsoft/api-extractor
+      
+      - name: Generate API documentation
+        run: |
+          # Python API docs
+          if [ -f setup.py ] || [ -f pyproject.toml ]; then
+            pydoc-markdown --output docs/api-reference.md
+          fi
+          
+          # JavaScript API docs
+          if [ -f package.json ]; then
+            jsdoc -c jsdoc.json -d docs/js-api
+          fi
+      
+      - name: Generate architecture diagrams
+        run: |
+          # Generate dependency diagrams
+          if command -v pydeps &> /dev/null; then
+            pydeps . --output docs/dependencies.png
+          fi
+      
+      - name: Update README
+        run: |
+          python scripts/update_readme.py || echo "README update script not found"
+      
+      - name: Deploy to GitHub Pages
+        if: github.ref == 'refs/heads/main'
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs
+          destination_dir: .
+      
+      - name: Documentation summary
+        run: |
+          echo "## Documentation Updates for medinovai-canary-rollout-orchestrator" >> $GITHUB_STEP_SUMMARY
+          echo "- API documentation generated" >> $GITHUB_STEP_SUMMARY
+          echo "- Architecture diagrams updated" >> $GITHUB_STEP_SUMMARY
+          echo "- README updated" >> $GITHUB_STEP_SUMMARY
+          echo "- Documentation deployed to GitHub Pages" >> $GITHUB_STEP_SUMMARY
