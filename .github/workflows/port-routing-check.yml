@@ -1,0 +1,25 @@
+name: forbid-host-port-publishing
+
+on:
+  pull_request:
+    branches: ["**"]
+  push:
+    branches: ["main", "master", "develop"]
+
+jobs:
+  lint-host-ports:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Fail if host ports are published in Docker/K8s manifests"
+        run: |
+          set -e
+          PATTERN='-p[[:space:]][0-9]+:|ports:[[:space:]]*\n[[:space:]]*-\s*"?[0-9]+:'
+          if grep -R --line-number -E "$PATTERN" --exclude-dir={.git,.venv,node_modules,.mypy_cache} . ; then
+            echo "::error title=Host port detected::Publishing host ports is disallowed. Use Traefik (Docker) or ingress-nginx (K8s) as per docs/port-routing-guidelines.md" && exit 1
+          fi
+
+          # K8s NodePort detection
+          if grep -R --line-number -E 'nodePort:[[:space:]]*[0-9]+' --exclude-dir={.git,.venv,node_modules,.mypy_cache} . ; then
+            echo "::error title=K8s NodePort detected::Use Service+Ingress instead of NodePort as per docs/port-routing-guidelines.md" && exit 1
+          fi
