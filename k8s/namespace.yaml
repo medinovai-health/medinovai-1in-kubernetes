@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: medinovai
+  labels:
+    name: medinovai
+    app.kubernetes.io/part-of: medinovai
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: medinovai-monitoring
+  labels:
+    name: medinovai-monitoring
+    app.kubernetes.io/part-of: medinovai
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: medinovai-infrastructure
+  labels:
+    name: medinovai-infrastructure
+    app.kubernetes.io/part-of: medinovai
