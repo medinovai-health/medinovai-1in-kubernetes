@@ -94,19 +94,14 @@ jobs:
 
       # ----- Coverage Gate (Python/.NET/Rust/Swift/Kotlin) -----
       - name: Coverage Gate
-        if: always() && hashFiles('.github/scripts/coverage_gate.py') != ''
+        if: always() && (hashFiles('coverage.xml') != '' || hashFiles('**/*coverage.cobertura.xml') != '')
         run: |
           python .github/scripts/coverage_gate.py ${{ inputs.coverage-threshold }}
 
       - name: Skip Coverage Gate (config-only repo)
-        if: always() && hashFiles('.github/scripts/coverage_gate.py') == ''
+        if: always() && hashFiles('coverage.xml') == '' && hashFiles('**/*coverage.cobertura.xml') == ''
         run: |
-          echo "Skipping coverage gate - no coverage script found"
-
-      - name: Skip Coverage Gate (config-only repo)
-        if: always() && hashFiles('.github/scripts/coverage_gate.py') == ''
-        run: |
-          echo "Skipping coverage gate - no coverage script found"
+          echo "Skipping coverage gate - no coverage files found in config-only repository"
 
       # ----- Security Scans -----
       - name: Gitleaks (secrets)
