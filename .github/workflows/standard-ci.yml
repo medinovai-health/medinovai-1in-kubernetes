@@ -103,6 +103,11 @@ jobs:
         run: |
           echo "Skipping coverage gate - no coverage script found"
 
+      - name: Skip Coverage Gate (config-only repo)
+        if: always() && hashFiles('.github/scripts/coverage_gate.py') == ''
+        run: |
+          echo "Skipping coverage gate - no coverage script found"
+
       # ----- Security Scans -----
       - name: Gitleaks (secrets)
         uses: zricethezav/gitleaks-action@v2
@@ -167,11 +172,61 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Check if language exists
+        id: check_lang
+        run: |
+          case "${{ matrix.language }}" in
+            javascript) 
+              if [ -f "package.json" ] || find . -name "*.js" -o -name "*.ts" -o -name "*.jsx" -o -name "*.tsx" | head -1 | grep -q .; then
+                echo "exists=true" >> $GITHUB_OUTPUT
+              else
+                echo "exists=false" >> $GITHUB_OUTPUT
+              fi ;;
+            python) 
+              if [ -f "requirements.txt" ] || [ -f "pyproject.toml" ] || [ -f "setup.py" ] || find . -name "*.py" | head -1 | grep -q .; then
+                echo "exists=true" >> $GITHUB_OUTPUT
+              else
+                echo "exists=false" >> $GITHUB_OUTPUT
+              fi ;;
+            csharp) 
+              if find . -name "*.csproj" -o -name "*.cs" -o -name "*.sln" | head -1 | grep -q .; then
+                echo "exists=true" >> $GITHUB_OUTPUT
+              else
+                echo "exists=false" >> $GITHUB_OUTPUT
+              fi ;;
+            go) 
+              if [ -f "go.mod" ] || find . -name "*.go" | head -1 | grep -q .; then
+                echo "exists=true" >> $GITHUB_OUTPUT
+              else
+                echo "exists=false" >> $GITHUB_OUTPUT
+              fi ;;
+            java) 
+              if [ -f "pom.xml" ] || [ -f "build.gradle" ] || find . -name "*.java" | head -1 | grep -q .; then
+                echo "exists=true" >> $GITHUB_OUTPUT
+              else
+                echo "exists=false" >> $GITHUB_OUTPUT
+              fi ;;
+            ruby) 
+              if [ -f "Gemfile" ] || find . -name "*.rb" | head -1 | grep -q .; then
+                echo "exists=true" >> $GITHUB_OUTPUT
+              else
+                echo "exists=false" >> $GITHUB_OUTPUT
+              fi ;;
+            cpp) 
+              if find . -name "*.cpp" -o -name "*.c" -o -name "*.h" -o -name "*.hpp" -o -name "*.cc" -o -name "*.cxx" | head -1 | grep -q .; then
+                echo "exists=true" >> $GITHUB_OUTPUT
+              else
+                echo "exists=false" >> $GITHUB_OUTPUT
+              fi ;;
+          esac
       - name: Initialize CodeQL
+        if: steps.check_lang.outputs.exists == 'true'
         uses: github/codeql-action/init@v3
         with:
           languages: ${{ matrix.language }}
       - name: Autobuild
+        if: steps.check_lang.outputs.exists == 'true'
         uses: github/codeql-action/autobuild@v3
       - name: Perform CodeQL Analysis
+        if: steps.check_lang.outputs.exists == 'true'
         uses: github/codeql-action/analyze@v3
