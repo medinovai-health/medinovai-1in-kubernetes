@@ -111,9 +111,10 @@ jobs:
         continue-on-error: false
 
       - name: SBOM (Syft)
-        uses: anchore/syft-action@v1.0.1
+        uses: codenotary/sbom.sh-create@main
         with:
-          output: cyclonedx-json=sbom.json
+          scan_type: 'syftfs'
+          target: '.'
         continue-on-error: true
 
       - name: Trivy FS scan
