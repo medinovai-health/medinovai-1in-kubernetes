@@ -1,0 +1,38 @@
+repository: myonsite-healthcare/sample-service
+owner: platform-team@myonsitehealthcare.com
+on_call: '@platform-oncall'
+lifecycle: Active
+compliance_scope: [HIPAA, GDPR, 21CFR11, IEC62304]
+sla_slo:
+  sla: "Enterprise SLA per contract"
+  slo: "99.9% monthly availability, p95 latency <= 300ms"
+  rto: "1h"
+  rpo: "5m"
+environments: [dev, test, stage, prod, us-east-1, eu-west-1]
+data_classification: PHI
+ci_cd:
+  workflows:
+    - .github/workflows/ci.yml
+    - .github/workflows/security-codeql.yml
+  coverage_target: 80
+  security_scans: [codeql, trivy, gitleaks, oss_review, sbom]
+  policy_gates: [opa_conftest_terraform, opa_conftest_k8s, coverage_gate, branch_protection]
+security:
+  kms_region_keys:
+    us-east-1: "arn:aws:kms:us-east-1:123456789012:key/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+    eu-west-1: "arn:aws:kms:eu-west-1:123456789012:key/ffffffff-1111-2222-3333-444444444444"
+  secrets_manager: "/medinovai/sample-service/"
+  rbac: "roles: admin, developer, auditor; least-privilege enforced"
+  tls: true
+audit:
+  log_hashing: true
+  no_phi_plaintext: true
+  evidence_targets:
+    - s3://audit-bucket/medinovai/sample-service/
+traceability:
+  requirements_map: docs/traceability/req-test-risk-matrix.yaml
+  risk_matrix: docs/traceability/risk-register.yaml
+backlog: https://github.com/myonsite-healthcare/sample-service/issues
+roadmap: https://github.com/orgs/myonsite-healthcare/projects/1
+risk_register: docs/traceability/risk-register.yaml
+last_review: 2025-08-18
