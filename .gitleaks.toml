@@ -1,0 +1,8 @@
+title = "MedinovAI Gitleaks Rulepack"
+[extend]
+# extend built-in rules; custom allowlist below
+[allowlist]
+description = "Allow common test keys patterns"
+regexes = [
+  '''(?i)example|dummy|test_key|not_a_real_secret'''
+]

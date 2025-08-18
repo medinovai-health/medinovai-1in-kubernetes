@@ -1,0 +1,7 @@
+[MASTER]
+extension-pkg-whitelist=
+
+[BASIC]
+good-names=i,j,k,ex,Run,_,id,pk
+const-rgx=^e_[A-Z0-9_]{2,}$
+variable-rgx=^mos_[a-z0-9_]{2,}$

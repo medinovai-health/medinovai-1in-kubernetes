@@ -1,0 +1,2 @@
+# Ignore noisy CVEs if necessary (keep minimal and justified)
+# CVE-XXXX-YYYY optional
