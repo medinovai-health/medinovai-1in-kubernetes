@@ -1,0 +1,24 @@
+# Enforce naming prefixes and formatting across languages
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 2
+
+[*.cs]
+dotnet_naming_rule.constant_prefix.rules = constant_symbols
+dotnet_naming_rule.constant_prefix.style = const_prefix_style
+dotnet_naming_rule.constant_prefix.severity = error
+dotnet_naming_symbols.constant_symbols.applicable_kinds = field
+dotnet_naming_symbols.constant_symbols.required_modifiers = const
+dotnet_naming_style.const_prefix_style.required_prefix = e_
+
+dotnet_naming_rule.local_prefix.rules = local_symbols
+dotnet_naming_rule.local_prefix.style = local_prefix_style
+dotnet_naming_rule.local_prefix.severity = error
+dotnet_naming_symbols.local_symbols.applicable_kinds = local
+dotnet_naming_style.local_prefix_style.required_prefix = mos_

@@ -1,0 +1,4 @@
+# CODEOWNERS
+*   @platform-team @security-team
+docs/* @documentation-team
+.github/* @platform-team
