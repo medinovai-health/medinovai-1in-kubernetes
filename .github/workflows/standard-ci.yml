@@ -106,9 +106,9 @@ jobs:
       # ----- Security Scans -----
       - name: Gitleaks (secrets)
         uses: zricethezav/gitleaks-action@v2
-        env:
-          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
-        continue-on-error: false
+        with:
+          config-path: .gitleaks.toml
+        continue-on-error: ${{ secrets.GITLEAKS_LICENSE == '' }}
 
       - name: SBOM (Syft)
         uses: codenotary/sbom.sh-create@main
