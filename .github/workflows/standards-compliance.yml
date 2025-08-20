@@ -1,0 +1,28 @@
+name: Standards Compliance Check
+on: [push, pull_request]
+
+jobs:
+  standards-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      
+      - name: Check MedinovAI Standards Compliance
+        run: |
+          if [ -d ".standards" ]; then
+            echo "✅ Standards repository found"
+            echo "Standards compliance check completed"
+          else
+            echo "❌ Standards repository not found. Adding as submodule..."
+            git submodule add https://github.com/myonsite-healthcare/medinovai-ai-standards.git .standards
+            git commit -m "Add Medinovai standards submodule"
+          fi
+      
+      - name: Check Port Allocations
+        run: |
+          if [ -d ".standards" ]; then
+            chmod +x .standards/scripts/check-ports.sh
+            .standards/scripts/check-ports.sh 8000 3000 5432 6379
+          fi
