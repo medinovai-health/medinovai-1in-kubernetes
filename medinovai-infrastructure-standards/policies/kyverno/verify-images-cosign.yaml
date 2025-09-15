@@ -1,0 +1,24 @@
+apiVersion: kyverno.io/v2
+kind: ClusterPolicy
+metadata:
+  name: verify-signed-images
+  annotations:
+    policies.kyverno.io/title: Verify images with Cosign (keyless)
+spec:
+  validationFailureAction: Enforce
+  background: false
+  rules:
+  - name: verify-image-signature
+    match:
+      any:
+      - resources:
+          kinds: ["Pod"]
+    verifyImages:
+    - imageReferences:
+      - "ghcr.io/myonsite-healthcare/*"
+      mutateDigest: true
+      attestors:
+      - entries:
+        - keyless:
+            issuer: "https://token.actions.githubusercontent.com"
+            subject: "repo:myonsite-healthcare/*"

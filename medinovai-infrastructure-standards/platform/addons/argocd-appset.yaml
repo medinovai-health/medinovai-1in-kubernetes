@@ -1,0 +1,34 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: platform-addons
+  namespace: argocd
+spec:
+  generators:
+  - list:
+      elements:
+      - name: cluster-a
+        namespace: argocd
+        values:
+          cluster_name: cluster-a
+  template:
+    metadata:
+      name: "{{name}}-addons"
+      namespace: argocd
+      labels:
+        envLabel: env-prod
+    spec:
+      project: default
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+      source:
+        repoURL: https://github.com/myonsite-healthcare/medinovai-infrastructure.git
+        targetRevision: HEAD
+        path: platform/charts
+        directory:
+          recurse: true
+      destination:
+        name: "{{name}}"
+        namespace: argocd

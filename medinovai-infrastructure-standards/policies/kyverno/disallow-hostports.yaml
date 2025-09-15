@@ -1,0 +1,28 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: disallow-hostports
+  annotations:
+    policies.kyverno.io/title: Disallow hostPorts
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+  - name: host-ports-none
+    match:
+      any:
+      - resources:
+          kinds: ["Pod"]
+    validate:
+      message: "hostPort is not allowed."
+      pattern:
+        spec:
+          =(ephemeralContainers):
+          - =(ports):
+            - X(hostPort): "0"
+          =(initContainers):
+          - =(ports):
+            - X(hostPort): "0"
+          containers:
+          - =(ports):
+            - X(hostPort): "0"

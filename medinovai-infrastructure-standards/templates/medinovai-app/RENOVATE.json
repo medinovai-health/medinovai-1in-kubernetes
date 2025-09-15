@@ -1,0 +1,11 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "prHourlyLimit": 2,
+  "packageRules": [
+    { "matchManagers": ["npm","poetry","pip-compile","maven"], "schedule": ["before 7am on monday"] }
+  ],
+  "regexManagers": [
+    { "fileMatch": ["(^|/)deploy/.+\.yaml$"], "matchStrings": ["image:\s(?<depName>[^:]+):(?<currentValue>.+)"], "datasourceTemplate": "docker" }
+  ]
+}
