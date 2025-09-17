@@ -1,0 +1,107 @@
+name: Bug Report
+description: Report a bug or issue with MedinovAI Infrastructure Standards
+title: "[BUG]: "
+labels: ["bug", "triage"]
+assignees: ["platform-team"]
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this bug report! Please provide as much detail as possible.
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      description: Which component is affected?
+      options:
+        - GitHub Actions
+        - Pre-commit hooks
+        - Kubernetes policies
+        - Helm charts
+        - Scripts
+        - Documentation
+        - Templates
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      description: How severe is this bug?
+      options:
+        - Critical (system down, security issue)
+        - High (major functionality broken)
+        - Medium (minor functionality affected)
+        - Low (cosmetic issue)
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of what the bug is.
+      placeholder: Describe the bug...
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      description: Steps to reproduce the behavior
+      placeholder: |
+        1. Go to '...'
+        2. Click on '....'
+        3. Scroll down to '....'
+        4. See error
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: A clear and concise description of what you expected to happen.
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      description: A clear and concise description of what actually happened.
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Environment details
+      placeholder: |
+        - OS: [e.g. Ubuntu 22.04]
+        - Kubernetes version: [e.g. 1.28]
+        - Argo CD version: [e.g. 2.8]
+        - Other relevant versions...
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs/Output
+      description: Relevant logs or error messages
+      render: shell
+      placeholder: Paste logs here...
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Add any other context about the problem here.
+

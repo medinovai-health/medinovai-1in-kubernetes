@@ -1,0 +1,10 @@
+medinovai-hl7-integration
+medinovai-fhir-integration
+medinovai-epic-integration
+medinovai-cerner-integration
+medinovai-allscripts-integration
+medinovai-athena-integration
+medinovai-nextgen-integration
+medinovai-eclinicalworks-integration
+medinovai-practice-fusion-integration
+medinovai-custom-integration

@@ -1,0 +1,7 @@
+medinovai-mobile-app
+medinovai-patient-mobile
+medinovai-doctor-mobile
+medinovai-nurse-mobile
+medinovai-admin-mobile
+medinovai-messaging-mobile
+medinovai-emergency-mobile
