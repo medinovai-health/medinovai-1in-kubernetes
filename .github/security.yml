@@ -1,0 +1,128 @@
+# Security configuration for MedinovAI Infrastructure
+# This file defines security policies and configurations
+
+security:
+  # Code scanning
+  code_scanning:
+    enabled: true
+    tools:
+      - codeql
+      - trivy
+      - gitleaks
+      - semgrep
+  
+  # Dependency scanning
+  dependency_scanning:
+    enabled: true
+    tools:
+      - dependabot
+      - renovate
+      - snyk
+  
+  # Container scanning
+  container_scanning:
+    enabled: true
+    tools:
+      - trivy
+      - grype
+      - snyk
+  
+  # Secret scanning
+  secret_scanning:
+    enabled: true
+    tools:
+      - gitleaks
+      - detect-secrets
+      - trufflehog
+  
+  # Policy enforcement
+  policies:
+    - name: "No plaintext secrets"
+      description: "Prevent plaintext secrets in code"
+      enforcement: "block"
+    
+    - name: "Image signing required"
+      description: "All container images must be signed"
+      enforcement: "block"
+    
+    - name: "Vulnerability scanning"
+      description: "All images must pass vulnerability scans"
+      enforcement: "block"
+    
+    - name: "SBOM generation"
+      description: "Software Bill of Materials must be generated"
+      enforcement: "block"
+  
+  # Compliance frameworks
+  compliance:
+    frameworks:
+      - HIPAA
+      - GDPR
+      - SOC2
+      - ISO27001
+    
+    requirements:
+      - audit_logging: true
+      - encryption_at_rest: true
+      - encryption_in_transit: true
+      - access_controls: true
+      - data_classification: true
+  
+  # Security headers
+  security_headers:
+    enabled: true
+    headers:
+      - "X-Content-Type-Options: nosniff"
+      - "X-Frame-Options: DENY"
+      - "X-XSS-Protection: 1; mode=block"
+      - "Strict-Transport-Security: max-age=31536000; includeSubDomains"
+      - "Content-Security-Policy: default-src 'self'"
+  
+  # Network security
+  network_security:
+    allowed_ports:
+      - 80
+      - 443
+      - 8080
+      - 8443
+    
+    blocked_ports:
+      - 22
+      - 23
+      - 3389
+      - 5432
+      - 6379
+  
+  # Access controls
+  access_controls:
+    rbac:
+      enabled: true
+      least_privilege: true
+    
+    mfa:
+      required: true
+    
+    session_timeout:
+      duration: "8h"
+  
+  # Monitoring and alerting
+  monitoring:
+    security_events:
+      - failed_login_attempts
+      - privilege_escalation
+      - suspicious_network_activity
+      - data_exfiltration
+      - policy_violations
+    
+    alerting:
+      channels:
+        - email
+        - slack
+        - pagerduty
+      
+      severity_levels:
+        - critical
+        - high
+        - medium
+        - low
+

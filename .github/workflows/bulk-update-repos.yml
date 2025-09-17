@@ -1,0 +1,65 @@
+name: Bulk Update Repositories
+
+on:
+  workflow_dispatch:
+    inputs:
+      org:
+        description: 'Organization name'
+        required: true
+        default: 'myonsite-healthcare'
+      match:
+        description: 'Repository name pattern to match'
+        required: true
+        default: 'medinovai'
+      dry_run:
+        description: 'Dry run mode (no actual changes)'
+        type: boolean
+        default: true
+      apply:
+        description: 'Apply changes (creates PRs)'
+        type: boolean
+        default: false
+
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+jobs:
+  bulk-sync:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        pip install pygithub requests pyyaml
+    
+    - name: Run bulk sync script
+      run: |
+        chmod +x ./medinovai-infrastructure-standards/scripts/bulk_sync.sh
+        ./medinovai-infrastructure-standards/scripts/bulk_sync.sh \
+          --org ${{ github.event.inputs.org }} \
+          --match ${{ github.event.inputs.match }} \
+          ${{ github.event.inputs.dry_run == 'true' && '--dry-run' || '' }} \
+          ${{ github.event.inputs.apply == 'true' && '--apply' || '' }}
+    
+    - name: Generate status report
+      run: |
+        ./medinovai-infrastructure-standards/scripts/audit_status.sh \
+          --org ${{ github.event.inputs.org }} \
+          --match ${{ github.event.inputs.match }} > .artifacts/report.csv
+        ./medinovai-infrastructure-standards/scripts/render_status.py .artifacts/report.csv > STATUS.md
+    
+    - name: Upload status report
+      uses: actions/upload-artifact@v4
+      with:
+        name: status-report
+        path: |
+          .artifacts/report.csv
+          STATUS.md
+

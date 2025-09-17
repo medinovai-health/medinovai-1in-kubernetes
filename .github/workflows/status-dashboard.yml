@@ -1,0 +1,39 @@
+name: Status Dashboard
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'  # Every 6 hours
+  workflow_dispatch:
+
+jobs:
+  update-status:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        pip install pygithub requests pyyaml
+    
+    - name: Generate status report
+      run: |
+        mkdir -p .artifacts
+        ./medinovai-infrastructure-standards/scripts/audit_status.sh \
+          --org myonsite-healthcare \
+          --match medinovai > .artifacts/report.csv
+        ./medinovai-infrastructure-standards/scripts/render_status.py .artifacts/report.csv > STATUS.md
+    
+    - name: Commit and push status update
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add STATUS.md
+        git diff --staged --quiet || git commit -m "Update status dashboard [skip ci]"
+        git push
+

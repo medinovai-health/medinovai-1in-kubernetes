@@ -1,0 +1,47 @@
+# Cursor Configuration for MedinovAI Infrastructure
+
+## Playwright MCP Configuration
+This project uses Playwright MCP (Model Context Protocol) for web automation, testing, and browser interactions.
+
+### MCP Servers Configuration
+```json
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": ["@modelcontextprotocol/server-playwright"],
+      "env": {
+        "PLAYWRIGHT_BROWSERS_PATH": "0"
+      }
+    }
+  }
+}
+```
+
+### Playwright Capabilities
+- **Web Automation**: Automated browser interactions and form filling
+- **Testing**: End-to-end testing of web applications
+- **Screenshot Capture**: Visual testing and documentation
+- **Performance Monitoring**: Web vitals and performance metrics
+- **Cross-browser Testing**: Chrome, Firefox, Safari, and Edge support
+
+### Usage Guidelines
+1. Use Playwright MCP for web-related tasks in this infrastructure project
+2. Leverage browser automation for testing deployment pipelines
+3. Utilize screenshot capabilities for documentation and validation
+4. Implement cross-browser testing for web-based monitoring dashboards
+
+### Project Context
+This is a Kubernetes infrastructure project with:
+- ArgoCD for GitOps deployments
+- Monitoring stack (Prometheus, Grafana, Loki)
+- Security policies (Kyverno)
+- External secrets management
+- Multi-environment support (dev, stage, prod)
+
+### Development Standards
+- Follow infrastructure as code principles
+- Maintain security best practices
+- Use GitOps workflows
+- Implement comprehensive monitoring
+- Ensure multi-environment consistency

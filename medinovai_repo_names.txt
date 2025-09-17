@@ -1,0 +1,10 @@
+medinovai-api
+medinovai-auth
+medinovai-patient-service
+medinovai-dashboard
+medinovai-analytics
+medinovai-notifications
+medinovai-reports
+medinovai-integrations
+medinovai-workflows
+medinovai-monitoring
