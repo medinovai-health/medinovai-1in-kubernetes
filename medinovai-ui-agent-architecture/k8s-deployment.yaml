@@ -1,0 +1,246 @@
+# MedinovAI UI Agent Service Kubernetes Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: medinovai-ui-agent-service
+  namespace: medinovai
+  labels:
+    app: medinovai-ui-agent-service
+    component: ai-agent
+    version: v1.0.0
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: medinovai-ui-agent-service
+  template:
+    metadata:
+      labels:
+        app: medinovai-ui-agent-service
+        component: ai-agent
+        version: v1.0.0
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8000"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+      - name: ui-agent-service
+        image: medinovai/ui-agent-service:latest
+        ports:
+        - containerPort: 8000
+          name: http
+          protocol: TCP
+        env:
+        - name: OLLAMA_BASE_URL
+          value: "http://ollama-service:11434"
+        - name: REDIS_URL
+          value: "redis://redis:6379"
+        - name: DATABASE_URL
+          value: "postgresql://medinovai:medinovai123@postgres:5432/medinovai"
+        - name: LOG_LEVEL
+          value: "INFO"
+        - name: ENVIRONMENT
+          value: "production"
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        volumeMounts:
+        - name: config-volume
+          mountPath: /app/config
+          readOnly: true
+        - name: logs-volume
+          mountPath: /app/logs
+      volumes:
+      - name: config-volume
+        configMap:
+          name: ui-agent-config
+      - name: logs-volume
+        emptyDir: {}
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: medinovai-ui-agent-service
+  namespace: medinovai
+  labels:
+    app: medinovai-ui-agent-service
+    component: ai-agent
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8000
+    targetPort: 8000
+    protocol: TCP
+    name: http
+  selector:
+    app: medinovai-ui-agent-service
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ui-agent-config
+  namespace: medinovai
+  labels:
+    app: medinovai-ui-agent-service
+    component: ai-agent
+data:
+  models.yaml: |
+    # MedinovAI UI Agent Model Configurations
+    models:
+      patient_portal:
+        name: "qwen2.5:3b"
+        parameters:
+          temperature: 0.7
+          max_tokens: 512
+          top_p: 0.9
+        specialization: "patient_care"
+        learning_enabled: true
+        performance_threshold: 0.85
+      
+      doctor_portal:
+        name: "meditron:7b"
+        parameters:
+          temperature: 0.5
+          max_tokens: 1024
+          top_p: 0.8
+        specialization: "clinical_decision"
+        learning_enabled: true
+        performance_threshold: 0.90
+      
+      admin_portal:
+        name: "deepseek-coder:7b"
+        parameters:
+          temperature: 0.6
+          max_tokens: 768
+          top_p: 0.85
+        specialization: "administrative"
+        learning_enabled: true
+        performance_threshold: 0.85
+      
+      analytics:
+        name: "llama3.1:8b"
+        parameters:
+          temperature: 0.4
+          max_tokens: 1024
+          top_p: 0.8
+        specialization: "data_analysis"
+        learning_enabled: true
+        performance_threshold: 0.88
+      
+      clinical:
+        name: "medinovai-clinical:latest"
+        parameters:
+          temperature: 0.3
+          max_tokens: 1536
+          top_p: 0.75
+        specialization: "clinical_workflows"
+        learning_enabled: true
+        performance_threshold: 0.95
+
+  training.yaml: |
+    # MedinovAI UI Agent Training Configurations
+    training:
+      continuous_learning: true
+      learning_rate: 0.001
+      batch_size: 32
+      validation_split: 0.2
+      early_stopping: true
+      performance_threshold: 0.85
+      max_epochs: 100
+      patience: 10
+
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: medinovai-ui-agent-service
+  namespace: medinovai
+spec:
+  hosts:
+  - "ui-agent.medinovai.local"
+  gateways:
+  - medinovai-gateway
+  http:
+  - match:
+    - uri:
+        prefix: /
+    route:
+    - destination:
+        host: medinovai-ui-agent-service
+        port:
+          number: 8000
+    timeout: 30s
+    retries:
+      attempts: 3
+      perTryTimeout: 10s
+
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: medinovai-ui-agent-service-pdb
+  namespace: medinovai
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: medinovai-ui-agent-service
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: medinovai-ui-agent-service-hpa
+  namespace: medinovai
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: medinovai-ui-agent-service
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+
+
+
+
+
+
+

@@ -77,3 +77,10 @@ CREATE TRIGGER update_patients_updated_at BEFORE UPDATE ON patients
 CREATE TRIGGER update_clinical_records_updated_at BEFORE UPDATE ON clinical_records
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+
+
+
+
+
+
+

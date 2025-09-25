@@ -103,3 +103,10 @@ docker restart medinovai-frontend
 
 **🎉 Your MedinovAI healthcare platform is ready to use!**
 
+
+
+
+
+
+
+

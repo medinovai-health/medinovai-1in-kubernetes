@@ -1,0 +1,222 @@
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: medinovai-main-gateway
+  namespace: istio-system
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    - "*.medinovai.local"
+    - "medinovai.local"
+    tls:
+      httpsRedirect: true
+  - port:
+      number: 443
+      name: https
+      protocol: HTTPS
+    hosts:
+    - "*.medinovai.local"
+    - "medinovai.local"
+    tls:
+      mode: SIMPLE
+      credentialName: medinovai-tls-cert
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: medinovai-main-vs
+  namespace: istio-system
+spec:
+  hosts:
+  - "*.medinovai.local"
+  - "medinovai.local"
+  gateways:
+  - medinovai-main-gateway
+  http:
+  # API Gateway
+  - match:
+    - uri:
+        prefix: /api/
+    route:
+    - destination:
+        host: medinovai-api-gateway.medinovai-production.svc.cluster.local
+        port:
+          number: 8080
+  # HealthLLM Service
+  - match:
+    - uri:
+        prefix: /healthllm/
+    route:
+    - destination:
+        host: medinovai-healthllm-service.medinovai-production.svc.cluster.local
+        port:
+          number: 8000
+  # Frontend
+  - match:
+    - uri:
+        prefix: /
+    route:
+    - destination:
+        host: medinovai-frontend.medinovai-production.svc.cluster.local
+        port:
+          number: 3000
+---
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: medinovai-monitoring-gateway
+  namespace: istio-system
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+  - port:
+      number: 80
+      name: http-monitoring
+      protocol: HTTP
+    hosts:
+    - "monitoring.medinovai.local"
+  - port:
+      number: 443
+      name: https-monitoring
+      protocol: HTTPS
+    hosts:
+    - "monitoring.medinovai.local"
+    tls:
+      mode: SIMPLE
+      credentialName: medinovai-tls-cert
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: medinovai-monitoring-vs
+  namespace: istio-system
+spec:
+  hosts:
+  - "monitoring.medinovai.local"
+  gateways:
+  - medinovai-monitoring-gateway
+  http:
+  # Grafana
+  - match:
+    - uri:
+        prefix: /grafana/
+    route:
+    - destination:
+        host: monitoring-grafana.monitoring.svc.cluster.local
+        port:
+          number: 80
+  # Prometheus
+  - match:
+    - uri:
+        prefix: /prometheus/
+    route:
+    - destination:
+        host: prometheus-monitoring-kube-prometheus-prometheus.monitoring.svc.cluster.local
+        port:
+          number: 9090
+  # AlertManager
+  - match:
+    - uri:
+        prefix: /alertmanager/
+    route:
+    - destination:
+        host: alertmanager-monitoring-kube-prometheus-alertmanager.monitoring.svc.cluster.local
+        port:
+          number: 9093
+---
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: medinovai-testing-gateway
+  namespace: istio-system
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+  - port:
+      number: 80
+      name: http-testing
+      protocol: HTTP
+    hosts:
+    - "testing.medinovai.local"
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: medinovai-testing-vs
+  namespace: istio-system
+spec:
+  hosts:
+  - "testing.medinovai.local"
+  gateways:
+  - medinovai-testing-gateway
+  http:
+  # Test Orchestrator
+  - match:
+    - uri:
+        prefix: /orchestrator/
+    route:
+    - destination:
+        host: test-orchestrator.medinovai-testing.svc.cluster.local
+        port:
+          number: 8080
+  # E2E Test Runner
+  - match:
+    - uri:
+        prefix: /e2e/
+    route:
+    - destination:
+        host: e2e-test-runner.medinovai-testing.svc.cluster.local
+        port:
+          number: 8080
+---
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: medinovai-security-gateway
+  namespace: istio-system
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+  - port:
+      number: 80
+      name: http-security
+      protocol: HTTP
+    hosts:
+    - "security.medinovai.local"
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: medinovai-security-vs
+  namespace: istio-system
+spec:
+  hosts:
+  - "security.medinovai.local"
+  gateways:
+  - medinovai-security-gateway
+  http:
+  # Security Gateway
+  - match:
+    - uri:
+        prefix: /
+    route:
+    - destination:
+        host: security-gateway.medinovai-security.svc.cluster.local
+        port:
+          number: 8080
+
+
+
+
+
+
+

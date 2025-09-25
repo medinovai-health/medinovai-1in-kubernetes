@@ -1,0 +1,137 @@
+# MedinovAI Centralized Port Management Configuration
+# This file defines the centralized port allocation for all MedinovAI services
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: medinovai-port-registry
+  namespace: istio-system
+data:
+  port-mapping.yaml: |
+    # Centralized Port Management for MedinovAI Infrastructure
+    # All services should use these standardized ports
+    
+    # Main Application Ports (HTTP/HTTPS)
+    main-gateway-http: 80
+    main-gateway-https: 443
+    
+    # Service-Specific Ports
+    api-gateway: 8080
+    frontend: 3000
+    healthllm: 8000
+    
+    # Monitoring Ports
+    grafana: 80
+    prometheus: 9090
+    alertmanager: 9093
+    
+    # Testing Ports
+    test-orchestrator: 8080
+    e2e-test-runner: 8080
+    integration-test-runner: 8080
+    performance-test-runner: 8080
+    
+    # Security Ports
+    security-gateway: 8080
+    
+    # Data Services Ports
+    postgres: 5432
+    redis: 6379
+    kafka: 9092
+    zookeeper: 2181
+    
+    # AI/ML Service Ports
+    ollama-service: 11434
+    ai-agent-orchestrator: 8080
+    
+    # Istio Internal Ports (Reserved)
+    istio-pilot: 15010
+    istio-pilot-https: 15012
+    istio-pilot-mtls: 15014
+    istio-proxy-admin: 15000
+    istio-proxy-stats: 15020
+    istio-proxy-health: 15021
+    
+  service-endpoints.yaml: |
+    # Service Endpoint Registry
+    services:
+      # Production Services
+      medinovai-api-gateway:
+        namespace: medinovai-production
+        port: 8080
+        protocol: http
+        path: /api/
+        
+      medinovai-frontend:
+        namespace: medinovai-production
+        port: 3000
+        protocol: http
+        path: /
+        
+      medinovai-healthllm:
+        namespace: medinovai-production
+        port: 8000
+        protocol: http
+        path: /healthllm/
+        
+      # Monitoring Services
+      grafana:
+        namespace: monitoring
+        port: 80
+        protocol: http
+        path: /grafana/
+        
+      prometheus:
+        namespace: monitoring
+        port: 9090
+        protocol: http
+        path: /prometheus/
+        
+      alertmanager:
+        namespace: monitoring
+        port: 9093
+        protocol: http
+        path: /alertmanager/
+        
+      # Testing Services
+      test-orchestrator:
+        namespace: medinovai-testing
+        port: 8080
+        protocol: http
+        path: /orchestrator/
+        
+      e2e-test-runner:
+        namespace: medinovai-testing
+        port: 8080
+        protocol: http
+        path: /e2e/
+        
+      # Security Services
+      security-gateway:
+        namespace: medinovai-security
+        port: 8080
+        protocol: http
+        path: /
+        
+      # Data Services
+      postgres:
+        namespace: medinovai-data
+        port: 5432
+        protocol: tcp
+        
+      redis:
+        namespace: medinovai-data
+        port: 6379
+        protocol: tcp
+        
+      kafka:
+        namespace: medinovai-data
+        port: 9092
+        protocol: tcp
+
+
+
+
+
+
+

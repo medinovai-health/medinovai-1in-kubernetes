@@ -164,3 +164,10 @@ info: ## Show environment information
 	@echo "Helm: $$(helm version --short 2>/dev/null || echo 'Not installed')"
 	@echo "Pre-commit: $$(pre-commit --version)"
 
+
+
+
+
+
+
+
