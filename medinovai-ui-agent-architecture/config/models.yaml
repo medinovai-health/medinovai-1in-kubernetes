@@ -1,0 +1,132 @@
+# MedinovAI UI Agent Model Configurations
+# Smallest suitable models for each UI/task with configurable parameters
+
+models:
+  patient_portal:
+    name: "qwen2.5:3b"
+    description: "Patient portal chatbot for health queries and appointment scheduling"
+    parameters:
+      temperature: 0.7
+      max_tokens: 512
+      top_p: 0.9
+      repeat_penalty: 1.1
+    specialization: "patient_care"
+    learning_enabled: true
+    performance_threshold: 0.85
+    use_cases:
+      - "Appointment scheduling"
+      - "Health information queries"
+      - "Medication reminders"
+      - "Symptom checking"
+      - "Patient education"
+    
+  doctor_portal:
+    name: "meditron:7b"
+    description: "Doctor portal chatbot for clinical decision support and medical research"
+    parameters:
+      temperature: 0.5
+      max_tokens: 1024
+      top_p: 0.8
+      repeat_penalty: 1.05
+    specialization: "clinical_decision"
+    learning_enabled: true
+    performance_threshold: 0.90
+    use_cases:
+      - "Clinical decision support"
+      - "Medical research assistance"
+      - "Case analysis"
+      - "Treatment recommendations"
+      - "Medical literature review"
+    
+  admin_portal:
+    name: "deepseek-coder:7b"
+    description: "Admin portal chatbot for system administration and reporting"
+    parameters:
+      temperature: 0.6
+      max_tokens: 768
+      top_p: 0.85
+      repeat_penalty: 1.1
+    specialization: "administrative"
+    learning_enabled: true
+    performance_threshold: 0.85
+    use_cases:
+      - "System administration"
+      - "Report generation"
+      - "Compliance monitoring"
+      - "User management"
+      - "Data analysis"
+    
+  analytics:
+    name: "llama3.1:8b"
+    description: "Analytics chatbot for data analysis and insights generation"
+    parameters:
+      temperature: 0.4
+      max_tokens: 1024
+      top_p: 0.8
+      repeat_penalty: 1.05
+    specialization: "data_analysis"
+    learning_enabled: true
+    performance_threshold: 0.88
+    use_cases:
+      - "Data analysis"
+      - "Report generation"
+      - "Insights extraction"
+      - "Trend analysis"
+      - "Performance metrics"
+    
+  clinical:
+    name: "medinovai-clinical:latest"
+    description: "Clinical chatbot for clinical workflows and patient care"
+    parameters:
+      temperature: 0.3
+      max_tokens: 1536
+      top_p: 0.75
+      repeat_penalty: 1.02
+    specialization: "clinical_workflows"
+    learning_enabled: true
+    performance_threshold: 0.95
+    use_cases:
+      - "Clinical workflows"
+      - "Patient care protocols"
+      - "Medical documentation"
+      - "Clinical guidelines"
+      - "Patient monitoring"
+
+# Model selection criteria
+model_selection:
+  criteria:
+    - "Task complexity"
+    - "Response time requirements"
+    - "Accuracy requirements"
+    - "Resource constraints"
+    - "Specialization needs"
+  
+  fallback_models:
+    patient_portal: "qwen2.5:1.5b"
+    doctor_portal: "meditron:3b"
+    admin_portal: "deepseek-coder:3b"
+    analytics: "llama3.1:3b"
+    clinical: "meditron:7b"
+
+# Performance optimization
+optimization:
+  gpu_utilization: ">90%"
+  memory_efficiency: ">95%"
+  response_time_target: "<2s"
+  accuracy_target: ">85%"
+  availability_target: "99.9%"
+
+# Model monitoring
+monitoring:
+  performance_tracking: true
+  usage_analytics: true
+  error_logging: true
+  learning_progress: true
+  user_satisfaction: true
+
+
+
+
+
+
+

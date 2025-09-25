@@ -302,3 +302,10 @@ trap 'log_error "Deployment interrupted by user"; exit 1' INT TERM
 # Run main function
 main "$@"
 
+
+
+
+
+
+
+
