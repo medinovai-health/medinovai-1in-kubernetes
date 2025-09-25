@@ -1,0 +1,6 @@
+SECURITY SCAN REPORT
+File: ./medinovai-infrastructure-standards/platform/charts/kyverno/values.yaml
+Date: Thu Sep 25 15:15:28 EDT 2025
+========================================
+
+No obvious security patterns found.
