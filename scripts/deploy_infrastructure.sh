@@ -1,3 +1,39 @@
+# Load environment variables for credentials
+export POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-$(openssl rand -base64 32)}"
+export MONGO_PASSWORD="${MONGO_PASSWORD:-$(openssl rand -base64 32)}"
+export RABBITMQ_PASSWORD="${RABBITMQ_PASSWORD:-$(openssl rand -base64 32)}"
+
+# Validate that credentials are set
+if [[ -z "$POSTGRES_PASSWORD" || -z "$MONGO_PASSWORD" || -z "$RABBITMQ_PASSWORD" ]]; then
+    echo "ERROR: Failed to set credentials"
+    exit 1
+fi
+
+echo "Credentials loaded successfully"
+# Load environment variables for credentials
+export POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-$(openssl rand -base64 32)}"
+export MONGO_PASSWORD="${MONGO_PASSWORD:-$(openssl rand -base64 32)}"
+export RABBITMQ_PASSWORD="${RABBITMQ_PASSWORD:-$(openssl rand -base64 32)}"
+
+# Validate that credentials are set
+if [[ -z "$POSTGRES_PASSWORD" || -z "$MONGO_PASSWORD" || -z "$RABBITMQ_PASSWORD" ]]; then
+    echo "ERROR: Failed to set credentials"
+    exit 1
+fi
+
+echo "Credentials loaded successfully"
+# Load environment variables for credentials
+export POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-$(openssl rand -base64 32)}"
+export MONGO_PASSWORD="${MONGO_PASSWORD:-$(openssl rand -base64 32)}"
+export RABBITMQ_PASSWORD="${RABBITMQ_PASSWORD:-$(openssl rand -base64 32)}"
+
+# Validate that credentials are set
+if [[ -z "$POSTGRES_PASSWORD" || -z "$MONGO_PASSWORD" || -z "$RABBITMQ_PASSWORD" ]]; then
+    echo "ERROR: Failed to set credentials"
+    exit 1
+fi
+
+echo "Credentials loaded successfully"
 #!/bin/bash
 
 # MedinovAI Infrastructure Deployment Script
@@ -117,7 +153,7 @@ metadata:
 data:
   POSTGRES_DB: medinovai
   POSTGRES_USER: medinovai
-  POSTGRES_PASSWORD: medinovai123
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-$(openssl rand -base64 32)}
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim

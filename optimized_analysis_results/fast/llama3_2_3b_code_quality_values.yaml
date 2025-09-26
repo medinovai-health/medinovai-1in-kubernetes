@@ -1,0 +1,12 @@
+ANALYSIS REPORT
+File: ./medinovai-infrastructure-standards/platform/charts/envoy-gateway/values.yaml
+Model: llama3.2:3b
+Category: code_quality
+Chunks: 0
+Date: Thu Sep 25 15:28:40 EDT 2025
+========================================
+
+CHUNK 1 ANALYSIS:
+ANALYSIS TIMEOUT
+
+TOTAL ISSUES FOUND: 0

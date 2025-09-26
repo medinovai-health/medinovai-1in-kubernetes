@@ -1,0 +1,6 @@
+SECURITY SCAN REPORT
+File: ./medinovai-deployment/services/api-gateway/auth.py
+Date: Thu Sep 25 15:28:48 EDT 2025
+========================================
+
+No obvious security patterns found.
