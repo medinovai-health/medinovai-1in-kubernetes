@@ -1,0 +1,45 @@
+# MedinovAI Production Repository List
+# Only MedinovAI named repositories and referenced repositories for production deployment
+
+# Core Infrastructure & Standards
+medinovai-AI-standards
+medinovai-infrastructure
+medinovai-core-platform
+
+# Security & Compliance
+medinovai-security-services
+medinovai-compliance-services
+medinovai-audit-logging
+medinovai-authentication
+medinovai-authorization
+
+# Core Services
+medinovai-api-gateway
+medinovai-data-services
+medinovai-clinical-services
+medinovai-healthcare-utilities
+
+# Platform Services
+medinovai-monitoring-services
+medinovai-alerting-services
+medinovai-backup-services
+medinovai-disaster-recovery
+medinovai-integration-services
+medinovai-performance-monitoring
+
+# Development & Testing
+medinovai-testing-framework
+medinovai-ui-components
+medinovai-devkit-infrastructure
+
+# Configuration & Management
+medinovai-configuration-management
+medinovai-development
+
+# Research & Analytics
+medinovai-ResearchSuite
+medinovai-DataOfficer
+
+# Legacy/Backup (exclude from production)
+# medinovai-Developer-backup-20250925-142951
+# medinovaios (legacy system)

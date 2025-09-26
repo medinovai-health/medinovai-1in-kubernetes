@@ -1,0 +1,309 @@
+# PostgreSQL Database Deployment for MedinovAI
+# Production-ready PostgreSQL with security and monitoring
+
+---
+# PostgreSQL ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgresql-config
+  namespace: medinovai
+data:
+  postgresql.conf: |
+    # PostgreSQL Configuration for MedinovAI
+    listen_addresses = '*'
+    port = 5432
+    max_connections = 200
+    shared_buffers = 256MB
+    effective_cache_size = 1GB
+    maintenance_work_mem = 64MB
+    checkpoint_completion_target = 0.9
+    wal_buffers = 16MB
+    default_statistics_target = 100
+    random_page_cost = 1.1
+    effective_io_concurrency = 200
+    work_mem = 4MB
+    min_wal_size = 1GB
+    max_wal_size = 4GB
+    max_worker_processes = 8
+    max_parallel_workers_per_gather = 4
+    max_parallel_workers = 8
+    max_parallel_maintenance_workers = 4
+    
+    # Security settings
+    ssl = on
+    ssl_cert_file = '/etc/ssl/certs/server.crt'
+    ssl_key_file = '/etc/ssl/private/server.key'
+    
+    # Logging
+    log_destination = 'stderr'
+    logging_collector = on
+    log_directory = '/var/log/postgresql'
+    log_filename = 'postgresql-%Y-%m-%d_%H%M%S.log'
+    log_rotation_age = 1d
+    log_rotation_size = 100MB
+    log_min_duration_statement = 1000
+    log_line_prefix = '%t [%p]: [%l-1] user=%u,db=%d,app=%a,client=%h '
+    log_checkpoints = on
+    log_connections = on
+    log_disconnections = on
+    log_lock_waits = on
+    log_temp_files = 0
+
+---
+# PostgreSQL Secret
+apiVersion: v1
+kind: Secret
+metadata:
+  name: postgresql-secret
+  namespace: medinovai
+type: Opaque
+data:
+  postgres-password: bWVkaW5vdmFpMTIz  # medinovai123
+  replication-password: bWVkaW5vdmFpMTIz  # medinovai123
+
+---
+# PostgreSQL PersistentVolumeClaim
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgresql-pvc
+  namespace: medinovai
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+  storageClassName: ""
+
+---
+# PostgreSQL Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgresql
+  namespace: medinovai
+  labels:
+    app: postgresql
+    component: database
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgresql
+  template:
+    metadata:
+      labels:
+        app: postgresql
+        component: database
+      annotations:
+        sidecar.istio.io/inject: "false"
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+        fsGroup: 999
+      containers:
+      - name: postgresql
+        image: postgres:15-alpine
+        ports:
+        - containerPort: 5432
+          name: postgresql
+        env:
+        - name: POSTGRES_DB
+          value: medinovai
+        - name: POSTGRES_USER
+          value: postgres
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgresql-secret
+              key: postgres-password
+        - name: PGDATA
+          value: /var/lib/postgresql/data/pgdata
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        volumeMounts:
+        - name: postgresql-storage
+          mountPath: /var/lib/postgresql/data
+        - name: postgresql-config
+          mountPath: /etc/postgresql/postgresql.conf
+          subPath: postgresql.conf
+        - name: postgresql-init
+          mountPath: /docker-entrypoint-initdb.d
+        livenessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - exec pg_isready -U postgres -h 127.0.0.1 -p 5432
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 6
+        readinessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - exec pg_isready -U postgres -h 127.0.0.1 -p 5432
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 6
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          seccompProfile:
+            type: RuntimeDefault
+      volumes:
+      - name: postgresql-storage
+        emptyDir:
+          sizeLimit: 20Gi
+      - name: postgresql-config
+        configMap:
+          name: postgresql-config
+      - name: postgresql-init
+        configMap:
+          name: postgresql-init
+
+---
+# PostgreSQL Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgresql
+  namespace: medinovai
+  labels:
+    app: postgresql
+    component: database
+spec:
+  selector:
+    app: postgresql
+  ports:
+  - name: postgresql
+    port: 5432
+    targetPort: 5432
+    protocol: TCP
+  type: ClusterIP
+
+---
+# PostgreSQL Init ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgresql-init
+  namespace: medinovai
+data:
+  01-init-database.sql: |
+    -- MedinovAI Database Initialization
+    -- Create database and users
+    
+    -- Create medinovai database
+    CREATE DATABASE medinovai;
+    
+    -- Create application user
+    CREATE USER medinovai_app WITH PASSWORD 'medinovai123';
+    GRANT ALL PRIVILEGES ON DATABASE medinovai TO medinovai_app;
+    
+    -- Connect to medinovai database
+    \c medinovai;
+    
+    -- Create patients table
+    CREATE TABLE IF NOT EXISTS patients (
+        id SERIAL PRIMARY KEY,
+        patient_id VARCHAR(50) UNIQUE NOT NULL,
+        first_name VARCHAR(100) NOT NULL,
+        last_name VARCHAR(100) NOT NULL,
+        date_of_birth DATE,
+        gender VARCHAR(10),
+        email VARCHAR(255),
+        phone VARCHAR(20),
+        address TEXT,
+        medical_history TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    
+    -- Create medical_records table
+    CREATE TABLE IF NOT EXISTS medical_records (
+        id SERIAL PRIMARY KEY,
+        patient_id VARCHAR(50) REFERENCES patients(patient_id),
+        record_type VARCHAR(50) NOT NULL,
+        record_data JSONB,
+        diagnosis TEXT,
+        treatment TEXT,
+        notes TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    
+    -- Create ai_queries table
+    CREATE TABLE IF NOT EXISTS ai_queries (
+        id SERIAL PRIMARY KEY,
+        query_id VARCHAR(50) UNIQUE NOT NULL,
+        patient_id VARCHAR(50),
+        query_text TEXT NOT NULL,
+        query_type VARCHAR(50),
+        model_used VARCHAR(100),
+        response_data JSONB,
+        confidence_score DECIMAL(3,2),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    
+    -- Create indexes
+    CREATE INDEX IF NOT EXISTS idx_patients_patient_id ON patients(patient_id);
+    CREATE INDEX IF NOT EXISTS idx_medical_records_patient_id ON medical_records(patient_id);
+    CREATE INDEX IF NOT EXISTS idx_ai_queries_patient_id ON ai_queries(patient_id);
+    CREATE INDEX IF NOT EXISTS idx_ai_queries_query_id ON ai_queries(query_id);
+    
+    -- Grant permissions to application user
+    GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO medinovai_app;
+    GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO medinovai_app;
+    
+    -- Insert sample data
+    INSERT INTO patients (patient_id, first_name, last_name, date_of_birth, gender, email, phone) VALUES
+    ('PAT001', 'John', 'Doe', '1980-01-15', 'Male', 'john.doe@example.com', '+1-555-0123'),
+    ('PAT002', 'Jane', 'Smith', '1985-05-20', 'Female', 'jane.smith@example.com', '+1-555-0124'),
+    ('PAT003', 'Bob', 'Johnson', '1975-12-10', 'Male', 'bob.johnson@example.com', '+1-555-0125')
+    ON CONFLICT (patient_id) DO NOTHING;
+
+---
+# Network Policy for PostgreSQL
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: postgresql-netpol
+  namespace: medinovai
+spec:
+  podSelector:
+    matchLabels:
+      app: postgresql
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: medinovai-api-gateway
+    ports:
+    - protocol: TCP
+      port: 5432
+  egress:
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 53
+    - protocol: UDP
+      port: 53

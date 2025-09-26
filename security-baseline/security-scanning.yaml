@@ -1,0 +1,54 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: security-scanning-config
+  namespace: medinovai-monitoring
+data:
+  trivy-config.yaml: |
+    # Trivy Security Scanning Configuration
+    db:
+      cache_dir: /tmp/trivy
+      no_progress: true
+    
+    security:
+      vuln_type: ["os", "library"]
+      severity: ["CRITICAL", "HIGH", "MEDIUM"]
+    
+    format: json
+    
+    output: /tmp/trivy-report.json
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: security-scan
+  namespace: medinovai-monitoring
+spec:
+  schedule: "0 2 * * *"  # Daily at 2 AM
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: trivy
+            image: aquasec/trivy:latest
+            command:
+            - /bin/sh
+            - -c
+            - |
+              trivy image --format json --output /tmp/trivy-report.json medinovai/api-gateway:latest
+              trivy image --format json --output /tmp/trivy-report.json medinovai/healthllm:latest
+              trivy image --format json --output /tmp/trivy-report.json postgres:16-alpine
+              trivy image --format json --output /tmp/trivy-report.json redis:7-alpine
+              trivy image --format json --output /tmp/trivy-report.json mongo:7.0
+            volumeMounts:
+            - name: trivy-cache
+              mountPath: /tmp/trivy
+            - name: trivy-reports
+              mountPath: /tmp/trivy-report.json
+          volumes:
+          - name: trivy-cache
+            emptyDir: {}
+          - name: trivy-reports
+            emptyDir: {}
+          restartPolicy: OnFailure

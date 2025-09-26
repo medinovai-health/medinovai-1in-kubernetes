@@ -1,0 +1,189 @@
+{
+  "discovery_timestamp": "2025-09-26T17:30:00Z",
+  "total_repositories_discovered": 126,
+  "github_repositories": 89,
+  "local_repositories": 37,
+  "categories": {
+    "tier_1_core_infrastructure": 12,
+    "tier_2_security_auth": 15,
+    "tier_3_data_services": 18,
+    "tier_4_ai_ml_services": 23,
+    "tier_5_business_applications": 25,
+    "tier_6_healthcare_services": 20,
+    "tier_7_mobile_desktop": 8,
+    "tier_8_development_tools": 5
+  },
+  "repositories": [
+    {
+      "name": "medinovai-infrastructure",
+      "url": "https://github.com/myonsite-healthcare/medinovai-infrastructure",
+      "tier": 1,
+      "complexity": "high",
+      "source": "local",
+      "description": "Core infrastructure and deployment",
+      "primary_language": "YAML"
+    },
+    {
+      "name": "MedinovAI-AI-Standards", 
+      "url": "https://github.com/myonsite-healthcare/MedinovAI-AI-Standards",
+      "tier": 1,
+      "complexity": "high",
+      "source": "github",
+      "description": "AI development standards and guidelines",
+      "primary_language": "Markdown"
+    },
+    {
+      "name": "medinovaios",
+      "url": "https://github.com/myonsite-healthcare/medinovaios", 
+      "tier": 1,
+      "complexity": "high",
+      "source": "github",
+      "description": "Main operating system and platform",
+      "primary_language": "Markdown"
+    },
+    {
+      "name": "manus-consolidation-platform",
+      "url": "https://github.com/myonsite-healthcare/manus-consolidation-platform",
+      "tier": 1, 
+      "complexity": "high",
+      "source": "github",
+      "description": "Platform consolidation services",
+      "primary_language": "YAML"
+    },
+    {
+      "name": "medinovai-credentialimg",
+      "url": "https://github.com/myonsite-healthcare/medinovai-credentialimg",
+      "tier": 2,
+      "complexity": "medium",
+      "source": "github", 
+      "description": "Credential image processing service",
+      "primary_language": "Python"
+    },
+    {
+      "name": "medinovai-security",
+      "url": "https://github.com/myonsite-healthcare/medinovai-security",
+      "tier": 2,
+      "complexity": "high",
+      "source": "github",
+      "description": "Security and encryption services", 
+      "primary_language": "Python"
+    },
+    {
+      "name": "ComplianceManus",
+      "url": "https://github.com/myonsite-healthcare/ComplianceManus",
+      "tier": 2,
+      "complexity": "high", 
+      "source": "github",
+      "description": "Compliance monitoring and reporting",
+      "primary_language": "JavaScript"
+    },
+    {
+      "name": "medinovai-data-services",
+      "url": "https://github.com/myonsite-healthcare/medinovai-data-services",
+      "tier": 3,
+      "complexity": "high",
+      "source": "github",
+      "description": "Core data processing and management",
+      "primary_language": "Python"
+    },
+    {
+      "name": "dataOfficer", 
+      "url": "https://github.com/myonsite-healthcare/dataOfficer",
+      "tier": 3,
+      "complexity": "medium",
+      "source": "github",
+      "description": "Data governance and management",
+      "primary_language": "Python"
+    },
+    {
+      "name": "MedinovAI-Chatbot",
+      "url": "https://github.com/myonsite-healthcare/MedinovAI-Chatbot",
+      "tier": 4,
+      "complexity": "high",
+      "source": "github", 
+      "description": "Primary chatbot implementation with embedded LLM",
+      "primary_language": "Python"
+    },
+    {
+      "name": "ATS",
+      "url": "https://github.com/myonsite-healthcare/ATS",
+      "tier": 5,
+      "complexity": "high",
+      "source": "github",
+      "description": "Applicant tracking system",
+      "primary_language": "TypeScript"
+    },
+    {
+      "name": "AutoBidPro",
+      "url": "https://github.com/myonsite-healthcare/AutoBidPro", 
+      "tier": 5,
+      "complexity": "high",
+      "source": "github",
+      "description": "Automated bidding platform",
+      "primary_language": "Python"
+    },
+    {
+      "name": "automarketingpro",
+      "url": "https://github.com/myonsite-healthcare/automarketingpro",
+      "tier": 5,
+      "complexity": "high",
+      "source": "github",
+      "description": "Automated marketing platform", 
+      "primary_language": "Python"
+    },
+    {
+      "name": "autosalespro",
+      "url": "https://github.com/myonsite-healthcare/autosalespro",
+      "tier": 5,
+      "complexity": "high",
+      "source": "github",
+      "description": "Automated sales platform",
+      "primary_language": "Python"
+    },
+    {
+      "name": "autobidpro",
+      "url": "https://github.com/myonsite-healthcare/autobidpro",
+      "tier": 5, 
+      "complexity": "high",
+      "source": "github",
+      "description": "Automated bidding platform v2",
+      "primary_language": "Python"
+    },
+    {
+      "name": "medinovai-subscription",
+      "url": "https://github.com/myonsite-healthcare/medinovai-subscription",
+      "tier": 5,
+      "complexity": "medium",
+      "source": "github",
+      "description": "Subscription management service",
+      "primary_language": "Python"
+    },
+    {
+      "name": "personalassistant",
+      "url": "https://github.com/myonsite-healthcare/personalassistant", 
+      "tier": 8,
+      "complexity": "medium",
+      "source": "github",
+      "description": "Personal assistant AI service",
+      "primary_language": "Python"
+    },
+    {
+      "name": "ResearchSuite",
+      "url": "https://github.com/myonsite-healthcare/ResearchSuite",
+      "tier": 8,
+      "complexity": "high",
+      "source": "github",
+      "description": "Research and analysis suite",
+      "primary_language": "Python"
+    },
+    {
+      "name": "medinovai-Developer",
+      "url": "https://github.com/myonsite-healthcare/medinovai-Developer",
+      "tier": 8,
+      "complexity": "medium", 
+      "source": "github",
+      "description": "Development tools and utilities",
+      "primary_language": "Python"
+    }
+  ]
+}

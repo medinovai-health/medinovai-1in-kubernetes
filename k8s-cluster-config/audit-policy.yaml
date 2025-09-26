@@ -1,0 +1,20 @@
+apiVersion: audit.k8s.io/v1
+kind: Policy
+rules:
+- level: Metadata
+  namespaces: ["kube-system", "kube-public", "kube-node-lease"]
+  verbs: ["get", "list", "watch"]
+- level: Request
+  namespaces: ["medinovai", "medinovai-database", "medinovai-ai", "medinovai-monitoring"]
+  verbs: ["create", "update", "patch", "delete"]
+- level: RequestResponse
+  resources:
+  - group: ""
+    resources: ["secrets", "configmaps"]
+  - group: "apps"
+    resources: ["deployments", "replicasets"]
+  - group: "networking.k8s.io"
+    resources: ["networkpolicies"]
+- level: Metadata
+  omitStages:
+  - RequestReceived

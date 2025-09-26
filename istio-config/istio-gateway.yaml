@@ -1,0 +1,156 @@
+# Istio Gateway Configuration for MedinovAI
+# Manual configuration since ingress gateway deployment had issues
+
+---
+# Gateway for HTTP traffic
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: medinovai-gateway
+  namespace: istio-system
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    - "medinovai.local"
+    - "*.medinovai.local"
+  - port:
+      number: 443
+      name: https
+      protocol: HTTPS
+    tls:
+      mode: SIMPLE
+      credentialName: medinovai-tls
+    hosts:
+    - "medinovai.local"
+    - "*.medinovai.local"
+
+---
+# Virtual Service for API Gateway
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: medinovai-api
+  namespace: default
+spec:
+  hosts:
+  - "api.medinovai.local"
+  gateways:
+  - istio-system/medinovai-gateway
+  http:
+  - match:
+    - uri:
+        prefix: /api
+    route:
+    - destination:
+        host: medinovai-api-gateway
+        port:
+          number: 8080
+
+---
+# Virtual Service for Monitoring
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: medinovai-monitoring
+  namespace: monitoring
+spec:
+  hosts:
+  - "monitoring.medinovai.local"
+  gateways:
+  - istio-system/medinovai-gateway
+  http:
+  - match:
+    - uri:
+        prefix: /grafana
+    route:
+    - destination:
+        host: prometheus-grafana
+        port:
+          number: 80
+  - match:
+    - uri:
+        prefix: /prometheus
+    route:
+    - destination:
+        host: prometheus-kube-prometheus-prometheus
+        port:
+          number: 9090
+
+---
+# Destination Rule for API Gateway
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: medinovai-api
+  namespace: default
+spec:
+  host: medinovai-api-gateway
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL
+    connectionPool:
+      tcp:
+        maxConnections: 100
+      http:
+        http1MaxPendingRequests: 50
+        maxRequestsPerConnection: 2
+    circuitBreaker:
+      consecutiveErrors: 3
+      interval: 30s
+      baseEjectionTime: 30s
+      maxEjectionPercent: 50
+
+---
+# Service Entry for External Services
+apiVersion: networking.istio.io/v1beta1
+kind: ServiceEntry
+metadata:
+  name: external-services
+  namespace: default
+spec:
+  hosts:
+  - "api.openai.com"
+  - "api.anthropic.com"
+  - "ollama.local"
+  ports:
+  - number: 443
+    name: https
+    protocol: HTTPS
+  - number: 11434
+    name: ollama
+    protocol: HTTP
+  location: MESH_EXTERNAL
+  resolution: DNS
+
+---
+# Authorization Policy for API Gateway
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: medinovai-api-auth
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      app: medinovai-api-gateway
+  rules:
+  - from:
+    - source:
+        principals: ["cluster.local/ns/default/sa/medinovai-admin"]
+    to:
+    - operation:
+        methods: ["GET", "POST", "PUT", "DELETE"]
+        paths: ["/api/*"]
+  - from:
+    - source:
+        namespaces: ["monitoring"]
+    to:
+    - operation:
+        methods: ["GET"]
+        paths: ["/health", "/metrics"]

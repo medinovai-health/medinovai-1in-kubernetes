@@ -1,0 +1,49 @@
+  "results": [
+    {
+      "input": "myonsite-healthcare/ATS",
+      "output": {
+        "repo_name": "myonsite-healthcare/ATS",
+        "clone_status": "Success",
+        "primary_language": "JSON",
+        "file_count": 247,
+        "build_system": "npm",
+        "has_dockerfile": true,
+        "has_k8s": "",
+        "has_ci": true,
+        "repo_size_kb": 83348
+      },
+      "error": ""
+    },
+    {
+      "input": "myonsite-healthcare/AutoBidPro",
+      "output": {
+        "repo_name": "myonsite-healthcare/AutoBidPro",
+        "clone_status": "Success",
+        "primary_language": "Python",
+        "file_count": 368,
+        "build_system": "Makefile, requirements.txt",
+        "has_dockerfile": true,
+        "has_k8s": true,
+        "has_ci": "",
+        "repo_size_kb": 11796
+      },
+      "error": ""
+    },
+    {
+      "input": "myonsite-healthcare/ComplianceManus",
+      "output": {
+        "repo_name": "myonsite-healthcare/ComplianceManus",
+        "clone_status": "success",
+        "primary_language": "JavaScript",
+        "file_count": 13610,
+        "build_system": "npm, pip",
+        "has_dockerfile": "",
+        "has_k8s": "",
+        "has_ci": true,
+        "repo_size_kb": 341592
+      },
+      "error": ""
+    },
+    {
+      "input": "myonsite-healthcare/DocuGenie",
+      "output": {

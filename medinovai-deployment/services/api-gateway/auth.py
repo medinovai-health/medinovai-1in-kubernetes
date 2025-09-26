@@ -3,7 +3,7 @@ Authentication module for MedinovAI API Gateway
 Implements JWT-based authentication with proper security
 """
 
-import jwt
+from jose import jwt
 import os
 from datetime import datetime, timedelta
 from functools import wraps

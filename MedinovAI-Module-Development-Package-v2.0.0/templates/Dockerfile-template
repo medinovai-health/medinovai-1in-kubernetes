@@ -1,0 +1,205 @@
+# MedinovAI Healthcare Service Dockerfile Template
+# Multi-stage build for production-ready healthcare applications
+# HIPAA-compliant container with security hardening
+
+# Build stage
+FROM python:3.11-slim as builder
+
+# Set build arguments
+ARG SERVICE_NAME="medinovai-service"
+ARG SERVICE_VERSION="2.0.0"
+ARG BUILD_DATE
+ARG VCS_REF
+
+# Add metadata
+LABEL maintainer="MedinovAI DevOps <devops@medinovai.com>" \
+      org.opencontainers.image.title="MedinovAI Healthcare Service" \
+      org.opencontainers.image.description="Healthcare-compliant microservice" \
+      org.opencontainers.image.version="${SERVICE_VERSION}" \
+      org.opencontainers.image.created="${BUILD_DATE}" \
+      org.opencontainers.image.revision="${VCS_REF}" \
+      org.opencontainers.image.vendor="MedinovAI" \
+      org.opencontainers.image.licenses="Proprietary" \
+      org.opencontainers.image.source="https://github.com/medinovai/medinovai-infrastructure" \
+      healthcare.compliance="HIPAA" \
+      security.scan="required"
+
+# Set environment variables for build
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    DEBIAN_FRONTEND=noninteractive
+
+# Install system dependencies and security updates
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    curl \
+    git \
+    && apt-get upgrade -y \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
+
+# Create application user and group
+RUN groupadd --gid 2000 medinovai && \
+    useradd --uid 1000 --gid medinovai --shell /bin/bash --create-home medinovai
+
+# Set working directory
+WORKDIR /app
+
+# Copy requirements first for better caching
+COPY requirements.txt .
+
+# Install Python dependencies
+RUN pip install --upgrade pip setuptools wheel && \
+    pip install --no-cache-dir -r requirements.txt && \
+    pip install --no-cache-dir gunicorn[gevent]==21.2.0
+
+# Copy application code
+COPY . .
+
+# Remove unnecessary files
+RUN find . -type f -name "*.pyc" -delete && \
+    find . -type d -name "__pycache__" -delete && \
+    rm -rf .git .pytest_cache tests/ docs/ *.md
+
+# Change ownership to application user
+RUN chown -R medinovai:medinovai /app
+
+# Production stage
+FROM python:3.11-slim as production
+
+# Set production environment variables
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PATH="/home/medinovai/.local/bin:$PATH" \
+    SERVICE_NAME="${SERVICE_NAME}" \
+    SERVICE_VERSION="${SERVICE_VERSION}"
+
+# Install runtime dependencies and security updates
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    ca-certificates \
+    && apt-get upgrade -y \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
+
+# Create application user and group (matching builder stage)
+RUN groupadd --gid 2000 medinovai && \
+    useradd --uid 1000 --gid medinovai --shell /bin/bash --create-home medinovai
+
+# Create necessary directories with proper permissions
+RUN mkdir -p /app /app/logs /app/cache /app/data /tmp/medinovai && \
+    chown -R medinovai:medinovai /app /tmp/medinovai && \
+    chmod 755 /app && \
+    chmod 750 /app/logs /app/cache /app/data /tmp/medinovai
+
+# Copy application from builder stage
+COPY --from=builder --chown=medinovai:medinovai /home/medinovai/.local /home/medinovai/.local
+COPY --from=builder --chown=medinovai:medinovai /app /app
+
+# Switch to application user
+USER medinovai
+
+# Set working directory
+WORKDIR /app
+
+# Create gunicorn configuration
+RUN cat > gunicorn.conf.py << 'EOF'
+# Gunicorn configuration for healthcare applications
+import multiprocessing
+import os
+
+# Server socket
+bind = f"0.0.0.0:{os.getenv('SERVICE_PORT', '8000')}"
+backlog = 2048
+
+# Worker processes
+workers = min(4, multiprocessing.cpu_count() * 2 + 1)
+worker_class = "uvicorn.workers.UvicornWorker"
+worker_connections = 1000
+max_requests = 1000
+max_requests_jitter = 50
+preload_app = True
+
+# Timeouts
+timeout = 30
+keepalive = 5
+graceful_timeout = 30
+
+# Logging
+accesslog = "-"
+errorlog = "-"
+loglevel = "info"
+access_log_format = '%(h)s %(l)s %(u)s %(t)s "%(r)s" %(s)s %(b)s "%(f)s" "%(a)s" %(D)s'
+
+# Process naming
+proc_name = os.getenv('SERVICE_NAME', 'medinovai-service')
+
+# Security
+limit_request_line = 4094
+limit_request_fields = 100
+limit_request_field_size = 8190
+
+# Healthcare-specific settings
+worker_tmp_dir = "/tmp/medinovai"
+tmp_upload_dir = "/tmp/medinovai"
+EOF
+
+# Health check script
+RUN cat > healthcheck.py << 'EOF'
+#!/usr/bin/env python3
+import sys
+import urllib.request
+import os
+
+def health_check():
+    try:
+        port = os.getenv('SERVICE_PORT', '8000')
+        url = f'http://localhost:{port}/health'
+        
+        with urllib.request.urlopen(url, timeout=10) as response:
+            if response.status == 200:
+                return 0
+            else:
+                print(f"Health check failed with status: {response.status}")
+                return 1
+    except Exception as e:
+        print(f"Health check failed: {e}")
+        return 1
+
+if __name__ == "__main__":
+    sys.exit(health_check())
+EOF
+
+RUN chmod +x healthcheck.py
+
+# Expose ports
+EXPOSE 8000 9090
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD python healthcheck.py
+
+# Security: Run as non-root user with minimal privileges
+USER medinovai
+
+# Set secure umask
+RUN umask 027
+
+# Default command (can be overridden)
+CMD ["gunicorn", "--config", "gunicorn.conf.py", "main:app"]
+
+# Alternative commands for different deployment scenarios:
+# Development: CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+# Production: CMD ["gunicorn", "--config", "gunicorn.conf.py", "main:app"]
+# Debug: CMD ["python", "-m", "debugpy", "--listen", "0.0.0.0:5678", "--wait-for-client", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+
+# Build instructions:
+# docker build --build-arg SERVICE_NAME=medinovai-[service] --build-arg BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ') --build-arg VCS_REF=$(git rev-parse --short HEAD) -t medinovai/[service]:2.0.0 .
+
+# Security scanning:
+# docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image medinovai/[service]:2.0.0
+
+# Run container:
+# docker run -d --name medinovai-[service] -p 8000:8000 -e SERVICE_PORT=8000 medinovai/[service]:2.0.0

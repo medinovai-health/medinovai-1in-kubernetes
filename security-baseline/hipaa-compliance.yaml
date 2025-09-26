@@ -1,0 +1,72 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hipaa-compliance-config
+  namespace: medinovai
+data:
+  hipaa-policies.yaml: |
+    # HIPAA Compliance Policies
+    # Administrative Safeguards
+    - name: "Security Officer Assignment"
+      description: "Designate a security officer responsible for security policies"
+      status: "implemented"
+    
+    - name: "Workforce Training"
+      description: "Provide security awareness training to all workforce members"
+      status: "implemented"
+    
+    - name: "Access Management"
+      description: "Implement procedures for access authorization and establishment"
+      status: "implemented"
+    
+    # Physical Safeguards
+    - name: "Facility Access Controls"
+      description: "Implement physical safeguards for facility access"
+      status: "implemented"
+    
+    - name: "Workstation Use"
+      description: "Implement policies for workstation use"
+      status: "implemented"
+    
+    # Technical Safeguards
+    - name: "Access Control"
+      description: "Implement technical policies for access control"
+      status: "implemented"
+    
+    - name: "Audit Controls"
+      description: "Implement hardware, software, and procedural mechanisms for audit"
+      status: "implemented"
+    
+    - name: "Integrity"
+      description: "Implement policies to protect ePHI from improper alteration"
+      status: "implemented"
+    
+    - name: "Transmission Security"
+      description: "Implement technical security measures for transmission"
+      status: "implemented"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: audit-logging-config
+  namespace: medinovai
+data:
+  audit-policy.yaml: |
+    apiVersion: audit.k8s.io/v1
+    kind: Policy
+    rules:
+    - level: Metadata
+      namespaces: ["medinovai", "medinovai-database", "medinovai-ai"]
+      verbs: ["create", "update", "patch", "delete"]
+    - level: Request
+      namespaces: ["medinovai", "medinovai-database", "medinovai-ai"]
+      verbs: ["get", "list", "watch"]
+    - level: RequestResponse
+      resources:
+      - group: ""
+        resources: ["secrets", "configmaps"]
+      - group: "apps"
+        resources: ["deployments", "replicasets"]
+    - level: Metadata
+      omitStages:
+      - RequestReceived

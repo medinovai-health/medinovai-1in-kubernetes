@@ -1,0 +1,131 @@
+# MedinovAI Healthcare Service Requirements Template
+# Production-ready Python dependencies for healthcare applications
+# Version: 2.0.0
+# Last Updated: September 26, 2025
+
+# Core Web Framework
+fastapi==0.104.1                    # Modern, fast web framework for building APIs
+uvicorn[standard]==0.24.0           # ASGI server for FastAPI
+gunicorn==21.2.0                    # WSGI HTTP Server for production
+
+# Data Validation and Serialization
+pydantic==2.5.0                     # Data validation using Python type hints
+pydantic-settings==2.1.0            # Settings management for Pydantic
+
+# HTTP Client
+httpx==0.25.2                       # Async HTTP client for AI service integration
+requests==2.31.0                    # HTTP library for synchronous requests
+
+# Authentication and Security
+python-jose[cryptography]==3.3.0    # JSON Web Token implementation
+passlib[bcrypt]==1.7.4              # Password hashing library
+cryptography==41.0.8                # Cryptographic recipes and primitives
+python-multipart==0.0.6             # Form data parsing
+
+# Database Connectivity
+asyncpg==0.29.0                     # Async PostgreSQL adapter
+psycopg2-binary==2.9.9              # PostgreSQL adapter (sync)
+sqlalchemy==2.0.23                  # SQL toolkit and ORM
+alembic==1.13.0                     # Database migration tool
+
+# Caching and Session Management
+redis==5.0.1                        # Redis client for caching
+aioredis==2.0.1                     # Async Redis client
+
+# Logging and Monitoring
+structlog==23.2.0                   # Structured logging
+prometheus-client==0.19.0           # Prometheus metrics client
+opentelemetry-api==1.21.0           # OpenTelemetry API
+opentelemetry-sdk==1.21.0           # OpenTelemetry SDK
+
+# Healthcare-Specific Libraries
+python-hl7==0.3.4                   # HL7 message parsing
+fhir.resources==7.0.2               # FHIR resource models
+pydicom==2.4.3                      # DICOM medical imaging
+
+# Data Processing and Analysis
+pandas==2.1.4                       # Data analysis and manipulation
+numpy==1.25.2                       # Numerical computing
+scipy==1.11.4                       # Scientific computing
+
+# AI and Machine Learning
+torch==2.1.1                        # PyTorch machine learning framework
+transformers==4.36.0                # Hugging Face transformers
+scikit-learn==1.3.2                 # Machine learning library
+langchain==0.0.350                  # LLM application framework
+
+# Date and Time Handling
+python-dateutil==2.8.2              # Extensions to the standard datetime module
+pytz==2023.3                        # World timezone definitions
+
+# Configuration and Environment
+python-dotenv==1.0.0                # Load environment variables from .env file
+pyyaml==6.0.1                       # YAML parser and emitter
+
+# Utilities
+click==8.1.7                        # Command line interface creation kit
+rich==13.7.0                        # Rich text and beautiful formatting
+typer==0.9.0                        # CLI library based on type hints
+
+# Development Dependencies (comment out for production)
+# pytest==7.4.3                     # Testing framework
+# pytest-asyncio==0.21.1            # Async testing support
+# pytest-cov==4.1.0                 # Coverage plugin for pytest
+# black==23.11.0                    # Code formatter
+# isort==5.12.0                     # Import sorter
+# flake8==6.1.0                     # Linting tool
+# mypy==1.7.1                       # Static type checker
+# pre-commit==3.6.0                 # Git hooks framework
+
+# Production WSGI Server
+gevent==23.9.1                      # Coroutine-based networking library
+
+# Email and Notifications
+emails==0.6                         # Email sending library
+celery==5.3.4                       # Distributed task queue
+
+# File Processing
+pillow==10.1.0                      # Python Imaging Library
+openpyxl==3.1.2                     # Excel file processing
+python-magic==0.4.27                # File type identification
+
+# Networking and Protocols
+websockets==12.0                    # WebSocket client and server
+paramiko==3.4.0                     # SSH2 protocol library
+
+# Healthcare Compliance and Security
+audit-log==0.1.0                    # Audit logging utilities
+phi-anonymizer==1.0.0               # PHI anonymization tools
+
+# Performance and Optimization
+cachetools==5.3.2                   # Caching utilities
+memory-profiler==0.61.0             # Memory usage monitoring
+
+# Kubernetes and Container Integration
+kubernetes==28.1.0                  # Kubernetes client library
+
+# Version Pinning Notes:
+# - All versions are pinned to ensure reproducible builds
+# - Security patches should be applied regularly
+# - Healthcare compliance requires stable, tested versions
+# - AI/ML libraries may need GPU-specific versions in production
+
+# Installation Commands:
+# pip install -r requirements.txt
+# pip install --upgrade pip setuptools wheel
+
+# Production Installation:
+# pip install --no-cache-dir -r requirements.txt
+
+# Development Installation:
+# pip install -r requirements.txt -r requirements-dev.txt
+
+# Security Scanning:
+# pip-audit -r requirements.txt
+# safety check -r requirements.txt
+
+# Healthcare Compliance Notes:
+# - All dependencies must be approved for healthcare use
+# - Regular security updates are mandatory
+# - HIPAA compliance validation required
+# - FDA regulations may apply to AI/ML components

@@ -1,0 +1,73 @@
+apiVersion: k3d.io/v1alpha4
+kind: Simple
+name: medinovai-cluster
+servers: 2
+agents: 3
+kubeAPI:
+  host: "0.0.0.0"
+  hostPort: "6443"
+ports:
+  - port: 80:80
+    nodeFilters:
+      - loadbalancer
+  - port: 443:443
+    nodeFilters:
+      - loadbalancer
+  - port: 8080:8080
+    nodeFilters:
+      - loadbalancer
+  - port: 30000-30100:30000-30100
+    nodeFilters:
+      - loadbalancer
+volumes:
+  - volume: /Users/dev1/github/medinovai-infrastructure:/var/lib/rancher/k3s/storage
+    nodeFilters:
+      - agent:*
+options:
+  k3s:
+    extraArgs:
+      - arg: --disable=traefik
+        nodeFilters:
+          - server:*
+      - arg: --disable=servicelb
+        nodeFilters:
+          - server:*
+      - arg: --disable=local-storage
+        nodeFilters:
+          - server:*
+      - arg: --disable=metrics-server
+        nodeFilters:
+          - server:*
+      - arg: --disable=coredns
+        nodeFilters:
+          - server:*
+      - arg: --cluster-cidr=10.42.0.0/16
+        nodeFilters:
+          - server:*
+      - arg: --service-cidr=10.43.0.0/16
+        nodeFilters:
+          - server:*
+      - arg: --cluster-dns=10.43.0.10
+        nodeFilters:
+          - server:*
+      - arg: --cluster-domain=cluster.local
+        nodeFilters:
+          - server:*
+      - arg: --enable-admission-plugins=NodeRestriction,PodSecurityPolicy
+        nodeFilters:
+          - server:*
+      - arg: --audit-log-path=/var/log/audit.log
+        nodeFilters:
+          - server:*
+      - arg: --audit-log-maxage=30
+        nodeFilters:
+          - server:*
+      - arg: --audit-log-maxbackup=3
+        nodeFilters:
+          - server:*
+      - arg: --audit-log-maxsize=100
+        nodeFilters:
+          - server:*
+      - arg: --audit-policy-file=/etc/kubernetes/audit-policy.yaml
+        nodeFilters:
+          - server:*

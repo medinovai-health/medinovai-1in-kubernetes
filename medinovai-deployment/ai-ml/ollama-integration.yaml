@@ -1,0 +1,319 @@
+# Ollama AI/ML Integration for MedinovAI
+# Production-ready Ollama deployment with healthcare models
+
+---
+# Ollama ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ollama-config
+  namespace: medinovai
+data:
+  ollama.conf: |
+    # Ollama Configuration for MedinovAI
+    OLLAMA_HOST=0.0.0.0:11434
+    OLLAMA_ORIGINS=*
+    OLLAMA_KEEP_ALIVE=24h
+    OLLAMA_NUM_PARALLEL=4
+    OLLAMA_MAX_LOADED_MODELS=3
+    OLLAMA_MAX_QUEUE=512
+    OLLAMA_FLASH_ATTENTION=1
+    OLLAMA_LLM_LIBRARY=cpu
+    
+    # Model configuration
+    OLLAMA_MODELS_PATH=/root/.ollama/models
+    OLLAMA_TMPDIR=/tmp/ollama
+    
+    # Performance settings
+    OLLAMA_GPU_LAYERS=0
+    OLLAMA_CPU_THREADS=8
+    OLLAMA_MEMORY_FRACTION=0.8
+
+---
+# Ollama Secret
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ollama-secret
+  namespace: medinovai
+type: Opaque
+data:
+  ollama-api-key: bWVkaW5vdmFpLW9sbGFtYS1rZXk=  # medinovai-ollama-key
+
+---
+# Ollama PersistentVolumeClaim for models
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ollama-models-pvc
+  namespace: medinovai
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Gi
+  storageClassName: ""
+
+---
+# Ollama Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ollama
+  namespace: medinovai
+  labels:
+    app: ollama
+    component: ai-ml
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ollama
+  template:
+    metadata:
+      labels:
+        app: ollama
+        component: ai-ml
+      annotations:
+        sidecar.istio.io/inject: "false"
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+      - name: ollama
+        image: ollama/ollama:latest
+        ports:
+        - containerPort: 11434
+          name: ollama-api
+        env:
+        - name: OLLAMA_HOST
+          value: "0.0.0.0:11434"
+        - name: OLLAMA_ORIGINS
+          value: "*"
+        - name: OLLAMA_KEEP_ALIVE
+          value: "24h"
+        - name: OLLAMA_NUM_PARALLEL
+          value: "4"
+        - name: OLLAMA_MAX_LOADED_MODELS
+          value: "3"
+        - name: OLLAMA_MAX_QUEUE
+          value: "512"
+        - name: OLLAMA_FLASH_ATTENTION
+          value: "1"
+        - name: OLLAMA_LLM_LIBRARY
+          value: "cpu"
+        resources:
+          requests:
+            memory: "4Gi"
+            cpu: "2000m"
+          limits:
+            memory: "16Gi"
+            cpu: "8000m"
+        volumeMounts:
+        - name: ollama-models
+          mountPath: /root/.ollama/models
+        - name: ollama-tmp
+          mountPath: /tmp/ollama
+        livenessProbe:
+          httpGet:
+            path: /api/tags
+            port: 11434
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+          successThreshold: 1
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /api/tags
+            port: 11434
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          seccompProfile:
+            type: RuntimeDefault
+      volumes:
+      - name: ollama-models
+        emptyDir:
+          sizeLimit: 50Gi
+      - name: ollama-tmp
+        emptyDir:
+          sizeLimit: 10Gi
+
+---
+# Ollama Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: ollama
+  namespace: medinovai
+  labels:
+    app: ollama
+    component: ai-ml
+spec:
+  selector:
+    app: ollama
+  ports:
+  - name: ollama-api
+    port: 11434
+    targetPort: 11434
+    protocol: TCP
+  type: ClusterIP
+
+---
+# Ollama Model Manager Job
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ollama-model-manager
+  namespace: medinovai
+spec:
+  template:
+    metadata:
+      annotations:
+        sidecar.istio.io/inject: "false"
+    spec:
+      restartPolicy: OnFailure
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+      - name: model-manager
+        image: ollama/ollama:latest
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          seccompProfile:
+            type: RuntimeDefault
+          runAsNonRoot: true
+          runAsUser: 1000
+        command:
+        - /bin/sh
+        - -c
+        - |
+          # Wait for Ollama service to be ready
+          until curl -f http://ollama:11434/api/tags; do
+            echo "Waiting for Ollama service..."
+            sleep 10
+          done
+          
+          # Pull healthcare-specific models
+          echo "Pulling healthcare AI models..."
+          
+          # Pull Llama 3.1 8B for general healthcare queries
+          ollama pull llama3.1:8b
+          
+          # Pull CodeLlama for medical code analysis
+          ollama pull codellama:7b
+          
+          # Pull Qwen2.5 for medical reasoning
+          ollama pull qwen2.5:7b
+          
+          # Create custom MedinovAI model
+          echo "Creating MedinovAI custom model..."
+          cat > /tmp/medinovai-model << 'EOF'
+          FROM llama3.1:8b
+          
+          SYSTEM """You are MedinovAI, an advanced healthcare AI assistant specialized in medical analysis, diagnosis support, and patient care. 
+          
+          Your capabilities include:
+          - Medical diagnosis support and differential diagnosis
+          - Patient data analysis and interpretation
+          - Medical literature review and evidence-based recommendations
+          - Healthcare workflow optimization
+          - Medical coding and documentation assistance
+          - Patient communication and education
+          
+          Always prioritize patient safety and recommend consulting healthcare professionals for critical decisions.
+          Provide evidence-based responses and cite medical sources when available.
+          Maintain strict patient confidentiality and HIPAA compliance.
+          
+          Respond in a professional, empathetic, and clinically accurate manner."""
+          EOF
+          
+          ollama create medinovai:latest -f /tmp/medinovai-model
+          
+          echo "Healthcare models successfully loaded!"
+          ollama list
+        env:
+        - name: OLLAMA_HOST
+          value: "http://ollama:11434"
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "1000m"
+          limits:
+            memory: "8Gi"
+            cpu: "4000m"
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          seccompProfile:
+            type: RuntimeDefault
+
+---
+# Network Policy for Ollama
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ollama-netpol
+  namespace: medinovai
+spec:
+  podSelector:
+    matchLabels:
+      app: ollama
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: medinovai-api-gateway
+    ports:
+    - protocol: TCP
+      port: 11434
+  egress:
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 80
+    - protocol: TCP
+      port: 443
+    - protocol: TCP
+      port: 53
+    - protocol: UDP
+      port: 53
+
+---
+# ServiceMonitor for Ollama (Prometheus monitoring)
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: ollama-monitor
+  namespace: medinovai
+  labels:
+    app: ollama
+spec:
+  selector:
+    matchLabels:
+      app: ollama
+  endpoints:
+  - port: ollama-api
+    path: /metrics
+    interval: 30s
