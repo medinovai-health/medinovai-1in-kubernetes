@@ -1,0 +1,1 @@
+ANALYSIS TIMEOUT - Model codellama:7b failed to complete analysis of istio-gateway-config.yaml within 60 seconds

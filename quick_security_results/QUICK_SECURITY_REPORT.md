@@ -1,27 +1,27 @@
 # QUICK SECURITY SCAN REPORT
-Generated: Thu Sep 25 15:15:28 EDT 2025
+Generated: Thu Sep 25 15:28:51 EDT 2025
 
 ## Files Scanned
 ./medinovai-deployment/services/healthllm/main.py
+./medinovai-deployment/services/api-gateway/auth.py
+./medinovai-deployment/services/api-gateway/rate_limiting.py
+./medinovai-deployment/services/api-gateway/logging_config.py
 ./medinovai-deployment/services/api-gateway/main.py
+./medinovai-deployment/services/api-gateway/validation.py
 ./validation_configs/validation_swarm_1_config.json
 ./validation_configs/validation_agent_1_1.sh
 ./istio-port-management.yaml
 ./traefik-config/traefik.yml
 ./traefik-config/traefik-simple.yml
 ./.pre-commit-config.yaml
-./medinovai-infrastructure-standards/platform/addons/secretstores/clustersecretstore-aws.yaml
-./medinovai-infrastructure-standards/platform/addons/secretstores/clustersecretstore-gcp.yaml
-./medinovai-infrastructure-standards/platform/addons/secretstores/clustersecretstore-azure.yaml
-./medinovai-infrastructure-standards/platform/addons/argocd-appset.yaml
-./medinovai-infrastructure-standards/platform/charts/loki/values.yaml
-./medinovai-infrastructure-standards/platform/charts/kube-prometheus-stack/values.yaml
-./medinovai-infrastructure-standards/platform/charts/external-dns/values.yaml
-./medinovai-infrastructure-standards/platform/charts/cert-manager/values.yaml
-./medinovai-infrastructure-standards/platform/charts/envoy-gateway/values.yaml
-./medinovai-infrastructure-standards/platform/charts/tempo/values.yaml
-./medinovai-infrastructure-standards/platform/charts/external-secrets/values.yaml
-./medinovai-infrastructure-standards/platform/charts/kyverno/values.yaml
+./optimized_analysis_results/critical/deepseek_r1_70b_analysis_latest_error_handling_deploy_infrastructure.sh
+./optimized_analysis_results/critical/deepseek_r1_70b_analysis_latest_security_vulnerabilities_deploy_infrastructure.sh
+./optimized_analysis_results/critical/qwen2_5_72b_code_quality_main.py
+./optimized_analysis_results/critical/qwen2_5_72b_performance_issues_main.py
+./optimized_analysis_results/critical/deepseek_r1_70b_analysis_latest_architecture_problems_package.json
+./optimized_analysis_results/critical/deepseek_r1_70b_analysis_latest_configuration_errors_main.py
+./optimized_analysis_results/critical/qwen2_5_72b_dependency_issues_package.json
+./optimized_analysis_results/critical/deepseek_r1_70b_analysis_latest_documentation_gaps_main.py
 
 ## Critical Files Analyzed
 scripts/deploy_infrastructure.sh
@@ -43,6 +43,15 @@ codellama:7b-analysis
 SECURITY SCAN REPORT
 File: ./medinovai-infrastructure-standards/platform/addons/argocd-appset.yaml
 Date: Thu Sep 25 15:15:27 EDT 2025
+========================================
+
+No obvious security patterns found.
+
+### auth.py_security_scan.txt
+
+SECURITY SCAN REPORT
+File: ./medinovai-deployment/services/api-gateway/auth.py
+Date: Thu Sep 25 15:28:48 EDT 2025
 ========================================
 
 No obvious security patterns found.
@@ -74,11 +83,65 @@ Date: Thu Sep 25 15:15:27 EDT 2025
 
 No obvious security patterns found.
 
+### deepseek_r1_70b_analysis_latest_architecture_problems_package.json_security_scan.txt
+
+SECURITY SCAN REPORT
+File: ./optimized_analysis_results/critical/deepseek_r1_70b_analysis_latest_architecture_problems_package.json
+Date: Thu Sep 25 15:28:50 EDT 2025
+========================================
+
+No obvious security patterns found.
+
+### deepseek_r1_70b_analysis_latest_configuration_errors_main.py_security_scan.txt
+
+SECURITY SCAN REPORT
+File: ./optimized_analysis_results/critical/deepseek_r1_70b_analysis_latest_configuration_errors_main.py
+Date: Thu Sep 25 15:28:50 EDT 2025
+========================================
+
+No obvious security patterns found.
+
+### deepseek_r1_70b_analysis_latest_documentation_gaps_main.py_security_scan.txt
+
+SECURITY SCAN REPORT
+File: ./optimized_analysis_results/critical/deepseek_r1_70b_analysis_latest_documentation_gaps_main.py
+Date: Thu Sep 25 15:28:50 EDT 2025
+========================================
+
+No obvious security patterns found.
+
+### deepseek_r1_70b_analysis_latest_error_handling_deploy_infrastructure.sh_security_scan.txt
+
+SECURITY SCAN REPORT
+File: ./optimized_analysis_results/critical/deepseek_r1_70b_analysis_latest_error_handling_deploy_infrastructure.sh
+Date: Thu Sep 25 15:28:50 EDT 2025
+========================================
+
+No obvious security patterns found.
+
+### deepseek_r1_70b_analysis_latest_security_vulnerabilities_deploy_infrastructure.sh_security_scan.txt
+
+SECURITY SCAN REPORT
+File: ./optimized_analysis_results/critical/deepseek_r1_70b_analysis_latest_security_vulnerabilities_deploy_infrastructure.sh
+Date: Thu Sep 25 15:28:50 EDT 2025
+========================================
+
+No obvious security patterns found.
+
 ### istio-port-management.yaml_security_scan.txt
 
 SECURITY SCAN REPORT
 File: ./istio-port-management.yaml
-Date: Thu Sep 25 15:15:26 EDT 2025
+Date: Thu Sep 25 15:28:49 EDT 2025
+========================================
+
+No obvious security patterns found.
+
+### logging_config.py_security_scan.txt
+
+SECURITY SCAN REPORT
+File: ./medinovai-deployment/services/api-gateway/logging_config.py
+Date: Thu Sep 25 15:28:49 EDT 2025
 ========================================
 
 No obvious security patterns found.
@@ -87,7 +150,43 @@ No obvious security patterns found.
 
 SECURITY SCAN REPORT
 File: ./medinovai-deployment/services/api-gateway/main.py
-Date: Thu Sep 25 15:15:26 EDT 2025
+Date: Thu Sep 25 15:28:49 EDT 2025
+========================================
+
+No obvious security patterns found.
+
+### qwen2_5_72b_code_quality_main.py_security_scan.txt
+
+SECURITY SCAN REPORT
+File: ./optimized_analysis_results/critical/qwen2_5_72b_code_quality_main.py
+Date: Thu Sep 25 15:28:50 EDT 2025
+========================================
+
+No obvious security patterns found.
+
+### qwen2_5_72b_dependency_issues_package.json_security_scan.txt
+
+SECURITY SCAN REPORT
+File: ./optimized_analysis_results/critical/qwen2_5_72b_dependency_issues_package.json
+Date: Thu Sep 25 15:28:50 EDT 2025
+========================================
+
+No obvious security patterns found.
+
+### qwen2_5_72b_performance_issues_main.py_security_scan.txt
+
+SECURITY SCAN REPORT
+File: ./optimized_analysis_results/critical/qwen2_5_72b_performance_issues_main.py
+Date: Thu Sep 25 15:28:50 EDT 2025
+========================================
+
+No obvious security patterns found.
+
+### rate_limiting.py_security_scan.txt
+
+SECURITY SCAN REPORT
+File: ./medinovai-deployment/services/api-gateway/rate_limiting.py
+Date: Thu Sep 25 15:28:48 EDT 2025
 ========================================
 
 No obvious security patterns found.
@@ -96,7 +195,7 @@ No obvious security patterns found.
 
 SECURITY SCAN REPORT
 File: ./traefik-config/traefik-simple.yml
-Date: Thu Sep 25 15:15:26 EDT 2025
+Date: Thu Sep 25 15:28:49 EDT 2025
 ========================================
 
 No obvious security patterns found.
@@ -105,7 +204,16 @@ No obvious security patterns found.
 
 SECURITY SCAN REPORT
 File: ./traefik-config/traefik.yml
-Date: Thu Sep 25 15:15:26 EDT 2025
+Date: Thu Sep 25 15:28:49 EDT 2025
+========================================
+
+No obvious security patterns found.
+
+### validation.py_security_scan.txt
+
+SECURITY SCAN REPORT
+File: ./medinovai-deployment/services/api-gateway/validation.py
+Date: Thu Sep 25 15:28:49 EDT 2025
 ========================================
 
 No obvious security patterns found.
@@ -114,7 +222,7 @@ No obvious security patterns found.
 
 SECURITY SCAN REPORT
 File: ./validation_configs/validation_agent_1_1.sh
-Date: Thu Sep 25 15:15:26 EDT 2025
+Date: Thu Sep 25 15:28:49 EDT 2025
 ========================================
 
 No obvious security patterns found.
@@ -123,7 +231,7 @@ No obvious security patterns found.
 
 SECURITY SCAN REPORT
 File: ./validation_configs/validation_swarm_1_config.json
-Date: Thu Sep 25 15:15:26 EDT 2025
+Date: Thu Sep 25 15:28:49 EDT 2025
 ========================================
 
 No obvious security patterns found.

@@ -1,0 +1,12 @@
+ANALYSIS REPORT
+File: ./.pre-commit-config.yaml
+Model: qwen2.5:7b
+Category: documentation_gaps
+Chunks: 0
+Date: Thu Sep 25 15:28:30 EDT 2025
+========================================
+
+CHUNK 1 ANALYSIS:
+ANALYSIS TIMEOUT
+
+TOTAL ISSUES FOUND: 0

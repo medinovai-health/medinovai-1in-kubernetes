@@ -1,0 +1,12 @@
+ANALYSIS REPORT
+File: ./istio-port-management.yaml
+Model: llama3.2:3b
+Category: configuration_errors
+Chunks: 0
+Date: Thu Sep 25 15:28:26 EDT 2025
+========================================
+
+CHUNK 1 ANALYSIS:
+ANALYSIS TIMEOUT
+
+TOTAL ISSUES FOUND: 0
