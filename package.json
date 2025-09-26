@@ -1,6 +1,6 @@
 {
   "name": "medinovai-infrastructure-validation",
-  "version": "2.1.0",
+  "version": "1.0.0",
   "description": "MedinovAI Infrastructure Validation with Agent Swarms and Playwright Tests",
   "main": "index.js",
   "scripts": {
@@ -32,7 +32,6 @@
     "@playwright/test": "^1.40.0"
   },
   "dependencies": {
-    "axios": "^1.12.2",
     "jq": "^1.6.0"
   },
   "engines": {
@@ -47,3 +46,11 @@
   },
   "homepage": "https://github.com/myonsite-healthcare/medinovai-infrastructure#readme"
 }
+
+
+
+
+
+
+
+
