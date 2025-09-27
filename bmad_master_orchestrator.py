@@ -185,6 +185,7 @@ class BMADOrchestrator:
             
             # Infrastructure & DevOps
             {"name": "medinovaios", "tier": 1, "complexity": "high"},
+            {"name": "MedinovAI-Module-Development-Package", "tier": 1, "complexity": "high"},
             {"name": "medinovai-devops-telemetry", "tier": 2, "complexity": "medium"},
             {"name": "medinovai-edge-cache-cdn", "tier": 2, "complexity": "medium"},
             {"name": "medinovai-Developer", "tier": 8, "complexity": "medium"},

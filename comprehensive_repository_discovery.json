@@ -1,10 +1,10 @@
 {
-  "discovery_timestamp": "2025-09-26T17:30:00Z",
-  "total_repositories_discovered": 126,
+  "discovery_timestamp": "2025-09-26T18:45:00Z",
+  "total_repositories_discovered": 127,
   "github_repositories": 89,
-  "local_repositories": 37,
+  "local_repositories": 38,
   "categories": {
-    "tier_1_core_infrastructure": 12,
+    "tier_1_core_infrastructure": 13,
     "tier_2_security_auth": 15,
     "tier_3_data_services": 18,
     "tier_4_ai_ml_services": 23,
@@ -49,6 +49,20 @@
       "source": "github",
       "description": "Platform consolidation services",
       "primary_language": "YAML"
+    },
+    {
+      "name": "MedinovAI-Module-Development-Package",
+      "url": "https://github.com/myonsite-healthcare/medinovai-infrastructure/MedinovAI-Module-Development-Package-v2.0.0",
+      "tier": 1,
+      "complexity": "high",
+      "source": "local",
+      "description": "Healthcare module development framework with AI integration and compliance templates",
+      "primary_language": "Python",
+      "version": "2.0.0",
+      "module_type": "development_framework",
+      "healthcare_compliant": true,
+      "ai_integrated": true,
+      "deployment_ready": true
     },
     {
       "name": "medinovai-credentialimg",
