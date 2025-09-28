@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: disaster_recovery
+  labels:
+    app: disaster_recovery
+spec:
+  selector:
+    app: disaster_recovery
+  ports:
+  - protocol: TCP
+    port: 3144
+    targetPort: 3144
+  type: ClusterIP

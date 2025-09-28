@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: disaster_recovery
+  labels:
+    app: disaster_recovery
+    version: 1.0.0
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: disaster_recovery
+  template:
+    metadata:
+      labels:
+        app: disaster_recovery
+        version: 1.0.0
+    spec:
+      containers:
+      - name: disaster_recovery
+        image: medinovai-disaster-recovery:1.0.0
+        ports:
+        - containerPort: 3144
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: PORT
+          value: "3144"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3144
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 3144
+          initialDelaySeconds: 5
+          periodSeconds: 5

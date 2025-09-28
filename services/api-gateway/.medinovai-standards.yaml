@@ -1,0 +1,61 @@
+ai_features:
+  code_quality_analysis: enabled
+  documentation_generation: ai-powered
+  incident_response: autonomous
+  performance_optimization: automated
+  security_scanning: continuous
+  self_healing: enabled
+  test_generation: intelligent
+architecture:
+  audit_trail: mandatory
+  context_memory_queue: implemented
+  rbac: implemented
+  stateless_design: enforced
+  superprompt_version: 1.0.0
+compliance:
+  fda: required
+  gdpr: required
+  hipaa: required
+  hitrust: required
+  iso_13485: required
+  soc2: required
+deployment:
+  blue_green: supported
+  ci_cd: github_actions
+  containerization: docker
+  orchestration: kubernetes
+  rollback: automated
+  self_healing: enabled
+monitoring:
+  alerting: ai-driven
+  anomaly_detection: ml-based
+  health_checks: implemented
+  logging: structured
+  metrics_collection: prometheus
+  tracing: distributed
+quality:
+  code_review: ai-powered
+  documentation: comprehensive
+  performance_testing: automated
+  security_review: mandatory
+  test_coverage: '>90%'
+repository_standards:
+  ai_enabled: true
+  last_updated: '2025-07-13T20:49:47.882264'
+  repository:
+    domain: integration
+    name: api-gateway
+    priority: critical
+    type: microservice
+  self_auditing: true
+  self_correcting: true
+  self_learning: true
+  self_maintaining: true
+  version: 2.0.0
+security:
+  audit_logging: comprehensive
+  authentication: jwt_based
+  authorization: rbac
+  encryption: aes_256
+  penetration_testing: automated
+  vulnerability_scanning: continuous

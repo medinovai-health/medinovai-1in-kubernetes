@@ -1,0 +1,17 @@
+PersonalAssistant
+medinovai-ResearchSuite
+Credentialing
+QualityManagementSystem
+medinovai-Developer-backup-20250925-142951
+MedinovAI-AI-Standards-1
+medinovai-infrastructure
+MedinovAI-security
+medinovai-etmf
+AutoMarketingPro
+medinovai-EDC
+medinovaios
+medinovai-registry
+medinovai-DataOfficer
+medinovai-healthLLM
+medinovai-AI-standards
+medinovai-Developer

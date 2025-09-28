@@ -1,0 +1,8 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'disaster_recovery'
+    static_configs:
+      - targets: ['localhost:7144']
+    metrics_path: '/metrics'

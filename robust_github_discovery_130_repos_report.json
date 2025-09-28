@@ -1,0 +1,155 @@
+{
+  "discovery_timestamp": "2025-09-28T01:39:18.044984",
+  "organization": "myonsite-healthcare",
+  "total_repositories_found": 17,
+  "statistics": {
+    "total_size_kb": 0,
+    "total_stars": 0,
+    "average_size_kb": 0,
+    "average_stars": 0,
+    "archived_repositories": 0,
+    "private_repositories": 17,
+    "public_repositories": 0
+  },
+  "languages": {
+    "Unknown": 17
+  },
+  "repositories": [
+    {
+      "name": "PersonalAssistant",
+      "description": "Discovered from local repository",
+      "language": "Unknown",
+      "archived": false,
+      "private": true,
+      "clone_url": "https://github.com/myonsite-healthcare/PersonalAssistant.git"
+    },
+    {
+      "name": "medinovai-ResearchSuite",
+      "description": "Discovered from local repository",
+      "language": "Unknown",
+      "archived": false,
+      "private": true,
+      "clone_url": "https://github.com/myonsite-healthcare/medinovai-ResearchSuite.git"
+    },
+    {
+      "name": "Credentialing",
+      "description": "Discovered from local repository",
+      "language": "Unknown",
+      "archived": false,
+      "private": true,
+      "clone_url": "https://github.com/myonsite-healthcare/Credentialing.git"
+    },
+    {
+      "name": "QualityManagementSystem",
+      "description": "Discovered from local repository",
+      "language": "Unknown",
+      "archived": false,
+      "private": true,
+      "clone_url": "https://github.com/myonsite-healthcare/QualityManagementSystem.git"
+    },
+    {
+      "name": "medinovai-Developer-backup-20250925-142951",
+      "description": "Discovered from local repository",
+      "language": "Unknown",
+      "archived": false,
+      "private": true,
+      "clone_url": "https://github.com/myonsite-healthcare/medinovai-Developer.git"
+    },
+    {
+      "name": "MedinovAI-AI-Standards-1",
+      "description": "Discovered from local repository",
+      "language": "Unknown",
+      "archived": false,
+      "private": true,
+      "clone_url": "https://github.com/myonsite-healthcare/MedinovAI-AI-Standards.git"
+    },
+    {
+      "name": "medinovai-infrastructure",
+      "description": "Discovered from local repository",
+      "language": "Unknown",
+      "archived": false,
+      "private": true,
+      "clone_url": "https://github.com/myonsite-healthcare/medinovai-infrastructure.git"
+    },
+    {
+      "name": "MedinovAI-security",
+      "description": "Discovered from local repository",
+      "language": "Unknown",
+      "archived": false,
+      "private": true,
+      "clone_url": "https://github.com/myonsite-healthcare/MedinovAI-security.git"
+    },
+    {
+      "name": "medinovai-etmf",
+      "description": "Discovered from local repository",
+      "language": "Unknown",
+      "archived": false,
+      "private": true,
+      "clone_url": "https://github.com/myonsite-healthcare/medinovai-etmf.git"
+    },
+    {
+      "name": "AutoMarketingPro",
+      "description": "Discovered from local repository",
+      "language": "Unknown",
+      "archived": false,
+      "private": true,
+      "clone_url": "https://github.com/myonsite-healthcare/AutoMarketingPro.git"
+    },
+    {
+      "name": "medinovai-EDC",
+      "description": "Discovered from local repository",
+      "language": "Unknown",
+      "archived": false,
+      "private": true,
+      "clone_url": "https://github.com/myonsite-healthcare/medinovai-EDC.git"
+    },
+    {
+      "name": "medinovaios",
+      "description": "Discovered from local repository",
+      "language": "Unknown",
+      "archived": false,
+      "private": true,
+      "clone_url": "https://github.com/myonsite-healthcare/medinovaios.git"
+    },
+    {
+      "name": "medinovai-registry",
+      "description": "Discovered from local repository",
+      "language": "Unknown",
+      "archived": false,
+      "private": true,
+      "clone_url": "https://github.com/myonsite-healthcare/medinovai-registry.git"
+    },
+    {
+      "name": "medinovai-DataOfficer",
+      "description": "Discovered from local repository",
+      "language": "Unknown",
+      "archived": false,
+      "private": true,
+      "clone_url": "https://github.com/myonsite-healthcare/medinovai-DataOfficer.git"
+    },
+    {
+      "name": "medinovai-healthLLM",
+      "description": "Discovered from local repository",
+      "language": "Unknown",
+      "archived": false,
+      "private": true,
+      "clone_url": "https://github.com/myonsite-healthcare/medinovai-healthLLM.git"
+    },
+    {
+      "name": "medinovai-AI-standards",
+      "description": "Discovered from local repository",
+      "language": "Unknown",
+      "archived": false,
+      "private": true,
+      "clone_url": "https://github.com/myonsite-healthcare/MedinovAI-AI-Standards.git"
+    },
+    {
+      "name": "medinovai-Developer",
+      "description": "Discovered from local repository",
+      "language": "Unknown",
+      "archived": false,
+      "private": true,
+      "clone_url": "https://github.com/myonsite-healthcare/medinovai-Developer.git"
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+    "service_name": "load-balancing",
+    "category": "infrastructure",
+    "migrated_from": "medinovaios",
+    "migration_date": "2025-09-28T19:57:50Z",
+    "target_repository": "medinovai-infrastructure",
+    "description": "Infrastructure service migrated from medinovaios"
+}

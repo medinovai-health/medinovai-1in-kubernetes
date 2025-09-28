@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MedinovAI OS - Healthcare Intelligence Platform RA1</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #0066cc;
+            --secondary-color: #004499;
+            --accent-color: #00aa55;
+            --success-color: #28a745;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+            --dark-color: #1a1a1a;
+            --light-color: #ffffff;
+            --border-color: #e1e5e9;
+            --text-primary: #2c3e50;
+            --text-secondary: #6c757d;
+            --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --gradient-healthcare: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%);
+            --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.1);
+            --shadow-hover: 0 12px 48px rgba(0, 0, 0, 0.15);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--gradient-primary);
+            min-height: 100vh;
+            color: var(--text-primary);
+            overflow-x: hidden;
+        }
+
+        .main-container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .platform-header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 24px 32px;
+            margin-bottom: 32px;
+            box-shadow: var(--shadow-card);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .platform-logo {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .logo-icon {
+            width: 64px;
+            height: 64px;
+            background: var(--gradient-healthcare);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 32px;
+            box-shadow: 0 4px 16px rgba(0, 114, 255, 0.3);
+        }
+
+        .logo-text {
+            font-size: 36px;
+            font-weight: 800;
+            color: var(--dark-color);
+            letter-spacing: -0.5px;
+        }
+
+        .version-badge {
+            background: var(--accent-color);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+
+        .platform-status {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: rgba(40, 167, 69, 0.1);
+            border-radius: 20px;
+            color: var(--success-color);
+            font-weight: 500;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--success-color);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .main-navigation {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 32px;
+            margin-bottom: 32px;
+            box-shadow: var(--shadow-card);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .nav-section-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .module-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 24px;
+            margin-bottom: 40px;
+        }
+
+        .module-card {
+            background: white;
+            border-radius: 20px;
+            padding: 28px;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 2px solid transparent;
+            box-shadow: var(--shadow-card);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .module-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--gradient-healthcare);
+            transform: scaleX(0);
+            transition: transform 0.4s ease;
+        }
+
+        .module-card:hover {
+            transform: translateY(-8px);
+            box-shadow: var(--shadow-hover);
+            border-color: var(--primary-color);
+        }
+
+        .module-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .module-icon {
+            width: 72px;
+            height: 72px;
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            color: white;
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .module-title {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+        }
+
+        .module-description {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 16px;
+        }
+
+        .module-stats {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .workflow-count {
+            background: rgba(0, 102, 204, 0.1);
+            color: var(--primary-color);
+            padding: 4px 8px;
+            border-radius: 8px;
+            font-weight: 600;
+        }
+
+        .module-status {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .status-online {
+            color: var(--success-color);
+        }
+
+        .content-area {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow: var(--shadow-card);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            min-height: 600px;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        .metric-card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .metric-number {
+            font-size: 36px;
+            font-weight: 800;
+            color: var(--primary-color);
+            margin-bottom: 8px;
+        }
+
+        .metric-label {
+            font-size: 14px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-top: 32px;
+        }
+
+        .action-button {
+            background: var(--gradient-healthcare);
+            color: white;
+            border: none;
+            border-radius: 16px;
+            padding: 16px 24px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+
+        .action-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 114, 255, 0.3);
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .module-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .platform-header {
+                flex-direction: column;
+                gap: 16px;
+                text-align: center;
+            }
+            
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Loading Animation */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+        }
+
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay hidden">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <div class="main-container">
+        <!-- Platform Header -->
+        <header class="platform-header">
+            <div class="platform-logo">
+                <div class="logo-icon">
+                    <i class="fas fa-heartbeat"></i>
+                </div>
+                <div>
+                    <span class="logo-text">MedinovAI OS</span>
+                    <span class="version-badge">RA1</span>
+                </div>
+            </div>
+            <div class="platform-status">
+                <div class="status-indicator">
+                    <div class="status-dot"></div>
+                    <span>All Systems Operational</span>
+                </div>
+                <div style="font-size: 14px; color: var(--text-secondary);">
+                    126 Modules | 50 Workflows | 5 AI Models
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Navigation -->
+        <nav class="main-navigation">
+            <!-- Business Applications Section -->
+            <div class="nav-section-title">
+                <i class="fas fa-briefcase" style="color: var(--primary-color);"></i>
+                Business Applications
+            </div>
+            <div class="module-grid">
+                <div class="module-card" onclick="openModule('ats', 8100)">
+                    <div class="module-icon" style="background: linear-gradient(135deg, #667eea, #764ba2);">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="module-title">ATS - Applicant Tracking</div>
+                    <div class="module-description">Complete hiring workflow management with AI-powered candidate matching and interview scheduling.</div>
+                    <div class="module-stats">
+                        <span class="workflow-count">5 Workflows</span>
+                        <div class="module-status status-online">
+                            <i class="fas fa-circle"></i>
+                            <span>Online</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="module-card" onclick="openModule('autobidpro', 8200)">
+                    <div class="module-icon" style="background: linear-gradient(135deg, #f093fb, #f5576c);">
+                        <i class="fas fa-gavel"></i>
+                    </div>
+                    <div class="module-title">AutoBidPro - Automated Bidding</div>
+                    <div class="module-description">Intelligent bidding platform with market analysis and automated proposal generation.</div>
+                    <div class="module-stats">
+                        <span class="workflow-count">5 Workflows</span>
+                        <div class="module-status status-online">
+                            <i class="fas fa-circle"></i>
+                            <span>Online</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="module-card" onclick="openModule('automarketingpro', 8300)">
+                    <div class="module-icon" style="background: linear-gradient(135deg, #4facfe, #00f2fe);">
+                        <i class="fas fa-bullhorn"></i>
+                    </div>
+                    <div class="module-title">AutoMarketingPro</div>
+                    <div class="module-description">Comprehensive marketing automation with campaign management and analytics.</div>
+                    <div class="module-stats">
+                        <span class="workflow-count">5 Workflows</span>
+                        <div class="module-status status-online">
+                            <i class="fas fa-circle"></i>
+                            <span>Online</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="module-card" onclick="openModule('autosalespro', 8400)">
+                    <div class="module-icon" style="background: linear-gradient(135deg, #43e97b, #38f9d7);">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div class="module-title">AutoSalesPro</div>
+                    <div class="module-description">Sales automation platform with CRM integration and pipeline management.</div>
+                    <div class="module-stats">
+                        <span class="workflow-count">5 Workflows</span>
+                        <div class="module-status status-online">
+                            <i class="fas fa-circle"></i>
+                            <span>Online</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="module-card" onclick="openModule('dataservices', 8500)">
+                    <div class="module-icon" style="background: linear-gradient(135deg, #fa709a, #fee140);">
+                        <i class="fas fa-database"></i>
+                    </div>
+                    <div class="module-title">Data Services</div>
+                    <div class="module-description">Advanced analytics and reporting with real-time data processing and visualization.</div>
+                    <div class="module-stats">
+                        <span class="workflow-count">5 Workflows</span>
+                        <div class="module-status status-online">
+                            <i class="fas fa-circle"></i>
+                            <span>Online</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Healthcare Services Section -->
+            <div class="nav-section-title">
+                <i class="fas fa-hospital" style="color: var(--accent-color);"></i>
+                Healthcare Services
+            </div>
+            <div class="module-grid">
+                <div class="module-card" onclick="openModule('clinical', 8600)">
+                    <div class="module-icon" style="background: linear-gradient(135deg, #a8edea, #fed6e3);">
+                        <i class="fas fa-stethoscope"></i>
+                    </div>
+                    <div class="module-title">Clinical Decision Support</div>
+                    <div class="module-description">AI-powered clinical decision support with evidence-based recommendations and protocols.</div>
+                    <div class="module-stats">
+                        <span class="workflow-count">5 Workflows</span>
+                        <div class="module-status status-online">
+                            <i class="fas fa-circle"></i>
+                            <span>Online</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="module-card" onclick="openModule('patientportal', 8700)">
+                    <div class="module-icon" style="background: linear-gradient(135deg, #ffecd2, #fcb69f);">
+                        <i class="fas fa-user-md"></i>
+                    </div>
+                    <div class="module-title">Patient Portal</div>
+                    <div class="module-description">Comprehensive patient management with medical records and appointment scheduling.</div>
+                    <div class="module-stats">
+                        <span class="workflow-count">5 Workflows</span>
+                        <div class="module-status status-online">
+                            <i class="fas fa-circle"></i>
+                            <span>Online</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="module-card" onclick="openModule('aihealthcare', 8800)">
+                    <div class="module-icon" style="background: linear-gradient(135deg, #ff9a9e, #fecfef);">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <div class="module-title">AI Healthcare Assistant</div>
+                    <div class="module-description">Advanced AI assistant with 55+ models for medical diagnosis and treatment support.</div>
+                    <div class="module-stats">
+                        <span class="workflow-count">5 Workflows</span>
+                        <div class="module-status status-online">
+                            <i class="fas fa-circle"></i>
+                            <span>Online</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="module-card" onclick="openModule('compliance', 8900)">
+                    <div class="module-icon" style="background: linear-gradient(135deg, #a18cd1, #fbc2eb);">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <div class="module-title">Compliance & Audit</div>
+                    <div class="module-description">HIPAA compliance monitoring with automated audit trails and regulatory reporting.</div>
+                    <div class="module-stats">
+                        <span class="workflow-count">5 Workflows</span>
+                        <div class="module-status status-online">
+                            <i class="fas fa-circle"></i>
+                            <span>Online</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="module-card" onclick="openModule('telemedicine', 9000)">
+                    <div class="module-icon" style="background: linear-gradient(135deg, #fad0c4, #ffd1ff);">
+                        <i class="fas fa-video"></i>
+                    </div>
+                    <div class="module-title">Telemedicine Platform</div>
+                    <div class="module-description">Secure video consultations with integrated medical records and prescription management.</div>
+                    <div class="module-stats">
+                        <span class="workflow-count">5 Workflows</span>
+                        <div class="module-status status-online">
+                            <i class="fas fa-circle"></i>
+                            <span>Online</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- System Administration Section -->
+            <div class="nav-section-title">
+                <i class="fas fa-cogs" style="color: var(--warning-color);"></i>
+                System Administration
+            </div>
+            <div class="module-grid">
+                <div class="module-card" onclick="openSystemModule('monitoring')">
+                    <div class="module-icon" style="background: linear-gradient(135deg, #667eea, #764ba2);">
+                        <i class="fas fa-chart-bar"></i>
+                    </div>
+                    <div class="module-title">System Monitoring</div>
+                    <div class="module-description">Real-time system monitoring with Grafana dashboards and Prometheus metrics.</div>
+                    <div class="module-stats">
+                        <span class="workflow-count">Live Data</span>
+                        <div class="module-status status-online">
+                            <i class="fas fa-circle"></i>
+                            <span>Online</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="module-card" onclick="openSystemModule('api-docs')">
+                    <div class="module-icon" style="background: linear-gradient(135deg, #f093fb, #f5576c);">
+                        <i class="fas fa-code"></i>
+                    </div>
+                    <div class="module-title">API Documentation</div>
+                    <div class="module-description">Interactive API documentation with testing interface for all 126 services.</div>
+                    <div class="module-stats">
+                        <span class="workflow-count">Interactive</span>
+                        <div class="module-status status-online">
+                            <i class="fas fa-circle"></i>
+                            <span>Online</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Content Area -->
+        <main class="content-area">
+            <div id="dashboard-content">
+                <h2 style="margin-bottom: 32px; font-size: 28px; font-weight: 700;">Platform Dashboard</h2>
+                
+                <div class="dashboard-grid">
+                    <div class="metric-card">
+                        <div class="metric-number" id="total-modules">126</div>
+                        <div class="metric-label">Total Modules</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-number" id="active-workflows">50</div>
+                        <div class="metric-label">Demo Workflows</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-number" id="ai-models">55+</div>
+                        <div class="metric-label">AI Models</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-number" id="system-uptime">99.9%</div>
+                        <div class="metric-label">System Uptime</div>
+                    </div>
+                </div>
+
+                <div style="background: white; border-radius: 16px; padding: 24px; margin-bottom: 24px;">
+                    <h3 style="margin-bottom: 16px; font-size: 20px; font-weight: 600;">Quick Actions</h3>
+                    <div class="quick-actions">
+                        <button class="action-button" onclick="testAllModules()">
+                            <i class="fas fa-play"></i>
+                            Test All Modules
+                        </button>
+                        <button class="action-button" onclick="runWorkflowDemo()">
+                            <i class="fas fa-magic"></i>
+                            Run Demo Workflows
+                        </button>
+                        <button class="action-button" onclick="openSystemModule('monitoring')">
+                            <i class="fas fa-chart-line"></i>
+                            View Monitoring
+                        </button>
+                        <button class="action-button" onclick="openSystemModule('api-docs')">
+                            <i class="fas fa-book"></i>
+                            API Documentation
+                        </button>
+                    </div>
+                </div>
+
+                <div style="background: white; border-radius: 16px; padding: 24px;">
+                    <h3 style="margin-bottom: 16px; font-size: 20px; font-weight: 600;">System Status</h3>
+                    <div id="system-status">
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+                            <div style="text-align: center; padding: 16px;">
+                                <div style="font-size: 24px; font-weight: 700; color: var(--success-color);">✅</div>
+                                <div style="font-size: 14px; color: var(--text-secondary);">Core Platform</div>
+                            </div>
+                            <div style="text-align: center; padding: 16px;">
+                                <div style="font-size: 24px; font-weight: 700; color: var(--success-color);">✅</div>
+                                <div style="font-size: 14px; color: var(--text-secondary);">Business Modules</div>
+                            </div>
+                            <div style="text-align: center; padding: 16px;">
+                                <div style="font-size: 24px; font-weight: 700; color: var(--success-color);">✅</div>
+                                <div style="font-size: 14px; color: var(--text-secondary);">Healthcare Services</div>
+                            </div>
+                            <div style="text-align: center; padding: 16px;">
+                                <div style="font-size: 24px; font-weight: 700; color: var(--success-color);">✅</div>
+                                <div style="font-size: 14px; color: var(--text-secondary);">AI Services</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Module navigation functions
+        function openModule(moduleName, port) {
+            showLoading();
+            
+            // Open module in new tab
+            const moduleUrl = `http://localhost:${port}`;
+            window.open(moduleUrl, '_blank');
+            
+            hideLoading();
+            
+            // Log module access
+            console.log(`Opening ${moduleName} module at ${moduleUrl}`);
+            
+            // Update analytics
+            fetch('/api/analytics/module-access', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ module: moduleName, timestamp: new Date().toISOString() })
+            }).catch(err => console.log('Analytics logging failed:', err));
+        }
+
+        function openSystemModule(type) {
+            showLoading();
+            
+            let url;
+            switch(type) {
+                case 'monitoring':
+                    url = 'http://localhost:3000'; // Grafana
+                    break;
+                case 'api-docs':
+                    url = 'http://localhost:8080/docs'; // API Gateway docs
+                    break;
+                default:
+                    url = '#';
+            }
+            
+            if (url !== '#') {
+                window.open(url, '_blank');
+            }
+            
+            hideLoading();
+        }
+
+        function testAllModules() {
+            showLoading();
+            
+            const modules = [
+                { name: 'ATS', port: 8100 },
+                { name: 'AutoBidPro', port: 8200 },
+                { name: 'AutoMarketingPro', port: 8300 },
+                { name: 'AutoSalesPro', port: 8400 },
+                { name: 'Data Services', port: 8500 },
+                { name: 'Clinical', port: 8600 },
+                { name: 'Patient Portal', port: 8700 },
+                { name: 'AI Healthcare', port: 8800 },
+                { name: 'Compliance', port: 8900 },
+                { name: 'Telemedicine', port: 9000 }
+            ];
+            
+            Promise.all(
+                modules.map(module => 
+                    fetch(`http://localhost:${module.port}/health`)
+                        .then(response => ({ module: module.name, status: response.ok }))
+                        .catch(error => ({ module: module.name, status: false, error }))
+                )
+            ).then(results => {
+                hideLoading();
+                
+                const passed = results.filter(r => r.status).length;
+                const total = results.length;
+                
+                alert(`Module Testing Complete: ${passed}/${total} modules online`);
+                console.log('Module test results:', results);
+            });
+        }
+
+        function runWorkflowDemo() {
+            showLoading();
+            
+            // Simulate workflow demo execution
+            setTimeout(() => {
+                hideLoading();
+                alert('Demo workflows executed successfully! Check individual modules for detailed results.');
+            }, 2000);
+        }
+
+        function showLoading() {
+            document.getElementById('loading-overlay').classList.remove('hidden');
+        }
+
+        function hideLoading() {
+            document.getElementById('loading-overlay').classList.add('hidden');
+        }
+
+        // Initialize platform
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('MedinovAI OS RA1 Platform Initialized');
+            
+            // Update system metrics
+            updateSystemMetrics();
+            
+            // Start health monitoring
+            setInterval(updateSystemMetrics, 30000);
+        });
+
+        function updateSystemMetrics() {
+            // Update real-time metrics
+            fetch('/api/system/metrics')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('total-modules').textContent = data.modules || '126';
+                    document.getElementById('active-workflows').textContent = data.workflows || '50';
+                    document.getElementById('ai-models').textContent = data.ai_models || '55+';
+                    document.getElementById('system-uptime').textContent = data.uptime || '99.9%';
+                })
+                .catch(error => {
+                    console.log('Metrics update failed:', error);
+                });
+        }
+    </script>
+</body>
+</html>

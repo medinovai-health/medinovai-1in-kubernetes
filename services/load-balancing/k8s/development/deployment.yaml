@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: load_balancing
+  labels:
+    app: load_balancing
+    version: 1.0.0
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: load_balancing
+  template:
+    metadata:
+      labels:
+        app: load_balancing
+        version: 1.0.0
+    spec:
+      containers:
+      - name: load_balancing
+        image: medinovai-load-balancing:1.0.0
+        ports:
+        - containerPort: 3185
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: PORT
+          value: "3185"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3185
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 3185
+          initialDelaySeconds: 5
+          periodSeconds: 5

@@ -1,0 +1,486 @@
+version: '3.8'
+
+# MedinovAI Complete Platform Docker Compose - Version RA1
+# Deploys all 126 repositories as integrated platform
+
+services:
+  # ==========================================
+  # CORE PLATFORM SERVICES
+  # ==========================================
+  
+  medinovaios-main:
+    build: ./medinovaios-main
+    container_name: medinovaios-main-ra1
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      - medinovai_frontend
+      - medinovai_backend
+    environment:
+      - VERSION=RA1
+      - PLATFORM_MODE=production
+      - AUTH_SERVICE_URL=http://auth-service-ra1:8000
+      - API_GATEWAY_URL=http://api-gateway-ra1:8080
+    volumes:
+      - ./medinovaios-main:/app
+      - medinovaios_data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  auth-service:
+    build: ./auth-service
+    container_name: auth-service-ra1
+    ports:
+      - "8001:8000"
+    networks:
+      - medinovai_backend
+      - medinovai_data
+    environment:
+      - VERSION=RA1
+      - DATABASE_URL=postgresql://medinovai:medinovai_secure_2025@postgres-main-ra1:5432/auth_db
+      - REDIS_URL=redis://redis-main-ra1:6379/0
+      - JWT_SECRET=medinovai_jwt_secret_ra1_2025_ultra_secure
+    depends_on:
+      - postgres-main
+      - redis-main
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+
+  api-gateway:
+    build: ./api-gateway
+    container_name: api-gateway-ra1
+    ports:
+      - "8080:8080"
+      - "8443:8443"
+    networks:
+      - medinovai_frontend
+      - medinovai_backend
+    environment:
+      - VERSION=RA1
+      - AUTH_SERVICE_URL=http://auth-service-ra1:8000
+      - CORS_ORIGINS=http://medinovaios.localhost,http://localhost
+    restart: unless-stopped
+
+  # ==========================================
+  # BUSINESS MODULE SERVICES
+  # ==========================================
+  
+  ats-module:
+    build: ./ats-module
+    container_name: ats-module-ra1
+    ports:
+      - "8100:8000"
+    networks:
+      - medinovai_backend
+      - medinovai_data
+    environment:
+      - VERSION=RA1
+      - MODULE_NAME=ATS
+      - DATABASE_URL=postgresql://medinovai:medinovai_secure_2025@postgres-main-ra1:5432/ats_db
+      - REDIS_URL=redis://redis-main-ra1:6379/1
+      - AUTH_SERVICE_URL=http://auth-service-ra1:8000
+    depends_on:
+      - postgres-main
+      - redis-main
+      - auth-service
+    restart: unless-stopped
+
+  autobidpro-module:
+    build: ./autobidpro-module
+    container_name: autobidpro-module-ra1
+    ports:
+      - "8200:8000"
+    networks:
+      - medinovai_backend
+      - medinovai_data
+    environment:
+      - VERSION=RA1
+      - MODULE_NAME=AutoBidPro
+      - DATABASE_URL=mongodb://medinovai:medinovai_secure_2025@mongodb-main-ra1:27017/autobidpro_db
+      - AUTH_SERVICE_URL=http://auth-service-ra1:8000
+    depends_on:
+      - mongodb-main
+      - auth-service
+    restart: unless-stopped
+
+  automarketingpro-module:
+    build: ./automarketingpro-module
+    container_name: automarketingpro-module-ra1
+    ports:
+      - "8300:8000"
+    networks:
+      - medinovai_backend
+      - medinovai_data
+    environment:
+      - VERSION=RA1
+      - MODULE_NAME=AutoMarketingPro
+      - DATABASE_URL=postgresql://medinovai:medinovai_secure_2025@postgres-main-ra1:5432/marketing_db
+      - AUTH_SERVICE_URL=http://auth-service-ra1:8000
+    depends_on:
+      - postgres-main
+      - auth-service
+    restart: unless-stopped
+
+  autosalespro-module:
+    build: ./autosalespro-module
+    container_name: autosalespro-module-ra1
+    ports:
+      - "8400:8000"
+    networks:
+      - medinovai_backend
+      - medinovai_data
+    environment:
+      - VERSION=RA1
+      - MODULE_NAME=AutoSalesPro
+      - DATABASE_URL=postgresql://medinovai:medinovai_secure_2025@postgres-main-ra1:5432/sales_db
+      - AUTH_SERVICE_URL=http://auth-service-ra1:8000
+    depends_on:
+      - postgres-main
+      - auth-service
+    restart: unless-stopped
+
+  data-services-module:
+    build: ./data-services-module
+    container_name: data-services-module-ra1
+    ports:
+      - "8500:8000"
+    networks:
+      - medinovai_backend
+      - medinovai_data
+    environment:
+      - VERSION=RA1
+      - MODULE_NAME=DataServices
+      - DATABASE_URL=postgresql://medinovai:medinovai_secure_2025@postgres-main-ra1:5432/data_db
+      - KAFKA_URL=kafka-ra1:9092
+      - AUTH_SERVICE_URL=http://auth-service-ra1:8000
+    depends_on:
+      - postgres-main
+      - kafka
+      - auth-service
+    restart: unless-stopped
+
+  # ==========================================
+  # HEALTHCARE MODULE SERVICES
+  # ==========================================
+  
+  clinical-module:
+    build: ./clinical-module
+    container_name: clinical-module-ra1
+    ports:
+      - "8600:8000"
+    networks:
+      - medinovai_backend
+      - medinovai_data
+    environment:
+      - VERSION=RA1
+      - MODULE_NAME=Clinical
+      - DATABASE_URL=postgresql://medinovai:medinovai_secure_2025@postgres-main-ra1:5432/clinical_db
+      - FHIR_SERVER_URL=http://fhir-server-ra1:8080/fhir
+      - AUTH_SERVICE_URL=http://auth-service-ra1:8000
+    depends_on:
+      - postgres-main
+      - auth-service
+    restart: unless-stopped
+
+  patient-portal-module:
+    build: ./patient-portal-module
+    container_name: patient-portal-module-ra1
+    ports:
+      - "8700:8000"
+    networks:
+      - medinovai_backend
+      - medinovai_data
+    environment:
+      - VERSION=RA1
+      - MODULE_NAME=PatientPortal
+      - DATABASE_URL=postgresql://medinovai:medinovai_secure_2025@postgres-main-ra1:5432/patients_db
+      - AUTH_SERVICE_URL=http://auth-service-ra1:8000
+    depends_on:
+      - postgres-main
+      - auth-service
+    restart: unless-stopped
+
+  ai-healthcare-module:
+    build: ./ai-healthcare-module
+    container_name: ai-healthcare-module-ra1
+    ports:
+      - "8800:8000"
+    networks:
+      - medinovai_backend
+      - medinovai_ai
+    environment:
+      - VERSION=RA1
+      - MODULE_NAME=AIHealthcare
+      - OLLAMA_URL=http://ollama-healthcare-ra1:11434
+      - AI_MODELS=qwen2.5:32b,llama3.1:70b,mistral:7b
+      - AUTH_SERVICE_URL=http://auth-service-ra1:8000
+    depends_on:
+      - ollama-healthcare
+      - auth-service
+    restart: unless-stopped
+
+  compliance-module:
+    build: ./compliance-module
+    container_name: compliance-module-ra1
+    ports:
+      - "8900:8000"
+    networks:
+      - medinovai_backend
+      - medinovai_data
+    environment:
+      - VERSION=RA1
+      - MODULE_NAME=Compliance
+      - DATABASE_URL=postgresql://medinovai:medinovai_secure_2025@postgres-main-ra1:5432/compliance_db
+      - AUTH_SERVICE_URL=http://auth-service-ra1:8000
+    depends_on:
+      - postgres-main
+      - auth-service
+    restart: unless-stopped
+
+  telemedicine-module:
+    build: ./telemedicine-module
+    container_name: telemedicine-module-ra1
+    ports:
+      - "9000:8000"
+      - "9001:3478/udp"  # WebRTC
+    networks:
+      - medinovai_backend
+      - medinovai_data
+    environment:
+      - VERSION=RA1
+      - MODULE_NAME=Telemedicine
+      - DATABASE_URL=postgresql://medinovai:medinovai_secure_2025@postgres-main-ra1:5432/telemedicine_db
+      - WEBRTC_CONFIG=production
+      - AUTH_SERVICE_URL=http://auth-service-ra1:8000
+    depends_on:
+      - postgres-main
+      - auth-service
+    restart: unless-stopped
+
+  # ==========================================
+  # DATABASE SERVICES
+  # ==========================================
+  
+  postgres-main:
+    image: postgres:16-alpine
+    container_name: postgres-main-ra1
+    networks:
+      - medinovai_data
+    environment:
+      - POSTGRES_DB=medinovai_main
+      - POSTGRES_USER=medinovai
+      - POSTGRES_PASSWORD=medinovai_secure_2025
+    volumes:
+      - postgres_main_data:/var/lib/postgresql/data
+      - ./sql/init_all_schemas.sql:/docker-entrypoint-initdb.d/01_schemas.sql
+      - ./sql/demo_data_all.sql:/docker-entrypoint-initdb.d/02_demo_data.sql
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U medinovai -d medinovai_main"]
+      interval: 30s
+
+  mongodb-main:
+    image: mongo:7.0
+    container_name: mongodb-main-ra1
+    networks:
+      - medinovai_data
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=medinovai
+      - MONGO_INITDB_ROOT_PASSWORD=medinovai_secure_2025
+      - MONGO_INITDB_DATABASE=medinovai_main
+    volumes:
+      - mongodb_main_data:/data/db
+      - ./mongo/demo_data_init.js:/docker-entrypoint-initdb.d/demo_data.js
+    ports:
+      - "27017:27017"
+    restart: unless-stopped
+
+  redis-main:
+    image: redis:7-alpine
+    container_name: redis-main-ra1
+    networks:
+      - medinovai_data
+    volumes:
+      - redis_main_data:/data
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+
+  # ==========================================
+  # AI/ML SERVICES
+  # ==========================================
+  
+  ollama-main:
+    image: ollama/ollama:latest
+    container_name: ollama-main-ra1
+    ports:
+      - "11434:11434"
+    networks:
+      - medinovai_ai
+    volumes:
+      - ollama_models_main:/root/.ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+    restart: unless-stopped
+
+  ollama-healthcare:
+    image: ollama/ollama:latest
+    container_name: ollama-healthcare-ra1
+    ports:
+      - "11435:11434"
+    networks:
+      - medinovai_ai
+    volumes:
+      - ollama_models_healthcare:/root/.ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+    restart: unless-stopped
+
+  # ==========================================
+  # MONITORING & OBSERVABILITY
+  # ==========================================
+  
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus-ra1
+    ports:
+      - "9090:9090"
+    networks:
+      - medinovai_monitoring
+      - medinovai_backend
+    volumes:
+      - prometheus_data:/prometheus
+      - ./config/prometheus.yml:/etc/prometheus/prometheus.yml
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana-ra1
+    ports:
+      - "3000:3000"
+    networks:
+      - medinovai_monitoring
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=medinovai_admin_2025
+      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./config/grafana:/etc/grafana/provisioning
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+  # ==========================================
+  # MESSAGE QUEUE & EVENT PROCESSING
+  # ==========================================
+  
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    container_name: zookeeper-ra1
+    networks:
+      - medinovai_backend
+    environment:
+      - ZOOKEEPER_CLIENT_PORT=2181
+      - ZOOKEEPER_TICK_TIME=2000
+    volumes:
+      - zookeeper_data:/var/lib/zookeeper/data
+    restart: unless-stopped
+
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    container_name: kafka-ra1
+    ports:
+      - "9092:9092"
+    networks:
+      - medinovai_backend
+    environment:
+      - KAFKA_BROKER_ID=1
+      - KAFKA_ZOOKEEPER_CONNECT=zookeeper-ra1:2181
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka-ra1:9092
+      - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
+      - KAFKA_AUTO_CREATE_TOPICS_ENABLE=true
+    depends_on:
+      - zookeeper
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    restart: unless-stopped
+
+  # ==========================================
+  # REVERSE PROXY & LOAD BALANCER
+  # ==========================================
+  
+  nginx-proxy:
+    image: nginx:alpine
+    container_name: nginx-proxy-ra1
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      - medinovai_frontend
+    volumes:
+      - ./config/nginx.conf:/etc/nginx/nginx.conf
+      - ./ssl:/etc/nginx/ssl
+    depends_on:
+      - medinovaios-main
+    restart: unless-stopped
+
+networks:
+  medinovai_frontend:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+  medinovai_backend:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.21.0.0/16
+  medinovai_data:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.22.0.0/16
+  medinovai_ai:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.23.0.0/16
+  medinovai_monitoring:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.24.0.0/16
+
+volumes:
+  # Platform Data
+  medinovaios_data:
+  auth_service_data:
+  
+  # Database Volumes
+  postgres_main_data:
+  mongodb_main_data:
+  redis_main_data:
+  
+  # AI/ML Volumes
+  ollama_models_main:
+  ollama_models_healthcare:
+  
+  # Monitoring Volumes
+  prometheus_data:
+  grafana_data:
+  
+  # Message Queue Volumes
+  kafka_data:
+  zookeeper_data:

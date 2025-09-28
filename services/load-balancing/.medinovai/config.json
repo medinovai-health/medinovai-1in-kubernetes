@@ -1,0 +1,79 @@
+{
+  "version": "2.0.0",
+  "project": {
+    "name": "load-balancing",
+    "type": "healthcare-service",
+    "compliance": [
+      "HIPAA",
+      "GDPR",
+      "FDA-21CFR11",
+      "ISO-13485",
+      "IEC-62304"
+    ]
+  },
+  "standards": {
+    "code_quality": {
+      "test_coverage_min": 95,
+      "complexity_max": 10,
+      "duplication_max": 3
+    },
+    "security": {
+      "encryption_required": true,
+      "phi_protection": true,
+      "audit_logging": true,
+      "vulnerability_scanning": true
+    },
+    "performance": {
+      "latency_p95_max_ms": 100,
+      "throughput_min_eps": 100000,
+      "availability_sla": 0.999
+    }
+  },
+  "integrations": {
+    "fhir_version": "R5",
+    "supported_formats": [
+      "JSON",
+      "XML",
+      "Avro"
+    ],
+    "ehr_systems": [
+      "Epic",
+      "Cerner",
+      "Allscripts"
+    ],
+    "messaging": [
+      "HL7v2",
+      "FHIR",
+      "DICOM"
+    ]
+  },
+  "deployment": {
+    "environments": [
+      "development",
+      "staging",
+      "production"
+    ],
+    "orchestration": "kubernetes",
+    "monitoring": [
+      "prometheus",
+      "grafana",
+      "elasticsearch"
+    ],
+    "backup": {
+      "rpo_minutes": 15,
+      "rto_minutes": 30,
+      "retention_years": 7
+    }
+  },
+  "ai_ml": {
+    "frameworks": [
+      "tensorflow",
+      "pytorch",
+      "scikit-learn"
+    ],
+    "explainability_required": true,
+    "bias_testing_required": true,
+    "model_versioning": true,
+    "clinical_validation": true
+  }
+}

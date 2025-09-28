@@ -1,0 +1,87 @@
+service:
+  name: api-gateway
+  description: api-gateway microservice
+  owner_team: platform-engineering
+  on_call_rotation: platform-oncall
+  lifecycle_status: active
+compliance:
+  scope:
+  - HIPAA
+  - GDPR
+  - FDA_21_CFR_Part_11
+  - SOC2_Type_II
+  - ISO_13485
+  data_classification: phi
+  audit_logging: true
+  encryption_required: true
+  retention_policy: 7_years
+slo:
+  availability_target: '99.9'
+  latency_p95_ms: 300
+  latency_p99_ms: 1000
+  error_rate_threshold: '0.1'
+  throughput_rps: 1000
+disaster_recovery:
+  rto_minutes: 60
+  rpo_minutes: 5
+  backup_frequency: daily
+  multi_region: true
+security:
+  encryption:
+    at_rest: true
+    in_transit: true
+    kms_key_arn: arn:aws:kms:us-east-1:123456789012:key/example
+  rbac_roles:
+  - service-admin
+  - service-operator
+  - service-viewer
+  secrets_manager_path: /medinovaios/api-gateway/
+  tls_required: true
+  mtls_enabled: true
+cicd:
+  coverage_target: 95
+  security_scans:
+  - sast
+  - dast
+  - sca
+  - secrets
+  - sbom
+  quality_gates:
+  - unit_tests
+  - integration_tests
+  - security_scan
+  - coverage_check
+  - policy_validation
+  branch_protection: true
+  required_reviewers: 2
+testing:
+  unit_tests: true
+  integration_tests: true
+  fuzz_tests: true
+  chaos_tests: true
+  performance_tests: true
+  security_tests: true
+  test_data_classification: synthetic
+reliability_baseline:
+  idempotency_keys: true
+  fuzz_testing: true
+  chaos_engineering: true
+  backpressure_handling: true
+  opa_policy_enforcement: true
+  sbom_generation: true
+  mtls_everywhere: true
+  health_probes: true
+  service_slos: true
+  dead_letter_queues: true
+  branch_sandboxing: true
+  exponential_backoff: true
+  circuit_breakers: true
+  rate_limiting: true
+  resource_quotas: true
+  centralized_monitoring: true
+  graceful_shutdown: true
+  multi_region_resilience: true
+  automated_recovery: true
+  service_scaffolding: true
+version: 1.0.0
+last_updated: '2025-08-19'

@@ -1,0 +1,22 @@
+sbom:
+  enabled: true
+  format: cyclonedx
+  include_dev_dependencies: false
+secrets_scanning:
+  enabled: true
+  exclude_patterns:
+  - test_*
+  - '*.example'
+  tools:
+  - gitleaks
+  - truffleHog
+security_scans:
+  enabled: true
+  fail_on_critical: true
+  fail_on_high: true
+  schedule: daily
+  tools:
+  - trivy
+  - bandit
+  - safety
+  - semgrep

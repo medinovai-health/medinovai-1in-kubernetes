@@ -1,0 +1,100 @@
+# MedinovAI Healthcare Platform - Cursor Rules
+
+## Project Context
+This is a MedinovAI healthcare service implementing enterprise-grade healthcare data architecture with FHIR R5 compliance, real-time streaming, and comprehensive disaster recovery. The service follows MedinovAI AI Standards for healthcare AI development.
+
+## Code Standards
+
+### General Principles
+- **Healthcare First**: All code must prioritize patient safety, data privacy, and regulatory compliance
+- **FHIR R5 Compliance**: Strictly adhere to FHIR R5 specifications for all healthcare data models
+- **Test Coverage**: Maintain minimum 95% test coverage across all modules
+- **Security by Design**: Implement security measures at every layer, assume zero trust
+- **Performance**: Optimize for sub-100ms latency in critical paths
+
+### Naming Conventions
+- **Constants**: Use `e_` prefix (e.g., `e_MAX_RETRIES`)
+- **Variables**: Use `mos_` prefix for MyOnsite-specific variables
+- **Max Length**: 30 characters for all identifiers
+- **CDM Resources**: PascalCase for classes (e.g., `Patient`, `MosPatientMetrics`)
+- **Functions**: camelCase with descriptive verbs (e.g., `validateFhirResource`)
+
+### Language-Specific Rules
+
+#### Python
+- Use type hints for all function signatures
+- Prefer `dataclasses` over plain classes for data models
+- Use `async/await` for I/O operations
+- Follow PEP 8 with 88-character line limit (Black formatter)
+- Docstrings must include Examples section for public APIs
+
+#### TypeScript
+- Strict mode always enabled
+- No `any` types without explicit justification
+- Prefer interfaces over type aliases for object shapes
+- Use branded types for domain primitives (e.g., `PatientId`)
+- Organize imports: external → internal → relative
+
+#### Healthcare-Specific Patterns
+- Always validate LOINC codes against known registry
+- PHI must be encrypted at rest and in transit
+- Audit all data access with `AuditEvent` resources
+- Use temporal tables for medical record versioning
+
+### Testing Standards
+- **Unit Tests**: Mock all external dependencies
+- **Integration Tests**: Use Docker containers for dependencies
+- **E2E Tests**: Cover critical patient workflows
+- **Performance Tests**: Validate latency SLAs
+- **Compliance Tests**: Verify HIPAA/GDPR requirements
+- **Test Data**: Use synthetic data generators, never real PHI
+
+### Documentation Requirements
+- All public APIs must have OpenAPI 3.0 specifications
+- Include architecture decision records (ADRs) for major changes
+- Maintain runbooks for all operational procedures
+- Document compliance mappings for regulations
+- Keep README files current with setup instructions
+
+### Security Checklist
+- [ ] No hardcoded credentials or secrets
+- [ ] All endpoints require authentication
+- [ ] Input validation on all user data
+- [ ] Rate limiting on public APIs
+- [ ] Encryption for data at rest and in transit
+- [ ] Regular dependency vulnerability scanning
+
+### Performance Guidelines
+- Cache frequently accessed reference data (e.g., LOINC codes)
+- Use connection pooling for databases
+- Implement circuit breakers for external services
+- Batch operations where possible
+- Profile and optimize hot paths
+
+### Error Handling
+- Use structured error responses with correlation IDs
+- Log errors with appropriate severity levels
+- Never expose internal details in error messages
+- Implement retry logic with exponential backoff
+- Dead letter queues for failed async operations
+
+### Monitoring & Observability
+- Instrument all services with OpenTelemetry
+- Custom metrics for business KPIs
+- Distributed tracing for request flows
+- Structured logging in JSON format
+- Alert on SLA violations
+
+## MedinovAI Standards Compliance
+- Follow MedinovAI coding standards for healthcare AI
+- Use approved ML models for clinical decision support
+- Implement explainable AI requirements
+- Maintain model versioning and lineage
+- Document all AI/ML assumptions and limitations
+
+## Remember
+- Patient safety is paramount
+- When in doubt, choose the more secure option
+- Performance matters, but correctness matters more
+- Always consider the healthcare provider's workflow
+- Compliance is not optional

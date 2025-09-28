@@ -1,0 +1,40 @@
+# Security-hardened Dockerfile for service-mesh
+FROM python:3.11-slim
+
+# Security hardening
+RUN apt-get update && apt-get install -y \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create non-root user
+RUN useradd -r -s /bin/false appuser
+
+# Copy application
+COPY . /app
+WORKDIR /app
+
+# Install dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Security hardening
+RUN strip /usr/local/bin/python3.11 \
+    && find /app -name "*.pyc" -delete \
+    && find /app -name "__pycache__" -delete
+
+# Set ownership
+RUN chown -R appuser:appuser /app
+
+# Switch to non-root user
+USER appuser
+
+# Security flags
+ENV PYTHONHASHSEED=random
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:1099/health || exit 1
+
+EXPOSE 1099
+CMD ["python", "main.py"]

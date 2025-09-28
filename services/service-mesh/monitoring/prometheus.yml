@@ -1,0 +1,8 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'service_mesh'
+    static_configs:
+      - targets: ['localhost:7145']
+    metrics_path: '/metrics'

@@ -1,0 +1,830 @@
+[
+  {
+    "name": "medinovai-api",
+    "full_name": "medinovai/medinovai-api",
+    "clone_url": "https://github.com/medinovai/medinovai-api.git",
+    "description": "MedinovAI Api",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-auth",
+    "full_name": "medinovai/medinovai-auth",
+    "clone_url": "https://github.com/medinovai/medinovai-auth.git",
+    "description": "MedinovAI Auth",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-patient-service",
+    "full_name": "medinovai/medinovai-patient-service",
+    "clone_url": "https://github.com/medinovai/medinovai-patient-service.git",
+    "description": "MedinovAI Patient Service",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-dashboard",
+    "full_name": "medinovai/medinovai-dashboard",
+    "clone_url": "https://github.com/medinovai/medinovai-dashboard.git",
+    "description": "MedinovAI Dashboard",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-analytics",
+    "full_name": "medinovai/medinovai-analytics",
+    "clone_url": "https://github.com/medinovai/medinovai-analytics.git",
+    "description": "MedinovAI Analytics",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-notifications",
+    "full_name": "medinovai/medinovai-notifications",
+    "clone_url": "https://github.com/medinovai/medinovai-notifications.git",
+    "description": "MedinovAI Notifications",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-reports",
+    "full_name": "medinovai/medinovai-reports",
+    "clone_url": "https://github.com/medinovai/medinovai-reports.git",
+    "description": "MedinovAI Reports",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-integrations",
+    "full_name": "medinovai/medinovai-integrations",
+    "clone_url": "https://github.com/medinovai/medinovai-integrations.git",
+    "description": "MedinovAI Integrations",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-workflows",
+    "full_name": "medinovai/medinovai-workflows",
+    "clone_url": "https://github.com/medinovai/medinovai-workflows.git",
+    "description": "MedinovAI Workflows",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-monitoring",
+    "full_name": "medinovai/medinovai-monitoring",
+    "clone_url": "https://github.com/medinovai/medinovai-monitoring.git",
+    "description": "MedinovAI Monitoring",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-credentialing",
+    "full_name": "medinovai/medinovai-credentialing",
+    "clone_url": "https://github.com/medinovai/medinovai-credentialing.git",
+    "description": "MedinovAI Credentialing",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-data-services",
+    "full_name": "medinovai/medinovai-data-services",
+    "clone_url": "https://github.com/medinovai/medinovai-data-services.git",
+    "description": "MedinovAI Data Services",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-ai-standards",
+    "full_name": "medinovai/medinovai-ai-standards",
+    "clone_url": "https://github.com/medinovai/medinovai-ai-standards.git",
+    "description": "MedinovAI Ai Standards",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-security",
+    "full_name": "medinovai/medinovai-security",
+    "clone_url": "https://github.com/medinovai/medinovai-security.git",
+    "description": "MedinovAI Security",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-subscription",
+    "full_name": "medinovai/medinovai-subscription",
+    "clone_url": "https://github.com/medinovai/medinovai-subscription.git",
+    "description": "MedinovAI Subscription",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-Developer",
+    "full_name": "medinovai/medinovai-Developer",
+    "clone_url": "https://github.com/medinovai/medinovai-Developer.git",
+    "description": "MedinovAI Developer",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-compliance-services",
+    "full_name": "medinovai/medinovai-compliance-services",
+    "clone_url": "https://github.com/medinovai/medinovai-compliance-services.git",
+    "description": "MedinovAI Compliance Services",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-devkit-infrastructure",
+    "full_name": "medinovai/medinovai-devkit-infrastructure",
+    "clone_url": "https://github.com/medinovai/medinovai-devkit-infrastructure.git",
+    "description": "MedinovAI Devkit Infrastructure",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-backup-services",
+    "full_name": "medinovai/medinovai-backup-services",
+    "clone_url": "https://github.com/medinovai/medinovai-backup-services.git",
+    "description": "MedinovAI Backup Services",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-DataOfficer",
+    "full_name": "medinovai/medinovai-DataOfficer",
+    "clone_url": "https://github.com/medinovai/medinovai-DataOfficer.git",
+    "description": "MedinovAI Dataofficer",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-healthLLM",
+    "full_name": "medinovai/medinovai-healthLLM",
+    "clone_url": "https://github.com/medinovai/medinovai-healthLLM.git",
+    "description": "MedinovAI Healthllm",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-api-gateway",
+    "full_name": "medinovai/medinovai-api-gateway",
+    "clone_url": "https://github.com/medinovai/medinovai-api-gateway.git",
+    "description": "MedinovAI Api Gateway",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-infrastructure",
+    "full_name": "medinovai/medinovai-infrastructure",
+    "clone_url": "https://github.com/medinovai/medinovai-infrastructure.git",
+    "description": "MedinovAI Infrastructure",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "PersonalAssistant",
+    "full_name": "medinovai/PersonalAssistant",
+    "clone_url": "https://github.com/medinovai/PersonalAssistant.git",
+    "description": "MedinovAI Personalassistant",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "ResearchSuite",
+    "full_name": "medinovai/ResearchSuite",
+    "clone_url": "https://github.com/medinovai/ResearchSuite.git",
+    "description": "MedinovAI Researchsuite",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "Credentialing",
+    "full_name": "medinovai/Credentialing",
+    "clone_url": "https://github.com/medinovai/Credentialing.git",
+    "description": "MedinovAI Credentialing",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "QualityManagementSystem",
+    "full_name": "medinovai/QualityManagementSystem",
+    "clone_url": "https://github.com/medinovai/QualityManagementSystem.git",
+    "description": "MedinovAI Qualitymanagementsystem",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "AutoMarketingPro",
+    "full_name": "medinovai/AutoMarketingPro",
+    "clone_url": "https://github.com/medinovai/AutoMarketingPro.git",
+    "description": "MedinovAI Automarketingpro",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "AutoBidPro",
+    "full_name": "medinovai/AutoBidPro",
+    "clone_url": "https://github.com/medinovai/AutoBidPro.git",
+    "description": "MedinovAI Autobidpro",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "AutoSalesPro",
+    "full_name": "medinovai/AutoSalesPro",
+    "clone_url": "https://github.com/medinovai/AutoSalesPro.git",
+    "description": "MedinovAI Autosalespro",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "DataOfficer",
+    "full_name": "medinovai/DataOfficer",
+    "clone_url": "https://github.com/medinovai/DataOfficer.git",
+    "description": "MedinovAI Dataofficer",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "ComplianceManus",
+    "full_name": "medinovai/ComplianceManus",
+    "clone_url": "https://github.com/medinovai/ComplianceManus.git",
+    "description": "MedinovAI Compliancemanus",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "manus-consolidation-platform",
+    "full_name": "medinovai/manus-consolidation-platform",
+    "clone_url": "https://github.com/medinovai/manus-consolidation-platform.git",
+    "description": "MedinovAI Manus Consolidation Platform",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovaios",
+    "full_name": "medinovai/medinovaios",
+    "clone_url": "https://github.com/medinovai/medinovaios.git",
+    "description": "MedinovAI Medinovaios",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "MedinovaiOS",
+    "full_name": "medinovai/MedinovaiOS",
+    "clone_url": "https://github.com/medinovai/MedinovaiOS.git",
+    "description": "MedinovAI Medinovaios",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-ui",
+    "full_name": "medinovai/medinovai-ui",
+    "clone_url": "https://github.com/medinovai/medinovai-ui.git",
+    "description": "MedinovAI Ui",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-frontend",
+    "full_name": "medinovai/medinovai-frontend",
+    "clone_url": "https://github.com/medinovai/medinovai-frontend.git",
+    "description": "MedinovAI Frontend",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-mobile",
+    "full_name": "medinovai/medinovai-mobile",
+    "clone_url": "https://github.com/medinovai/medinovai-mobile.git",
+    "description": "MedinovAI Mobile",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-desktop",
+    "full_name": "medinovai/medinovai-desktop",
+    "clone_url": "https://github.com/medinovai/medinovai-desktop.git",
+    "description": "MedinovAI Desktop",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-cli",
+    "full_name": "medinovai/medinovai-cli",
+    "clone_url": "https://github.com/medinovai/medinovai-cli.git",
+    "description": "MedinovAI Cli",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-user-service",
+    "full_name": "medinovai/medinovai-user-service",
+    "clone_url": "https://github.com/medinovai/medinovai-user-service.git",
+    "description": "MedinovAI User Service",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-organization-service",
+    "full_name": "medinovai/medinovai-organization-service",
+    "clone_url": "https://github.com/medinovai/medinovai-organization-service.git",
+    "description": "MedinovAI Organization Service",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-appointment-service",
+    "full_name": "medinovai/medinovai-appointment-service",
+    "clone_url": "https://github.com/medinovai/medinovai-appointment-service.git",
+    "description": "MedinovAI Appointment Service",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-billing-service",
+    "full_name": "medinovai/medinovai-billing-service",
+    "clone_url": "https://github.com/medinovai/medinovai-billing-service.git",
+    "description": "MedinovAI Billing Service",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-document-service",
+    "full_name": "medinovai/medinovai-document-service",
+    "clone_url": "https://github.com/medinovai/medinovai-document-service.git",
+    "description": "MedinovAI Document Service",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-messaging-service",
+    "full_name": "medinovai/medinovai-messaging-service",
+    "clone_url": "https://github.com/medinovai/medinovai-messaging-service.git",
+    "description": "MedinovAI Messaging Service",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-calendar-service",
+    "full_name": "medinovai/medinovai-calendar-service",
+    "clone_url": "https://github.com/medinovai/medinovai-calendar-service.git",
+    "description": "MedinovAI Calendar Service",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-email-service",
+    "full_name": "medinovai/medinovai-email-service",
+    "clone_url": "https://github.com/medinovai/medinovai-email-service.git",
+    "description": "MedinovAI Email Service",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-sms-service",
+    "full_name": "medinovai/medinovai-sms-service",
+    "clone_url": "https://github.com/medinovai/medinovai-sms-service.git",
+    "description": "MedinovAI Sms Service",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-push-service",
+    "full_name": "medinovai/medinovai-push-service",
+    "clone_url": "https://github.com/medinovai/medinovai-push-service.git",
+    "description": "MedinovAI Push Service",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-file-service",
+    "full_name": "medinovai/medinovai-file-service",
+    "clone_url": "https://github.com/medinovai/medinovai-file-service.git",
+    "description": "MedinovAI File Service",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-image-service",
+    "full_name": "medinovai/medinovai-image-service",
+    "clone_url": "https://github.com/medinovai/medinovai-image-service.git",
+    "description": "MedinovAI Image Service",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-audio-service",
+    "full_name": "medinovai/medinovai-audio-service",
+    "clone_url": "https://github.com/medinovai/medinovai-audio-service.git",
+    "description": "MedinovAI Audio Service",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-video-service",
+    "full_name": "medinovai/medinovai-video-service",
+    "clone_url": "https://github.com/medinovai/medinovai-video-service.git",
+    "description": "MedinovAI Video Service",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-chat-service",
+    "full_name": "medinovai/medinovai-chat-service",
+    "clone_url": "https://github.com/medinovai/medinovai-chat-service.git",
+    "description": "MedinovAI Chat Service",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-voice-service",
+    "full_name": "medinovai/medinovai-voice-service",
+    "clone_url": "https://github.com/medinovai/medinovai-voice-service.git",
+    "description": "MedinovAI Voice Service",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-ai-engine",
+    "full_name": "medinovai/medinovai-ai-engine",
+    "clone_url": "https://github.com/medinovai/medinovai-ai-engine.git",
+    "description": "MedinovAI Ai Engine",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-ml-models",
+    "full_name": "medinovai/medinovai-ml-models",
+    "clone_url": "https://github.com/medinovai/medinovai-ml-models.git",
+    "description": "MedinovAI Ml Models",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-nlp-service",
+    "full_name": "medinovai/medinovai-nlp-service",
+    "clone_url": "https://github.com/medinovai/medinovai-nlp-service.git",
+    "description": "MedinovAI Nlp Service",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-computer-vision",
+    "full_name": "medinovai/medinovai-computer-vision",
+    "clone_url": "https://github.com/medinovai/medinovai-computer-vision.git",
+    "description": "MedinovAI Computer Vision",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-predictive-analytics",
+    "full_name": "medinovai/medinovai-predictive-analytics",
+    "clone_url": "https://github.com/medinovai/medinovai-predictive-analytics.git",
+    "description": "MedinovAI Predictive Analytics",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-recommendation-engine",
+    "full_name": "medinovai/medinovai-recommendation-engine",
+    "clone_url": "https://github.com/medinovai/medinovai-recommendation-engine.git",
+    "description": "MedinovAI Recommendation Engine",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-chatbot",
+    "full_name": "medinovai/medinovai-chatbot",
+    "clone_url": "https://github.com/medinovai/medinovai-chatbot.git",
+    "description": "MedinovAI Chatbot",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-voice-assistant",
+    "full_name": "medinovai/medinovai-voice-assistant",
+    "clone_url": "https://github.com/medinovai/medinovai-voice-assistant.git",
+    "description": "MedinovAI Voice Assistant",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-diagnostic-ai",
+    "full_name": "medinovai/medinovai-diagnostic-ai",
+    "clone_url": "https://github.com/medinovai/medinovai-diagnostic-ai.git",
+    "description": "MedinovAI Diagnostic Ai",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-treatment-planner",
+    "full_name": "medinovai/medinovai-treatment-planner",
+    "clone_url": "https://github.com/medinovai/medinovai-treatment-planner.git",
+    "description": "MedinovAI Treatment Planner",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-drug-interaction-checker",
+    "full_name": "medinovai/medinovai-drug-interaction-checker",
+    "clone_url": "https://github.com/medinovai/medinovai-drug-interaction-checker.git",
+    "description": "MedinovAI Drug Interaction Checker",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-ehr-integration",
+    "full_name": "medinovai/medinovai-ehr-integration",
+    "clone_url": "https://github.com/medinovai/medinovai-ehr-integration.git",
+    "description": "MedinovAI Ehr Integration",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-hl7-integration",
+    "full_name": "medinovai/medinovai-hl7-integration",
+    "clone_url": "https://github.com/medinovai/medinovai-hl7-integration.git",
+    "description": "MedinovAI Hl7 Integration",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-fhir-integration",
+    "full_name": "medinovai/medinovai-fhir-integration",
+    "clone_url": "https://github.com/medinovai/medinovai-fhir-integration.git",
+    "description": "MedinovAI Fhir Integration",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-dicom-integration",
+    "full_name": "medinovai/medinovai-dicom-integration",
+    "clone_url": "https://github.com/medinovai/medinovai-dicom-integration.git",
+    "description": "MedinovAI Dicom Integration",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-laboratory-integration",
+    "full_name": "medinovai/medinovai-laboratory-integration",
+    "clone_url": "https://github.com/medinovai/medinovai-laboratory-integration.git",
+    "description": "MedinovAI Laboratory Integration",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-pharmacy-integration",
+    "full_name": "medinovai/medinovai-pharmacy-integration",
+    "clone_url": "https://github.com/medinovai/medinovai-pharmacy-integration.git",
+    "description": "MedinovAI Pharmacy Integration",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-insurance-integration",
+    "full_name": "medinovai/medinovai-insurance-integration",
+    "clone_url": "https://github.com/medinovai/medinovai-insurance-integration.git",
+    "description": "MedinovAI Insurance Integration",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-payment-integration",
+    "full_name": "medinovai/medinovai-payment-integration",
+    "clone_url": "https://github.com/medinovai/medinovai-payment-integration.git",
+    "description": "MedinovAI Payment Integration",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-calendar-integration",
+    "full_name": "medinovai/medinovai-calendar-integration",
+    "clone_url": "https://github.com/medinovai/medinovai-calendar-integration.git",
+    "description": "MedinovAI Calendar Integration",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-email-integration",
+    "full_name": "medinovai/medinovai-email-integration",
+    "clone_url": "https://github.com/medinovai/medinovai-email-integration.git",
+    "description": "MedinovAI Email Integration",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-testing-framework",
+    "full_name": "medinovai/medinovai-testing-framework",
+    "clone_url": "https://github.com/medinovai/medinovai-testing-framework.git",
+    "description": "MedinovAI Testing Framework",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-qa-automation",
+    "full_name": "medinovai/medinovai-qa-automation",
+    "clone_url": "https://github.com/medinovai/medinovai-qa-automation.git",
+    "description": "MedinovAI Qa Automation",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-performance-testing",
+    "full_name": "medinovai/medinovai-performance-testing",
+    "clone_url": "https://github.com/medinovai/medinovai-performance-testing.git",
+    "description": "MedinovAI Performance Testing",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-security-testing",
+    "full_name": "medinovai/medinovai-security-testing",
+    "clone_url": "https://github.com/medinovai/medinovai-security-testing.git",
+    "description": "MedinovAI Security Testing",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-load-testing",
+    "full_name": "medinovai/medinovai-load-testing",
+    "clone_url": "https://github.com/medinovai/medinovai-load-testing.git",
+    "description": "MedinovAI Load Testing",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-integration-testing",
+    "full_name": "medinovai/medinovai-integration-testing",
+    "clone_url": "https://github.com/medinovai/medinovai-integration-testing.git",
+    "description": "MedinovAI Integration Testing",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-e2e-testing",
+    "full_name": "medinovai/medinovai-e2e-testing",
+    "clone_url": "https://github.com/medinovai/medinovai-e2e-testing.git",
+    "description": "MedinovAI E2E Testing",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-api-testing",
+    "full_name": "medinovai/medinovai-api-testing",
+    "clone_url": "https://github.com/medinovai/medinovai-api-testing.git",
+    "description": "MedinovAI Api Testing",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-documentation",
+    "full_name": "medinovai/medinovai-documentation",
+    "clone_url": "https://github.com/medinovai/medinovai-documentation.git",
+    "description": "MedinovAI Documentation",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-api-docs",
+    "full_name": "medinovai/medinovai-api-docs",
+    "clone_url": "https://github.com/medinovai/medinovai-api-docs.git",
+    "description": "MedinovAI Api Docs",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-user-guide",
+    "full_name": "medinovai/medinovai-user-guide",
+    "clone_url": "https://github.com/medinovai/medinovai-user-guide.git",
+    "description": "MedinovAI User Guide",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-developer-guide",
+    "full_name": "medinovai/medinovai-developer-guide",
+    "clone_url": "https://github.com/medinovai/medinovai-developer-guide.git",
+    "description": "MedinovAI Developer Guide",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-admin-guide",
+    "full_name": "medinovai/medinovai-admin-guide",
+    "clone_url": "https://github.com/medinovai/medinovai-admin-guide.git",
+    "description": "MedinovAI Admin Guide",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-deployment-guide",
+    "full_name": "medinovai/medinovai-deployment-guide",
+    "clone_url": "https://github.com/medinovai/medinovai-deployment-guide.git",
+    "description": "MedinovAI Deployment Guide",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  },
+  {
+    "name": "medinovai-troubleshooting-guide",
+    "full_name": "medinovai/medinovai-troubleshooting-guide",
+    "clone_url": "https://github.com/medinovai/medinovai-troubleshooting-guide.git",
+    "description": "MedinovAI Troubleshooting Guide",
+    "language": "Python",
+    "size": 0,
+    "source": "comprehensive_list"
+  }
+]
