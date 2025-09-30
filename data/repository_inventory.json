@@ -1,0 +1,57 @@
+[
+  {
+    "name": "medinovai-core",
+    "fullName": "medinovai/medinovai-core",
+    "description": "Core MedinovAI platform components",
+    "language": "Python",
+    "size": 2048,
+    "updatedAt": "2024-09-30T10:00:00Z",
+    "isPrivate": false,
+    "owner": "medinovai",
+    "type": "organization"
+  },
+  {
+    "name": "health-llm",
+    "fullName": "medinovai/health-llm",
+    "description": "Health-focused Large Language Model",
+    "language": "Python",
+    "size": 5120,
+    "updatedAt": "2024-09-30T09:30:00Z",
+    "isPrivate": false,
+    "owner": "medinovai",
+    "type": "organization"
+  },
+  {
+    "name": "clinical-data-processor",
+    "fullName": "medinovai/clinical-data-processor",
+    "description": "Clinical data processing and validation",
+    "language": "JavaScript",
+    "size": 1536,
+    "updatedAt": "2024-09-30T09:00:00Z",
+    "isPrivate": false,
+    "owner": "medinovai",
+    "type": "organization"
+  },
+  {
+    "name": "patient-management-system",
+    "fullName": "medinovai/patient-management-system",
+    "description": "Comprehensive patient management platform",
+    "language": "TypeScript",
+    "size": 3072,
+    "updatedAt": "2024-09-30T08:30:00Z",
+    "isPrivate": false,
+    "owner": "medinovai",
+    "type": "organization"
+  },
+  {
+    "name": "ai-diagnostic-engine",
+    "fullName": "medinovai/ai-diagnostic-engine",
+    "description": "AI-powered diagnostic assistance",
+    "language": "Python",
+    "size": 4096,
+    "updatedAt": "2024-09-30T08:00:00Z",
+    "isPrivate": false,
+    "owner": "medinovai",
+    "type": "organization"
+  }
+]

@@ -1,8 +1,0 @@
-medinovai-identity-service
-medinovai-auth-service
-medinovai-authorization-service
-medinovai-audit-service
-medinovai-compliance-service
-medinovai-encryption-service
-medinovai-key-management
-medinovai-threat-detection
