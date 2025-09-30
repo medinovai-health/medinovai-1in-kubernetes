@@ -54,7 +54,7 @@ jobs:
       services-ready: ${{ steps.services-check.outputs.ready }}
     steps:
       - name: 📥 Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: 🐍 Setup Python
         uses: actions/setup-python@v4
@@ -125,7 +125,7 @@ jobs:
     if: needs.prerequisites.outputs.cluster-ready == 'true'
     steps:
       - name: 📥 Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: 🐍 Setup Python
         uses: actions/setup-python@v4
@@ -186,7 +186,7 @@ jobs:
         ]
     steps:
       - name: 📥 Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: 🐍 Setup Python
         uses: actions/setup-python@v4
@@ -251,7 +251,7 @@ jobs:
     environment: ${{ github.event.inputs.environment || 'development' }}
     steps:
       - name: 📥 Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: 🔧 Setup kubectl
         uses: azure/setup-kubectl@v3
@@ -299,7 +299,7 @@ jobs:
         ]
     steps:
       - name: 📥 Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: 🔧 Setup kubectl
         uses: azure/setup-kubectl@v3
@@ -331,7 +331,7 @@ jobs:
     if: needs.prerequisites.outputs.cluster-ready == 'true'
     steps:
       - name: 📥 Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: 🐍 Setup Python
         uses: actions/setup-python@v4
@@ -369,7 +369,7 @@ jobs:
     environment: ${{ github.event.inputs.environment || 'development' }}
     steps:
       - name: 📥 Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: 🔧 Setup kubectl
         uses: azure/setup-kubectl@v3
@@ -412,7 +412,7 @@ jobs:
     environment: ${{ github.event.inputs.environment || 'development' }}
     steps:
       - name: 📥 Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: 🔧 Setup kubectl
         uses: azure/setup-kubectl@v3
@@ -451,7 +451,7 @@ jobs:
     environment: ${{ github.event.inputs.environment || 'development' }}
     steps:
       - name: 📥 Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: 🔧 Setup kubectl
         uses: azure/setup-kubectl@v3

@@ -19,7 +19,7 @@ jobs:
         lang: [python, dotnet, rust, swift, kotlin]
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Python
         if: matrix.lang == 'python'
@@ -155,7 +155,7 @@ jobs:
         language: ['javascript', 'python', 'csharp', 'go', 'java', 'ruby', 'cpp']
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
         with:
