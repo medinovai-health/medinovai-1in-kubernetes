@@ -1,0 +1,137 @@
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: medinovai-main-gateway
+  namespace: istio-system
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    - "*.medinovai.local"
+    - "medinovai.local"
+    - "localhost"
+  - port:
+      number: 443
+      name: https
+      protocol: HTTPS
+    hosts:
+    - "*.medinovai.local"
+    - "medinovai.local"
+    - "localhost"
+    tls:
+      mode: SIMPLE
+      credentialName: medinovai-tls-cert
+
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: medinovai-main-vs
+  namespace: istio-system
+spec:
+  hosts:
+  - "*.medinovai.local"
+  - "medinovai.local"
+  - "localhost"
+  gateways:
+  - medinovai-main-gateway
+  http:
+  # API Gateway
+  - match:
+    - uri:
+        prefix: /api/
+    route:
+    - destination:
+        host: api-gateway.medinovai.svc.cluster.local
+        port:
+          number: 8080
+  # Dashboard
+  - match:
+    - uri:
+        prefix: /dashboard/
+    route:
+    - destination:
+        host: api-gateway.medinovai.svc.cluster.local
+        port:
+          number: 8080
+  # Health Check
+  - match:
+    - uri:
+        prefix: /health
+    route:
+    - destination:
+        host: api-gateway.medinovai.svc.cluster.local
+        port:
+          number: 8080
+  # Clinical Services
+  - match:
+    - uri:
+        prefix: /clinical/
+    route:
+    - destination:
+        host: medinovai-clinical-services.medinovai.svc.cluster.local
+        port:
+          number: 8080
+  # Data Services
+  - match:
+    - uri:
+        prefix: /data/
+    route:
+    - destination:
+        host: medinovai-data-services.medinovai.svc.cluster.local
+        port:
+          number: 8080
+  # Patient Services
+  - match:
+    - uri:
+        prefix: /patients/
+    route:
+    - destination:
+        host: medinovai-patient-services.medinovai.svc.cluster.local
+        port:
+          number: 8080
+  # Research Suite
+  - match:
+    - uri:
+        prefix: /research/
+    route:
+    - destination:
+        host: researchsuite-cds.medinovai.svc.cluster.local
+        port:
+          number: 8081
+  # Default route to API Gateway
+  - match:
+    - uri:
+        prefix: /
+    route:
+    - destination:
+        host: api-gateway.medinovai.svc.cluster.local
+        port:
+          number: 8080
+
+---
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: medinovai-destination-rule
+  namespace: istio-system
+spec:
+  host: "*.medinovai.svc.cluster.local"
+  trafficPolicy:
+    connectionPool:
+      tcp:
+        maxConnections: 100
+      http:
+        http1MaxPendingRequests: 50
+        maxRequestsPerConnection: 2
+    circuitBreaker:
+      consecutiveErrors: 3
+      interval: 30s
+      baseEjectionTime: 30s
+
+

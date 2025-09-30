@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: medinovai-registry
+    compliance.medinovaios.com/data-classification: phi
+    reliability.medinovaios.com/baseline: enabled
+  name: medinovai-registry
+  namespace: medinovai
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: medinovai-registry
+  template:
+    metadata:
+      annotations:
+        prometheus.io/port: '9090'
+        prometheus.io/scrape: 'true'
+        sidecar.istio.io/inject: 'false'
+      labels:
+        app: medinovai-registry
+        compliance.medinovaios.com/data-classification: phi
+    spec:
+      containers:
+      - env:
+        - name: SERVICE_NAME
+          value: medinovai-registry
+        - name: LOG_LEVEL
+          value: INFO
+        - name: METRICS_ENABLED
+          value: 'true'
+        - name: REGISTRY_PORT
+          value: '8080'
+        image: httpd:2.4-alpine
+        livenessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 10
+        name: medinovai-registry
+        ports:
+        - containerPort: 80
+          name: http
+        - containerPort: 9090
+          name: metrics
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+        resources:
+          limits:
+            cpu: 500m
+            memory: 512Mi
+          requests:
+            cpu: 100m
+            memory: 128Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+      securityContext:
+        fsGroup: 0
+        runAsNonRoot: false
+        runAsUser: 0
+

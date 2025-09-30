@@ -1,0 +1,127 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: medinovai-services
+  namespace: medinovai
+spec:
+  hosts:
+  - medinovai-services
+  http:
+  - match:
+    - uri:
+        prefix: /ai/
+    route:
+    - destination:
+        host: medinovai-ai-standards
+        port:
+          number: 5000
+  - match:
+    - uri:
+        prefix: /clinical/
+    route:
+    - destination:
+        host: medinovai-clinical-services
+        port:
+          number: 5000
+  - match:
+    - uri:
+        prefix: /security/
+    route:
+    - destination:
+        host: medinovai-security-services
+        port:
+          number: 5000
+  - match:
+    - uri:
+        prefix: /data/
+    route:
+    - destination:
+        host: medinovai-data-services
+        port:
+          number: 5000
+  - match:
+    - uri:
+        prefix: /integration/
+    route:
+    - destination:
+        host: medinovai-integration-services
+        port:
+          number: 5000
+  - match:
+    - uri:
+        prefix: /patient/
+    route:
+    - destination:
+        host: medinovai-patient-services
+        port:
+          number: 5000
+  - match:
+    - uri:
+        prefix: /billing/
+    route:
+    - destination:
+        host: medinovai-billing
+        port:
+          number: 5000
+  - match:
+    - uri:
+        prefix: /compliance/
+    route:
+    - destination:
+        host: medinovai-compliance-services
+        port:
+          number: 5000
+  - match:
+    - uri:
+        prefix: /ui/
+    route:
+    - destination:
+        host: medinovai-ui-components
+        port:
+          number: 5000
+  - match:
+    - uri:
+        prefix: /utilities/
+    route:
+    - destination:
+        host: medinovai-healthcare-utilities
+        port:
+          number: 5000
+  - match:
+    - uri:
+        prefix: /business/
+    route:
+    - destination:
+        host: medinovai-business-services
+        port:
+          number: 5000
+  - match:
+    - uri:
+        prefix: /research/
+    route:
+    - destination:
+        host: medinovai-research-services
+        port:
+          number: 5000
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: medinovai-services
+  namespace: medinovai
+spec:
+  host: medinovai-services
+  trafficPolicy:
+    loadBalancer:
+      simple: ROUND_ROBIN
+    connectionPool:
+      tcp:
+        maxConnections: 100
+      http:
+        http1MaxPendingRequests: 50
+        maxRequestsPerConnection: 10
+    circuitBreaker:
+      consecutiveErrors: 3
+      interval: 30s
+      baseEjectionTime: 30s
+      maxEjectionPercent: 50

@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: SERVICE_NAME
+  namespace: medinovai
+  labels:
+    app: SERVICE_NAME
+    tier: specialized
+    healthcare-compliant: "true"
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: SERVICE_NAME
+  template:
+    metadata:
+      labels:
+        app: SERVICE_NAME
+        tier: specialized
+    spec:
+      containers:
+      - name: SERVICE_NAME
+        image: medinovai/SERVICE_NAME:latest
+        ports:
+        - containerPort: 5000
+          name: http
+        env:
+        - name: SERVICE_NAME
+          value: "SERVICE_NAME"
+        - name: ENVIRONMENT
+          value: "production"
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 5000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 5000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 1000
+          capabilities:
+            drop:
+            - ALL
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: SERVICE_NAME
+  namespace: medinovai
+  labels:
+    app: SERVICE_NAME
+spec:
+  selector:
+    app: SERVICE_NAME
+  ports:
+  - port: 5000
+    targetPort: 5000
+    name: http
+  type: ClusterIP

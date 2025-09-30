@@ -1,0 +1,49 @@
+{
+    "discovery_timestamp": "2025-09-28T20:04:25Z",
+    "total_services_remaining": 219,
+    "service_categories": {
+        "clinical_services": [
+            "cardiology-monitoring,care-team,clinical-decision-ai,clinical-decision-test,clinical-education,clinical-modules-config,clinical-nlp,clinical-notes,clinical-pathways,clinical-quality-metrics,clinical-research-platform,clinical-trial-management,clinical-trials-management,clinical-workflows,medication,medication-concierge,medication-reconciliation,medinovai-clinical-suite"
+        ],
+        "compliance_services": [
+            "breach-detection,breach-notification,capa-deviation-management-service,capa-qms-service,capacity-planning,certificate-authority,certificate-management,change-control-board-ccb-orchestration-service,compliance-audit,engineering-compliance"
+        ],
+        "ai_services": [
+            "bias-fairness-explainability-service,clinical-decision-ai,clinical-nlp,document-ai-service,healthcare-ai-assistant,medinovai-ai-standards,medinovai-auto-enrollment,medinovai-billing,medinovai-clinical-suite,medinovai-complete-platform,medinovai-pharmacy,medinovai-platform,xai-service"
+        ],
+        "infrastructure_services": [
+            "canary-service,capacity-planning,chat-service,online-evaluation-canary-service"
+        ],
+        "business_services": [
+            "business-rules,complaints-service,product-quality-device-complaints-service"
+        ],
+        "research_services": [
+            "clinical-research-platform,clinical-trial-management,clinical-trials-management"
+        ],
+        "unclassified_services": [
+            "architecture-and-implementation-sections-a-d-service,configuration-management,consent-api,consent-authorization-service,consent-integration-guide,consent-management,consent-vault-service,content-translator,cost-estimation,ctms,dashboards-service,decision-support,delegation-gateway-sidecar,deployment-manager,dicom-viewer,differential-privacy-engine,directory-service,disaster-recovery-manager,doc-summarizer,document-management,document_ai_agent,drift-detect-service,drug-discovery-ai,drug-interaction,dsur-service,e-prescribe,emergency-medicine,encryption-service,etmf,expert-system,fax-service,fhir-gateway,field-actions-recalls-service,field-actions-service,file-storage,fraud-detection,genomics,genomics-analysis,guardrails-service,health-timeline,healthcare-blockchain,healthcare-predictive-analytics,healthcare-workflow-automation,healthcare_platform,human-wellness-layer,icsr-authoring-gateway-e2b-r3-service,icsr-gateway-service,identity-management,identity-provider,image-archive,imaging,imaging-viewer,incident-management,incident-reporting,insurance-verification,inventory-management,key-management,keycloak-integration,knowledge-graph,knowledge-management,kubectl-ai,lab-order,lab-results,lab-router,legal-hold,life-services-router,lis,literature-service,literature-surveillance-service,log-aggregation,mcp-healthcare-data,mcp-triage-router,meddata-nexus,medical-imaging-ai,medical-information-mi-requests-service,medinfo-service,medinovai_env,mercury-enablement-ai,mfa-service,model-cards-documentation-service,model-registry-lineage-service,model-registry-service,model-risk-management-mrm-service,module-development-service,monitoring-dashboard,monitoring-drift-data-quality-service,monitoring-service,mrm-service,myonsite-healthcare-repos,nlp,notification-gateway,notification-service,notification-system,ocr,oncology-care,outcome-prediction,pass-service,password-policy,pathology,pathology-results,patient-authentication,patient-billing,patient-demographics,patient-imaging,patient-onboarding,patient-pharmacy,patient-safety-monitoring,pediatric-care,penetration-testing,performance-monitoring,periodic-safety-service,personal-assistant,pharmacy,pharmacy-integration,pharmacy-management,phi-protection,platform,platform-orchestrator,pms-pmcf-service,policy-engine,population-health,predictive-maintenance,prior-authorization,privacy-deid-gateway,procurement,provider-communication,provider-credentialing,purpose-control-service,push-service,pv-case-intake-triage-service,pv-case-service,qa-agent,quality-reporting,readme-service,reporting-engine,resource-optimization,restore-service,revocation-hook-service,safe-export-scheduler,sandbox-environment,secret-management,security_enhancements,sentiment-monitor,service-discovery,shared,simple-health-service,snapshot-service,sso-service,subscription,supply-chain,surgery-scheduling,task-kanban,task-management,telehealth,telehealth-platform,telemedicine-platform,template,text-to-speech,threat-detection,tokenization-vault,tracing-service,training_data,ui-shell,unified-auth-billing,unified-comm-hub,user-provisioning,vendor-management,virtual-triage,vital-signs,vitals-ingest,voice-command,voice-service,vulnerability-scanning,wait-list,white-label"
+        ]
+    },
+    "migration_recommendations": {
+        "high_priority": [
+            "clinical-decision-ai",
+            "clinical-nlp", 
+            "bias-fairness-explainability-service",
+            "compliance-audit",
+            "breach-detection",
+            "breach-notification"
+        ],
+        "medium_priority": [
+            "clinical-research-platform",
+            "clinical-trial-management",
+            "clinical-trials-management",
+            "certificate-management",
+            "certificate-authority"
+        ],
+        "low_priority": [
+            "architecture-and-implementation-sections-a-d-service",
+            "clinical-decision-test",
+            "clinical-modules-config"
+        ]
+    }
+}

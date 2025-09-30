@@ -597,3 +597,4 @@ if __name__ == "__main__":
     print(f"Total Lines of Code: {results['summary_statistics']['total_lines']:,}")
     print(f"Primary Languages: {list(results['summary_statistics']['language_distribution'].keys())}")
     print(f"\n📄 Detailed results saved to: comprehensive_repository_analysis.json")
+

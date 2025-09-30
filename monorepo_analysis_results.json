@@ -1,0 +1,123 @@
+{
+  "analysis_timestamp": "2025-09-30T13:45:00Z",
+  "monorepo_name": "medinovai-ResearchSuite",
+  "total_modules": 12,
+  "deployable_modules": 12,
+  "modules": [
+    {
+      "name": "cds",
+      "full_name": "Clinical Decision Support",
+      "type": "clinical_service",
+      "deployable": true,
+      "has_main": true,
+      "has_dockerfile": false,
+      "has_k8s": false,
+      "port": 8081
+    },
+    {
+      "name": "ctms",
+      "full_name": "Clinical Trial Management System",
+      "type": "clinical_service",
+      "deployable": true,
+      "has_main": true,
+      "has_dockerfile": false,
+      "has_k8s": false,
+      "port": 8082
+    },
+    {
+      "name": "econsent",
+      "full_name": "Electronic Consent",
+      "type": "compliance_service",
+      "deployable": true,
+      "has_main": true,
+      "has_dockerfile": false,
+      "has_k8s": false,
+      "port": 8083
+    },
+    {
+      "name": "edc",
+      "full_name": "Electronic Data Capture",
+      "type": "data_service",
+      "deployable": true,
+      "has_main": true,
+      "has_dockerfile": false,
+      "has_k8s": false,
+      "port": 8084
+    },
+    {
+      "name": "epro",
+      "full_name": "Electronic Patient Reported Outcomes",
+      "type": "patient_service",
+      "deployable": true,
+      "has_main": true,
+      "has_dockerfile": false,
+      "has_k8s": false,
+      "port": 8085
+    },
+    {
+      "name": "esource",
+      "full_name": "Electronic Source Data",
+      "type": "data_service",
+      "deployable": true,
+      "has_main": true,
+      "has_dockerfile": false,
+      "has_k8s": false,
+      "port": 8086
+    },
+    {
+      "name": "etmf",
+      "full_name": "Electronic Trial Master File",
+      "type": "document_service",
+      "deployable": true,
+      "has_main": true,
+      "has_dockerfile": false,
+      "has_k8s": false,
+      "port": 8087
+    },
+    {
+      "name": "iwrs",
+      "full_name": "Interactive Web Response System",
+      "type": "randomization_service",
+      "deployable": true,
+      "has_main": true,
+      "has_dockerfile": false,
+      "has_k8s": false,
+      "port": 8088
+    },
+    {
+      "name": "patient_matching",
+      "full_name": "Patient Matching Service",
+      "type": "ai_service",
+      "deployable": true,
+      "has_main": true,
+      "has_dockerfile": false,
+      "has_k8s": false,
+      "port": 8089
+    },
+    {
+      "name": "rbm",
+      "full_name": "Risk-Based Monitoring",
+      "type": "monitoring_service",
+      "deployable": true,
+      "has_main": true,
+      "has_dockerfile": false,
+      "has_k8s": false,
+      "port": 8090
+    }
+  ],
+  "deployment_strategy": {
+    "individual_deployment": true,
+    "shared_infrastructure": true,
+    "service_mesh_integration": true,
+    "istio_routing": true
+  },
+  "infrastructure_requirements": {
+    "postgresql": true,
+    "redis": true,
+    "ollama": true,
+    "monitoring": true,
+    "logging": true
+  }
+}
+
+

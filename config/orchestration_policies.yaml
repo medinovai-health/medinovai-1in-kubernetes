@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: medinovai-orchestration-policies
+  namespace: medinovai
+data:
+  policies.yaml: |
+    orchestration:
+      service_discovery:
+        interval: 30s
+        timeout: 10s
+        retry_attempts: 3
+      
+      deployment:
+        strategy: rolling_update
+        max_unavailable: 1
+        max_surge: 1
+        health_check_timeout: 60s
+      
+      scaling:
+        min_replicas: 2
+        max_replicas: 10
+        target_cpu_utilization: 70
+        target_memory_utilization: 80
+      
+      monitoring:
+        metrics_interval: 15s
+        log_level: info
+        alert_thresholds:
+          cpu: 80
+          memory: 85
+          response_time: 2000ms
+      
+      security:
+        network_policies: true
+        pod_security_standards: restricted
+        image_scanning: true
+        secret_management: true

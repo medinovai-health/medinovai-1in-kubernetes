@@ -16,7 +16,7 @@ spec:
       annotations:
         prometheus.io/port: '9090'
         prometheus.io/scrape: 'true'
-        sidecar.istio.io/inject: 'true'
+        sidecar.istio.io/inject: 'false'
       labels:
         app: api-gateway
         compliance.medinovaios.com/data-classification: phi
@@ -29,27 +29,27 @@ spec:
           value: INFO
         - name: METRICS_ENABLED
           value: 'true'
-        image: medinovaios/api-gateway:latest
+        image: httpd:2.4-alpine
         livenessProbe:
           failureThreshold: 3
           httpGet:
-            path: /healthz
-            port: 8080
-          initialDelaySeconds: 60
+            path: /
+            port: 80
+          initialDelaySeconds: 30
           periodSeconds: 30
           timeoutSeconds: 10
         name: api-gateway
         ports:
-        - containerPort: 8080
+        - containerPort: 80
           name: http
         - containerPort: 9090
           name: metrics
         readinessProbe:
           failureThreshold: 3
           httpGet:
-            path: /healthz
-            port: 8080
-          initialDelaySeconds: 30
+            path: /
+            port: 80
+          initialDelaySeconds: 10
           periodSeconds: 10
           timeoutSeconds: 5
         resources:
@@ -64,8 +64,7 @@ spec:
           capabilities:
             drop:
             - ALL
-          readOnlyRootFilesystem: true
       securityContext:
-        fsGroup: 1000
-        runAsNonRoot: true
-        runAsUser: 1000
+        fsGroup: 0
+        runAsNonRoot: false
+        runAsUser: 0

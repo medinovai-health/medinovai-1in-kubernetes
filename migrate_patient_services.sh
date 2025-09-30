@@ -141,3 +141,4 @@ echo "   - Target: $TARGET_REPO"
 echo "   - Migration date: $(date)"
 echo ""
 echo "🔄 Next step: Remove migrated services from medinovaios"
+

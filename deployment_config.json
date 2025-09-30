@@ -1,0 +1,6214 @@
+{
+  "timestamp": "2025-09-28T16:08:03.391814Z",
+  "environments": [
+    "dev",
+    "stage",
+    "prod"
+  ],
+  "services": {
+    "medinovai-infrastructure-load-balancing": {
+      "repository": "medinovai-infrastructure",
+      "service": "load-balancing",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovai-infrastructure-api-gateway": {
+      "repository": "medinovai-infrastructure",
+      "service": "api-gateway",
+      "type": "flask_service",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovai-infrastructure-disaster-recovery": {
+      "repository": "medinovai-infrastructure",
+      "service": "disaster-recovery",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovai-infrastructure-service-mesh": {
+      "repository": "medinovai-infrastructure",
+      "service": "service-mesh",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "MedinovAI-AI-Standards-ai-clinical-decision": {
+      "repository": "MedinovAI-AI-Standards",
+      "service": "ai-clinical-decision",
+      "type": "python_service",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "MedinovAI-AI-Standards-healthcare-predictive-analytics": {
+      "repository": "MedinovAI-AI-Standards",
+      "service": "healthcare-predictive-analytics",
+      "type": "python_service",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "MedinovAI-AI-Standards-ai-real-time-monitoring": {
+      "repository": "MedinovAI-AI-Standards",
+      "service": "ai-real-time-monitoring",
+      "type": "python_service",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "MedinovAI-AI-Standards-ai-medication-management": {
+      "repository": "MedinovAI-AI-Standards",
+      "service": "ai-medication-management",
+      "type": "python_service",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "MedinovAI-AI-Standards-ai-model-service": {
+      "repository": "MedinovAI-AI-Standards",
+      "service": "ai-model-service",
+      "type": "flask_service",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "MedinovAI-AI-Standards-outcome-prediction": {
+      "repository": "MedinovAI-AI-Standards",
+      "service": "outcome-prediction",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "MedinovAI-AI-Standards-medical-imaging-ai": {
+      "repository": "MedinovAI-AI-Standards",
+      "service": "medical-imaging-ai",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "MedinovAI-AI-Standards-mercury-enablement-ai": {
+      "repository": "MedinovAI-AI-Standards",
+      "service": "mercury-enablement-ai",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "MedinovAI-AI-Standards-clinical-nlp": {
+      "repository": "MedinovAI-AI-Standards",
+      "service": "clinical-nlp",
+      "type": "python_service",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "MedinovAI-AI-Standards-ai-models": {
+      "repository": "MedinovAI-AI-Standards",
+      "service": "ai-models",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "MedinovAI-AI-Standards-ai-voice-triage": {
+      "repository": "MedinovAI-AI-Standards",
+      "service": "ai-voice-triage",
+      "type": "python_service",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "MedinovAI-AI-Standards-clinical-decision-ai": {
+      "repository": "MedinovAI-AI-Standards",
+      "service": "clinical-decision-ai",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "MedinovAI-AI-Standards-ai-agents": {
+      "repository": "MedinovAI-AI-Standards",
+      "service": "ai-agents",
+      "type": "python_service",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "MedinovAI-AI-Standards-predictive-analytics": {
+      "repository": "MedinovAI-AI-Standards",
+      "service": "predictive-analytics",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "MedinovAI-AI-Standards-drug-discovery-ai": {
+      "repository": "MedinovAI-AI-Standards",
+      "service": "drug-discovery-ai",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "MedinovAI-AI-Standards-ai-agent-orchestrator": {
+      "repository": "MedinovAI-AI-Standards",
+      "service": "ai-agent-orchestrator",
+      "type": "python_service",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "MedinovAI-AI-Standards-ai-workflow-optimization": {
+      "repository": "MedinovAI-AI-Standards",
+      "service": "ai-workflow-optimization",
+      "type": "python_service",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "MedinovAI-AI-Standards-ai-prompt-manager": {
+      "repository": "MedinovAI-AI-Standards",
+      "service": "ai-prompt-manager",
+      "type": "python_service",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "MedinovAI-AI-Standards-genomics-analysis": {
+      "repository": "MedinovAI-AI-Standards",
+      "service": "genomics-analysis",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "MedinovAI-AI-Standards-ai-risk-stratification": {
+      "repository": "MedinovAI-AI-Standards",
+      "service": "ai-risk-stratification",
+      "type": "python_service",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "MedinovAI-AI-Standards-nlp": {
+      "repository": "MedinovAI-AI-Standards",
+      "service": "nlp",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "MedinovAI-AI-Standards-ai-visual-diagnosis": {
+      "repository": "MedinovAI-AI-Standards",
+      "service": "ai-visual-diagnosis",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "MedinovAI-AI-Standards-xai-service": {
+      "repository": "MedinovAI-AI-Standards",
+      "service": "xai-service",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "MedinovAI-AI-Standards-ai-predictive-modeling": {
+      "repository": "MedinovAI-AI-Standards",
+      "service": "ai-predictive-modeling",
+      "type": "python_service",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "MedinovAI-AI-Standards-ai-automation": {
+      "repository": "MedinovAI-AI-Standards",
+      "service": "ai-automation",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "MedinovAI-AI-Standards-healthcare-ai-assistant": {
+      "repository": "MedinovAI-AI-Standards",
+      "service": "healthcare-ai-assistant",
+      "type": "python_service",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "MedinovAI-AI-Standards-ai-scribe": {
+      "repository": "MedinovAI-AI-Standards",
+      "service": "ai-scribe",
+      "type": "flask_service",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-kubectl-ai": {
+      "repository": "medinovaios",
+      "service": "kubectl-ai",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-password-policy": {
+      "repository": "medinovaios",
+      "service": "password-policy",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-medinovai-auto-enrollment": {
+      "repository": "medinovaios",
+      "service": "medinovai-auto-enrollment",
+      "type": "python_service",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-safe-export-scheduler": {
+      "repository": "medinovaios",
+      "service": "safe-export-scheduler",
+      "type": "python_service",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-sentiment-monitor": {
+      "repository": "medinovaios",
+      "service": "sentiment-monitor",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-cardiology-monitoring": {
+      "repository": "medinovaios",
+      "service": "cardiology-monitoring",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-certificate-management": {
+      "repository": "medinovaios",
+      "service": "certificate-management",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-cost-estimation": {
+      "repository": "medinovaios",
+      "service": "cost-estimation",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-telehealth": {
+      "repository": "medinovaios",
+      "service": "telehealth",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-knowledge-management": {
+      "repository": "medinovaios",
+      "service": "knowledge-management",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-periodic-safety-service": {
+      "repository": "medinovaios",
+      "service": "periodic-safety-service",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-pharmacy": {
+      "repository": "medinovaios",
+      "service": "pharmacy",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-secret-management": {
+      "repository": "medinovaios",
+      "service": "secret-management",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-breach-notification": {
+      "repository": "medinovaios",
+      "service": "breach-notification",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-training_data": {
+      "repository": "medinovaios",
+      "service": "training_data",
+      "type": "python_service",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-unified-comm-hub": {
+      "repository": "medinovaios",
+      "service": "unified-comm-hub",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-unified-auth-billing": {
+      "repository": "medinovaios",
+      "service": "unified-auth-billing",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-medinovai-pharmacy": {
+      "repository": "medinovaios",
+      "service": "medinovai-pharmacy",
+      "type": "python_service",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-healthcare-predictive-analytics": {
+      "repository": "medinovaios",
+      "service": "healthcare-predictive-analytics",
+      "type": "python_service",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-model-risk-management-mrm-service": {
+      "repository": "medinovaios",
+      "service": "model-risk-management-mrm-service",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-notification-gateway": {
+      "repository": "medinovaios",
+      "service": "notification-gateway",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-dashboards-service": {
+      "repository": "medinovaios",
+      "service": "dashboards-service",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-virtual-triage": {
+      "repository": "medinovaios",
+      "service": "virtual-triage",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-patient-safety-monitoring": {
+      "repository": "medinovaios",
+      "service": "patient-safety-monitoring",
+      "type": "python_service",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-module-development-service": {
+      "repository": "medinovaios",
+      "service": "module-development-service",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-clinical-modules-config": {
+      "repository": "medinovaios",
+      "service": "clinical-modules-config",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-outcome-prediction": {
+      "repository": "medinovaios",
+      "service": "outcome-prediction",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-drug-interaction": {
+      "repository": "medinovaios",
+      "service": "drug-interaction",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-voice-command": {
+      "repository": "medinovaios",
+      "service": "voice-command",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-patient-authentication": {
+      "repository": "medinovaios",
+      "service": "patient-authentication",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-architecture-and-implementation-sections-a-d-service": {
+      "repository": "medinovaios",
+      "service": "architecture-and-implementation-sections-a-d-service",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-dicom-viewer": {
+      "repository": "medinovaios",
+      "service": "dicom-viewer",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-policy-engine": {
+      "repository": "medinovaios",
+      "service": "policy-engine",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-medical-imaging-ai": {
+      "repository": "medinovaios",
+      "service": "medical-imaging-ai",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-document_ai_agent": {
+      "repository": "medinovaios",
+      "service": "document_ai_agent",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-document-ai-service": {
+      "repository": "medinovaios",
+      "service": "document-ai-service",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-business-rules": {
+      "repository": "medinovaios",
+      "service": "business-rules",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-genomics": {
+      "repository": "medinovaios",
+      "service": "genomics",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-wait-list": {
+      "repository": "medinovaios",
+      "service": "wait-list",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-provider-communication": {
+      "repository": "medinovaios",
+      "service": "provider-communication",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-task-management": {
+      "repository": "medinovaios",
+      "service": "task-management",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-pass-service": {
+      "repository": "medinovaios",
+      "service": "pass-service",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-mrm-service": {
+      "repository": "medinovaios",
+      "service": "mrm-service",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-file-storage": {
+      "repository": "medinovaios",
+      "service": "file-storage",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-notification-service": {
+      "repository": "medinovaios",
+      "service": "notification-service",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-lis": {
+      "repository": "medinovaios",
+      "service": "lis",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-mercury-enablement-ai": {
+      "repository": "medinovaios",
+      "service": "mercury-enablement-ai",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-lab-order": {
+      "repository": "medinovaios",
+      "service": "lab-order",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-mcp-triage-router": {
+      "repository": "medinovaios",
+      "service": "mcp-triage-router",
+      "type": "python_service",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-notification-system": {
+      "repository": "medinovaios",
+      "service": "notification-system",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-monitoring-dashboard": {
+      "repository": "medinovaios",
+      "service": "monitoring-dashboard",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-canary-service": {
+      "repository": "medinovaios",
+      "service": "canary-service",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-clinical-notes": {
+      "repository": "medinovaios",
+      "service": "clinical-notes",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-patient-pharmacy": {
+      "repository": "medinovaios",
+      "service": "patient-pharmacy",
+      "type": "python_service",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-configuration-management": {
+      "repository": "medinovaios",
+      "service": "configuration-management",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-expert-system": {
+      "repository": "medinovaios",
+      "service": "expert-system",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-voice-service": {
+      "repository": "medinovaios",
+      "service": "voice-service",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-model-registry-lineage-service": {
+      "repository": "medinovaios",
+      "service": "model-registry-lineage-service",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-task-kanban": {
+      "repository": "medinovaios",
+      "service": "task-kanban",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-fax-service": {
+      "repository": "medinovaios",
+      "service": "fax-service",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-deployment-manager": {
+      "repository": "medinovaios",
+      "service": "deployment-manager",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-knowledge-graph": {
+      "repository": "medinovaios",
+      "service": "knowledge-graph",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-healthcare-workflow-automation": {
+      "repository": "medinovaios",
+      "service": "healthcare-workflow-automation",
+      "type": "python_service",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-monitoring-drift-data-quality-service": {
+      "repository": "medinovaios",
+      "service": "monitoring-drift-data-quality-service",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-clinical-research-platform": {
+      "repository": "medinovaios",
+      "service": "clinical-research-platform",
+      "type": "python_service",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-decision-support": {
+      "repository": "medinovaios",
+      "service": "decision-support",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-model-cards-documentation-service": {
+      "repository": "medinovaios",
+      "service": "model-cards-documentation-service",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-inventory-management": {
+      "repository": "medinovaios",
+      "service": "inventory-management",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-life-services-router": {
+      "repository": "medinovaios",
+      "service": "life-services-router",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-disaster-recovery-manager": {
+      "repository": "medinovaios",
+      "service": "disaster-recovery-manager",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-fhir-gateway": {
+      "repository": "medinovaios",
+      "service": "fhir-gateway",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-medinovai-platform": {
+      "repository": "medinovaios",
+      "service": "medinovai-platform",
+      "type": "python_service",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-white-label": {
+      "repository": "medinovaios",
+      "service": "white-label",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-clinical-trials-management": {
+      "repository": "medinovaios",
+      "service": "clinical-trials-management",
+      "type": "python_service",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-capacity-planning": {
+      "repository": "medinovaios",
+      "service": "capacity-planning",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-platform": {
+      "repository": "medinovaios",
+      "service": "platform",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-etmf": {
+      "repository": "medinovaios",
+      "service": "etmf",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-medinovai-complete-platform": {
+      "repository": "medinovaios",
+      "service": "medinovai-complete-platform",
+      "type": "python_service",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-document-management": {
+      "repository": "medinovaios",
+      "service": "document-management",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-chat-service": {
+      "repository": "medinovaios",
+      "service": "chat-service",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-threat-detection": {
+      "repository": "medinovaios",
+      "service": "threat-detection",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-pv-case-intake-triage-service": {
+      "repository": "medinovaios",
+      "service": "pv-case-intake-triage-service",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-qa-agent": {
+      "repository": "medinovaios",
+      "service": "qa-agent",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-resource-optimization": {
+      "repository": "medinovaios",
+      "service": "resource-optimization",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-population-health": {
+      "repository": "medinovaios",
+      "service": "population-health",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-vitals-ingest": {
+      "repository": "medinovaios",
+      "service": "vitals-ingest",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-template": {
+      "repository": "medinovaios",
+      "service": "template",
+      "type": "flask_service",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-emergency-medicine": {
+      "repository": "medinovaios",
+      "service": "emergency-medicine",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-ocr": {
+      "repository": "medinovaios",
+      "service": "ocr",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-complaints-service": {
+      "repository": "medinovaios",
+      "service": "complaints-service",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-consent-vault-service": {
+      "repository": "medinovaios",
+      "service": "consent-vault-service",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-sso-service": {
+      "repository": "medinovaios",
+      "service": "sso-service",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-prior-authorization": {
+      "repository": "medinovaios",
+      "service": "prior-authorization",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-guardrails-service": {
+      "repository": "medinovaios",
+      "service": "guardrails-service",
+      "type": "python_service",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-patient-billing": {
+      "repository": "medinovaios",
+      "service": "patient-billing",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-clinical-quality-metrics": {
+      "repository": "medinovaios",
+      "service": "clinical-quality-metrics",
+      "type": "python_service",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-imaging": {
+      "repository": "medinovaios",
+      "service": "imaging",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-drug-discovery-ai": {
+      "repository": "medinovaios",
+      "service": "drug-discovery-ai",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-security_enhancements": {
+      "repository": "medinovaios",
+      "service": "security_enhancements",
+      "type": "python_service",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-incident-management": {
+      "repository": "medinovaios",
+      "service": "incident-management",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-medication-reconciliation": {
+      "repository": "medinovaios",
+      "service": "medication-reconciliation",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-oncology-care": {
+      "repository": "medinovaios",
+      "service": "oncology-care",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-doc-summarizer": {
+      "repository": "medinovaios",
+      "service": "doc-summarizer",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-human-wellness-layer": {
+      "repository": "medinovaios",
+      "service": "human-wellness-layer",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-shared": {
+      "repository": "medinovaios",
+      "service": "shared",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-purpose-control-service": {
+      "repository": "medinovaios",
+      "service": "purpose-control-service",
+      "type": "python_service",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-model-registry-service": {
+      "repository": "medinovaios",
+      "service": "model-registry-service",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-incident-reporting": {
+      "repository": "medinovaios",
+      "service": "incident-reporting",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-snapshot-service": {
+      "repository": "medinovaios",
+      "service": "snapshot-service",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-consent-integration-guide": {
+      "repository": "medinovaios",
+      "service": "consent-integration-guide",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-medinfo-service": {
+      "repository": "medinovaios",
+      "service": "medinfo-service",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-telehealth-platform": {
+      "repository": "medinovaios",
+      "service": "telehealth-platform",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-text-to-speech": {
+      "repository": "medinovaios",
+      "service": "text-to-speech",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-meddata-nexus": {
+      "repository": "medinovaios",
+      "service": "meddata-nexus",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-privacy-deid-gateway": {
+      "repository": "medinovaios",
+      "service": "privacy-deid-gateway",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-simple-health-service": {
+      "repository": "medinovaios",
+      "service": "simple-health-service",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-dsur-service": {
+      "repository": "medinovaios",
+      "service": "dsur-service",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-compliance-audit": {
+      "repository": "medinovaios",
+      "service": "compliance-audit",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-capa-qms-service": {
+      "repository": "medinovaios",
+      "service": "capa-qms-service",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-restore-service": {
+      "repository": "medinovaios",
+      "service": "restore-service",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-subscription": {
+      "repository": "medinovaios",
+      "service": "subscription",
+      "type": "flask_service",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-change-control-board-ccb-orchestration-service": {
+      "repository": "medinovaios",
+      "service": "change-control-board-ccb-orchestration-service",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-readme-service": {
+      "repository": "medinovaios",
+      "service": "readme-service",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-consent-management": {
+      "repository": "medinovaios",
+      "service": "consent-management",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-monitoring-service": {
+      "repository": "medinovaios",
+      "service": "monitoring-service",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-fraud-detection": {
+      "repository": "medinovaios",
+      "service": "fraud-detection",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-pathology": {
+      "repository": "medinovaios",
+      "service": "pathology",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-healthcare-blockchain": {
+      "repository": "medinovaios",
+      "service": "healthcare-blockchain",
+      "type": "python_service",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-personal-assistant": {
+      "repository": "medinovaios",
+      "service": "personal-assistant",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-medinovai-clinical-suite": {
+      "repository": "medinovaios",
+      "service": "medinovai-clinical-suite",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-platform-orchestrator": {
+      "repository": "medinovaios",
+      "service": "platform-orchestrator",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-consent-api": {
+      "repository": "medinovaios",
+      "service": "consent-api",
+      "type": "python_service",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-bias-fairness-explainability-service": {
+      "repository": "medinovaios",
+      "service": "bias-fairness-explainability-service",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-key-management": {
+      "repository": "medinovaios",
+      "service": "key-management",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-mcp-healthcare-data": {
+      "repository": "medinovaios",
+      "service": "mcp-healthcare-data",
+      "type": "python_service",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-field-actions-recalls-service": {
+      "repository": "medinovaios",
+      "service": "field-actions-recalls-service",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-vulnerability-scanning": {
+      "repository": "medinovaios",
+      "service": "vulnerability-scanning",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-genomics-analysis": {
+      "repository": "medinovaios",
+      "service": "genomics-analysis",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-clinical-education": {
+      "repository": "medinovaios",
+      "service": "clinical-education",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-surgery-scheduling": {
+      "repository": "medinovaios",
+      "service": "surgery-scheduling",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-ctms": {
+      "repository": "medinovaios",
+      "service": "ctms",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-encryption-service": {
+      "repository": "medinovaios",
+      "service": "encryption-service",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-pharmacy-integration": {
+      "repository": "medinovaios",
+      "service": "pharmacy-integration",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-tokenization-vault": {
+      "repository": "medinovaios",
+      "service": "tokenization-vault",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-online-evaluation-canary-service": {
+      "repository": "medinovaios",
+      "service": "online-evaluation-canary-service",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-capa-deviation-management-service": {
+      "repository": "medinovaios",
+      "service": "capa-deviation-management-service",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-telemedicine-platform": {
+      "repository": "medinovaios",
+      "service": "telemedicine-platform",
+      "type": "python_service",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-content-translator": {
+      "repository": "medinovaios",
+      "service": "content-translator",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-clinical-workflows": {
+      "repository": "medinovaios",
+      "service": "clinical-workflows",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-procurement": {
+      "repository": "medinovaios",
+      "service": "procurement",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-clinical-pathways": {
+      "repository": "medinovaios",
+      "service": "clinical-pathways",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-predictive-maintenance": {
+      "repository": "medinovaios",
+      "service": "predictive-maintenance",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-medinovai-billing": {
+      "repository": "medinovaios",
+      "service": "medinovai-billing",
+      "type": "python_service",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-directory-service": {
+      "repository": "medinovaios",
+      "service": "directory-service",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-pediatric-care": {
+      "repository": "medinovaios",
+      "service": "pediatric-care",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-performance-monitoring": {
+      "repository": "medinovaios",
+      "service": "performance-monitoring",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-medinovai_env": {
+      "repository": "medinovaios",
+      "service": "medinovai_env",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-myonsite-healthcare-repos": {
+      "repository": "medinovaios",
+      "service": "myonsite-healthcare-repos",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-icsr-gateway-service": {
+      "repository": "medinovaios",
+      "service": "icsr-gateway-service",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-literature-service": {
+      "repository": "medinovaios",
+      "service": "literature-service",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-differential-privacy-engine": {
+      "repository": "medinovaios",
+      "service": "differential-privacy-engine",
+      "type": "python_service",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-breach-detection": {
+      "repository": "medinovaios",
+      "service": "breach-detection",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-nlp": {
+      "repository": "medinovaios",
+      "service": "nlp",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-field-actions-service": {
+      "repository": "medinovaios",
+      "service": "field-actions-service",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-vendor-management": {
+      "repository": "medinovaios",
+      "service": "vendor-management",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-imaging-viewer": {
+      "repository": "medinovaios",
+      "service": "imaging-viewer",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-patient-demographics": {
+      "repository": "medinovaios",
+      "service": "patient-demographics",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-log-aggregation": {
+      "repository": "medinovaios",
+      "service": "log-aggregation",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-legal-hold": {
+      "repository": "medinovaios",
+      "service": "legal-hold",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-pharmacy-management": {
+      "repository": "medinovaios",
+      "service": "pharmacy-management",
+      "type": "python_service",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-pms-pmcf-service": {
+      "repository": "medinovaios",
+      "service": "pms-pmcf-service",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-image-archive": {
+      "repository": "medinovaios",
+      "service": "image-archive",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-xai-service": {
+      "repository": "medinovaios",
+      "service": "xai-service",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-care-team": {
+      "repository": "medinovaios",
+      "service": "care-team",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-medical-information-mi-requests-service": {
+      "repository": "medinovaios",
+      "service": "medical-information-mi-requests-service",
+      "type": "python_service",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-service-discovery": {
+      "repository": "medinovaios",
+      "service": "service-discovery",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-ui-shell": {
+      "repository": "medinovaios",
+      "service": "ui-shell",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-vital-signs": {
+      "repository": "medinovaios",
+      "service": "vital-signs",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-consent-authorization-service": {
+      "repository": "medinovaios",
+      "service": "consent-authorization-service",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-sandbox-environment": {
+      "repository": "medinovaios",
+      "service": "sandbox-environment",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-supply-chain": {
+      "repository": "medinovaios",
+      "service": "supply-chain",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-medication-concierge": {
+      "repository": "medinovaios",
+      "service": "medication-concierge",
+      "type": "python_service",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-phi-protection": {
+      "repository": "medinovaios",
+      "service": "phi-protection",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-medication": {
+      "repository": "medinovaios",
+      "service": "medication",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-patient-onboarding": {
+      "repository": "medinovaios",
+      "service": "patient-onboarding",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-delegation-gateway-sidecar": {
+      "repository": "medinovaios",
+      "service": "delegation-gateway-sidecar",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-drift-detect-service": {
+      "repository": "medinovaios",
+      "service": "drift-detect-service",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-certificate-authority": {
+      "repository": "medinovaios",
+      "service": "certificate-authority",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-product-quality-device-complaints-service": {
+      "repository": "medinovaios",
+      "service": "product-quality-device-complaints-service",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-lab-results": {
+      "repository": "medinovaios",
+      "service": "lab-results",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-healthcare-ai-assistant": {
+      "repository": "medinovaios",
+      "service": "healthcare-ai-assistant",
+      "type": "python_service",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-clinical-decision-test": {
+      "repository": "medinovaios",
+      "service": "clinical-decision-test",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-literature-surveillance-service": {
+      "repository": "medinovaios",
+      "service": "literature-surveillance-service",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-health-timeline": {
+      "repository": "medinovaios",
+      "service": "health-timeline",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-insurance-verification": {
+      "repository": "medinovaios",
+      "service": "insurance-verification",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-quality-reporting": {
+      "repository": "medinovaios",
+      "service": "quality-reporting",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-penetration-testing": {
+      "repository": "medinovaios",
+      "service": "penetration-testing",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-e-prescribe": {
+      "repository": "medinovaios",
+      "service": "e-prescribe",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-healthcare_platform": {
+      "repository": "medinovaios",
+      "service": "healthcare_platform",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-pathology-results": {
+      "repository": "medinovaios",
+      "service": "pathology-results",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-push-service": {
+      "repository": "medinovaios",
+      "service": "push-service",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-reporting-engine": {
+      "repository": "medinovaios",
+      "service": "reporting-engine",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-medinovai-ai-standards": {
+      "repository": "medinovaios",
+      "service": "medinovai-ai-standards",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-clinical-trial-management": {
+      "repository": "medinovaios",
+      "service": "clinical-trial-management",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-revocation-hook-service": {
+      "repository": "medinovaios",
+      "service": "revocation-hook-service",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-keycloak-integration": {
+      "repository": "medinovaios",
+      "service": "keycloak-integration",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-pv-case-service": {
+      "repository": "medinovaios",
+      "service": "pv-case-service",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-user-provisioning": {
+      "repository": "medinovaios",
+      "service": "user-provisioning",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-mfa-service": {
+      "repository": "medinovaios",
+      "service": "mfa-service",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-engineering-compliance": {
+      "repository": "medinovaios",
+      "service": "engineering-compliance",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-tracing-service": {
+      "repository": "medinovaios",
+      "service": "tracing-service",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-lab-router": {
+      "repository": "medinovaios",
+      "service": "lab-router",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-identity-provider": {
+      "repository": "medinovaios",
+      "service": "identity-provider",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-identity-management": {
+      "repository": "medinovaios",
+      "service": "identity-management",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-patient-imaging": {
+      "repository": "medinovaios",
+      "service": "patient-imaging",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-provider-credentialing": {
+      "repository": "medinovaios",
+      "service": "provider-credentialing",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovaios-icsr-authoring-gateway-e2b-r3-service": {
+      "repository": "medinovaios",
+      "service": "icsr-authoring-gateway-e2b-r3-service",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovai-security-visualization-service": {
+      "repository": "medinovai-security",
+      "service": "visualization-service",
+      "type": "nodejs_service",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovai-security-policy-engine": {
+      "repository": "medinovai-security",
+      "service": "policy-engine",
+      "type": "nodejs_service",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovai-security-ollama-service": {
+      "repository": "medinovai-security",
+      "service": "ollama-service",
+      "type": "nodejs_service",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovai-security-tenant-onboarding": {
+      "repository": "medinovai-security",
+      "service": "tenant-onboarding",
+      "type": "nodejs_service",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovai-security-token-validator": {
+      "repository": "medinovai-security",
+      "service": "token-validator",
+      "type": "nodejs_service",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovai-security-websocket-service": {
+      "repository": "medinovai-security",
+      "service": "websocket-service",
+      "type": "nodejs_service",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovai-security-audit-service": {
+      "repository": "medinovai-security",
+      "service": "audit-service",
+      "type": "nodejs_service",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovai-data-services-data-warehouse": {
+      "repository": "medinovai-data-services",
+      "service": "data-warehouse",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovai-data-services-data-analytics": {
+      "repository": "medinovai-data-services",
+      "service": "data-analytics",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovai-data-services-data-catalog": {
+      "repository": "medinovai-data-services",
+      "service": "data-catalog",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovai-data-services-behavioral-analytics": {
+      "repository": "medinovai-data-services",
+      "service": "behavioral-analytics",
+      "type": "python_service",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovai-data-services-healthcare-cost-analytics": {
+      "repository": "medinovai-data-services",
+      "service": "healthcare-cost-analytics",
+      "type": "python_service",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovai-data-services-data-services": {
+      "repository": "medinovai-data-services",
+      "service": "data-services",
+      "type": "nodejs_service",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovai-data-services-business-intelligence": {
+      "repository": "medinovai-data-services",
+      "service": "business-intelligence",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovai-data-services-data-retention": {
+      "repository": "medinovai-data-services",
+      "service": "data-retention",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovai-data-services-data-governance": {
+      "repository": "medinovai-data-services",
+      "service": "data-governance",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovai-data-services-metrics-collector": {
+      "repository": "medinovai-data-services",
+      "service": "metrics-collector",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovai-data-services-metrics-service": {
+      "repository": "medinovai-data-services",
+      "service": "metrics-service",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovai-data-services-data-lineage": {
+      "repository": "medinovai-data-services",
+      "service": "data-lineage",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovai-data-services-advanced-analytics": {
+      "repository": "medinovai-data-services",
+      "service": "advanced-analytics",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovai-data-services-healthcare-analytics-dashboard": {
+      "repository": "medinovai-data-services",
+      "service": "healthcare-analytics-dashboard",
+      "type": "python_service",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovai-data-services-data-sync": {
+      "repository": "medinovai-data-services",
+      "service": "data-sync",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovai-data-services-real-time-analytics": {
+      "repository": "medinovai-data-services",
+      "service": "real-time-analytics",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovai-Developer-ai-orchestration": {
+      "repository": "medinovai-Developer",
+      "service": "ai-orchestration",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovai-Developer-ai-agents": {
+      "repository": "medinovai-Developer",
+      "service": "ai-agents",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovai-Developer-ai-learning": {
+      "repository": "medinovai-Developer",
+      "service": "ai-learning",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovai-Developer-ai-guidance": {
+      "repository": "medinovai-Developer",
+      "service": "ai-guidance",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovai-Developer-ai-integration": {
+      "repository": "medinovai-Developer",
+      "service": "ai-integration",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovai-Developer-maads-engine": {
+      "repository": "medinovai-Developer",
+      "service": "maads-engine",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovai-Developer-ai-monitoring": {
+      "repository": "medinovai-Developer",
+      "service": "ai-monitoring",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovai-Developer-monitoring": {
+      "repository": "medinovai-Developer",
+      "service": "monitoring",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovai-Developer-ai-optimization": {
+      "repository": "medinovai-Developer",
+      "service": "ai-optimization",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovai-Developer-agent-mesh": {
+      "repository": "medinovai-Developer",
+      "service": "agent-mesh",
+      "type": "python_service",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    },
+    "medinovai-Developer-ai-context": {
+      "repository": "medinovai-Developer",
+      "service": "ai-context",
+      "type": "unknown",
+      "deployment": {
+        "replicas": 2,
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi"
+          }
+        },
+        "health_check": {
+          "path": "/health",
+          "port": 5000
+        }
+      }
+    }
+  }
+}

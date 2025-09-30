@@ -1,0 +1,1744 @@
+{
+  "timestamp": "2025-09-28T16:08:03.335194Z",
+  "total_services": 282,
+  "repositories": {
+    "medinovai-infrastructure": {
+      "path": "/Users/dev1/github/medinovai-infrastructure",
+      "services": [
+        {
+          "name": "load-balancing",
+          "path": "/Users/dev1/github/medinovai-infrastructure/services/load-balancing",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "api-gateway",
+          "path": "/Users/dev1/github/medinovai-infrastructure/services/api-gateway",
+          "type": "flask_service",
+          "status": "active"
+        },
+        {
+          "name": "disaster-recovery",
+          "path": "/Users/dev1/github/medinovai-infrastructure/services/disaster-recovery",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "service-mesh",
+          "path": "/Users/dev1/github/medinovai-infrastructure/services/service-mesh",
+          "type": "unknown",
+          "status": "active"
+        }
+      ],
+      "service_count": 4
+    },
+    "MedinovAI-AI-Standards": {
+      "path": "/Users/dev1/github/MedinovAI-AI-Standards",
+      "services": [
+        {
+          "name": "ai-clinical-decision",
+          "path": "/Users/dev1/github/MedinovAI-AI-Standards/services/ai-clinical-decision",
+          "type": "python_service",
+          "status": "active"
+        },
+        {
+          "name": "healthcare-predictive-analytics",
+          "path": "/Users/dev1/github/MedinovAI-AI-Standards/services/healthcare-predictive-analytics",
+          "type": "python_service",
+          "status": "active"
+        },
+        {
+          "name": "ai-real-time-monitoring",
+          "path": "/Users/dev1/github/MedinovAI-AI-Standards/services/ai-real-time-monitoring",
+          "type": "python_service",
+          "status": "active"
+        },
+        {
+          "name": "ai-medication-management",
+          "path": "/Users/dev1/github/MedinovAI-AI-Standards/services/ai-medication-management",
+          "type": "python_service",
+          "status": "active"
+        },
+        {
+          "name": "ai-model-service",
+          "path": "/Users/dev1/github/MedinovAI-AI-Standards/services/ai-model-service",
+          "type": "flask_service",
+          "status": "active"
+        },
+        {
+          "name": "outcome-prediction",
+          "path": "/Users/dev1/github/MedinovAI-AI-Standards/services/outcome-prediction",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "medical-imaging-ai",
+          "path": "/Users/dev1/github/MedinovAI-AI-Standards/services/medical-imaging-ai",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "mercury-enablement-ai",
+          "path": "/Users/dev1/github/MedinovAI-AI-Standards/services/mercury-enablement-ai",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "clinical-nlp",
+          "path": "/Users/dev1/github/MedinovAI-AI-Standards/services/clinical-nlp",
+          "type": "python_service",
+          "status": "active"
+        },
+        {
+          "name": "ai-models",
+          "path": "/Users/dev1/github/MedinovAI-AI-Standards/services/ai-models",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "ai-voice-triage",
+          "path": "/Users/dev1/github/MedinovAI-AI-Standards/services/ai-voice-triage",
+          "type": "python_service",
+          "status": "active"
+        },
+        {
+          "name": "clinical-decision-ai",
+          "path": "/Users/dev1/github/MedinovAI-AI-Standards/services/clinical-decision-ai",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "ai-agents",
+          "path": "/Users/dev1/github/MedinovAI-AI-Standards/services/ai-agents",
+          "type": "python_service",
+          "status": "active"
+        },
+        {
+          "name": "predictive-analytics",
+          "path": "/Users/dev1/github/MedinovAI-AI-Standards/services/predictive-analytics",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "drug-discovery-ai",
+          "path": "/Users/dev1/github/MedinovAI-AI-Standards/services/drug-discovery-ai",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "ai-agent-orchestrator",
+          "path": "/Users/dev1/github/MedinovAI-AI-Standards/services/ai-agent-orchestrator",
+          "type": "python_service",
+          "status": "active"
+        },
+        {
+          "name": "ai-workflow-optimization",
+          "path": "/Users/dev1/github/MedinovAI-AI-Standards/services/ai-workflow-optimization",
+          "type": "python_service",
+          "status": "active"
+        },
+        {
+          "name": "ai-prompt-manager",
+          "path": "/Users/dev1/github/MedinovAI-AI-Standards/services/ai-prompt-manager",
+          "type": "python_service",
+          "status": "active"
+        },
+        {
+          "name": "genomics-analysis",
+          "path": "/Users/dev1/github/MedinovAI-AI-Standards/services/genomics-analysis",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "ai-risk-stratification",
+          "path": "/Users/dev1/github/MedinovAI-AI-Standards/services/ai-risk-stratification",
+          "type": "python_service",
+          "status": "active"
+        },
+        {
+          "name": "nlp",
+          "path": "/Users/dev1/github/MedinovAI-AI-Standards/services/nlp",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "ai-visual-diagnosis",
+          "path": "/Users/dev1/github/MedinovAI-AI-Standards/services/ai-visual-diagnosis",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "xai-service",
+          "path": "/Users/dev1/github/MedinovAI-AI-Standards/services/xai-service",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "ai-predictive-modeling",
+          "path": "/Users/dev1/github/MedinovAI-AI-Standards/services/ai-predictive-modeling",
+          "type": "python_service",
+          "status": "active"
+        },
+        {
+          "name": "ai-automation",
+          "path": "/Users/dev1/github/MedinovAI-AI-Standards/services/ai-automation",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "healthcare-ai-assistant",
+          "path": "/Users/dev1/github/MedinovAI-AI-Standards/services/healthcare-ai-assistant",
+          "type": "python_service",
+          "status": "active"
+        },
+        {
+          "name": "ai-scribe",
+          "path": "/Users/dev1/github/MedinovAI-AI-Standards/services/ai-scribe",
+          "type": "flask_service",
+          "status": "active"
+        }
+      ],
+      "service_count": 27
+    },
+    "medinovaios": {
+      "path": "/Users/dev1/github/medinovaios",
+      "services": [
+        {
+          "name": "kubectl-ai",
+          "path": "/Users/dev1/github/medinovaios/services/kubectl-ai",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "password-policy",
+          "path": "/Users/dev1/github/medinovaios/services/password-policy",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "medinovai-auto-enrollment",
+          "path": "/Users/dev1/github/medinovaios/services/medinovai-auto-enrollment",
+          "type": "python_service",
+          "status": "active"
+        },
+        {
+          "name": "safe-export-scheduler",
+          "path": "/Users/dev1/github/medinovaios/services/safe-export-scheduler",
+          "type": "python_service",
+          "status": "active"
+        },
+        {
+          "name": "sentiment-monitor",
+          "path": "/Users/dev1/github/medinovaios/services/sentiment-monitor",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "cardiology-monitoring",
+          "path": "/Users/dev1/github/medinovaios/services/cardiology-monitoring",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "certificate-management",
+          "path": "/Users/dev1/github/medinovaios/services/certificate-management",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "cost-estimation",
+          "path": "/Users/dev1/github/medinovaios/services/cost-estimation",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "telehealth",
+          "path": "/Users/dev1/github/medinovaios/services/telehealth",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "knowledge-management",
+          "path": "/Users/dev1/github/medinovaios/services/knowledge-management",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "periodic-safety-service",
+          "path": "/Users/dev1/github/medinovaios/services/periodic-safety-service",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "pharmacy",
+          "path": "/Users/dev1/github/medinovaios/services/pharmacy",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "secret-management",
+          "path": "/Users/dev1/github/medinovaios/services/secret-management",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "breach-notification",
+          "path": "/Users/dev1/github/medinovaios/services/breach-notification",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "training_data",
+          "path": "/Users/dev1/github/medinovaios/services/training_data",
+          "type": "python_service",
+          "status": "active"
+        },
+        {
+          "name": "unified-comm-hub",
+          "path": "/Users/dev1/github/medinovaios/services/unified-comm-hub",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "unified-auth-billing",
+          "path": "/Users/dev1/github/medinovaios/services/unified-auth-billing",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "medinovai-pharmacy",
+          "path": "/Users/dev1/github/medinovaios/services/medinovai-pharmacy",
+          "type": "python_service",
+          "status": "active"
+        },
+        {
+          "name": "healthcare-predictive-analytics",
+          "path": "/Users/dev1/github/medinovaios/services/healthcare-predictive-analytics",
+          "type": "python_service",
+          "status": "active"
+        },
+        {
+          "name": "model-risk-management-mrm-service",
+          "path": "/Users/dev1/github/medinovaios/services/model-risk-management-mrm-service",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "notification-gateway",
+          "path": "/Users/dev1/github/medinovaios/services/notification-gateway",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "dashboards-service",
+          "path": "/Users/dev1/github/medinovaios/services/dashboards-service",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "virtual-triage",
+          "path": "/Users/dev1/github/medinovaios/services/virtual-triage",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "patient-safety-monitoring",
+          "path": "/Users/dev1/github/medinovaios/services/patient-safety-monitoring",
+          "type": "python_service",
+          "status": "active"
+        },
+        {
+          "name": "module-development-service",
+          "path": "/Users/dev1/github/medinovaios/services/module-development-service",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "clinical-modules-config",
+          "path": "/Users/dev1/github/medinovaios/services/clinical-modules-config",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "outcome-prediction",
+          "path": "/Users/dev1/github/medinovaios/services/outcome-prediction",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "drug-interaction",
+          "path": "/Users/dev1/github/medinovaios/services/drug-interaction",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "voice-command",
+          "path": "/Users/dev1/github/medinovaios/services/voice-command",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "patient-authentication",
+          "path": "/Users/dev1/github/medinovaios/services/patient-authentication",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "architecture-and-implementation-sections-a-d-service",
+          "path": "/Users/dev1/github/medinovaios/services/architecture-and-implementation-sections-a-d-service",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "dicom-viewer",
+          "path": "/Users/dev1/github/medinovaios/services/dicom-viewer",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "policy-engine",
+          "path": "/Users/dev1/github/medinovaios/services/policy-engine",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "medical-imaging-ai",
+          "path": "/Users/dev1/github/medinovaios/services/medical-imaging-ai",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "document_ai_agent",
+          "path": "/Users/dev1/github/medinovaios/services/document_ai_agent",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "document-ai-service",
+          "path": "/Users/dev1/github/medinovaios/services/document-ai-service",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "business-rules",
+          "path": "/Users/dev1/github/medinovaios/services/business-rules",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "genomics",
+          "path": "/Users/dev1/github/medinovaios/services/genomics",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "wait-list",
+          "path": "/Users/dev1/github/medinovaios/services/wait-list",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "provider-communication",
+          "path": "/Users/dev1/github/medinovaios/services/provider-communication",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "task-management",
+          "path": "/Users/dev1/github/medinovaios/services/task-management",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "pass-service",
+          "path": "/Users/dev1/github/medinovaios/services/pass-service",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "mrm-service",
+          "path": "/Users/dev1/github/medinovaios/services/mrm-service",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "file-storage",
+          "path": "/Users/dev1/github/medinovaios/services/file-storage",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "notification-service",
+          "path": "/Users/dev1/github/medinovaios/services/notification-service",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "lis",
+          "path": "/Users/dev1/github/medinovaios/services/lis",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "mercury-enablement-ai",
+          "path": "/Users/dev1/github/medinovaios/services/mercury-enablement-ai",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "lab-order",
+          "path": "/Users/dev1/github/medinovaios/services/lab-order",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "mcp-triage-router",
+          "path": "/Users/dev1/github/medinovaios/services/mcp-triage-router",
+          "type": "python_service",
+          "status": "active"
+        },
+        {
+          "name": "notification-system",
+          "path": "/Users/dev1/github/medinovaios/services/notification-system",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "monitoring-dashboard",
+          "path": "/Users/dev1/github/medinovaios/services/monitoring-dashboard",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "canary-service",
+          "path": "/Users/dev1/github/medinovaios/services/canary-service",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "clinical-notes",
+          "path": "/Users/dev1/github/medinovaios/services/clinical-notes",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "patient-pharmacy",
+          "path": "/Users/dev1/github/medinovaios/services/patient-pharmacy",
+          "type": "python_service",
+          "status": "active"
+        },
+        {
+          "name": "configuration-management",
+          "path": "/Users/dev1/github/medinovaios/services/configuration-management",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "expert-system",
+          "path": "/Users/dev1/github/medinovaios/services/expert-system",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "voice-service",
+          "path": "/Users/dev1/github/medinovaios/services/voice-service",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "model-registry-lineage-service",
+          "path": "/Users/dev1/github/medinovaios/services/model-registry-lineage-service",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "task-kanban",
+          "path": "/Users/dev1/github/medinovaios/services/task-kanban",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "fax-service",
+          "path": "/Users/dev1/github/medinovaios/services/fax-service",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "deployment-manager",
+          "path": "/Users/dev1/github/medinovaios/services/deployment-manager",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "knowledge-graph",
+          "path": "/Users/dev1/github/medinovaios/services/knowledge-graph",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "healthcare-workflow-automation",
+          "path": "/Users/dev1/github/medinovaios/services/healthcare-workflow-automation",
+          "type": "python_service",
+          "status": "active"
+        },
+        {
+          "name": "monitoring-drift-data-quality-service",
+          "path": "/Users/dev1/github/medinovaios/services/monitoring-drift-data-quality-service",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "clinical-research-platform",
+          "path": "/Users/dev1/github/medinovaios/services/clinical-research-platform",
+          "type": "python_service",
+          "status": "active"
+        },
+        {
+          "name": "decision-support",
+          "path": "/Users/dev1/github/medinovaios/services/decision-support",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "model-cards-documentation-service",
+          "path": "/Users/dev1/github/medinovaios/services/model-cards-documentation-service",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "inventory-management",
+          "path": "/Users/dev1/github/medinovaios/services/inventory-management",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "life-services-router",
+          "path": "/Users/dev1/github/medinovaios/services/life-services-router",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "disaster-recovery-manager",
+          "path": "/Users/dev1/github/medinovaios/services/disaster-recovery-manager",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "fhir-gateway",
+          "path": "/Users/dev1/github/medinovaios/services/fhir-gateway",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "medinovai-platform",
+          "path": "/Users/dev1/github/medinovaios/services/medinovai-platform",
+          "type": "python_service",
+          "status": "active"
+        },
+        {
+          "name": "white-label",
+          "path": "/Users/dev1/github/medinovaios/services/white-label",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "clinical-trials-management",
+          "path": "/Users/dev1/github/medinovaios/services/clinical-trials-management",
+          "type": "python_service",
+          "status": "active"
+        },
+        {
+          "name": "capacity-planning",
+          "path": "/Users/dev1/github/medinovaios/services/capacity-planning",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "platform",
+          "path": "/Users/dev1/github/medinovaios/services/platform",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "etmf",
+          "path": "/Users/dev1/github/medinovaios/services/etmf",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "medinovai-complete-platform",
+          "path": "/Users/dev1/github/medinovaios/services/medinovai-complete-platform",
+          "type": "python_service",
+          "status": "active"
+        },
+        {
+          "name": "document-management",
+          "path": "/Users/dev1/github/medinovaios/services/document-management",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "chat-service",
+          "path": "/Users/dev1/github/medinovaios/services/chat-service",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "threat-detection",
+          "path": "/Users/dev1/github/medinovaios/services/threat-detection",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "pv-case-intake-triage-service",
+          "path": "/Users/dev1/github/medinovaios/services/pv-case-intake-triage-service",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "qa-agent",
+          "path": "/Users/dev1/github/medinovaios/services/qa-agent",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "resource-optimization",
+          "path": "/Users/dev1/github/medinovaios/services/resource-optimization",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "population-health",
+          "path": "/Users/dev1/github/medinovaios/services/population-health",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "vitals-ingest",
+          "path": "/Users/dev1/github/medinovaios/services/vitals-ingest",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "template",
+          "path": "/Users/dev1/github/medinovaios/services/template",
+          "type": "flask_service",
+          "status": "active"
+        },
+        {
+          "name": "emergency-medicine",
+          "path": "/Users/dev1/github/medinovaios/services/emergency-medicine",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "ocr",
+          "path": "/Users/dev1/github/medinovaios/services/ocr",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "complaints-service",
+          "path": "/Users/dev1/github/medinovaios/services/complaints-service",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "consent-vault-service",
+          "path": "/Users/dev1/github/medinovaios/services/consent-vault-service",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "sso-service",
+          "path": "/Users/dev1/github/medinovaios/services/sso-service",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "prior-authorization",
+          "path": "/Users/dev1/github/medinovaios/services/prior-authorization",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "guardrails-service",
+          "path": "/Users/dev1/github/medinovaios/services/guardrails-service",
+          "type": "python_service",
+          "status": "active"
+        },
+        {
+          "name": "patient-billing",
+          "path": "/Users/dev1/github/medinovaios/services/patient-billing",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "clinical-quality-metrics",
+          "path": "/Users/dev1/github/medinovaios/services/clinical-quality-metrics",
+          "type": "python_service",
+          "status": "active"
+        },
+        {
+          "name": "imaging",
+          "path": "/Users/dev1/github/medinovaios/services/imaging",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "drug-discovery-ai",
+          "path": "/Users/dev1/github/medinovaios/services/drug-discovery-ai",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "security_enhancements",
+          "path": "/Users/dev1/github/medinovaios/services/security_enhancements",
+          "type": "python_service",
+          "status": "active"
+        },
+        {
+          "name": "incident-management",
+          "path": "/Users/dev1/github/medinovaios/services/incident-management",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "medication-reconciliation",
+          "path": "/Users/dev1/github/medinovaios/services/medication-reconciliation",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "oncology-care",
+          "path": "/Users/dev1/github/medinovaios/services/oncology-care",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "doc-summarizer",
+          "path": "/Users/dev1/github/medinovaios/services/doc-summarizer",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "human-wellness-layer",
+          "path": "/Users/dev1/github/medinovaios/services/human-wellness-layer",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "shared",
+          "path": "/Users/dev1/github/medinovaios/services/shared",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "purpose-control-service",
+          "path": "/Users/dev1/github/medinovaios/services/purpose-control-service",
+          "type": "python_service",
+          "status": "active"
+        },
+        {
+          "name": "model-registry-service",
+          "path": "/Users/dev1/github/medinovaios/services/model-registry-service",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "incident-reporting",
+          "path": "/Users/dev1/github/medinovaios/services/incident-reporting",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "snapshot-service",
+          "path": "/Users/dev1/github/medinovaios/services/snapshot-service",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "consent-integration-guide",
+          "path": "/Users/dev1/github/medinovaios/services/consent-integration-guide",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "medinfo-service",
+          "path": "/Users/dev1/github/medinovaios/services/medinfo-service",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "telehealth-platform",
+          "path": "/Users/dev1/github/medinovaios/services/telehealth-platform",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "text-to-speech",
+          "path": "/Users/dev1/github/medinovaios/services/text-to-speech",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "meddata-nexus",
+          "path": "/Users/dev1/github/medinovaios/services/meddata-nexus",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "privacy-deid-gateway",
+          "path": "/Users/dev1/github/medinovaios/services/privacy-deid-gateway",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "simple-health-service",
+          "path": "/Users/dev1/github/medinovaios/services/simple-health-service",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "dsur-service",
+          "path": "/Users/dev1/github/medinovaios/services/dsur-service",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "compliance-audit",
+          "path": "/Users/dev1/github/medinovaios/services/compliance-audit",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "capa-qms-service",
+          "path": "/Users/dev1/github/medinovaios/services/capa-qms-service",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "restore-service",
+          "path": "/Users/dev1/github/medinovaios/services/restore-service",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "subscription",
+          "path": "/Users/dev1/github/medinovaios/services/subscription",
+          "type": "flask_service",
+          "status": "active"
+        },
+        {
+          "name": "change-control-board-ccb-orchestration-service",
+          "path": "/Users/dev1/github/medinovaios/services/change-control-board-ccb-orchestration-service",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "readme-service",
+          "path": "/Users/dev1/github/medinovaios/services/readme-service",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "consent-management",
+          "path": "/Users/dev1/github/medinovaios/services/consent-management",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "monitoring-service",
+          "path": "/Users/dev1/github/medinovaios/services/monitoring-service",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "fraud-detection",
+          "path": "/Users/dev1/github/medinovaios/services/fraud-detection",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "pathology",
+          "path": "/Users/dev1/github/medinovaios/services/pathology",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "healthcare-blockchain",
+          "path": "/Users/dev1/github/medinovaios/services/healthcare-blockchain",
+          "type": "python_service",
+          "status": "active"
+        },
+        {
+          "name": "personal-assistant",
+          "path": "/Users/dev1/github/medinovaios/services/personal-assistant",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "medinovai-clinical-suite",
+          "path": "/Users/dev1/github/medinovaios/services/medinovai-clinical-suite",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "platform-orchestrator",
+          "path": "/Users/dev1/github/medinovaios/services/platform-orchestrator",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "consent-api",
+          "path": "/Users/dev1/github/medinovaios/services/consent-api",
+          "type": "python_service",
+          "status": "active"
+        },
+        {
+          "name": "bias-fairness-explainability-service",
+          "path": "/Users/dev1/github/medinovaios/services/bias-fairness-explainability-service",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "key-management",
+          "path": "/Users/dev1/github/medinovaios/services/key-management",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "mcp-healthcare-data",
+          "path": "/Users/dev1/github/medinovaios/services/mcp-healthcare-data",
+          "type": "python_service",
+          "status": "active"
+        },
+        {
+          "name": "field-actions-recalls-service",
+          "path": "/Users/dev1/github/medinovaios/services/field-actions-recalls-service",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "vulnerability-scanning",
+          "path": "/Users/dev1/github/medinovaios/services/vulnerability-scanning",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "genomics-analysis",
+          "path": "/Users/dev1/github/medinovaios/services/genomics-analysis",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "clinical-education",
+          "path": "/Users/dev1/github/medinovaios/services/clinical-education",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "surgery-scheduling",
+          "path": "/Users/dev1/github/medinovaios/services/surgery-scheduling",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "ctms",
+          "path": "/Users/dev1/github/medinovaios/services/ctms",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "encryption-service",
+          "path": "/Users/dev1/github/medinovaios/services/encryption-service",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "pharmacy-integration",
+          "path": "/Users/dev1/github/medinovaios/services/pharmacy-integration",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "tokenization-vault",
+          "path": "/Users/dev1/github/medinovaios/services/tokenization-vault",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "online-evaluation-canary-service",
+          "path": "/Users/dev1/github/medinovaios/services/online-evaluation-canary-service",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "capa-deviation-management-service",
+          "path": "/Users/dev1/github/medinovaios/services/capa-deviation-management-service",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "telemedicine-platform",
+          "path": "/Users/dev1/github/medinovaios/services/telemedicine-platform",
+          "type": "python_service",
+          "status": "active"
+        },
+        {
+          "name": "content-translator",
+          "path": "/Users/dev1/github/medinovaios/services/content-translator",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "clinical-workflows",
+          "path": "/Users/dev1/github/medinovaios/services/clinical-workflows",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "procurement",
+          "path": "/Users/dev1/github/medinovaios/services/procurement",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "clinical-pathways",
+          "path": "/Users/dev1/github/medinovaios/services/clinical-pathways",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "predictive-maintenance",
+          "path": "/Users/dev1/github/medinovaios/services/predictive-maintenance",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "medinovai-billing",
+          "path": "/Users/dev1/github/medinovaios/services/medinovai-billing",
+          "type": "python_service",
+          "status": "active"
+        },
+        {
+          "name": "directory-service",
+          "path": "/Users/dev1/github/medinovaios/services/directory-service",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "pediatric-care",
+          "path": "/Users/dev1/github/medinovaios/services/pediatric-care",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "performance-monitoring",
+          "path": "/Users/dev1/github/medinovaios/services/performance-monitoring",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "medinovai_env",
+          "path": "/Users/dev1/github/medinovaios/services/medinovai_env",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "myonsite-healthcare-repos",
+          "path": "/Users/dev1/github/medinovaios/services/myonsite-healthcare-repos",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "icsr-gateway-service",
+          "path": "/Users/dev1/github/medinovaios/services/icsr-gateway-service",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "literature-service",
+          "path": "/Users/dev1/github/medinovaios/services/literature-service",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "differential-privacy-engine",
+          "path": "/Users/dev1/github/medinovaios/services/differential-privacy-engine",
+          "type": "python_service",
+          "status": "active"
+        },
+        {
+          "name": "breach-detection",
+          "path": "/Users/dev1/github/medinovaios/services/breach-detection",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "nlp",
+          "path": "/Users/dev1/github/medinovaios/services/nlp",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "field-actions-service",
+          "path": "/Users/dev1/github/medinovaios/services/field-actions-service",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "vendor-management",
+          "path": "/Users/dev1/github/medinovaios/services/vendor-management",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "imaging-viewer",
+          "path": "/Users/dev1/github/medinovaios/services/imaging-viewer",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "patient-demographics",
+          "path": "/Users/dev1/github/medinovaios/services/patient-demographics",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "log-aggregation",
+          "path": "/Users/dev1/github/medinovaios/services/log-aggregation",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "legal-hold",
+          "path": "/Users/dev1/github/medinovaios/services/legal-hold",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "pharmacy-management",
+          "path": "/Users/dev1/github/medinovaios/services/pharmacy-management",
+          "type": "python_service",
+          "status": "active"
+        },
+        {
+          "name": "pms-pmcf-service",
+          "path": "/Users/dev1/github/medinovaios/services/pms-pmcf-service",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "image-archive",
+          "path": "/Users/dev1/github/medinovaios/services/image-archive",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "xai-service",
+          "path": "/Users/dev1/github/medinovaios/services/xai-service",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "care-team",
+          "path": "/Users/dev1/github/medinovaios/services/care-team",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "medical-information-mi-requests-service",
+          "path": "/Users/dev1/github/medinovaios/services/medical-information-mi-requests-service",
+          "type": "python_service",
+          "status": "active"
+        },
+        {
+          "name": "service-discovery",
+          "path": "/Users/dev1/github/medinovaios/services/service-discovery",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "ui-shell",
+          "path": "/Users/dev1/github/medinovaios/services/ui-shell",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "vital-signs",
+          "path": "/Users/dev1/github/medinovaios/services/vital-signs",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "consent-authorization-service",
+          "path": "/Users/dev1/github/medinovaios/services/consent-authorization-service",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "sandbox-environment",
+          "path": "/Users/dev1/github/medinovaios/services/sandbox-environment",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "supply-chain",
+          "path": "/Users/dev1/github/medinovaios/services/supply-chain",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "medication-concierge",
+          "path": "/Users/dev1/github/medinovaios/services/medication-concierge",
+          "type": "python_service",
+          "status": "active"
+        },
+        {
+          "name": "phi-protection",
+          "path": "/Users/dev1/github/medinovaios/services/phi-protection",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "medication",
+          "path": "/Users/dev1/github/medinovaios/services/medication",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "patient-onboarding",
+          "path": "/Users/dev1/github/medinovaios/services/patient-onboarding",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "delegation-gateway-sidecar",
+          "path": "/Users/dev1/github/medinovaios/services/delegation-gateway-sidecar",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "drift-detect-service",
+          "path": "/Users/dev1/github/medinovaios/services/drift-detect-service",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "certificate-authority",
+          "path": "/Users/dev1/github/medinovaios/services/certificate-authority",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "product-quality-device-complaints-service",
+          "path": "/Users/dev1/github/medinovaios/services/product-quality-device-complaints-service",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "lab-results",
+          "path": "/Users/dev1/github/medinovaios/services/lab-results",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "healthcare-ai-assistant",
+          "path": "/Users/dev1/github/medinovaios/services/healthcare-ai-assistant",
+          "type": "python_service",
+          "status": "active"
+        },
+        {
+          "name": "clinical-decision-test",
+          "path": "/Users/dev1/github/medinovaios/services/clinical-decision-test",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "literature-surveillance-service",
+          "path": "/Users/dev1/github/medinovaios/services/literature-surveillance-service",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "health-timeline",
+          "path": "/Users/dev1/github/medinovaios/services/health-timeline",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "insurance-verification",
+          "path": "/Users/dev1/github/medinovaios/services/insurance-verification",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "quality-reporting",
+          "path": "/Users/dev1/github/medinovaios/services/quality-reporting",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "penetration-testing",
+          "path": "/Users/dev1/github/medinovaios/services/penetration-testing",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "e-prescribe",
+          "path": "/Users/dev1/github/medinovaios/services/e-prescribe",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "healthcare_platform",
+          "path": "/Users/dev1/github/medinovaios/services/healthcare_platform",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "pathology-results",
+          "path": "/Users/dev1/github/medinovaios/services/pathology-results",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "push-service",
+          "path": "/Users/dev1/github/medinovaios/services/push-service",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "reporting-engine",
+          "path": "/Users/dev1/github/medinovaios/services/reporting-engine",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "medinovai-ai-standards",
+          "path": "/Users/dev1/github/medinovaios/services/medinovai-ai-standards",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "clinical-trial-management",
+          "path": "/Users/dev1/github/medinovaios/services/clinical-trial-management",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "revocation-hook-service",
+          "path": "/Users/dev1/github/medinovaios/services/revocation-hook-service",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "keycloak-integration",
+          "path": "/Users/dev1/github/medinovaios/services/keycloak-integration",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "pv-case-service",
+          "path": "/Users/dev1/github/medinovaios/services/pv-case-service",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "user-provisioning",
+          "path": "/Users/dev1/github/medinovaios/services/user-provisioning",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "mfa-service",
+          "path": "/Users/dev1/github/medinovaios/services/mfa-service",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "engineering-compliance",
+          "path": "/Users/dev1/github/medinovaios/services/engineering-compliance",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "tracing-service",
+          "path": "/Users/dev1/github/medinovaios/services/tracing-service",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "lab-router",
+          "path": "/Users/dev1/github/medinovaios/services/lab-router",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "identity-provider",
+          "path": "/Users/dev1/github/medinovaios/services/identity-provider",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "identity-management",
+          "path": "/Users/dev1/github/medinovaios/services/identity-management",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "patient-imaging",
+          "path": "/Users/dev1/github/medinovaios/services/patient-imaging",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "provider-credentialing",
+          "path": "/Users/dev1/github/medinovaios/services/provider-credentialing",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "icsr-authoring-gateway-e2b-r3-service",
+          "path": "/Users/dev1/github/medinovaios/services/icsr-authoring-gateway-e2b-r3-service",
+          "type": "unknown",
+          "status": "active"
+        }
+      ],
+      "service_count": 217
+    },
+    "medinovai-security": {
+      "path": "/Users/dev1/github/medinovai-security",
+      "services": [
+        {
+          "name": "visualization-service",
+          "path": "/Users/dev1/github/medinovai-security/services/visualization-service",
+          "type": "nodejs_service",
+          "status": "active"
+        },
+        {
+          "name": "policy-engine",
+          "path": "/Users/dev1/github/medinovai-security/services/policy-engine",
+          "type": "nodejs_service",
+          "status": "active"
+        },
+        {
+          "name": "ollama-service",
+          "path": "/Users/dev1/github/medinovai-security/services/ollama-service",
+          "type": "nodejs_service",
+          "status": "active"
+        },
+        {
+          "name": "tenant-onboarding",
+          "path": "/Users/dev1/github/medinovai-security/services/tenant-onboarding",
+          "type": "nodejs_service",
+          "status": "active"
+        },
+        {
+          "name": "token-validator",
+          "path": "/Users/dev1/github/medinovai-security/services/token-validator",
+          "type": "nodejs_service",
+          "status": "active"
+        },
+        {
+          "name": "websocket-service",
+          "path": "/Users/dev1/github/medinovai-security/services/websocket-service",
+          "type": "nodejs_service",
+          "status": "active"
+        },
+        {
+          "name": "audit-service",
+          "path": "/Users/dev1/github/medinovai-security/services/audit-service",
+          "type": "nodejs_service",
+          "status": "active"
+        }
+      ],
+      "service_count": 7
+    },
+    "medinovai-data-services": {
+      "path": "/Users/dev1/github/medinovai-data-services",
+      "services": [
+        {
+          "name": "data-warehouse",
+          "path": "/Users/dev1/github/medinovai-data-services/services/data-warehouse",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "data-analytics",
+          "path": "/Users/dev1/github/medinovai-data-services/services/data-analytics",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "data-catalog",
+          "path": "/Users/dev1/github/medinovai-data-services/services/data-catalog",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "behavioral-analytics",
+          "path": "/Users/dev1/github/medinovai-data-services/services/behavioral-analytics",
+          "type": "python_service",
+          "status": "active"
+        },
+        {
+          "name": "healthcare-cost-analytics",
+          "path": "/Users/dev1/github/medinovai-data-services/services/healthcare-cost-analytics",
+          "type": "python_service",
+          "status": "active"
+        },
+        {
+          "name": "data-services",
+          "path": "/Users/dev1/github/medinovai-data-services/services/data-services",
+          "type": "nodejs_service",
+          "status": "active"
+        },
+        {
+          "name": "business-intelligence",
+          "path": "/Users/dev1/github/medinovai-data-services/services/business-intelligence",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "data-retention",
+          "path": "/Users/dev1/github/medinovai-data-services/services/data-retention",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "data-governance",
+          "path": "/Users/dev1/github/medinovai-data-services/services/data-governance",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "metrics-collector",
+          "path": "/Users/dev1/github/medinovai-data-services/services/metrics-collector",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "metrics-service",
+          "path": "/Users/dev1/github/medinovai-data-services/services/metrics-service",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "data-lineage",
+          "path": "/Users/dev1/github/medinovai-data-services/services/data-lineage",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "advanced-analytics",
+          "path": "/Users/dev1/github/medinovai-data-services/services/advanced-analytics",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "healthcare-analytics-dashboard",
+          "path": "/Users/dev1/github/medinovai-data-services/services/healthcare-analytics-dashboard",
+          "type": "python_service",
+          "status": "active"
+        },
+        {
+          "name": "data-sync",
+          "path": "/Users/dev1/github/medinovai-data-services/services/data-sync",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "real-time-analytics",
+          "path": "/Users/dev1/github/medinovai-data-services/services/real-time-analytics",
+          "type": "unknown",
+          "status": "active"
+        }
+      ],
+      "service_count": 16
+    },
+    "automarketingpro": {
+      "path": "/Users/dev1/github/automarketingpro",
+      "services": [],
+      "service_count": 0
+    },
+    "personalassistant": {
+      "path": "/Users/dev1/github/personalassistant",
+      "services": [],
+      "service_count": 0
+    },
+    "medinovai-Developer": {
+      "path": "/Users/dev1/github/medinovai-Developer",
+      "services": [
+        {
+          "name": "ai-orchestration",
+          "path": "/Users/dev1/github/medinovai-Developer/services/ai-orchestration",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "ai-agents",
+          "path": "/Users/dev1/github/medinovai-Developer/services/ai-agents",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "ai-learning",
+          "path": "/Users/dev1/github/medinovai-Developer/services/ai-learning",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "ai-guidance",
+          "path": "/Users/dev1/github/medinovai-Developer/services/ai-guidance",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "ai-integration",
+          "path": "/Users/dev1/github/medinovai-Developer/services/ai-integration",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "maads-engine",
+          "path": "/Users/dev1/github/medinovai-Developer/services/maads-engine",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "ai-monitoring",
+          "path": "/Users/dev1/github/medinovai-Developer/services/ai-monitoring",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "monitoring",
+          "path": "/Users/dev1/github/medinovai-Developer/services/monitoring",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "ai-optimization",
+          "path": "/Users/dev1/github/medinovai-Developer/services/ai-optimization",
+          "type": "unknown",
+          "status": "active"
+        },
+        {
+          "name": "agent-mesh",
+          "path": "/Users/dev1/github/medinovai-Developer/services/agent-mesh",
+          "type": "python_service",
+          "status": "active"
+        },
+        {
+          "name": "ai-context",
+          "path": "/Users/dev1/github/medinovai-Developer/services/ai-context",
+          "type": "unknown",
+          "status": "active"
+        }
+      ],
+      "service_count": 11
+    }
+  }
+}

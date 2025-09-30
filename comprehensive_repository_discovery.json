@@ -24,7 +24,7 @@
       "primary_language": "YAML"
     },
     {
-      "name": "MedinovAI-AI-Standards", 
+      "name": "MedinovAI-AI-Standards",
       "url": "https://github.com/myonsite-healthcare/MedinovAI-AI-Standards",
       "tier": 1,
       "complexity": "high",
@@ -34,7 +34,7 @@
     },
     {
       "name": "medinovaios",
-      "url": "https://github.com/myonsite-healthcare/medinovaios", 
+      "url": "https://github.com/myonsite-healthcare/medinovaios",
       "tier": 1,
       "complexity": "high",
       "source": "github",
@@ -44,7 +44,7 @@
     {
       "name": "manus-consolidation-platform",
       "url": "https://github.com/myonsite-healthcare/manus-consolidation-platform",
-      "tier": 1, 
+      "tier": 1,
       "complexity": "high",
       "source": "github",
       "description": "Platform consolidation services",
@@ -69,7 +69,7 @@
       "url": "https://github.com/myonsite-healthcare/medinovai-credentialimg",
       "tier": 2,
       "complexity": "medium",
-      "source": "github", 
+      "source": "github",
       "description": "Credential image processing service",
       "primary_language": "Python"
     },
@@ -79,14 +79,14 @@
       "tier": 2,
       "complexity": "high",
       "source": "github",
-      "description": "Security and encryption services", 
+      "description": "Security and encryption services",
       "primary_language": "Python"
     },
     {
       "name": "ComplianceManus",
       "url": "https://github.com/myonsite-healthcare/ComplianceManus",
       "tier": 2,
-      "complexity": "high", 
+      "complexity": "high",
       "source": "github",
       "description": "Compliance monitoring and reporting",
       "primary_language": "JavaScript"
@@ -101,7 +101,7 @@
       "primary_language": "Python"
     },
     {
-      "name": "dataOfficer", 
+      "name": "dataOfficer",
       "url": "https://github.com/myonsite-healthcare/dataOfficer",
       "tier": 3,
       "complexity": "medium",
@@ -114,7 +114,7 @@
       "url": "https://github.com/myonsite-healthcare/MedinovAI-Chatbot",
       "tier": 4,
       "complexity": "high",
-      "source": "github", 
+      "source": "github",
       "description": "Primary chatbot implementation with embedded LLM",
       "primary_language": "Python"
     },
@@ -129,7 +129,7 @@
     },
     {
       "name": "AutoBidPro",
-      "url": "https://github.com/myonsite-healthcare/AutoBidPro", 
+      "url": "https://github.com/myonsite-healthcare/AutoBidPro",
       "tier": 5,
       "complexity": "high",
       "source": "github",
@@ -142,7 +142,7 @@
       "tier": 5,
       "complexity": "high",
       "source": "github",
-      "description": "Automated marketing platform", 
+      "description": "Automated marketing platform",
       "primary_language": "Python"
     },
     {
@@ -157,7 +157,7 @@
     {
       "name": "autobidpro",
       "url": "https://github.com/myonsite-healthcare/autobidpro",
-      "tier": 5, 
+      "tier": 5,
       "complexity": "high",
       "source": "github",
       "description": "Automated bidding platform v2",
@@ -174,7 +174,7 @@
     },
     {
       "name": "personalassistant",
-      "url": "https://github.com/myonsite-healthcare/personalassistant", 
+      "url": "https://github.com/myonsite-healthcare/personalassistant",
       "tier": 8,
       "complexity": "medium",
       "source": "github",
@@ -194,7 +194,7 @@
       "name": "medinovai-Developer",
       "url": "https://github.com/myonsite-healthcare/medinovai-Developer",
       "tier": 8,
-      "complexity": "medium", 
+      "complexity": "medium",
       "source": "github",
       "description": "Development tools and utilities",
       "primary_language": "Python"

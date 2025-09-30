@@ -425,3 +425,4 @@ if __name__ == "__main__":
     # discovery = GitHubPATDiscovery(pat_token="your_pat_token_here")
     discovery = GitHubPATDiscovery()
     report = discovery.run_discovery()
+

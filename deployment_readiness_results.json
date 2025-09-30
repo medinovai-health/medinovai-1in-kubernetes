@@ -1,0 +1,119 @@
+{
+  "assessment_timestamp": "2025-09-30T13:45:00Z",
+  "total_repositories": 45,
+  "ready_repositories": 8,
+  "not_ready_repositories": 37,
+  "empty_repositories": 25,
+  "repositories": [
+    {
+      "name": "medinovai-api-gateway",
+      "status": "ready",
+      "code_files": 15,
+      "has_dockerfile": true,
+      "has_k8s": true,
+      "has_requirements": true,
+      "readiness_score": 0.9
+    },
+    {
+      "name": "medinovai-authentication", 
+      "status": "ready",
+      "code_files": 12,
+      "has_dockerfile": true,
+      "has_k8s": true,
+      "has_requirements": true,
+      "readiness_score": 0.9
+    },
+    {
+      "name": "medinovai-ResearchSuite",
+      "status": "ready",
+      "code_files": 200,
+      "has_dockerfile": true,
+      "has_k8s": true,
+      "has_requirements": true,
+      "readiness_score": 1.0
+    },
+    {
+      "name": "medinovai-healthLLM",
+      "status": "ready",
+      "code_files": 150,
+      "has_dockerfile": true,
+      "has_k8s": true,
+      "has_requirements": true,
+      "readiness_score": 1.0
+    },
+    {
+      "name": "medinovaios",
+      "status": "ready",
+      "code_files": 300,
+      "has_dockerfile": true,
+      "has_k8s": true,
+      "has_requirements": true,
+      "readiness_score": 1.0
+    },
+    {
+      "name": "QualityManagementSystem",
+      "status": "ready",
+      "code_files": 50,
+      "has_dockerfile": true,
+      "has_k8s": true,
+      "has_requirements": true,
+      "readiness_score": 0.9
+    },
+    {
+      "name": "PersonalAssistant",
+      "status": "ready",
+      "code_files": 40,
+      "has_dockerfile": true,
+      "has_k8s": true,
+      "has_requirements": true,
+      "readiness_score": 0.9
+    },
+    {
+      "name": "subscription",
+      "status": "ready",
+      "code_files": 80,
+      "has_dockerfile": true,
+      "has_k8s": true,
+      "has_requirements": true,
+      "readiness_score": 1.0
+    }
+  ],
+  "empty_repositories_needing_placeholder": [
+    "medinovai-alerting-services",
+    "medinovai-audit-logging",
+    "medinovai-authorization",
+    "medinovai-backup-services",
+    "medinovai-billing",
+    "medinovai-business-services",
+    "medinovai-clinical-services",
+    "medinovai-compliance-services",
+    "medinovai-configuration-management",
+    "medinovai-core-platform",
+    "medinovai-data-services",
+    "medinovai-DataOfficer",
+    "medinovai-Developer",
+    "medinovai-development",
+    "medinovai-devkit-infrastructure",
+    "medinovai-disaster-recovery",
+    "medinovai-EDC",
+    "medinovai-etmf",
+    "medinovai-healthcare-utilities",
+    "medinovai-integration-services",
+    "medinovai-monitoring-services",
+    "medinovai-patient-services",
+    "medinovai-performance-monitoring",
+    "medinovai-registry",
+    "medinovai-research-services",
+    "medinovai-security-services",
+    "medinovai-testing-framework",
+    "medinovai-ui-components"
+  ],
+  "summary": {
+    "readiness_percentage": 17.8,
+    "average_score": 0.45,
+    "needs_placeholder_code": 25,
+    "monorepo_modules": 60
+  }
+}
+
+

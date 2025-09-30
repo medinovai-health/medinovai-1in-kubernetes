@@ -537,3 +537,4 @@ if __name__ == "__main__":
     print(f"Average Score: {results['platform_summary']['average_score']:.2f}/10")
     print(f"Total Iterations: {results['platform_summary']['total_iterations']}")
     print(f"\n📄 Detailed results saved to: comprehensive_platform_evaluation.json")
+

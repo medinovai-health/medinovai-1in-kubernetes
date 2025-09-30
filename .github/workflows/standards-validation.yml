@@ -1,0 +1,28 @@
+name: Standards Validation
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  validate-standards:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Validate MedinovAI Standards
+      run: |
+        python scripts/validate-standards.py
+    
+    - name: Check registry integration
+      run: |
+        test -f .medinovai/registry-config.yml
+        test -f .medinovai/data-services-config.yml
+        test -f .medinovai/standards.yml
+    
+    - name: Validate Dockerfile
+      run: |
+        docker run --rm -i hadolint/hadolint < Dockerfile

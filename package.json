@@ -1,6 +1,6 @@
 {
   "name": "medinovai-infrastructure-validation",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "MedinovAI Infrastructure Validation with Agent Swarms and Playwright Tests",
   "main": "index.js",
   "scripts": {

@@ -1,0 +1,132 @@
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: medinovai-researchsuite
+  namespace: medinovai
+spec:
+  hosts:
+  - "research.medinovai.local"
+  gateways:
+  - istio-system/medinovai-gateway
+  http:
+  # Clinical Decision Support
+  - match:
+    - uri:
+        prefix: /research/cds/
+    route:
+    - destination:
+        host: researchsuite-cds.medinovai.svc.cluster.local
+        port:
+          number: 8081
+
+  # Clinical Trial Management System
+  - match:
+    - uri:
+        prefix: /research/ctms/
+    route:
+    - destination:
+        host: researchsuite-ctms.medinovai.svc.cluster.local
+        port:
+          number: 8082
+
+  # Electronic Consent
+  - match:
+    - uri:
+        prefix: /research/econsent/
+    route:
+    - destination:
+        host: researchsuite-econsent.medinovai.svc.cluster.local
+        port:
+          number: 8083
+
+  # Electronic Data Capture
+  - match:
+    - uri:
+        prefix: /research/edc/
+    route:
+    - destination:
+        host: researchsuite-edc.medinovai.svc.cluster.local
+        port:
+          number: 8084
+
+  # Electronic Patient Reported Outcomes
+  - match:
+    - uri:
+        prefix: /research/epro/
+    route:
+    - destination:
+        host: researchsuite-epro.medinovai.svc.cluster.local
+        port:
+          number: 8085
+
+  # Electronic Source Data
+  - match:
+    - uri:
+        prefix: /research/esource/
+    route:
+    - destination:
+        host: researchsuite-esource.medinovai.svc.cluster.local
+        port:
+          number: 8086
+
+  # Electronic Trial Master File
+  - match:
+    - uri:
+        prefix: /research/etmf/
+    route:
+    - destination:
+        host: researchsuite-etmf.medinovai.svc.cluster.local
+        port:
+          number: 8087
+
+  # Interactive Web Response System
+  - match:
+    - uri:
+        prefix: /research/iwrs/
+    route:
+    - destination:
+        host: researchsuite-iwrs.medinovai.svc.cluster.local
+        port:
+          number: 8088
+
+  # Patient Matching Service
+  - match:
+    - uri:
+        prefix: /research/patient-matching/
+    route:
+    - destination:
+        host: researchsuite-patient-matching.medinovai.svc.cluster.local
+        port:
+          number: 8089
+
+  # Risk-Based Monitoring
+  - match:
+    - uri:
+        prefix: /research/rbm/
+    route:
+    - destination:
+        host: researchsuite-rbm.medinovai.svc.cluster.local
+        port:
+          number: 8090
+
+---
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: researchsuite-destination-rule
+  namespace: medinovai
+spec:
+  host: "*.medinovai.svc.cluster.local"
+  trafficPolicy:
+    connectionPool:
+      tcp:
+        maxConnections: 100
+      http:
+        http1MaxPendingRequests: 50
+        maxRequestsPerConnection: 2
+    circuitBreaker:
+      consecutiveErrors: 3
+      interval: 30s
+      baseEjectionTime: 30s
+
+

@@ -1,0 +1,82 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: medinovai-monitoring-config
+  namespace: medinovai
+data:
+  prometheus-rules.yaml: |
+    groups:
+    - name: medinovai-services
+      rules:
+      - alert: HighCPUUsage
+        expr: rate(container_cpu_usage_seconds_total[5m]) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage detected"
+          description: "Service {{ $labels.service }} has high CPU usage"
+      
+      - alert: HighMemoryUsage
+        expr: container_memory_usage_bytes / container_spec_memory_limit_bytes > 0.85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage detected"
+          description: "Service {{ $labels.service }} has high memory usage"
+      
+      - alert: ServiceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Service is down"
+          description: "Service {{ $labels.service }} is not responding"
+  
+  grafana-dashboards.yaml: |
+    apiVersion: v1
+    kind: ConfigMap
+    metadata:
+      name: medinovai-dashboards
+      namespace: medinovai
+    data:
+      medinovai-overview.json: |
+        {
+          "dashboard": {
+            "title": "MedinovAI Services Overview",
+            "panels": [
+              {
+                "title": "Service Health",
+                "type": "stat",
+                "targets": [
+                  {
+                    "expr": "up",
+                    "legendFormat": "{{ service }}"
+                  }
+                ]
+              },
+              {
+                "title": "Request Rate",
+                "type": "graph",
+                "targets": [
+                  {
+                    "expr": "rate(http_requests_total[5m])",
+                    "legendFormat": "{{ service }}"
+                  }
+                ]
+              },
+              {
+                "title": "Response Time",
+                "type": "graph",
+                "targets": [
+                  {
+                    "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))",
+                    "legendFormat": "{{ service }}"
+                  }
+                ]
+              }
+            ]
+          }
+        }

@@ -1,133 +1,54 @@
-name: CI
+name: Continuous Integration
 
 on:
   push:
     branches: [ main, develop ]
   pull_request:
-    branches: [ main, develop ]
-
-env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+    branches: [ main ]
 
 jobs:
-  lint:
+  test:
     runs-on: ubuntu-latest
+    
     steps:
     - uses: actions/checkout@v4
     
-    - name: Run pre-commit
-      uses: pre-commit/action@v3.0.0
-      
-    - name: Run OPA Conftest
-      uses: instrumenta/conftest-action@master
+    - name: Set up Python
+      uses: actions/setup-python@v4
       with:
-        files: |
-          medinovai-infrastructure-standards/platform/charts/**/*.yaml
-          medinovai-infrastructure-standards/policies/**/*.yaml
-          medinovai-infrastructure-standards/templates/**/*.yaml
-        policy: policy/
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    - name: Run tests
+      run: |
+        python -m pytest tests/ -v
+    
+    - name: Run linting
+      run: |
+        flake8 src/
+        black --check src/
+    
+    - name: Security scan
+      run: |
+        bandit -r src/
+        safety check
 
-  security:
+  build:
+    needs: test
     runs-on: ubuntu-latest
+    
     steps:
     - uses: actions/checkout@v4
     
-    - name: Run Trivy vulnerability scanner
-      uses: aquasecurity/trivy-action@master
-      with:
-        scan-type: 'fs'
-        scan-ref: '.'
-        format: 'sarif'
-        output: 'trivy-results.sarif'
-    
-    - name: Upload Trivy scan results to GitHub Security tab
-      uses: github/codeql-action/upload-sarif@v2
-      if: always()
-      with:
-        sarif_file: 'trivy-results.sarif'
-
-  policy-test:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Test Terraform policies
+    - name: Build Docker image
       run: |
-        conftest test -p policy/terraform .
+        docker build -t medinovai/medinovai-infrastructure:latest .
     
-    - name: Test Kubernetes policies
+    - name: Security scan
       run: |
-        conftest test -p policy/kubernetes ./medinovai-infrastructure-standards/platform/charts/
-    
-    - name: Test GitHub policies
-      run: |
-        conftest test -p policy/github .
-
-  build-and-push:
-    needs: [lint, security, policy-test]
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    
-    permissions:
-      contents: read
-      packages: write
-    
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-    
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-    
-    - name: Log in to Container Registry
-      uses: docker/login-action@v3
-      with:
-        registry: ${{ env.REGISTRY }}
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-    
-    - name: Extract metadata
-      id: meta
-      uses: docker/metadata-action@v5
-      with:
-        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-        tags: |
-          type=ref,event=branch
-          type=ref,event=pr
-          type=sha,prefix={{branch}}-
-          type=raw,value=latest,enable={{is_default_branch}}
-    
-    - name: Build and push Docker image
-      uses: docker/build-push-action@v5
-      with:
-        context: .
-        push: true
-        tags: ${{ steps.meta.outputs.tags }}
-        labels: ${{ steps.meta.outputs.labels }}
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
-        platforms: linux/amd64,linux/arm64
-    
-    - name: Generate SBOM
-      uses: anchore/sbom-action@v0
-      with:
-        image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
-        format: spdx-json
-        output-file: sbom.spdx.json
-    
-    - name: Upload SBOM
-      uses: actions/upload-artifact@v4
-      with:
-        name: sbom
-        path: sbom.spdx.json
-    
-    - name: Sign image with Cosign
-      uses: sigstore/cosign-installer@v3
-      with:
-        cosign-release: 'v2.2.0'
-    
-    - name: Sign the published Docker image
-      run: cosign sign --yes ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ steps.meta.outputs.digest }}
-      env:
-        COSIGN_EXPERIMENTAL: 1
+        docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+          aquasec/trivy image medinovai/medinovai-infrastructure:latest

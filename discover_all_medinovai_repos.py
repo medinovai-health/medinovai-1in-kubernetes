@@ -198,3 +198,4 @@ if __name__ == "__main__":
     print(f"\nCategory Breakdown:")
     for category, count in report['categories'].items():
         print(f"  {category}: {count}")
+

@@ -1,0 +1,60 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: medinovai-service-discovery
+  namespace: medinovai
+data:
+  discovery-config.yaml: |
+    repositories:
+      - name: medinovai-infrastructure
+        tier: 1
+        services: 4
+        type: infrastructure
+      - name: medinovai-AI-standards
+        tier: 2
+        services: 27
+        type: ai_services
+      - name: medinovai-clinical-services
+        tier: 2
+        services: 27
+        type: clinical_services
+      - name: medinovai-security-services
+        tier: 2
+        services: 24
+        type: security_services
+      - name: medinovai-data-services
+        tier: 2
+        services: 16
+        type: data_services
+      - name: medinovai-integration-services
+        tier: 2
+        services: 17
+        type: integration_services
+      - name: medinovai-patient-services
+        tier: 2
+        services: 7
+        type: patient_services
+      - name: medinovai-billing
+        tier: 2
+        services: 4
+        type: billing_services
+      - name: medinovai-compliance-services
+        tier: 2
+        services: 7
+        type: compliance_services
+      - name: medinovai-ui-components
+        tier: 2
+        services: 0
+        type: ui_services
+      - name: medinovai-healthcare-utilities
+        tier: 2
+        services: 9
+        type: utility_services
+      - name: medinovai-business-services
+        tier: 2
+        services: 0
+        type: business_services
+      - name: medinovai-research-services
+        tier: 2
+        services: 2
+        type: research_services
