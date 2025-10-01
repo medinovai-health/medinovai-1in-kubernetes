@@ -14,7 +14,6 @@ spec:
     hosts:
     - "*.medinovai.local"
     - "medinovai.local"
-    - "localhost"
   - port:
       number: 443
       name: https
@@ -22,7 +21,6 @@ spec:
     hosts:
     - "*.medinovai.local"
     - "medinovai.local"
-    - "localhost"
     tls:
       mode: SIMPLE
       credentialName: medinovai-tls-cert
@@ -37,7 +35,6 @@ spec:
   hosts:
   - "*.medinovai.local"
   - "medinovai.local"
-  - "localhost"
   gateways:
   - medinovai-main-gateway
   http:
@@ -129,7 +126,7 @@ spec:
       http:
         http1MaxPendingRequests: 50
         maxRequestsPerConnection: 2
-    circuitBreaker:
+    outlierDetection:
       consecutiveErrors: 3
       interval: 30s
       baseEjectionTime: 30s
