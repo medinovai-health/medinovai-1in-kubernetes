@@ -1,0 +1,130 @@
+version: '3.8'
+
+# Phase 3: Complete Message Queue Layer - Zookeeper, Kafka, RabbitMQ
+# Centralized message queue infrastructure for all 243+ MedinovAI repositories
+
+services:
+  # Zookeeper - Kafka Coordination
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    container_name: medinovai-zookeeper-phase3
+    hostname: zookeeper
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 2G
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_SERVER_ID: 1
+      ZOOKEEPER_SERVERS: zookeeper:2888:3888
+      ZOOKEEPER_MAX_CLIENT_CNXNS: 0
+      ZOOKEEPER_ADMIN_ENABLE_SERVER: "true"
+      ZOOKEEPER_ADMIN_SERVER_PORT: 8080
+    ports:
+      - "2181:2181"
+      - "8082:8080"  # Admin UI
+    volumes:
+      - /Users/dev1/medinovai-data/zookeeper/data:/var/lib/zookeeper/data
+      - /Users/dev1/medinovai-data/zookeeper/logs:/var/lib/zookeeper/log
+    networks:
+      - medinovai_messaging
+    healthcheck:
+      test: ["CMD", "echo", "ruok", "|", "nc", "localhost", "2181"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Apache Kafka - Event Streaming
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    container_name: medinovai-kafka-phase3
+    hostname: kafka
+    restart: unless-stopped
+    depends_on:
+      - zookeeper
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 16G
+        reservations:
+          cpus: '2'
+          memory: 8G
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_DELETE_TOPIC_ENABLE: "true"
+      KAFKA_LOG_RETENTION_HOURS: 168  # 7 days
+      KAFKA_LOG_SEGMENT_BYTES: 1073741824  # 1GB
+      KAFKA_NUM_PARTITIONS: 3
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 1
+      KAFKA_MIN_INSYNC_REPLICAS: 1
+      KAFKA_COMPRESSION_TYPE: lz4
+      # Performance tuning
+      KAFKA_NUM_NETWORK_THREADS: 8
+      KAFKA_NUM_IO_THREADS: 8
+      KAFKA_SOCKET_SEND_BUFFER_BYTES: 102400
+      KAFKA_SOCKET_RECEIVE_BUFFER_BYTES: 102400
+      KAFKA_SOCKET_REQUEST_MAX_BYTES: 104857600
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    volumes:
+      - /Users/dev1/medinovai-data/kafka:/var/lib/kafka/data
+    networks:
+      - medinovai_messaging
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # RabbitMQ - Alternative Message Queue
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: medinovai-rabbitmq-phase3
+    hostname: rabbitmq
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 4G
+        reservations:
+          cpus: '1'
+          memory: 2G
+    environment:
+      RABBITMQ_DEFAULT_USER: medinovai_admin
+      RABBITMQ_DEFAULT_PASS: medinovai_rabbitmq_secure_2025
+      RABBITMQ_DEFAULT_VHOST: /medinovai
+      # Enable management plugin
+      RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS: -rabbit log_levels [{connection,error}]
+    ports:
+      - "5672:5672"    # AMQP
+      - "15672:15672"  # Management UI
+    volumes:
+      - /Users/dev1/medinovai-data/rabbitmq:/var/lib/rabbitmq
+    networks:
+      - medinovai_messaging
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  medinovai_messaging:
+    name: medinovai_messaging
+    driver: bridge
+
