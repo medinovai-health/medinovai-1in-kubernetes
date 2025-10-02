@@ -29,7 +29,7 @@
   "author": "MedinovAI Platform Team",
   "license": "MIT",
   "devDependencies": {
-    "@playwright/test": "^1.40.0"
+    "@playwright/test": "^1.55.1"
   },
   "dependencies": {
     "jq": "^1.6.0"
@@ -46,11 +46,3 @@
   },
   "homepage": "https://github.com/myonsite-healthcare/medinovai-infrastructure#readme"
 }
-
-
-
-
-
-
-
-
