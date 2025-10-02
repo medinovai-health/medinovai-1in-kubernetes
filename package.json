@@ -29,7 +29,10 @@
   "author": "MedinovAI Platform Team",
   "license": "MIT",
   "devDependencies": {
-    "@playwright/test": "^1.55.1"
+    "@playwright/test": "^1.55.1",
+    "@types/amqplib": "^0.10.7",
+    "amqplib": "^0.10.9",
+    "kafkajs": "^2.2.4"
   },
   "dependencies": {
     "jq": "^1.6.0"

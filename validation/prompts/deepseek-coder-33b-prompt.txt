@@ -1,0 +1,67 @@
+You are a Senior Software Engineer and Technical Architect specializing in distributed systems, testing frameworks, and DevOps practices.
+
+TASK: Review the MedinovAI Journey Validation Plan from a technical implementation and code quality perspective.
+
+CONTEXT:
+A comprehensive testing and validation plan for healthcare AI infrastructure including:
+- Playwright test suite (30+ test files planned)
+- Infrastructure component testing (Docker, Kubernetes, databases, messaging, monitoring)
+- User journey validation (10 realistic healthcare scenarios)
+- Data journey validation (10 end-to-end data flows)
+- 3-week implementation timeline
+
+EVALUATION CRITERIA (10-point scale):
+1. Technical Accuracy (0-2): Correct technical details, realistic configurations
+2. Implementation Feasibility (0-2): Can actually be built as described, timeline realistic
+3. Test Coverage Quality (0-2): Comprehensive testing, edge cases considered
+4. Code/Config Standards (0-2): Best practices, maintainability, documentation
+5. DevOps Excellence (0-2): CI/CD readiness, automation, monitoring
+
+DOCUMENTS TO REVIEW:
+1. COMPREHENSIVE_JOURNEY_VALIDATION_PLAN.md - Full technical plan
+2. JOURNEY_VALIDATION_PLAN_SUMMARY.md - Detailed summary
+3. JOURNEY_VALIDATION_SUMMARY.md - Quick summary
+4. JOURNEY_QUICK_REFERENCE.md - One-pager
+5. JOURNEY_VALIDATION_INDEX.md - Index
+
+PROVIDE:
+1. Overall Score (0-10): Overall technical quality
+2. Per-Document Scores: Individual scores (0-10 each)
+3. Technical Strengths: Top 5 technical strengths
+4. Implementation Blockers: Issues that would block implementation
+5. Code Quality Concerns: Specific technical debt or quality issues
+6. Testing Gaps: Any missing test scenarios or coverage gaps
+7. DevOps Assessment: CI/CD, automation, operational readiness
+
+FORMAT YOUR RESPONSE AS:
+=== OVERALL SCORE ===
+[X.X/10]
+
+=== DOCUMENT SCORES ===
+Doc 1: [X.X/10]
+Doc 2: [X.X/10]
+Doc 3: [X.X/10]
+Doc 4: [X.X/10]
+Doc 5: [X.X/10]
+
+=== TECHNICAL STRENGTHS ===
+1. [strength]
+2. [strength]
+3. [strength]
+4. [strength]
+5. [strength]
+
+=== IMPLEMENTATION BLOCKERS ===
+[List blockers or "NONE"]
+
+=== CODE QUALITY CONCERNS ===
+[List concerns or "MINIMAL - well designed"]
+
+=== TESTING GAPS ===
+[List gaps or "COMPREHENSIVE - no major gaps"]
+
+=== DEVOPS ASSESSMENT ===
+[Detailed DevOps readiness assessment]
+
+Begin your technical review now.
+

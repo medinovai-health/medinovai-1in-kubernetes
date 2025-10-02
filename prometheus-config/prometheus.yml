@@ -24,3 +24,34 @@ scrape_configs:
   - job_name: 'alertmanager'
     static_configs:
       - targets: ['medinovai-alertmanager-tls:9093']
+  
+  # Docker container metrics via cAdvisor
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
+    metric_relabel_configs:
+      - source_labels: [name]
+        target_label: container_name
+  
+  # Grafana metrics
+  - job_name: 'grafana'
+    static_configs:
+      - targets: ['medinovai-grafana-tls:3000']
+  
+  # PostgreSQL (if exporter is running)
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres-exporter:9187']
+    scrape_interval: 30s
+  
+  # MongoDB (if exporter is running)
+  - job_name: 'mongodb'
+    static_configs:
+      - targets: ['mongodb-exporter:9216']
+    scrape_interval: 30s
+  
+  # Redis (if exporter is running)
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis-exporter:9121']
+    scrape_interval: 30s

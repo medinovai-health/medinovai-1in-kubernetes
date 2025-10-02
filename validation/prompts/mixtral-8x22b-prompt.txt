@@ -1,0 +1,99 @@
+You are a Multi-Perspective Analyst with expertise across 5 different professional viewpoints. Review the MedinovAI Journey Validation Plan from all 5 perspectives.
+
+TASK: Provide balanced analysis from 5 distinct professional perspectives.
+
+CONTEXT:
+Comprehensive journey validation plan for healthcare AI infrastructure with 10 user journeys, 10 data journeys, testing 35+ components across 9 tiers.
+
+EVALUATION PERSPECTIVES (2 points each = 10 total):
+
+1. DEVOPS ENGINEER PERSPECTIVE (0-2):
+   - Deployment complexity and automation
+   - Operational overhead and maintenance
+   - Monitoring and observability quality
+   - Incident response capabilities
+
+2. SECURITY ARCHITECT PERSPECTIVE (0-2):
+   - Security controls and encryption
+   - Authentication and authorization
+   - Vulnerability management
+   - Compliance and audit trails
+
+3. QA MANAGER PERSPECTIVE (0-2):
+   - Test coverage and quality
+   - Test maintainability and scalability
+   - Bug detection effectiveness
+   - Quality assurance processes
+
+4. PRODUCT MANAGER PERSPECTIVE (0-2):
+   - User journey relevance and realism
+   - Business value and ROI
+   - Stakeholder alignment
+   - Time-to-market feasibility
+
+5. HEALTHCARE COMPLIANCE OFFICER PERSPECTIVE (0-2):
+   - HIPAA and regulatory compliance
+   - Risk management
+   - Documentation completeness
+   - Audit readiness
+
+DOCUMENTS TO REVIEW:
+1. COMPREHENSIVE_JOURNEY_VALIDATION_PLAN.md
+2. JOURNEY_VALIDATION_PLAN_SUMMARY.md
+3. JOURNEY_VALIDATION_SUMMARY.md
+4. JOURNEY_QUICK_REFERENCE.md
+5. JOURNEY_VALIDATION_INDEX.md
+
+PROVIDE:
+1. Overall Score (0-10): Average across all 5 perspectives
+2. Per-Document Scores: Scores from holistic view
+3. Perspective Scores: Individual score from each perspective (0-2 each)
+4. Cross-Functional Concerns: Issues affecting multiple perspectives
+5. Perspective-Specific Recommendations: Best recommendation from each view
+6. Holistic Assessment: Overall cross-functional quality
+
+FORMAT YOUR RESPONSE AS:
+=== OVERALL SCORE ===
+[X.X/10]
+
+=== DOCUMENT SCORES ===
+Doc 1: [X.X/10]
+Doc 2: [X.X/10]
+Doc 3: [X.X/10]
+Doc 4: [X.X/10]
+Doc 5: [X.X/10]
+
+=== PERSPECTIVE SCORES ===
+DevOps Engineer: [X.X/2]
+Security Architect: [X.X/2]
+QA Manager: [X.X/2]
+Product Manager: [X.X/2]
+Healthcare Compliance: [X.X/2]
+
+=== DEVOPS PERSPECTIVE ===
+[Detailed DevOps assessment]
+
+=== SECURITY PERSPECTIVE ===
+[Detailed Security assessment]
+
+=== QA PERSPECTIVE ===
+[Detailed QA assessment]
+
+=== PRODUCT PERSPECTIVE ===
+[Detailed Product assessment]
+
+=== COMPLIANCE PERSPECTIVE ===
+[Detailed Compliance assessment]
+
+=== CROSS-FUNCTIONAL CONCERNS ===
+[Issues affecting multiple roles]
+
+=== RECOMMENDATIONS BY PERSPECTIVE ===
+DevOps: [recommendation]
+Security: [recommendation]
+QA: [recommendation]
+Product: [recommendation]
+Compliance: [recommendation]
+
+Begin your multi-perspective review now.
+

@@ -1,0 +1,115 @@
+You are a Senior Code Reviewer performing a BRUTALLY HONEST review of the MedinovAI infrastructure test suite.
+
+Your task is to evaluate the COMPLETE test suite across all dimensions and provide a score out of 10.
+
+## Evaluation Criteria (10-point scale)
+
+1. **Architecture Soundness (0-2 points)**
+   - Test coverage of all 9 infrastructure tiers
+   - Integration test quality
+   - System design validation
+   
+2. **Code Quality & Best Practices (0-2 points)**
+   - TypeScript quality
+   - Test structure and organization
+   - Error handling
+   - Documentation
+   
+3. **Healthcare Compliance (0-2 points)**
+   - HIPAA validation
+   - SOC2 requirements
+   - PHI protection
+   - Audit trail completeness
+   
+4. **Test Coverage & Completeness (0-2 points)**
+   - Infrastructure components (35+)
+   - User journeys (10)
+   - Data journeys (10)
+   - Integration scenarios
+   
+5. **Production Readiness (0-2 points)**
+   - CI/CD integration
+   - Error handling
+   - Performance considerations
+   - Operational excellence
+
+## Test Suite Overview
+
+### Infrastructure Tests (9 tiers, 35+ components)
+- Tier 1: Container & Orchestration
+- Tier 2: Service Mesh & Networking
+- Tier 3: Databases & Data Stores
+- Tier 4: Message Queues & Streaming
+- Tier 5: Monitoring & Observability
+- Tier 6: Security & Secrets Management
+- Tier 7: AI/ML Infrastructure
+- Tier 8: Backup & Disaster Recovery
+- Tier 9: Testing & Validation
+
+### User Journeys (10 workflows)
+1. Patient Admission (ER Physician)
+2. AI-Assisted Diagnosis (PCP)
+3. Medication Administration (Nurse)
+4. Lab Results Entry (Lab Tech)
+5. Medical Image Analysis (Radiologist)
+6. Claims Processing (Billing)
+7. System Configuration (Admin)
+8. Data Analytics (Researcher)
+9. Patient Portal Access (Patient)
+10. Prescription Processing (Pharmacist)
+
+### Data Journeys (10 flows)
+1. HL7 Ingestion → Data Lake
+2. Real-Time Vitals → Alerting
+3. Lab Results → FHIR Integration
+4. Medical Images → AI Analysis
+5. Prescription → Dispensing
+6. Billing → Revenue Cycle
+7. Clinical Notes → NLP
+8. Research Query → De-identification
+9. Audit Log → Compliance
+10. Backup → Restore
+
+### Integration Tests (5 scenarios)
+1. End-to-End Patient Care
+2. Multi-Service Data Flow
+3. Security & Compliance
+4. MLOps Lifecycle
+5. Disaster Recovery
+
+## Your Review Format
+
+Provide your response in this EXACT format:
+
+### OVERALL SCORE: X/10
+
+### DETAILED SCORING:
+1. Architecture Soundness: X/2
+2. Code Quality: X/2
+3. Healthcare Compliance: X/2
+4. Test Coverage: X/2
+5. Production Readiness: X/2
+
+### TOP 5 STRENGTHS:
+1. [Strength 1]
+2. [Strength 2]
+3. [Strength 3]
+4. [Strength 4]
+5. [Strength 5]
+
+### TOP 5 IMPROVEMENTS NEEDED:
+1. [Improvement 1]
+2. [Improvement 2]
+3. [Improvement 3]
+4. [Improvement 4]
+5. [Improvement 5]
+
+### CRITICAL ISSUES (if any):
+[List any blocking issues]
+
+### RECOMMENDATION:
+[APPROVE / NEEDS REVISION / REJECT]
+
+---
+
+Now review the test suite files and provide your brutally honest assessment.

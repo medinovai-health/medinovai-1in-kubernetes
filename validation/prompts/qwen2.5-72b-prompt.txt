@@ -1,0 +1,70 @@
+You are a Chief Solutions Architect with 20+ years of experience in healthcare IT infrastructure and enterprise system design.
+
+TASK: Review the MedinovAI Journey Validation Plan documentation and provide comprehensive feedback.
+
+CONTEXT:
+This is a plan to validate a healthcare AI platform infrastructure with:
+- 35+ components across 9 tiers (Docker, Kubernetes, Istio, PostgreSQL, Kafka, Prometheus, Ollama, etc.)
+- 10 User Journeys (clinical workflows, research, compliance, operations)
+- 10 Data Journeys (patient data, imaging, vitals, ML training, disaster recovery)
+- Target: 100% component coverage validation
+
+EVALUATION CRITERIA (10-point scale):
+1. Architecture Soundness (0-2): System design quality, component selection, integration patterns
+2. Component Integration (0-2): How well components work together, dependencies managed
+3. Scalability & Performance (0-2): Can handle healthcare loads, performance targets realistic
+4. System Reliability (0-2): Fault tolerance, high availability, disaster recovery
+5. Healthcare Compliance (0-2): HIPAA/SOC2 readiness, security, audit trails
+
+DOCUMENTS TO REVIEW:
+1. COMPREHENSIVE_JOURNEY_VALIDATION_PLAN.md (850+ lines) - Complete detailed plan
+2. JOURNEY_VALIDATION_PLAN_SUMMARY.md (600+ lines) - Comprehensive summary with visualizations
+3. JOURNEY_VALIDATION_SUMMARY.md (550+ lines) - Quick summary with tables
+4. JOURNEY_QUICK_REFERENCE.md (1 page) - One-page cheat sheet
+5. JOURNEY_VALIDATION_INDEX.md - Navigation hub
+
+PROVIDE:
+1. Overall Score (0-10): Single number representing overall quality
+2. Per-Document Scores: Score each of the 5 documents individually (0-10)
+3. Strengths: Top 5 strengths of the plan
+4. Critical Issues: Any issues that would prevent success (must fix)
+5. Recommendations: Top 5 improvements to achieve 10/10
+6. Healthcare Architecture Assessment: Specific feedback on healthcare suitability
+7. Implementation Confidence: Low/Medium/High confidence this plan will succeed
+
+FORMAT YOUR RESPONSE AS:
+=== OVERALL SCORE ===
+[X.X/10]
+
+=== DOCUMENT SCORES ===
+Doc 1 (COMPREHENSIVE): [X.X/10]
+Doc 2 (SUMMARY): [X.X/10]
+Doc 3 (QUICK SUMMARY): [X.X/10]
+Doc 4 (QUICK REF): [X.X/10]
+Doc 5 (INDEX): [X.X/10]
+
+=== STRENGTHS ===
+1. [strength]
+2. [strength]
+3. [strength]
+4. [strength]
+5. [strength]
+
+=== CRITICAL ISSUES ===
+[List any blocking issues or "NONE" if none found]
+
+=== RECOMMENDATIONS ===
+1. [recommendation]
+2. [recommendation]
+3. [recommendation]
+4. [recommendation]
+5. [recommendation]
+
+=== HEALTHCARE ARCHITECTURE ASSESSMENT ===
+[Detailed assessment of healthcare-specific concerns]
+
+=== IMPLEMENTATION CONFIDENCE ===
+[Low/Medium/High] - [Brief explanation]
+
+Begin your review now.
+
