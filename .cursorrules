@@ -1,22 +1,46 @@
 # Cursor Configuration for MedinovAI Infrastructure
 
-## Playwright MCP Configuration
-This project uses Playwright MCP (Model Context Protocol) for web automation, testing, and browser interactions.
+## MCP (Model Context Protocol) Configuration
+This project uses MCP servers for enhanced development capabilities.
 
 ### MCP Servers Configuration
 ```json
 {
   "mcpServers": {
+    "gitlab": {
+      "command": "mcp-server-gitlab",
+      "args": [],
+      "env": {
+        "GITLAB_PERSONAL_ACCESS_TOKEN": "<your-token-here>",
+        "GITLAB_API_URL": "https://git.myonsitehealthcare.com/api/v4"
+      }
+    },
     "playwright": {
       "command": "npx",
-      "args": ["@modelcontextprotocol/server-playwright"],
-      "env": {
-        "PLAYWRIGHT_BROWSERS_PATH": "0"
-      }
+      "args": ["@playwright/mcp@latest"]
     }
   }
 }
 ```
+
+**Note**: Use npm-based MCP servers (not Docker-based) to avoid container accumulation issues.
+
+### GitLab MCP Configuration
+This project uses GitLab MCP for interacting with MedinovAI repositories.
+
+**Installation**:
+```bash
+npm install -g @modelcontextprotocol/server-gitlab
+```
+
+**Capabilities**:
+- Repository browsing and file access
+- Issue and merge request management
+- CI/CD pipeline interaction
+- Code search and navigation
+
+### Playwright MCP Configuration
+This project uses Playwright MCP for web automation, testing, and browser interactions.
 
 ### Playwright Capabilities
 - **Web Automation**: Automated browser interactions and form filling

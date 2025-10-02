@@ -1,0 +1,94 @@
+version: '3.8'
+
+# Phase 2: Complete Data Layer - MongoDB, TimescaleDB, MinIO
+# Centralized infrastructure for all 243+ MedinovAI repositories
+
+services:
+  # MongoDB 7.0 - Document Store
+  mongodb:
+    image: mongo:7.0
+    container_name: medinovai-mongodb-phase2
+    hostname: mongodb
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 8G
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: medinovai_admin
+      MONGO_INITDB_ROOT_PASSWORD: medinovai_mongo_secure_2025
+      MONGO_INITDB_DATABASE: medinovai
+    ports:
+      - "27017:27017"
+    volumes:
+      - /Users/dev1/medinovai-data/mongodb/data:/data/db
+      - /Users/dev1/medinovai-data/mongodb/config:/data/configdb
+      - ./mongodb-init:/docker-entrypoint-initdb.d:ro
+    networks:
+      - medinovai_data
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # TimescaleDB latest-pg15 - Time-Series Database
+  timescaledb:
+    image: timescale/timescaledb:latest-pg15
+    container_name: medinovai-timescaledb-phase2
+    hostname: timescaledb
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 8G
+    environment:
+      POSTGRES_DB: medinovai_timeseries
+      POSTGRES_USER: medinovai_admin
+      POSTGRES_PASSWORD: medinovai_timescale_secure_2025
+    ports:
+      - "5433:5432"
+    volumes:
+      - /Users/dev1/medinovai-data/timescaledb:/var/lib/postgresql/data
+    networks:
+      - medinovai_data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U medinovai_admin -d medinovai_timeseries"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # MinIO - S3-Compatible Object Storage
+  minio:
+    image: minio/minio:latest
+    container_name: medinovai-minio-phase2
+    hostname: minio
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 4G
+    environment:
+      MINIO_ROOT_USER: medinovai_admin
+      MINIO_ROOT_PASSWORD: medinovai_minio_secure_2025
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - /Users/dev1/medinovai-data/minio:/data
+    networks:
+      - medinovai_data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  medinovai_data:
+    name: medinovai_data
+    driver: bridge

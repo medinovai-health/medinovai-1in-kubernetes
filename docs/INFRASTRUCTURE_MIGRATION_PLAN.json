@@ -1,0 +1,69 @@
+{
+  "metadata": {
+    "created": "2025-10-02T10:32:57.024226",
+    "total_repos": 36,
+    "high_priority": 4,
+    "medium_priority": 4,
+    "low_priority": 2
+  },
+  "migration_phases": {
+    "phase_1": {
+      "name": "High Priority - Core Infrastructure",
+      "repos": [
+        "medinovaios",
+        "medinovai-data-services",
+        "medinovai-security-services",
+        "medinovai-core-platform"
+      ],
+      "actions": [
+        "Audit all docker-compose files",
+        "Identify infrastructure services (postgres, redis, kafka, etc.)",
+        "Move to medinovai-infrastructure",
+        "Update repo to reference central infrastructure",
+        "Test functionality"
+      ],
+      "timeline": "Week 1-2"
+    },
+    "phase_2": {
+      "name": "Medium Priority - Service-Specific Infrastructure",
+      "repos": [
+        "medinovai-api-gateway",
+        "medinovai-monitoring-services",
+        "medinovai-registry",
+        "PersonalAssistant"
+      ],
+      "actions": [
+        "Audit infrastructure dependencies",
+        "Migrate to central repo",
+        "Update documentation",
+        "Test"
+      ],
+      "timeline": "Week 3"
+    },
+    "phase_3": {
+      "name": "Low Priority - Client Libraries Only",
+      "repos": [
+        "medinovai-clinical-services",
+        "medinovai-patient-services"
+      ],
+      "actions": [
+        "Verify only client libraries (psycopg2, pymongo, etc.)",
+        "These are OK - just ensure they don't install servers",
+        "Update documentation to reference central infrastructure"
+      ],
+      "timeline": "Week 4"
+    }
+  },
+  "validation_requirements": {
+    "per_repo": [
+      "Playwright test to verify functionality after migration",
+      "3 Ollama models validate migration (qwen2.5:72b, deepseek-coder:33b, llama3.1:70b)",
+      "Target score: 9.0/10+"
+    ],
+    "overall": [
+      "Zero functionality broken",
+      "All infrastructure centralized",
+      "All repos reference medinovai-infrastructure"
+    ]
+  }
+}

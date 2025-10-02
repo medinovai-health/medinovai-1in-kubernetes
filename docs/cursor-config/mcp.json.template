@@ -1,0 +1,19 @@
+{
+  "mcpServers": {
+    "gitlab": {
+      "command": "mcp-server-gitlab",
+      "args": [],
+      "env": {
+        "GITLAB_PERSONAL_ACCESS_TOKEN": "<your-gitlab-token-here>",
+        "GITLAB_API_URL": "https://git.myonsitehealthcare.com/api/v4"
+      }
+    },
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "@playwright/mcp@latest"
+      ]
+    }
+  }
+}
+

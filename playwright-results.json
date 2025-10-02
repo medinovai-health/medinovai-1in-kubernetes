@@ -166,13 +166,13 @@
   "suites": [],
   "errors": [
     {
-      "message": "Error: Process from config.webServer exited early.",
-      "stack": "Error: Process from config.webServer exited early."
+      "message": "Error: No tests found.\nMake sure that arguments are regular expressions matching test files.\nYou may need to escape symbols like \"$\" or \"*\" and quote the arguments.",
+      "stack": "Error: No tests found.\nMake sure that arguments are regular expressions matching test files.\nYou may need to escape symbols like \"$\" or \"*\" and quote the arguments."
     }
   ],
   "stats": {
-    "startTime": "2025-09-25T19:37:29.875Z",
-    "duration": 444.9990000000001,
+    "startTime": "2025-10-02T13:20:15.256Z",
+    "duration": 41646.426999999996,
     "expected": 0,
     "skipped": 0,
     "unexpected": 0,

@@ -194,3 +194,4 @@ if [ "$ALL_CHECKS_PASSED" = true ]; then
 else
     error_exit "Health checks failed"
 fi
+

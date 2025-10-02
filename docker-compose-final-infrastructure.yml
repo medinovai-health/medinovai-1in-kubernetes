@@ -1,0 +1,532 @@
+version: '3.8'
+
+# MedinovAI Final Infrastructure - Complete Service Stack
+# Version: 1.0.0
+# Date: October 1, 2025
+# Status: IMMUTABLE (requires explicit approval for changes)
+
+networks:
+  medinovai-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
+
+volumes:
+  # Databases
+  postgres_data:
+  mongo_data:
+  timescale_data:
+  redis_data:
+  
+  # Message Queues
+  kafka_data:
+  zookeeper_data:
+  rabbitmq_data:
+  
+  # Monitoring
+  prometheus_data:
+  grafana_data:
+  loki_data:
+  
+  # Storage & Secrets
+  minio_data:
+  vault_data:
+  
+  # Security
+  keycloak_data:
+
+services:
+  # ============================================================================
+  # TIER 1: CRITICAL DATABASES
+  # ============================================================================
+  
+  postgres:
+    image: postgres:15-alpine
+    container_name: medinovai-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: medinovai
+      POSTGRES_USER: medinovai
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-medinovai_secure_2025}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - medinovai-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U medinovai"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 16G
+        reservations:
+          cpus: '2'
+          memory: 8G
+    command: >
+      postgres
+      -c max_connections=200
+      -c shared_buffers=4GB
+      -c effective_cache_size=12GB
+      -c maintenance_work_mem=1GB
+      -c checkpoint_completion_target=0.9
+      -c wal_buffers=16MB
+      -c default_statistics_target=100
+      -c random_page_cost=1.1
+      -c effective_io_concurrency=200
+      -c work_mem=20MB
+      -c min_wal_size=1GB
+      -c max_wal_size=4GB
+      -c max_worker_processes=4
+      -c max_parallel_workers_per_gather=2
+      -c max_parallel_workers=4
+      -c max_parallel_maintenance_workers=2
+  
+  timescaledb:
+    image: timescale/timescaledb:latest-pg15
+    container_name: medinovai-timescaledb
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: medinovai_timeseries
+      POSTGRES_USER: medinovai
+      POSTGRES_PASSWORD: ${TIMESCALE_PASSWORD:-medinovai_timeseries_2025}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5433:5432"
+    volumes:
+      - timescale_data:/var/lib/postgresql/data
+    networks:
+      - medinovai-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U medinovai"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 8G
+        reservations:
+          cpus: '1'
+          memory: 4G
+  
+  mongodb:
+    image: mongo:7.0
+    container_name: medinovai-mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: medinovai
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-medinovai_mongo_2025}
+      MONGO_INITDB_DATABASE: medinovai
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+      - mongo_data:/data/configdb
+    networks:
+      - medinovai-network
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 8G
+        reservations:
+          cpus: '1'
+          memory: 4G
+    command: ["mongod", "--wiredTigerCacheSizeGB", "4"]
+  
+  redis:
+    image: redis:7-alpine
+    container_name: medinovai-redis
+    restart: unless-stopped
+    command: >
+      redis-server
+      --requirepass ${REDIS_PASSWORD:-medinovai_redis_2025}
+      --maxmemory 4gb
+      --maxmemory-policy allkeys-lru
+      --appendonly yes
+      --appendfsync everysec
+      --save 900 1
+      --save 300 10
+      --save 60 10000
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - medinovai-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 4G
+        reservations:
+          cpus: '0.5'
+          memory: 2G
+  
+  # ============================================================================
+  # TIER 1: MESSAGE QUEUE & STREAMING
+  # ============================================================================
+  
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    container_name: medinovai-zookeeper
+    restart: unless-stopped
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_SYNC_LIMIT: 2
+      ZOOKEEPER_INIT_LIMIT: 5
+    ports:
+      - "2181:2181"
+    volumes:
+      - zookeeper_data:/var/lib/zookeeper/data
+    networks:
+      - medinovai-network
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "2181"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 2G
+  
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: medinovai-kafka
+    restart: unless-stopped
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_LOG_RETENTION_HOURS: 168
+      KAFKA_LOG_RETENTION_BYTES: 10737418240
+      KAFKA_NUM_PARTITIONS: 3
+      KAFKA_PROCESS_ROLES: ""
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    networks:
+      - medinovai-network
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '3'
+          memory: 12G
+        reservations:
+          cpus: '2'
+          memory: 8G
+  
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: medinovai-rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: medinovai
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-medinovai_rabbit_2025}
+      RABBITMQ_DEFAULT_VHOST: medinovai
+    ports:
+      - "5672:5672"   # AMQP
+      - "15672:15672" # Management UI
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - medinovai-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 2G
+  
+  # ============================================================================
+  # TIER 1: MONITORING & LOGGING
+  # ============================================================================
+  
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: medinovai-prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus-config:/etc/prometheus
+      - prometheus_data:/prometheus
+    networks:
+      - medinovai-network
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 8G
+  
+  grafana:
+    image: grafana/grafana:latest
+    container_name: medinovai-grafana
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+      - loki
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-medinovai_grafana_2025}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_SERVER_ROOT_URL: http://localhost:3000
+      GF_INSTALL_PLUGINS: grafana-clock-panel,grafana-simple-json-datasource,grafana-worldmap-panel
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana-provisioning:/etc/grafana/provisioning
+    networks:
+      - medinovai-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 2G
+  
+  loki:
+    image: grafana/loki:latest
+    container_name: medinovai-loki
+    restart: unless-stopped
+    ports:
+      - "3100:3100"
+    volumes:
+      - loki_data:/loki
+      - ./loki-config:/etc/loki
+    networks:
+      - medinovai-network
+    command: -config.file=/etc/loki/local-config.yaml
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3100/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 4G
+  
+  promtail:
+    image: grafana/promtail:latest
+    container_name: medinovai-promtail
+    restart: unless-stopped
+    depends_on:
+      - loki
+    volumes:
+      - /var/log:/var/log:ro
+      - ./promtail-config:/etc/promtail
+    networks:
+      - medinovai-network
+    command: -config.file=/etc/promtail/config.yml
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 1G
+  
+  # ============================================================================
+  # TIER 2: SECURITY & SECRETS
+  # ============================================================================
+  
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0
+    container_name: medinovai-keycloak
+    restart: unless-stopped
+    depends_on:
+      - postgres
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/medinovai
+      KC_DB_USERNAME: medinovai
+      KC_DB_PASSWORD: ${POSTGRES_PASSWORD:-medinovai_secure_2025}
+      KC_HOSTNAME: localhost
+      KC_HOSTNAME_PORT: 8080
+      KC_HOSTNAME_STRICT: "false"
+      KC_HOSTNAME_STRICT_HTTPS: "false"
+      KC_LOG_LEVEL: info
+      KC_METRICS_ENABLED: "true"
+      KC_HEALTH_ENABLED: "true"
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_PASSWORD:-medinovai_keycloak_2025}
+    ports:
+      - "8180:8080"
+    networks:
+      - medinovai-network
+    command: start-dev
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health/ready"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 4G
+  
+  vault:
+    image: hashicorp/vault:latest
+    container_name: medinovai-vault
+    restart: unless-stopped
+    environment:
+      VAULT_ADDR: http://0.0.0.0:8200
+      VAULT_DEV_ROOT_TOKEN_ID: ${VAULT_ROOT_TOKEN:-medinovai-root-token}
+      VAULT_DEV_LISTEN_ADDRESS: 0.0.0.0:8200
+    ports:
+      - "8200:8200"
+    volumes:
+      - vault_data:/vault/data
+      - ./vault-config:/vault/config
+    networks:
+      - medinovai-network
+    cap_add:
+      - IPC_LOCK
+    command: server -dev
+    healthcheck:
+      test: ["CMD", "vault", "status"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 2G
+  
+  # ============================================================================
+  # TIER 2: OBJECT STORAGE
+  # ============================================================================
+  
+  minio:
+    image: minio/minio:latest
+    container_name: medinovai-minio
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: medinovai
+      MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD:-medinovai_minio_2025_secure}
+      MINIO_BROWSER_REDIRECT_URL: http://localhost:9001
+    ports:
+      - "9000:9000"   # API
+      - "9001:9001"   # Console
+    volumes:
+      - minio_data:/data
+    networks:
+      - medinovai-network
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 4G
+  
+  # ============================================================================
+  # API GATEWAY
+  # ============================================================================
+  
+  nginx:
+    image: nginx:alpine
+    container_name: medinovai-nginx
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx-simple.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - medinovai-network
+    depends_on:
+      - prometheus
+      - grafana
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+
+  # ============================================================================
+  # HEALTH CHECK SERVICE
+  # ============================================================================
+  
+  healthcheck:
+    image: busybox:latest
+    container_name: medinovai-healthcheck
+    restart: unless-stopped
+    networks:
+      - medinovai-network
+    command: >
+      sh -c 'while true; do 
+        echo "[$(date)] MedinovAI Infrastructure Health Check"; 
+        sleep 60; 
+      done'
+    deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 128M
+

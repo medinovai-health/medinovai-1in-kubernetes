@@ -1,0 +1,87 @@
+version: '3.8'
+
+# MongoDB 7.0 - Document Store for MedinovAI
+# Purpose: Unstructured medical data, logs, session data
+# Resource: 2 CPU, 8GB RAM
+
+services:
+  mongodb:
+    image: mongo:7.0
+    container_name: medinovai-mongodb
+    hostname: mongodb
+    restart: unless-stopped
+    
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 8G
+        reservations:
+          cpus: '1'
+          memory: 4G
+    
+    # Environment configuration
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: medinovai_admin
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_ROOT_PASSWORD:-medinovai_mongo_secure_2025}
+      MONGO_INITDB_DATABASE: medinovai
+    
+    # Ports
+    ports:
+      - "27017:27017"
+    
+    # Persistent storage
+    volumes:
+      - mongodb-data:/data/db
+      - mongodb-config:/data/configdb
+      - ./mongodb-init:/docker-entrypoint-initdb.d:ro
+      - ./backups/mongodb:/backups
+    
+    # Networking
+    networks:
+      - medinovai_backend
+      - medinovai_data
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    
+    # Logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
+        labels: "service=mongodb,env=production"
+
+# Volumes
+volumes:
+  mongodb-data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /Users/dev1/medinovai-data/mongodb/data
+  
+  mongodb-config:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /Users/dev1/medinovai-data/mongodb/config
+
+# Networks
+networks:
+  medinovai_backend:
+    name: medinovai_backend
+    driver: bridge
+  
+  medinovai_data:
+    name: medinovai_data
+    driver: bridge
+

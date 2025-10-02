@@ -161,3 +161,4 @@ if [ "$ALL_TESTS_PASSED" = true ]; then
 else
     error_exit "Validation tests failed"
 fi
+

@@ -1,0 +1,103 @@
+version: '3.8'
+
+services:
+  # Core Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: medinovai-postgres
+    environment:
+      POSTGRES_DB: medinovai
+      POSTGRES_USER: medinovai
+      POSTGRES_PASSWORD: medinovai123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U medinovai"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - medinovai-network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: medinovai-redis
+    command: redis-server --requirepass medinovai123
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    networks:
+      - medinovai-network
+
+  # Prometheus Monitoring
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: medinovai-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus-config:/etc/prometheus
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    networks:
+      - medinovai-network
+
+  # Grafana Dashboard
+  grafana:
+    image: grafana/grafana:latest
+    container_name: medinovai-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=medinovai123
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    networks:
+      - medinovai-network
+
+  # API Gateway (Nginx)
+  api-gateway:
+    image: nginx:alpine
+    container_name: medinovai-api-gateway
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - medinovai-network
+
+  # Simple Health Check Service
+  healthcheck:
+    image: busybox:latest
+    container_name: medinovai-healthcheck
+    command: sh -c "while true; do echo 'MedinovAI is healthy'; sleep 60; done"
+    networks:
+      - medinovai-network
+
+volumes:
+  postgres_data:
+  redis_data:
+  prometheus_data:
+  grafana_data:
+
+networks:
+  medinovai-network:
+    driver: bridge
+
