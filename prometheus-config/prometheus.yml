@@ -1,20 +1,26 @@
 global:
   scrape_interval: 15s
   evaluation_interval: 15s
+  external_labels:
+    cluster: 'medinovai-infrastructure'
+    environment: 'production'
+
+# AlertManager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - 'medinovai-alertmanager-tls:9093'
+
+# Alert rule files
+rule_files:
+  - '/etc/prometheus/alerts/*.yml'
 
 scrape_configs:
   - job_name: 'prometheus'
     static_configs:
       - targets: ['localhost:9090']
   
-  - job_name: 'postgres'
+  - job_name: 'alertmanager'
     static_configs:
-      - targets: ['postgres:5432']
-  
-  - job_name: 'redis'
-    static_configs:
-      - targets: ['redis:6379']
-  
-  - job_name: 'grafana'
-    static_configs:
-      - targets: ['grafana:3000']
+      - targets: ['medinovai-alertmanager-tls:9093']

@@ -1,0 +1,35 @@
+version: '3.8'
+
+# AlertManager Addition to MedinovAI Infrastructure
+# Add this to existing docker-compose-final-infrastructure-tls.yml
+
+services:
+  alertmanager:
+    image: prom/alertmanager:latest
+    container_name: medinovai-alertmanager-tls
+    command:
+      - '--config.file=/etc/alertmanager/config.yml'
+      - '--storage.path=/alertmanager'
+      - '--web.external-url=http://localhost:9093'
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./alertmanager-config.yml:/etc/alertmanager/config.yml:ro
+      - alertmanager_data:/alertmanager
+    networks:
+      - medinovai-network
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9093/-/healthy"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+networks:
+  medinovai-network:
+    external: true
+    name: medinovai-infrastructure_medinovai-network
+
+volumes:
+  alertmanager_data:
+
