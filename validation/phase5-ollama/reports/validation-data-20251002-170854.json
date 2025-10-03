@@ -1,0 +1,71 @@
+{
+  "timestamp": "2025-10-02T17:08:54.802008",
+  "models": {
+    "llama3.1": {
+      "avg_overall": 0.0,
+      "avg_architecture": 0.0,
+      "avg_code_quality": 0.0,
+      "avg_healthcare": 0.0,
+      "avg_coverage": 0.0,
+      "avg_production": 0.0,
+      "recommendations": [
+        "UNKNOWN",
+        "UNKNOWN",
+        "UNKNOWN"
+      ]
+    },
+    "mixtral": {
+      "avg_overall": 0.0,
+      "avg_architecture": 0.0,
+      "avg_code_quality": 0.0,
+      "avg_healthcare": 0.0,
+      "avg_coverage": 0.0,
+      "avg_production": 0.0,
+      "recommendations": [
+        "UNKNOWN",
+        "UNKNOWN",
+        "UNKNOWN"
+      ]
+    },
+    "deepseek": {
+      "avg_overall": 0.0,
+      "avg_architecture": 0.0,
+      "avg_code_quality": 0.0,
+      "avg_healthcare": 0.0,
+      "avg_coverage": 0.0,
+      "avg_production": 0.0,
+      "recommendations": [
+        "UNKNOWN",
+        "UNKNOWN",
+        "UNKNOWN"
+      ]
+    },
+    "codellama": {
+      "avg_overall": 0.0,
+      "avg_architecture": 0.0,
+      "avg_code_quality": 0.0,
+      "avg_healthcare": 0.0,
+      "avg_coverage": 0.0,
+      "avg_production": 0.0,
+      "recommendations": [
+        "UNKNOWN",
+        "UNKNOWN",
+        "UNKNOWN"
+      ]
+    },
+    "qwen2.5": {
+      "avg_overall": 0.0,
+      "avg_architecture": 0.0,
+      "avg_code_quality": 0.0,
+      "avg_healthcare": 0.0,
+      "avg_coverage": 0.0,
+      "avg_production": 0.0,
+      "recommendations": [
+        "UNKNOWN",
+        "UNKNOWN",
+        "UNKNOWN"
+      ]
+    }
+  },
+  "total_average": 0.0
+}

@@ -1,0 +1,104 @@
+# TLS-CONFIGURED DATABASE EXPORTERS PLAN VALIDATION
+
+## CONTEXT
+We have deployed 6 Grafana dashboards for infrastructure monitoring. The Docker container monitoring dashboard works perfectly (showing metrics from cAdvisor for 30+ containers). However, the database-specific dashboards (PostgreSQL, MongoDB, Redis) show "No data" because all our databases use TLS/SSL encryption, and the metric exporters are not configured with proper TLS certificates and connection strings.
+
+## INFRASTRUCTURE DETAILS
+- **Environment**: Mac Studio M3 Ultra, Docker-based infrastructure
+- **TLS Implementation**: All databases secured with TLS (PostgreSQL on 5432, MongoDB on 27017, Redis on 6379)
+- **Network**: medinovai-infrastructure_medinovai-network (Docker bridge)
+- **Current Success**: Docker monitoring fully operational with cAdvisor
+- **Current Gap**: Database exporters cannot connect due to TLS requirements
+
+## PROPOSED PLAN
+
+### Phase 1: PostgreSQL Exporter with TLS (30 min)
+1. Extract TLS certificates from postgres container (server.crt, server.key, ca.crt)
+2. Deploy postgres-exporter with TLS configuration:
+   - Mount certificates into exporter container
+   - Configure connection string with SSL parameters
+   - Verify pg_up metric shows "1"
+3. Validate PostgreSQL dashboard shows real metrics
+
+### Phase 2: MongoDB Exporter with TLS (30 min)
+1. Extract TLS certificates from mongodb container (server.pem, ca.crt)
+2. Deploy mongodb-exporter with TLS:
+   - Configure connection URI with TLS parameters
+   - Mount certificates
+   - Verify mongodb_up metric
+3. Validate MongoDB dashboard displays operations, connections
+
+### Phase 3: Redis Exporter with TLS (30 min)
+1. Extract TLS certificates from redis container
+2. Deploy redis-exporter with TLS:
+   - Configure rediss:// protocol
+   - Set TLS certificate environment variables
+   - Verify redis_up metric
+3. Validate Redis dashboard shows cache hit ratio, memory
+
+### Phase 4: Prometheus Update (15 min)
+- Update scrape configs
+- Restart Prometheus
+- Verify all targets "UP"
+
+### Phase 5: Dashboard Validation (15 min)
+- Manual testing of all dashboards
+- Playwright automated testing
+- Screenshot capture with real data
+
+### Phase 6: Documentation (15 min)
+- TLS configuration guide
+- Troubleshooting runbook
+- Maintenance procedures
+
+**Total Time**: ~2 hours 15 minutes
+
+## YOUR TASK
+
+Please provide:
+
+1. **SCORE (1-10)**: Rate this plan's overall quality, feasibility, and completeness
+
+2. **5 SPECIFIC ENHANCEMENTS**: Provide exactly 5 concrete improvements to this plan. For each enhancement, specify:
+   - What to add/change
+   - Why it's important
+   - How to implement it
+   - Which phase it affects
+
+3. **TOP 3 RISKS**: Identify the 3 biggest risks and how to mitigate them
+
+4. **PRIORITY RECOMMENDATION**: Which phase should be done first and why?
+
+5. **ALTERNATIVE APPROACH**: Is there a better way to accomplish getting metrics from TLS-secured databases?
+
+## FORMAT YOUR RESPONSE
+
+```
+SCORE: [1-10] / 10
+
+ENHANCEMENT 1:
+Title: [Brief title]
+Phase: [Which phase]
+What: [What to change]
+Why: [Rationale]
+How: [Implementation steps]
+
+ENHANCEMENT 2:
+...
+
+[Continue for all 5 enhancements]
+
+TOP RISKS:
+1. [Risk + Mitigation]
+2. [Risk + Mitigation]
+3. [Risk + Mitigation]
+
+PRIORITY:
+[Phase to start with + Reasoning]
+
+ALTERNATIVE:
+[Better approach if any, or "Current approach is optimal"]
+```
+
+Focus on practical, actionable advice for a production healthcare infrastructure (HIPAA compliant).
+
