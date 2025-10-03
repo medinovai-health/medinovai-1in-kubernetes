@@ -270,8 +270,8 @@
       "pluginVersion": "9.0.0",
       "targets": [
         {
-          "expr": "sum(rate(container_cpu_usage_seconds_total[5m])) * 100",
-          "legendFormat": "CPU Cores %",
+          "expr": "avg(rate(container_cpu_usage_seconds_total{image!=\"\"}[5m])) * 100",
+          "legendFormat": "CPU %",
           "refId": "A"
         }
       ],
@@ -327,12 +327,12 @@
       "pluginVersion": "9.0.0",
       "targets": [
         {
-          "expr": "sum(container_memory_working_set_bytes) / 1024 / 1024 / 1024",
-          "legendFormat": "Memory GB",
+          "expr": "(sum(container_memory_working_set_bytes{image!=\"\"}) / sum(container_spec_memory_limit_bytes{image!=\"\"} > 0)) * 100",
+          "legendFormat": "Memory %",
           "refId": "A"
         }
       ],
-      "title": "💾 System Memory (GB)",
+      "title": "💾 System Memory",
       "type": "gauge"
     },
     {
@@ -384,12 +384,12 @@
       "pluginVersion": "9.0.0",
       "targets": [
         {
-          "expr": "sum(container_fs_usage_bytes) / 1024 / 1024 / 1024",
-          "legendFormat": "Disk GB",
+          "expr": "(sum(container_fs_usage_bytes{image!=\"\"}) / sum(container_fs_limit_bytes{image!=\"\"} > 0)) * 100",
+          "legendFormat": "Disk %",
           "refId": "A"
         }
       ],
-      "title": "💿 System Disk (GB)",
+      "title": "💿 System Disk",
       "type": "gauge"
     },
     {
