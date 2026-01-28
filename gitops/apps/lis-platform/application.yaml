@@ -1,0 +1,193 @@
+# MedinovAI LIS Platform - ArgoCD Application
+# Healthcare Laboratory Information System - Core Platform
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: lis-platform
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: lis-platform
+    app.kubernetes.io/part-of: medinovai
+    app.kubernetes.io/component: core-lis
+    medinovai.com/product: lis
+    medinovai.com/compliance: hipaa
+  annotations:
+    notifications.argoproj.io/subscribe.on-sync-succeeded.slack: medinovai-deployments
+    notifications.argoproj.io/subscribe.on-sync-failed.slack: medinovai-alerts
+    notifications.argoproj.io/subscribe.on-health-degraded.pagerduty: medinovai-oncall
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: medinovai-healthcare
+  
+  source:
+    repoURL: https://github.com/medinovai/medinovai-lis-platform.git
+    targetRevision: HEAD
+    path: deploy/kubernetes/overlays/production
+    
+    # Kustomize configuration
+    kustomize:
+      namePrefix: lis-
+      commonLabels:
+        medinovai.com/managed-by: argocd
+      images:
+        - name: medinovai/lis-api
+          newTag: latest
+        - name: medinovai/lis-worker
+          newTag: latest
+        - name: medinovai/lis-scheduler
+          newTag: latest
+  
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: lis-platform
+  
+  # Sync Policy - Healthcare requires controlled deployments
+  syncPolicy:
+    automated:
+      prune: false  # Manual pruning for healthcare safety
+      selfHeal: true
+      allowEmpty: false
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
+      - RespectIgnoreDifferences=true
+      - ApplyOutOfSyncOnly=true
+      - ServerSideApply=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+  
+  # Ignore differences for dynamic fields
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas
+    - group: ""
+      kind: Secret
+      jsonPointers:
+        - /data
+    - group: autoscaling
+      kind: HorizontalPodAutoscaler
+      jsonPointers:
+        - /spec/minReplicas
+        - /spec/maxReplicas
+  
+  # Health assessment configuration
+  revisionHistoryLimit: 10
+  
+  info:
+    - name: Documentation
+      value: https://docs.medinovai.com/lis-platform
+    - name: Support
+      value: https://support.medinovai.com
+    - name: Compliance
+      value: HIPAA, CLIA, CAP
+---
+# LIS Platform Component Applications
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: lis-api
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: lis-api
+    app.kubernetes.io/part-of: lis-platform
+    medinovai.com/tier: api
+spec:
+  project: medinovai-healthcare
+  source:
+    repoURL: https://github.com/medinovai/medinovai-lis-platform.git
+    targetRevision: HEAD
+    path: deploy/kubernetes/components/api
+    helm:
+      releaseName: lis-api
+      valueFiles:
+        - values.yaml
+        - values-production.yaml
+      parameters:
+        - name: image.repository
+          value: medinovai/lis-api
+        - name: replicaCount
+          value: "3"
+        - name: resources.limits.memory
+          value: "2Gi"
+        - name: resources.limits.cpu
+          value: "1000m"
+        - name: autoscaling.enabled
+          value: "true"
+        - name: autoscaling.minReplicas
+          value: "3"
+        - name: autoscaling.maxReplicas
+          value: "10"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: lis-platform
+  syncPolicy:
+    automated:
+      selfHeal: true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: lis-worker
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: lis-worker
+    app.kubernetes.io/part-of: lis-platform
+    medinovai.com/tier: worker
+spec:
+  project: medinovai-healthcare
+  source:
+    repoURL: https://github.com/medinovai/medinovai-lis-platform.git
+    targetRevision: HEAD
+    path: deploy/kubernetes/components/worker
+    helm:
+      releaseName: lis-worker
+      valueFiles:
+        - values.yaml
+        - values-production.yaml
+      parameters:
+        - name: image.repository
+          value: medinovai/lis-worker
+        - name: replicaCount
+          value: "2"
+        - name: resources.limits.memory
+          value: "4Gi"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: lis-platform
+  syncPolicy:
+    automated:
+      selfHeal: true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: lis-scheduler
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: lis-scheduler
+    app.kubernetes.io/part-of: lis-platform
+    medinovai.com/tier: scheduler
+spec:
+  project: medinovai-healthcare
+  source:
+    repoURL: https://github.com/medinovai/medinovai-lis-platform.git
+    targetRevision: HEAD
+    path: deploy/kubernetes/components/scheduler
+    helm:
+      releaseName: lis-scheduler
+      valueFiles:
+        - values.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: lis-platform
+  syncPolicy:
+    automated:
+      selfHeal: true

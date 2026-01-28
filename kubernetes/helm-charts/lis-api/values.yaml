@@ -1,0 +1,354 @@
+# MedinovAI LIS API - Helm Chart Values
+# Healthcare-compliant configuration with HIPAA/ISO 13485 support
+
+# Global Settings
+global:
+  namespace: lis-platform
+  environment: production
+  imageRegistry: ghcr.io
+  imagePullSecrets:
+    - name: ghcr-credentials
+  
+  # Compliance Settings
+  compliance:
+    hipaa: true
+    iso13485: true
+    gdpr: true
+    auditLogging: true
+
+# Image Configuration
+image:
+  registry: ghcr.io
+  repository: medinovai/lis-api
+  tag: "1.0.0"
+  pullPolicy: IfNotPresent
+  digest: ""
+
+# Replica Configuration
+replicaCount: 3
+
+# Update Strategy
+updateStrategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 1
+    maxUnavailable: 0
+
+# Service Account
+serviceAccount:
+  create: true
+  name: "lis-api-sa"
+  annotations:
+    azure.workload.identity/client-id: ""
+  automountServiceAccountToken: true
+
+# Pod Configuration
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "8080"
+  prometheus.io/path: "/metrics"
+  sidecar.istio.io/inject: "true"
+
+podLabels:
+  app.kubernetes.io/name: lis-api
+  app.kubernetes.io/component: api
+  app.kubernetes.io/part-of: medinovai-platform
+  compliance/hipaa: "true"
+  compliance/iso-13485: "true"
+  monitoring.medinovai.com/scrape: "true"
+
+# Security Context
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 1000
+  capabilities:
+    drop:
+      - ALL
+
+# Container Configuration
+container:
+  ports:
+    - name: http
+      containerPort: 8080
+      protocol: TCP
+    - name: metrics
+      containerPort: 9090
+      protocol: TCP
+
+# Service Configuration
+service:
+  type: ClusterIP
+  port: 8080
+  targetPort: 8080
+  annotations:
+    service.beta.kubernetes.io/azure-load-balancer-internal: "true"
+  labels:
+    app.kubernetes.io/component: api
+
+# Ingress Configuration
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+    nginx.ingress.kubernetes.io/rate-limit-burst: "200"
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      more_set_headers "X-Frame-Options: DENY";
+      more_set_headers "X-Content-Type-Options: nosniff";
+      more_set_headers "X-XSS-Protection: 1; mode=block";
+      more_set_headers "Strict-Transport-Security: max-age=31536000; includeSubDomains";
+  hosts:
+    - host: api.lis.medinovai.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: lis-api-tls
+      hosts:
+        - api.lis.medinovai.com
+
+# Resource Configuration
+resources:
+  requests:
+    memory: "512Mi"
+    cpu: "250m"
+  limits:
+    memory: "2Gi"
+    cpu: "2000m"
+
+# Horizontal Pod Autoscaler
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 20
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+        - type: Pods
+          value: 1
+          periodSeconds: 60
+    scaleUp:
+      stabilizationWindowSeconds: 0
+      policies:
+        - type: Pods
+          value: 4
+          periodSeconds: 15
+        - type: Percent
+          value: 100
+          periodSeconds: 15
+      selectPolicy: Max
+
+# Pod Disruption Budget
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 2
+  # maxUnavailable: 1
+
+# Health Checks
+livenessProbe:
+  enabled: true
+  httpGet:
+    path: /health/live
+    port: http
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+  successThreshold: 1
+
+readinessProbe:
+  enabled: true
+  httpGet:
+    path: /health/ready
+    port: http
+  initialDelaySeconds: 10
+  periodSeconds: 5
+  timeoutSeconds: 3
+  failureThreshold: 3
+  successThreshold: 1
+
+startupProbe:
+  enabled: true
+  httpGet:
+    path: /health/startup
+    port: http
+  initialDelaySeconds: 5
+  periodSeconds: 5
+  timeoutSeconds: 3
+  failureThreshold: 30
+  successThreshold: 1
+
+# Environment Variables
+env:
+  - name: ASPNETCORE_ENVIRONMENT
+    value: "Production"
+  - name: ASPNETCORE_URLS
+    value: "http://+:8080"
+  - name: OTEL_SERVICE_NAME
+    value: "lis-api"
+  - name: OTEL_EXPORTER_OTLP_ENDPOINT
+    value: "http://otel-collector.monitoring:4317"
+
+# Environment Variables from Secrets/ConfigMaps
+envFrom:
+  - configMapRef:
+      name: lis-api-config
+  - secretRef:
+      name: lis-database-credentials
+  - secretRef:
+      name: lis-redis-credentials
+  - secretRef:
+      name: lis-jwt-signing-key
+
+# Volume Mounts
+volumeMounts:
+  - name: tmp
+    mountPath: /tmp
+  - name: app-logs
+    mountPath: /var/log/app
+  - name: tls-certs
+    mountPath: /etc/tls
+    readOnly: true
+
+volumes:
+  - name: tmp
+    emptyDir: {}
+  - name: app-logs
+    emptyDir: {}
+  - name: tls-certs
+    secret:
+      secretName: lis-api-tls
+      optional: true
+
+# Node Selector
+nodeSelector:
+  node-type: healthcare
+  kubernetes.io/os: linux
+
+# Tolerations
+tolerations:
+  - key: "healthcare"
+    operator: "Equal"
+    value: "true"
+    effect: "NoSchedule"
+
+# Affinity Rules
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values:
+                  - lis-api
+          topologyKey: kubernetes.io/hostname
+  nodeAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 50
+        preference:
+          matchExpressions:
+            - key: node-type
+              operator: In
+              values:
+                - healthcare
+
+# Topology Spread Constraints
+topologySpreadConstraints:
+  - maxSkew: 1
+    topologyKey: topology.kubernetes.io/zone
+    whenUnsatisfiable: ScheduleAnyway
+    labelSelector:
+      matchLabels:
+        app.kubernetes.io/name: lis-api
+
+# Init Containers
+initContainers:
+  - name: wait-for-db
+    image: busybox:1.36
+    command:
+      - sh
+      - -c
+      - |
+        until nc -z mysql.lis-platform.svc.cluster.local 3306; do
+          echo "Waiting for MySQL..."
+          sleep 2
+        done
+        echo "MySQL is available"
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 1000
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+          - ALL
+
+# Sidecar Containers
+sidecars: []
+
+# Network Policy
+networkPolicy:
+  enabled: true
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: gateway
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+      ports:
+        - port: 8080
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: database
+      ports:
+        - port: 3306
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: cache
+      ports:
+        - port: 6379
+
+# Service Monitor for Prometheus
+serviceMonitor:
+  enabled: true
+  namespace: monitoring
+  interval: 30s
+  scrapeTimeout: 10s
+  labels:
+    release: prometheus
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 30s
+
+# Extra Manifests
+extraManifests: []

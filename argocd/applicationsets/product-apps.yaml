@@ -1,0 +1,310 @@
+# MedinovAI LIS - ArgoCD ApplicationSets
+# Dynamic application generation for multi-environment deployments
+# Supports development, staging, and production environments
+
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: lis-platform-environments
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: lis-platform-environments
+    app.kubernetes.io/part-of: medinovai-lis
+  annotations:
+    description: "Multi-environment deployment for LIS platform"
+spec:
+  # Generate applications for each environment
+  generators:
+    - list:
+        elements:
+          - environment: development
+            namespace: lis-development
+            targetRevision: develop
+            replicaCount: "1"
+            autoscalingEnabled: "false"
+            values: values-development.yaml
+            syncPolicy: automated
+          - environment: staging
+            namespace: lis-staging
+            targetRevision: staging
+            replicaCount: "2"
+            autoscalingEnabled: "true"
+            values: values-staging.yaml
+            syncPolicy: automated
+          - environment: production
+            namespace: lis-platform
+            targetRevision: main
+            replicaCount: "3"
+            autoscalingEnabled: "true"
+            values: values-production.yaml
+            syncPolicy: manual
+  
+  template:
+    metadata:
+      name: 'lis-platform-{{environment}}'
+      namespace: argocd
+      labels:
+        app.kubernetes.io/name: lis-platform
+        app.kubernetes.io/instance: '{{environment}}'
+        app.kubernetes.io/part-of: medinovai-lis
+        environment: '{{environment}}'
+        compliance/hipaa: "true"
+      annotations:
+        notifications.argoproj.io/subscribe.on-sync-succeeded.slack: 'lis-{{environment}}'
+        notifications.argoproj.io/subscribe.on-sync-failed.slack: lis-alerts
+      finalizers:
+        - resources-finalizer.argocd.argoproj.io
+    spec:
+      project: medinovai-lis
+      
+      source:
+        repoURL: https://github.com/medinovai/lis-infrastructure.git
+        targetRevision: '{{targetRevision}}'
+        path: kubernetes/helm-charts/lis-api
+        
+        helm:
+          releaseName: 'lis-platform-{{environment}}'
+          valueFiles:
+            - values.yaml
+            - '{{values}}'
+          parameters:
+            - name: global.environment
+              value: '{{environment}}'
+            - name: global.namespace
+              value: '{{namespace}}'
+            - name: replicaCount
+              value: '{{replicaCount}}'
+            - name: autoscaling.enabled
+              value: '{{autoscalingEnabled}}'
+      
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: '{{namespace}}'
+      
+      syncPolicy:
+        syncOptions:
+          - CreateNamespace=true
+          - PruneLast=true
+          - ApplyOutOfSyncOnly=true
+        retry:
+          limit: 3
+          backoff:
+            duration: 10s
+            factor: 2
+            maxDuration: 2m
+      
+      ignoreDifferences:
+        - group: apps
+          kind: Deployment
+          jsonPointers:
+            - /spec/replicas
+---
+# ApplicationSet for microservices across environments
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: lis-microservices
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: lis-microservices
+    app.kubernetes.io/part-of: medinovai-lis
+spec:
+  generators:
+    # Matrix generator: environments x services
+    - matrix:
+        generators:
+          # Environments
+          - list:
+              elements:
+                - environment: development
+                  namespace: lis-development
+                  targetRevision: develop
+                - environment: staging
+                  namespace: lis-staging
+                  targetRevision: staging
+                - environment: production
+                  namespace: lis-platform
+                  targetRevision: main
+          # Services
+          - list:
+              elements:
+                - service: billing
+                  path: services/billing
+                  port: "8081"
+                - service: notification
+                  path: services/notification
+                  port: "8082"
+                - service: hl7
+                  path: services/hl7
+                  port: "8083"
+                - service: reporting
+                  path: services/reporting
+                  port: "8084"
+  
+  template:
+    metadata:
+      name: 'lis-{{service}}-{{environment}}'
+      namespace: argocd
+      labels:
+        app.kubernetes.io/name: 'lis-{{service}}'
+        app.kubernetes.io/instance: '{{environment}}'
+        app.kubernetes.io/part-of: medinovai-lis
+        app.kubernetes.io/component: '{{service}}'
+        environment: '{{environment}}'
+      finalizers:
+        - resources-finalizer.argocd.argoproj.io
+    spec:
+      project: medinovai-lis
+      
+      source:
+        repoURL: https://github.com/medinovai/lis-services.git
+        targetRevision: '{{targetRevision}}'
+        path: '{{path}}/kubernetes'
+        
+        kustomize:
+          namePrefix: lis-
+          commonLabels:
+            environment: '{{environment}}'
+            service: '{{service}}'
+      
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: '{{namespace}}'
+      
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=false
+          - ApplyOutOfSyncOnly=true
+        retry:
+          limit: 3
+          backoff:
+            duration: 10s
+            factor: 2
+            maxDuration: 2m
+---
+# ApplicationSet using Git generator for dynamic service discovery
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: lis-services-git-discovery
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: lis-services-discovery
+    app.kubernetes.io/part-of: medinovai-lis
+spec:
+  generators:
+    # Git directory generator - discovers services from repo structure
+    - git:
+        repoURL: https://github.com/medinovai/lis-services.git
+        revision: main
+        directories:
+          - path: services/*/kubernetes
+        template:
+          metadata:
+            labels:
+              service-type: discovered
+  
+  template:
+    metadata:
+      name: 'lis-{{path.basename}}-prod'
+      namespace: argocd
+      labels:
+        app.kubernetes.io/name: '{{path.basename}}'
+        app.kubernetes.io/part-of: medinovai-lis
+        discovered: "true"
+      finalizers:
+        - resources-finalizer.argocd.argoproj.io
+    spec:
+      project: medinovai-lis
+      
+      source:
+        repoURL: https://github.com/medinovai/lis-services.git
+        targetRevision: main
+        path: '{{path}}'
+      
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: lis-platform
+      
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=false
+        retry:
+          limit: 3
+          backoff:
+            duration: 10s
+            factor: 2
+            maxDuration: 2m
+---
+# ApplicationSet for Pull Request previews
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: lis-pr-previews
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: lis-pr-previews
+    app.kubernetes.io/part-of: medinovai-lis
+spec:
+  generators:
+    - pullRequest:
+        github:
+          owner: medinovai
+          repo: lis-api
+          tokenRef:
+            secretName: github-token
+            key: token
+          labels:
+            - preview
+        requeueAfterSeconds: 60
+  
+  template:
+    metadata:
+      name: 'lis-api-pr-{{number}}'
+      namespace: argocd
+      labels:
+        app.kubernetes.io/name: lis-api-preview
+        app.kubernetes.io/instance: 'pr-{{number}}'
+        preview: "true"
+      annotations:
+        pr-url: '{{url}}'
+        pr-author: '{{author}}'
+      finalizers:
+        - resources-finalizer.argocd.argoproj.io
+    spec:
+      project: medinovai-lis
+      
+      source:
+        repoURL: https://github.com/medinovai/lis-api.git
+        targetRevision: '{{head_sha}}'
+        path: kubernetes
+        
+        helm:
+          parameters:
+            - name: global.environment
+              value: preview
+            - name: image.tag
+              value: 'pr-{{number}}'
+            - name: replicaCount
+              value: "1"
+            - name: autoscaling.enabled
+              value: "false"
+            - name: ingress.hosts[0].host
+              value: 'pr-{{number}}.preview.lis.medinovai.com'
+      
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: 'lis-preview-{{number}}'
+      
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true

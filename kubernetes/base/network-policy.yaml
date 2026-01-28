@@ -1,0 +1,480 @@
+# MedinovAI LIS Infrastructure - Network Policies
+# HIPAA-compliant zero-trust network segmentation
+# All traffic is denied by default, explicit allow rules only
+
+#==============================================================================
+# Default Deny All - Zero Trust Foundation
+#==============================================================================
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: lis-platform
+  labels:
+    app.kubernetes.io/name: medinovai-lis
+    app.kubernetes.io/component: security
+    security.medinovai.com/policy: zero-trust
+  annotations:
+    description: "Default deny all ingress and egress traffic - zero trust baseline"
+    compliance: "HIPAA Security Rule - Access Control"
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+---
+#==============================================================================
+# Allow DNS Resolution - Required for all pods
+#==============================================================================
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-dns
+  namespace: lis-platform
+  labels:
+    app.kubernetes.io/name: medinovai-lis
+    app.kubernetes.io/component: security
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+---
+#==============================================================================
+# LIS API Network Policy
+#==============================================================================
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: lis-api-policy
+  namespace: lis-platform
+  labels:
+    app.kubernetes.io/name: medinovai-lis
+    app.kubernetes.io/component: api
+    security.medinovai.com/tier: application
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: api
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Allow from gateway
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: gateway
+      ports:
+        - protocol: TCP
+          port: 8080
+    # Allow from ingress controller
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+      ports:
+        - protocol: TCP
+          port: 8080
+    # Allow metrics scraping from Prometheus
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
+          podSelector:
+            matchLabels:
+              app: prometheus
+      ports:
+        - protocol: TCP
+          port: 8080
+        - protocol: TCP
+          port: 9090
+    # Allow from internal services
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/part-of: medinovai-platform
+      ports:
+        - protocol: TCP
+          port: 8080
+  egress:
+    # Allow to MySQL
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: database
+      ports:
+        - protocol: TCP
+          port: 3306
+    # Allow to Redis
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: cache
+      ports:
+        - protocol: TCP
+          port: 6379
+    # Allow to RabbitMQ
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: messaging
+      ports:
+        - protocol: TCP
+          port: 5672
+    # Allow to Elasticsearch
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: logging
+      ports:
+        - protocol: TCP
+          port: 9200
+    # Allow HTTPS to external services (integrations)
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.0.0.0/8
+              - 172.16.0.0/12
+              - 192.168.0.0/16
+      ports:
+        - protocol: TCP
+          port: 443
+---
+#==============================================================================
+# Gateway Network Policy
+#==============================================================================
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: gateway-policy
+  namespace: lis-platform
+  labels:
+    app.kubernetes.io/name: medinovai-lis
+    app.kubernetes.io/component: gateway
+    security.medinovai.com/tier: edge
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: gateway
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Allow from ingress controller
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+      ports:
+        - protocol: TCP
+          port: 8080
+    # Allow from load balancer
+    - from: []
+      ports:
+        - protocol: TCP
+          port: 8080
+  egress:
+    # Allow to API services
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: api
+      ports:
+        - protocol: TCP
+          port: 8080
+    # Allow to Redis for caching/rate limiting
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: cache
+      ports:
+        - protocol: TCP
+          port: 6379
+---
+#==============================================================================
+# Database Network Policy - Most Restrictive
+#==============================================================================
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: database-policy
+  namespace: lis-platform
+  labels:
+    app.kubernetes.io/name: medinovai-lis
+    app.kubernetes.io/component: database
+    security.medinovai.com/tier: data
+    compliance: hipaa-phi
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: database
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Only allow from API services
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: api
+      ports:
+        - protocol: TCP
+          port: 3306
+    # Allow from background workers
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: worker
+      ports:
+        - protocol: TCP
+          port: 3306
+    # Allow from migration jobs
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: migration
+      ports:
+        - protocol: TCP
+          port: 3306
+  egress:
+    # Database replication only (if using MySQL replication)
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: database
+      ports:
+        - protocol: TCP
+          port: 3306
+---
+#==============================================================================
+# Redis Cache Network Policy
+#==============================================================================
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: redis-policy
+  namespace: lis-platform
+  labels:
+    app.kubernetes.io/name: medinovai-lis
+    app.kubernetes.io/component: cache
+    security.medinovai.com/tier: data
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: cache
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Allow from API
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: api
+      ports:
+        - protocol: TCP
+          port: 6379
+    # Allow from Gateway
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: gateway
+      ports:
+        - protocol: TCP
+          port: 6379
+    # Allow from Workers
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: worker
+      ports:
+        - protocol: TCP
+          port: 6379
+  egress:
+    # Redis Sentinel/Cluster communication
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: cache
+      ports:
+        - protocol: TCP
+          port: 6379
+        - protocol: TCP
+          port: 26379
+---
+#==============================================================================
+# RabbitMQ Network Policy
+#==============================================================================
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: rabbitmq-policy
+  namespace: lis-platform
+  labels:
+    app.kubernetes.io/name: medinovai-lis
+    app.kubernetes.io/component: messaging
+    security.medinovai.com/tier: data
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: messaging
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Allow from API
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: api
+      ports:
+        - protocol: TCP
+          port: 5672
+    # Allow from Workers
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: worker
+      ports:
+        - protocol: TCP
+          port: 5672
+    # Allow from HL7 services
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: hl7
+      ports:
+        - protocol: TCP
+          port: 5672
+    # Management port from monitoring
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
+      ports:
+        - protocol: TCP
+          port: 15672
+  egress:
+    # Cluster communication
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: messaging
+      ports:
+        - protocol: TCP
+          port: 4369
+        - protocol: TCP
+          port: 25672
+---
+#==============================================================================
+# Background Workers Network Policy
+#==============================================================================
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: workers-policy
+  namespace: lis-platform
+  labels:
+    app.kubernetes.io/name: medinovai-lis
+    app.kubernetes.io/component: worker
+    security.medinovai.com/tier: application
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: worker
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Workers typically don't receive inbound traffic
+    # Only health checks from kubelet
+    - from: []
+      ports:
+        - protocol: TCP
+          port: 8080
+  egress:
+    # Allow to Database
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: database
+      ports:
+        - protocol: TCP
+          port: 3306
+    # Allow to Redis
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: cache
+      ports:
+        - protocol: TCP
+          port: 6379
+    # Allow to RabbitMQ
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: messaging
+      ports:
+        - protocol: TCP
+          port: 5672
+    # Allow to API (internal calls)
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: api
+      ports:
+        - protocol: TCP
+          port: 8080
+    # Allow external HTTPS (email, SMS providers)
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.0.0.0/8
+              - 172.16.0.0/12
+              - 192.168.0.0/16
+      ports:
+        - protocol: TCP
+          port: 443
+---
+#==============================================================================
+# Monitoring Stack Network Policy
+#==============================================================================
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-monitoring-scrape
+  namespace: lis-platform
+  labels:
+    app.kubernetes.io/name: medinovai-lis
+    app.kubernetes.io/component: monitoring
+spec:
+  podSelector:
+    matchLabels:
+      monitoring.medinovai.com/scrape: "true"
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
+          podSelector:
+            matchLabels:
+              app: prometheus
+      ports:
+        - protocol: TCP
+          port: 8080
+        - protocol: TCP
+          port: 9090

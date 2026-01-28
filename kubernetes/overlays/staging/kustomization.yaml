@@ -1,0 +1,61 @@
+# MedinovAI LIS - Staging Overlay
+# Kustomize overlay for staging environment
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: lis-staging
+
+namePrefix: staging-
+
+commonLabels:
+  environment: staging
+  app.kubernetes.io/part-of: medinovai-lis
+  compliance/hipaa: "true"
+
+commonAnnotations:
+  deployment.kubernetes.io/environment: staging
+
+resources:
+  - ../../base
+
+# Staging-specific patches
+patches:
+  - patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 2
+    target:
+      kind: Deployment
+      name: lis-api
+  
+  - patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/resources
+        value:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "2Gi"
+            cpu: "2000m"
+    target:
+      kind: Deployment
+      name: lis-api
+
+configMapGenerator:
+  - name: lis-api-env
+    behavior: merge
+    literals:
+      - ASPNETCORE_ENVIRONMENT=Staging
+      - LOG_LEVEL=Debug
+      - ENABLE_SWAGGER=true
+      - ENABLE_DETAILED_ERRORS=true
+
+images:
+  - name: medinovai/lis-api
+    newTag: staging-latest
+
+replicas:
+  - name: lis-api
+    count: 2

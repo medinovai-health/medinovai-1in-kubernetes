@@ -1,0 +1,468 @@
+{
+  "$schema": "https://grafana.com/schema/dashboard/v1",
+  "title": "MedinovAI Healthcare LIS - Security Dashboard",
+  "description": "Real-time security monitoring for healthcare compliance",
+  "tags": ["security", "healthcare", "hipaa", "soc2"],
+  "timezone": "UTC",
+  "refresh": "5m",
+  "schemaVersion": 39,
+  "editable": true,
+  
+  "annotations": {
+    "list": [
+      {
+        "name": "Security Incidents",
+        "datasource": "Prometheus",
+        "enable": true,
+        "iconColor": "red",
+        "query": "security_incident_total"
+      },
+      {
+        "name": "Compliance Audits",
+        "datasource": "Prometheus",
+        "enable": true,
+        "iconColor": "blue",
+        "query": "compliance_audit_completed"
+      }
+    ]
+  },
+  
+  "templating": {
+    "list": [
+      {
+        "name": "environment",
+        "type": "query",
+        "datasource": "Prometheus",
+        "query": "label_values(security_scan_total, environment)",
+        "current": {
+          "text": "production",
+          "value": "production"
+        },
+        "multi": false
+      },
+      {
+        "name": "service",
+        "type": "query",
+        "datasource": "Prometheus",
+        "query": "label_values(security_scan_total, service)",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "multi": true
+      }
+    ]
+  },
+  
+  "panels": [
+    {
+      "id": 1,
+      "title": "Security Overview",
+      "type": "stat",
+      "gridPos": { "x": 0, "y": 0, "w": 24, "h": 3 },
+      "targets": [],
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            { "type": "value", "options": { "pass": { "text": "COMPLIANT", "color": "green" } } },
+            { "type": "value", "options": { "warning": { "text": "WARNING", "color": "yellow" } } },
+            { "type": "value", "options": { "fail": { "text": "NON-COMPLIANT", "color": "red" } } }
+          ]
+        }
+      }
+    },
+    
+    {
+      "id": 2,
+      "title": "Vulnerability Counts",
+      "type": "stat",
+      "gridPos": { "x": 0, "y": 3, "w": 6, "h": 4 },
+      "targets": [
+        {
+          "expr": "sum(vulnerability_count{severity=\"critical\", environment=\"$environment\"})",
+          "legendFormat": "Critical"
+        },
+        {
+          "expr": "sum(vulnerability_count{severity=\"high\", environment=\"$environment\"})",
+          "legendFormat": "High"
+        },
+        {
+          "expr": "sum(vulnerability_count{severity=\"medium\", environment=\"$environment\"})",
+          "legendFormat": "Medium"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 1 },
+              { "color": "red", "value": 5 }
+            ]
+          }
+        }
+      }
+    },
+    
+    {
+      "id": 3,
+      "title": "Compliance Status",
+      "type": "gauge",
+      "gridPos": { "x": 6, "y": 3, "w": 6, "h": 4 },
+      "targets": [
+        {
+          "expr": "avg(compliance_score{framework=~\"hipaa|soc2|fda\", environment=\"$environment\"}) * 100",
+          "legendFormat": "Compliance Score"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 80 },
+              { "color": "green", "value": 95 }
+            ]
+          }
+        }
+      }
+    },
+    
+    {
+      "id": 4,
+      "title": "PHI Access Monitoring",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 3, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "sum(rate(phi_access_total{environment=\"$environment\"}[5m])) by (access_type)",
+          "legendFormat": "{{access_type}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "fillOpacity": 20
+          }
+        }
+      }
+    },
+    
+    {
+      "id": 5,
+      "title": "Failed Authentication Attempts",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 7, "w": 12, "h": 4 },
+      "targets": [
+        {
+          "expr": "sum(rate(authentication_failure_total{environment=\"$environment\"}[5m])) by (reason)",
+          "legendFormat": "{{reason}}"
+        }
+      ],
+      "alert": {
+        "name": "High Authentication Failures",
+        "conditions": [
+          {
+            "evaluator": { "type": "gt", "params": [10] },
+            "query": { "params": ["A", "5m", "now"] }
+          }
+        ],
+        "notifications": [
+          { "uid": "security-slack" },
+          { "uid": "security-pagerduty" }
+        ]
+      }
+    },
+    
+    {
+      "id": 6,
+      "title": "HIPAA Compliance Controls",
+      "type": "table",
+      "gridPos": { "x": 0, "y": 11, "w": 8, "h": 8 },
+      "targets": [
+        {
+          "expr": "compliance_control_status{framework=\"hipaa\"}",
+          "format": "table",
+          "instant": true
+        }
+      ],
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": { "Time": true },
+            "renameByName": {
+              "control_id": "Control ID",
+              "control_name": "Control Name",
+              "status": "Status"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Status" },
+            "properties": [
+              {
+                "id": "custom.displayMode",
+                "value": "color-background"
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  { "type": "value", "options": { "1": { "text": "PASS", "color": "green" } } },
+                  { "type": "value", "options": { "0": { "text": "FAIL", "color": "red" } } }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    
+    {
+      "id": 7,
+      "title": "SOC 2 Trust Services Criteria",
+      "type": "table",
+      "gridPos": { "x": 8, "y": 11, "w": 8, "h": 8 },
+      "targets": [
+        {
+          "expr": "compliance_control_status{framework=\"soc2\"}",
+          "format": "table",
+          "instant": true
+        }
+      ]
+    },
+    
+    {
+      "id": 8,
+      "title": "FDA 21 CFR Part 11 Status",
+      "type": "table",
+      "gridPos": { "x": 16, "y": 11, "w": 8, "h": 8 },
+      "targets": [
+        {
+          "expr": "compliance_control_status{framework=\"fda\"}",
+          "format": "table",
+          "instant": true
+        }
+      ]
+    },
+    
+    {
+      "id": 9,
+      "title": "Security Scan Results (Last 24h)",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 19, "w": 12, "h": 6 },
+      "targets": [
+        {
+          "expr": "sum(security_scan_findings{environment=\"$environment\"}) by (scan_type, severity)",
+          "legendFormat": "{{scan_type}} - {{severity}}"
+        }
+      ]
+    },
+    
+    {
+      "id": 10,
+      "title": "Container Security Status",
+      "type": "stat",
+      "gridPos": { "x": 12, "y": 19, "w": 6, "h": 6 },
+      "targets": [
+        {
+          "expr": "sum(container_vulnerability_count{environment=\"$environment\"}) by (image)",
+          "legendFormat": "{{image}}"
+        }
+      ]
+    },
+    
+    {
+      "id": 11,
+      "title": "Secret Rotation Status",
+      "type": "gauge",
+      "gridPos": { "x": 18, "y": 19, "w": 6, "h": 6 },
+      "targets": [
+        {
+          "expr": "avg(secrets_rotation_compliance{environment=\"$environment\"}) * 100",
+          "legendFormat": "Rotation Compliance"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 80 },
+              { "color": "green", "value": 95 }
+            ]
+          }
+        }
+      }
+    },
+    
+    {
+      "id": 12,
+      "title": "Recent Security Events",
+      "type": "logs",
+      "gridPos": { "x": 0, "y": 25, "w": 24, "h": 8 },
+      "datasource": "Loki",
+      "targets": [
+        {
+          "expr": "{job=\"security-events\", environment=\"$environment\"} |= \"security\" | json"
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "showLabels": true,
+        "wrapLogMessage": true,
+        "enableLogDetails": true
+      }
+    },
+    
+    {
+      "id": 13,
+      "title": "Audit Log Activity",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 33, "w": 12, "h": 6 },
+      "targets": [
+        {
+          "expr": "sum(rate(audit_log_entries{environment=\"$environment\"}[5m])) by (action_type)",
+          "legendFormat": "{{action_type}}"
+        }
+      ]
+    },
+    
+    {
+      "id": 14,
+      "title": "Break Glass Usage",
+      "type": "stat",
+      "gridPos": { "x": 12, "y": 33, "w": 6, "h": 6 },
+      "targets": [
+        {
+          "expr": "sum(increase(break_glass_access_total{environment=\"$environment\"}[24h]))",
+          "legendFormat": "Last 24h"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 1 },
+              { "color": "red", "value": 5 }
+            ]
+          }
+        }
+      }
+    },
+    
+    {
+      "id": 15,
+      "title": "Network Security Events",
+      "type": "timeseries",
+      "gridPos": { "x": 18, "y": 33, "w": 6, "h": 6 },
+      "targets": [
+        {
+          "expr": "sum(rate(network_security_events{environment=\"$environment\"}[5m])) by (event_type)",
+          "legendFormat": "{{event_type}}"
+        }
+      ]
+    },
+    
+    {
+      "id": 16,
+      "title": "Vulnerability Remediation SLA",
+      "type": "bargauge",
+      "gridPos": { "x": 0, "y": 39, "w": 8, "h": 6 },
+      "targets": [
+        {
+          "expr": "vulnerability_remediation_sla_compliance{environment=\"$environment\"}",
+          "legendFormat": "{{severity}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 80 },
+              { "color": "green", "value": 95 }
+            ]
+          }
+        }
+      }
+    },
+    
+    {
+      "id": 17,
+      "title": "Encryption Status",
+      "type": "stat",
+      "gridPos": { "x": 8, "y": 39, "w": 8, "h": 6 },
+      "targets": [
+        {
+          "expr": "encryption_enabled{environment=\"$environment\", type=\"at-rest\"}",
+          "legendFormat": "At Rest"
+        },
+        {
+          "expr": "encryption_enabled{environment=\"$environment\", type=\"in-transit\"}",
+          "legendFormat": "In Transit"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            { "type": "value", "options": { "1": { "text": "Enabled", "color": "green" } } },
+            { "type": "value", "options": { "0": { "text": "Disabled", "color": "red" } } }
+          ]
+        }
+      }
+    },
+    
+    {
+      "id": 18,
+      "title": "Security Training Compliance",
+      "type": "piechart",
+      "gridPos": { "x": 16, "y": 39, "w": 8, "h": 6 },
+      "targets": [
+        {
+          "expr": "security_training_status",
+          "legendFormat": "{{status}}"
+        }
+      ]
+    }
+  ],
+  
+  "links": [
+    {
+      "title": "HIPAA Compliance Checklist",
+      "url": "/d/hipaa-checklist",
+      "icon": "doc"
+    },
+    {
+      "title": "SOC 2 Evidence",
+      "url": "/d/soc2-evidence",
+      "icon": "doc"
+    },
+    {
+      "title": "Incident Response",
+      "url": "/d/incident-response",
+      "icon": "fire"
+    }
+  ]
+}

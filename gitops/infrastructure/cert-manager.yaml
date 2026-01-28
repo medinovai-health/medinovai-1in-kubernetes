@@ -1,0 +1,323 @@
+# Cert-Manager - Automated TLS certificate management
+# Required for healthcare HTTPS/TLS compliance
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cert-manager
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: cert-manager
+    app.kubernetes.io/component: security
+    medinovai.com/infrastructure: core
+  annotations:
+    argocd.argoproj.io/sync-wave: "-10"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: infrastructure
+  source:
+    repoURL: https://charts.jetstack.io
+    chart: cert-manager
+    targetRevision: v1.14.2
+    helm:
+      releaseName: cert-manager
+      values: |
+        # Install CRDs
+        installCRDs: true
+        
+        # Global configuration
+        global:
+          leaderElection:
+            namespace: cert-manager
+        
+        # Replica count for HA
+        replicaCount: 2
+        
+        # Resource limits
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 200m
+            memory: 256Mi
+        
+        # Security context
+        securityContext:
+          runAsNonRoot: true
+          seccompProfile:
+            type: RuntimeDefault
+        
+        containerSecurityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          capabilities:
+            drop:
+              - ALL
+        
+        # Webhook configuration
+        webhook:
+          replicaCount: 2
+          resources:
+            requests:
+              cpu: 25m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi
+          securityContext:
+            runAsNonRoot: true
+          containerSecurityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+        
+        # CA Injector
+        cainjector:
+          replicaCount: 2
+          resources:
+            requests:
+              cpu: 25m
+              memory: 64Mi
+            limits:
+              cpu: 100m
+              memory: 256Mi
+        
+        # Prometheus metrics
+        prometheus:
+          enabled: true
+          servicemonitor:
+            enabled: true
+            namespace: monitoring
+            labels:
+              release: prometheus
+        
+        # Pod disruption budget
+        podDisruptionBudget:
+          enabled: true
+          minAvailable: 1
+        
+        # DNS configuration for ACME challenges
+        dns01RecursiveNameservers: "8.8.8.8:53,1.1.1.1:53"
+        dns01RecursiveNameserversOnly: true
+  
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cert-manager
+  
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+---
+# Let's Encrypt Production ClusterIssuer
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+  labels:
+    medinovai.com/issuer-type: acme
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: platform@medinovai.com
+    privateKeySecretRef:
+      name: letsencrypt-prod-account-key
+    solvers:
+      # HTTP-01 challenge for standard domains
+      - http01:
+          ingress:
+            class: nginx
+        selector:
+          matchLabels:
+            use-http01-solver: "true"
+      # DNS-01 challenge for wildcard certificates
+      - dns01:
+          route53:
+            region: us-east-1
+            # Uses IRSA (IAM Roles for Service Accounts)
+        selector:
+          dnsZones:
+            - "medinovai.com"
+            - "*.medinovai.com"
+---
+# Let's Encrypt Staging ClusterIssuer (for testing)
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-staging
+  labels:
+    medinovai.com/issuer-type: acme
+spec:
+  acme:
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    email: platform@medinovai.com
+    privateKeySecretRef:
+      name: letsencrypt-staging-account-key
+    solvers:
+      - http01:
+          ingress:
+            class: nginx
+---
+# Self-Signed CA for Internal Services
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: internal-ca
+  labels:
+    medinovai.com/issuer-type: internal
+spec:
+  selfSigned: {}
+---
+# Internal CA Certificate
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: medinovai-internal-ca
+  namespace: cert-manager
+spec:
+  isCA: true
+  commonName: MedinovAI Internal CA
+  secretName: medinovai-internal-ca
+  duration: 87600h  # 10 years
+  renewBefore: 8760h  # 1 year
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  issuerRef:
+    name: internal-ca
+    kind: ClusterIssuer
+---
+# Internal CA Issuer (issues from CA cert)
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: medinovai-internal-issuer
+  labels:
+    medinovai.com/issuer-type: internal
+spec:
+  ca:
+    secretName: medinovai-internal-ca
+---
+# Wildcard Certificate for Production
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: wildcard-medinovai-com
+  namespace: ingress-nginx
+  labels:
+    medinovai.com/cert-type: wildcard
+spec:
+  secretName: wildcard-medinovai-com-tls
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  commonName: "*.medinovai.com"
+  dnsNames:
+    - "medinovai.com"
+    - "*.medinovai.com"
+  duration: 2160h  # 90 days
+  renewBefore: 720h  # 30 days
+  privateKey:
+    algorithm: RSA
+    size: 2048
+    rotationPolicy: Always
+---
+# LIS Platform TLS Certificate
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: lis-platform-tls
+  namespace: lis-platform
+  labels:
+    app.kubernetes.io/name: lis-platform
+spec:
+  secretName: lis-platform-tls
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  dnsNames:
+    - "lis.medinovai.com"
+    - "api.lis.medinovai.com"
+  duration: 2160h
+  renewBefore: 720h
+  privateKey:
+    algorithm: RSA
+    size: 2048
+---
+# CTMS Platform TLS Certificate
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: ctms-tls
+  namespace: ctms
+  labels:
+    app.kubernetes.io/name: ctms
+spec:
+  secretName: ctms-tls
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  dnsNames:
+    - "ctms.medinovai.com"
+    - "api.ctms.medinovai.com"
+  duration: 2160h
+  renewBefore: 720h
+  privateKey:
+    algorithm: RSA
+    size: 2048
+---
+# Billing Platform TLS Certificate
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: billing-tls
+  namespace: billing
+  labels:
+    app.kubernetes.io/name: billing
+spec:
+  secretName: billing-tls
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  dnsNames:
+    - "billing.medinovai.com"
+    - "api.billing.medinovai.com"
+  duration: 2160h
+  renewBefore: 720h
+  privateKey:
+    algorithm: RSA
+    size: 2048
+---
+# mTLS Certificate for inter-service communication
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: lis-mtls
+  namespace: lis-platform
+  labels:
+    app.kubernetes.io/name: lis-platform
+    medinovai.com/cert-type: mtls
+spec:
+  secretName: lis-mtls-certs
+  issuerRef:
+    name: medinovai-internal-issuer
+    kind: ClusterIssuer
+  commonName: lis-platform.lis-platform.svc.cluster.local
+  dnsNames:
+    - "lis-platform"
+    - "lis-platform.lis-platform"
+    - "lis-platform.lis-platform.svc"
+    - "lis-platform.lis-platform.svc.cluster.local"
+    - "*.lis-platform.svc.cluster.local"
+  usages:
+    - server auth
+    - client auth
+  duration: 8760h  # 1 year
+  renewBefore: 720h  # 30 days
+  privateKey:
+    algorithm: ECDSA
+    size: 256

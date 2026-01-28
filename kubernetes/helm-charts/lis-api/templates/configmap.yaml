@@ -1,0 +1,45 @@
+{{- /*
+MedinovAI LIS API - ConfigMap Template
+Application configuration for healthcare compliance
+*/ -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "lis-api.fullname" . }}-config
+  namespace: {{ .Values.global.namespace | default .Release.Namespace }}
+  labels:
+    {{- include "lis-api.labels" . | nindent 4 }}
+  annotations:
+    description: "Application configuration for LIS API"
+data:
+  # Application Settings
+  ASPNETCORE_ENVIRONMENT: {{ .Values.global.environment | default "Production" | quote }}
+  ASPNETCORE_URLS: "http://+:8080"
+  
+  # Logging
+  Logging__LogLevel__Default: {{ .Values.logging.level | default "Information" | quote }}
+  Logging__LogLevel__Microsoft: "Warning"
+  Logging__LogLevel__Microsoft.EntityFrameworkCore: "Warning"
+  
+  # Health Checks
+  HealthChecks__Enabled: "true"
+  HealthChecks__ReadinessPath: "/health/ready"
+  HealthChecks__LivenessPath: "/health/live"
+  
+  # OpenTelemetry
+  OTEL_SERVICE_NAME: {{ include "lis-api.fullname" . | quote }}
+  OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.observability.otlpEndpoint | default "http://otel-collector.monitoring:4317" | quote }}
+  OTEL_TRACES_SAMPLER: "parentbased_traceidratio"
+  OTEL_TRACES_SAMPLER_ARG: {{ .Values.observability.traceSampleRate | default "0.1" | quote }}
+  
+  # Rate Limiting
+  RateLimiting__PermitLimit: {{ .Values.rateLimiting.permitLimit | default "100" | quote }}
+  RateLimiting__Window: {{ .Values.rateLimiting.window | default "60" | quote }}
+  
+  # Cache
+  Cache__DefaultExpirationMinutes: {{ .Values.cache.defaultExpiration | default "15" | quote }}
+  
+  # Healthcare Compliance
+  Compliance__HIPAA__Enabled: {{ .Values.global.compliance.hipaa | default true | quote }}
+  Compliance__HIPAA__AuditAllAccess: "true"
+  Compliance__ISO13485__Enabled: {{ .Values.global.compliance.iso13485 | default true | quote }}

@@ -1,0 +1,223 @@
+# MedinovAI LIS Platform - ArgoCD Application
+# GitOps deployment for the core LIS platform
+# Healthcare-compliant with automated sync and rollback
+
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: lis-platform
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: lis-platform
+    app.kubernetes.io/part-of: medinovai-lis
+    app.kubernetes.io/managed-by: argocd
+    compliance/hipaa: "true"
+    compliance/iso-13485: "true"
+  annotations:
+    argocd.argoproj.io/manifest-generate-paths: .
+    notifications.argoproj.io/subscribe.on-sync-succeeded.slack: lis-deployments
+    notifications.argoproj.io/subscribe.on-sync-failed.slack: lis-deployments
+    notifications.argoproj.io/subscribe.on-health-degraded.slack: lis-alerts
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: medinovai-lis
+  
+  source:
+    repoURL: https://github.com/medinovai/lis-infrastructure.git
+    targetRevision: main
+    path: kubernetes/helm-charts/lis-api
+    
+    helm:
+      releaseName: lis-platform
+      
+      # Values files in order of precedence (later overrides earlier)
+      valueFiles:
+        - values.yaml
+        - values-production.yaml
+      
+      # Inline value overrides
+      parameters:
+        - name: global.environment
+          value: production
+        - name: replicaCount
+          value: "3"
+        - name: autoscaling.enabled
+          value: "true"
+        - name: autoscaling.minReplicas
+          value: "3"
+        - name: autoscaling.maxReplicas
+          value: "20"
+      
+      # Skip CRDs if they should be managed separately
+      skipCrds: false
+  
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: lis-platform
+  
+  # Sync policy
+  syncPolicy:
+    # Automated sync with self-heal
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    
+    # Sync options
+    syncOptions:
+      - Validate=true
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
+      - ApplyOutOfSyncOnly=true
+      - ServerSideApply=true
+      - RespectIgnoreDifferences=true
+    
+    # Retry policy for failed syncs
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+    
+    # Managed namespace metadata
+    managedNamespaceMetadata:
+      labels:
+        app.kubernetes.io/managed-by: argocd
+        compliance/hipaa: "true"
+  
+  # Ignore differences for dynamic fields
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas
+    - group: autoscaling
+      kind: HorizontalPodAutoscaler
+      jsonPointers:
+        - /spec/minReplicas
+        - /spec/maxReplicas
+    - kind: Secret
+      jsonPointers:
+        - /data
+  
+  # Resource tracking
+  revisionHistoryLimit: 10
+  
+  info:
+    - name: Documentation
+      value: https://docs.medinovai.com/lis-platform
+    - name: Compliance
+      value: HIPAA, ISO 13485
+    - name: Support
+      value: platform@medinovai.com
+---
+# ArgoCD Project for MedinovAI LIS
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: medinovai-lis
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: medinovai-lis
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  description: MedinovAI Laboratory Information System - Healthcare Platform
+  
+  # Source repositories
+  sourceRepos:
+    - https://github.com/medinovai/lis-infrastructure.git
+    - https://github.com/medinovai/lis-api.git
+    - https://github.com/medinovai/lis-services.git
+    - https://charts.bitnami.com/bitnami
+  
+  # Destination clusters and namespaces
+  destinations:
+    - namespace: lis-platform
+      server: https://kubernetes.default.svc
+    - namespace: lis-staging
+      server: https://kubernetes.default.svc
+    - namespace: lis-development
+      server: https://kubernetes.default.svc
+    - namespace: monitoring
+      server: https://kubernetes.default.svc
+  
+  # Cluster resource whitelist
+  clusterResourceWhitelist:
+    - group: ''
+      kind: Namespace
+    - group: 'networking.k8s.io'
+      kind: NetworkPolicy
+    - group: 'rbac.authorization.k8s.io'
+      kind: ClusterRole
+    - group: 'rbac.authorization.k8s.io'
+      kind: ClusterRoleBinding
+  
+  # Namespace resource blacklist (prevent dangerous resources)
+  namespaceResourceBlacklist:
+    - group: ''
+      kind: ResourceQuota
+    - group: ''
+      kind: LimitRange
+  
+  # Namespace resource whitelist
+  namespaceResourceWhitelist:
+    - group: '*'
+      kind: '*'
+  
+  # Roles for team access
+  roles:
+    - name: platform-admin
+      description: Full access to platform applications
+      policies:
+        - p, proj:medinovai-lis:platform-admin, applications, *, medinovai-lis/*, allow
+        - p, proj:medinovai-lis:platform-admin, clusters, get, medinovai-lis/*, allow
+        - p, proj:medinovai-lis:platform-admin, repositories, get, medinovai-lis/*, allow
+        - p, proj:medinovai-lis:platform-admin, logs, get, medinovai-lis/*, allow
+      groups:
+        - platform-admins
+    
+    - name: developer
+      description: Read access and sync for development
+      policies:
+        - p, proj:medinovai-lis:developer, applications, get, medinovai-lis/*, allow
+        - p, proj:medinovai-lis:developer, applications, sync, medinovai-lis/*-development, allow
+        - p, proj:medinovai-lis:developer, logs, get, medinovai-lis/*, allow
+      groups:
+        - developers
+    
+    - name: readonly
+      description: Read-only access for monitoring
+      policies:
+        - p, proj:medinovai-lis:readonly, applications, get, medinovai-lis/*, allow
+        - p, proj:medinovai-lis:readonly, logs, get, medinovai-lis/*, allow
+      groups:
+        - readonly-users
+  
+  # Sync windows for change management
+  syncWindows:
+    - kind: deny
+      schedule: '0 22 * * 1-5'  # Deny syncs weekdays 10 PM - 6 AM
+      duration: 8h
+      applications:
+        - '*-production'
+      namespaces:
+        - lis-platform
+      clusters:
+        - '*'
+    - kind: allow
+      schedule: '0 6 * * 0'  # Allow Sunday morning maintenance window
+      duration: 4h
+      applications:
+        - '*'
+      manualSync: true
+  
+  # Signature keys for signed commits (optional)
+  signatureKeys: []
+  
+  # Orphaned resources monitoring
+  orphanedResources:
+    warn: true

@@ -1,0 +1,346 @@
+# MedinovAI Healthcare LIS - Semgrep SAST Rules
+# Security scanning configuration for healthcare applications
+# Compliant with: HIPAA, SOC2, FDA 21 CFR Part 11
+
+rules:
+  # =============================================================================
+  # PHI/PII EXPOSURE PREVENTION
+  # =============================================================================
+  - id: phi-logging-prevention
+    message: "Potential PHI/PII data being logged. Healthcare data must not be logged in plain text."
+    severity: ERROR
+    languages: [csharp, typescript, javascript, python]
+    pattern-either:
+      - pattern: |
+          $LOGGER.Log(..., $SSN, ...)
+      - pattern: |
+          $LOGGER.Log(..., $PATIENT_NAME, ...)
+      - pattern: |
+          $LOGGER.Log(..., $DOB, ...)
+      - pattern: |
+          $LOGGER.Log(..., $MRN, ...)
+      - pattern: |
+          console.log(..., $PHI, ...)
+      - pattern: |
+          Console.WriteLine(..., $PHI, ...)
+    metadata:
+      category: security
+      subcategory: phi-exposure
+      compliance: [HIPAA, SOC2]
+      cwe: CWE-532
+
+  - id: ssn-hardcoded
+    message: "Hardcoded SSN detected. Social Security Numbers must never be hardcoded."
+    severity: ERROR
+    languages: [csharp, typescript, javascript, python]
+    pattern-regex: '\b\d{3}-\d{2}-\d{4}\b'
+    metadata:
+      category: security
+      subcategory: pii-exposure
+      compliance: [HIPAA]
+      cwe: CWE-798
+
+  - id: phi-in-url
+    message: "PHI/PII data in URL parameters. Patient data must not be passed in URLs."
+    severity: ERROR
+    languages: [csharp, typescript, javascript]
+    pattern-either:
+      - pattern: |
+          $URL = $"...{$PATIENT_ID}..."
+      - pattern: |
+          fetch(`.../${$PATIENT_DATA}/...`)
+      - pattern: |
+          HttpClient.GetAsync($"...?ssn={$SSN}...")
+    metadata:
+      category: security
+      subcategory: phi-exposure
+      compliance: [HIPAA]
+      cwe: CWE-598
+
+  # =============================================================================
+  # AUTHENTICATION & AUTHORIZATION
+  # =============================================================================
+  - id: missing-authorization-attribute
+    message: "Controller action missing [Authorize] attribute. All healthcare endpoints must be secured."
+    severity: ERROR
+    languages: [csharp]
+    patterns:
+      - pattern: |
+          [HttpGet]
+          public $RETURN_TYPE $METHOD(...) { ... }
+      - pattern-not-inside: |
+          [Authorize]
+          ...
+      - pattern-not-inside: |
+          [AllowAnonymous]
+          ...
+    metadata:
+      category: security
+      subcategory: authorization
+      compliance: [HIPAA, SOC2]
+      cwe: CWE-862
+
+  - id: weak-password-policy
+    message: "Weak password validation. Healthcare systems require strong password policies."
+    severity: WARNING
+    languages: [csharp]
+    pattern-either:
+      - pattern: |
+          password.Length >= 6
+      - pattern: |
+          password.Length > 5
+      - pattern: |
+          MinimumLength = $X
+    metadata:
+      category: security
+      subcategory: authentication
+      compliance: [HIPAA, NIST]
+      cwe: CWE-521
+
+  - id: hardcoded-credentials
+    message: "Hardcoded credentials detected. Use secure secrets management."
+    severity: ERROR
+    languages: [csharp, typescript, javascript, python]
+    pattern-either:
+      - pattern: |
+          password = "..."
+      - pattern: |
+          Password = "..."
+      - pattern: |
+          apiKey = "..."
+      - pattern: |
+          connectionString = "..."
+    metadata:
+      category: security
+      subcategory: secrets
+      compliance: [HIPAA, SOC2]
+      cwe: CWE-798
+
+  # =============================================================================
+  # INJECTION PREVENTION
+  # =============================================================================
+  - id: sql-injection-raw-query
+    message: "Potential SQL injection via raw query. Use parameterized queries."
+    severity: ERROR
+    languages: [csharp]
+    pattern-either:
+      - pattern: |
+          $DB.FromSqlRaw($"SELECT ... {$INPUT} ...")
+      - pattern: |
+          $DB.ExecuteSqlRaw($"... {$INPUT} ...")
+      - pattern: |
+          SqlCommand($"... {$INPUT} ...")
+    metadata:
+      category: security
+      subcategory: injection
+      compliance: [OWASP]
+      cwe: CWE-89
+
+  - id: command-injection
+    message: "Potential command injection vulnerability."
+    severity: ERROR
+    languages: [csharp, python]
+    pattern-either:
+      - pattern: |
+          Process.Start($INPUT)
+      - pattern: |
+          subprocess.run($INPUT, shell=True)
+      - pattern: |
+          os.system($INPUT)
+    metadata:
+      category: security
+      subcategory: injection
+      cwe: CWE-78
+
+  # =============================================================================
+  # CRYPTOGRAPHY
+  # =============================================================================
+  - id: weak-encryption-algorithm
+    message: "Weak encryption algorithm. Use AES-256 for PHI encryption."
+    severity: ERROR
+    languages: [csharp]
+    pattern-either:
+      - pattern: |
+          DES.Create()
+      - pattern: |
+          TripleDES.Create()
+      - pattern: |
+          RC2.Create()
+      - pattern: |
+          MD5.Create()
+    metadata:
+      category: security
+      subcategory: cryptography
+      compliance: [HIPAA, FIPS]
+      cwe: CWE-327
+
+  - id: insecure-random
+    message: "Insecure random number generator. Use cryptographically secure RNG for security operations."
+    severity: WARNING
+    languages: [csharp]
+    pattern: |
+      new Random()
+    metadata:
+      category: security
+      subcategory: cryptography
+      cwe: CWE-330
+
+  # =============================================================================
+  # SESSION MANAGEMENT
+  # =============================================================================
+  - id: session-timeout-too-long
+    message: "Session timeout exceeds healthcare recommended limits (15-30 minutes)."
+    severity: WARNING
+    languages: [csharp]
+    pattern-either:
+      - pattern: |
+          options.ExpireTimeSpan = TimeSpan.FromHours($X)
+      - pattern: |
+          options.IdleTimeout = TimeSpan.FromHours($X)
+    metadata:
+      category: security
+      subcategory: session
+      compliance: [HIPAA]
+      cwe: CWE-613
+
+  # =============================================================================
+  # AUDIT LOGGING
+  # =============================================================================
+  - id: phi-access-without-audit
+    message: "PHI access without audit logging. All PHI access must be logged for HIPAA compliance."
+    severity: ERROR
+    languages: [csharp]
+    patterns:
+      - pattern: |
+          $PATIENT = await $REPO.GetPatient($ID)
+      - pattern-not-inside: |
+          $AUDIT.LogAccess(...)
+    metadata:
+      category: security
+      subcategory: audit
+      compliance: [HIPAA]
+      cwe: CWE-778
+
+  - id: missing-audit-trail
+    message: "Data modification without audit trail. Healthcare requires complete audit trails."
+    severity: ERROR
+    languages: [csharp]
+    patterns:
+      - pattern: |
+          await $CONTEXT.SaveChangesAsync()
+      - pattern-not-inside: |
+          $AUDIT.Log(...)
+    metadata:
+      category: security
+      subcategory: audit
+      compliance: [HIPAA, FDA-21CFR11]
+      cwe: CWE-778
+
+  # =============================================================================
+  # DATA VALIDATION
+  # =============================================================================
+  - id: missing-input-validation
+    message: "User input used without validation. All inputs must be validated."
+    severity: WARNING
+    languages: [csharp]
+    pattern-either:
+      - pattern: |
+          [FromBody] $TYPE $PARAM
+      - pattern: |
+          [FromQuery] $TYPE $PARAM
+    metadata:
+      category: security
+      subcategory: validation
+      cwe: CWE-20
+
+  # =============================================================================
+  # SECURE COMMUNICATIONS
+  # =============================================================================
+  - id: http-without-tls
+    message: "HTTP connection without TLS. All healthcare data must be transmitted over HTTPS."
+    severity: ERROR
+    languages: [csharp, typescript, javascript]
+    pattern-either:
+      - pattern: |
+          "http://..."
+      - pattern: |
+          HttpClient(..., $CONFIG) where $CONFIG.RequireHttps = false
+    metadata:
+      category: security
+      subcategory: transport
+      compliance: [HIPAA]
+      cwe: CWE-319
+
+  # =============================================================================
+  # ERROR HANDLING
+  # =============================================================================
+  - id: sensitive-error-exposure
+    message: "Sensitive information in error messages. Do not expose stack traces or internal details."
+    severity: WARNING
+    languages: [csharp]
+    pattern-either:
+      - pattern: |
+          return BadRequest($EXCEPTION.StackTrace)
+      - pattern: |
+          return StatusCode(500, $EXCEPTION.Message)
+      - pattern: |
+          throw new Exception(..., $SENSITIVE_DATA)
+    metadata:
+      category: security
+      subcategory: error-handling
+      cwe: CWE-209
+
+  # =============================================================================
+  # FDA 21 CFR PART 11 - ELECTRONIC SIGNATURES
+  # =============================================================================
+  - id: electronic-signature-missing-validation
+    message: "Electronic signature without proper validation. FDA 21 CFR Part 11 requires signature verification."
+    severity: ERROR
+    languages: [csharp]
+    patterns:
+      - pattern: |
+          $RESULT.SignedBy = $USER
+      - pattern-not-inside: |
+          ValidateSignature(...)
+    metadata:
+      category: security
+      subcategory: electronic-signature
+      compliance: [FDA-21CFR11]
+
+  - id: result-modification-without-signature
+    message: "Lab result modification without electronic signature. FDA 21 CFR Part 11 compliance required."
+    severity: ERROR
+    languages: [csharp]
+    patterns:
+      - pattern: |
+          $RESULT.Value = $VALUE
+      - pattern-not-inside: |
+          RequireSignature(...)
+    metadata:
+      category: security
+      subcategory: electronic-signature
+      compliance: [FDA-21CFR11]
+
+# Global configuration
+options:
+  error_on_findings: true
+  metrics: on
+  severity:
+    - ERROR
+    - WARNING
+  exclude:
+    - "**/tests/**"
+    - "**/test/**"
+    - "**/*.test.*"
+    - "**/*.spec.*"
+    - "**/node_modules/**"
+    - "**/bin/**"
+    - "**/obj/**"
+
+# CI/CD integration
+ci:
+  autofix: false
+  deepsemgrep: true
+  timeout: 300
+  max_memory: 4096
+  output_format: sarif

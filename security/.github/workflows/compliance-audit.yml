@@ -1,0 +1,488 @@
+# MedinovAI Healthcare LIS - Compliance Audit Workflow
+# Automated healthcare compliance verification
+# Compliant with: HIPAA, SOC2, FDA 21 CFR Part 11
+
+name: Compliance Audit
+
+on:
+  schedule:
+    # Run daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      audit_type:
+        description: 'Type of audit to run'
+        required: true
+        default: 'full'
+        type: choice
+        options:
+          - full
+          - hipaa
+          - soc2
+          - fda
+      generate_report:
+        description: 'Generate compliance report'
+        required: false
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+  security-events: write
+  issues: write
+
+env:
+  COMPLIANCE_REPORT_BUCKET: medinovai-compliance-reports
+  AUDIT_RETENTION_DAYS: 2555  # 7 years for HIPAA
+
+jobs:
+  # ===========================================================================
+  # HIPAA COMPLIANCE AUDIT
+  # ===========================================================================
+  hipaa-audit:
+    name: HIPAA Compliance Audit
+    runs-on: ubuntu-latest
+    if: github.event.inputs.audit_type == 'full' || github.event.inputs.audit_type == 'hipaa' || github.event_name == 'schedule'
+    outputs:
+      compliance_status: ${{ steps.hipaa-check.outputs.status }}
+      findings_count: ${{ steps.hipaa-check.outputs.findings }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup compliance tools
+        run: |
+          # Install compliance checking tools
+          pip install pyyaml jsonschema
+          
+          # Download HIPAA checklist
+          cp .agent/polyrepo-scaffold/medinovai-infrastructure/security/compliance/hipaa-checklist.yaml ./hipaa-checklist.yaml
+
+      - name: Check Access Controls (§164.312)
+        id: access-controls
+        run: |
+          echo "Checking HIPAA Access Control requirements..."
+          
+          # Check for authorization attributes on controllers
+          UNPROTECTED=$(find . -name "*.cs" -type f \
+            -exec grep -l "public class.*Controller" {} \; | \
+            xargs grep -L "\[Authorize\]" 2>/dev/null || true)
+          
+          if [ -n "$UNPROTECTED" ]; then
+            echo "::warning::Found controllers without authorization:"
+            echo "$UNPROTECTED"
+            echo "access_controls=warning" >> $GITHUB_OUTPUT
+          else
+            echo "access_controls=pass" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check Audit Logging (§164.312(b))
+        id: audit-logging
+        run: |
+          echo "Checking HIPAA Audit Control requirements..."
+          
+          # Check for audit logging implementation
+          AUDIT_IMPL=$(find . -name "*.cs" -type f -exec grep -l "IAuditLogger\|AuditLog\|ILogAudit" {} \; | wc -l)
+          
+          if [ "$AUDIT_IMPL" -lt 5 ]; then
+            echo "::warning::Limited audit logging implementation found"
+            echo "audit_logging=warning" >> $GITHUB_OUTPUT
+          else
+            echo "audit_logging=pass" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check PHI Encryption (§164.312(a)(2)(iv))
+        id: encryption
+        run: |
+          echo "Checking HIPAA Encryption requirements..."
+          
+          # Check for encryption implementation
+          ENCRYPTION=$(find . -name "*.cs" -type f -exec grep -l "Encrypt\|AES\|RSA\|DataProtection" {} \; | wc -l)
+          
+          # Check for TLS configuration
+          TLS_CONFIG=$(find . -name "*.json" -o -name "*.yaml" | xargs grep -l "TLS\|HTTPS\|SSL" 2>/dev/null | wc -l)
+          
+          if [ "$ENCRYPTION" -lt 3 ] || [ "$TLS_CONFIG" -lt 2 ]; then
+            echo "::warning::Encryption implementation may be incomplete"
+            echo "encryption=warning" >> $GITHUB_OUTPUT
+          else
+            echo "encryption=pass" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check Session Management (§164.312(a)(2)(iii))
+        id: session-mgmt
+        run: |
+          echo "Checking HIPAA Session Management requirements..."
+          
+          # Check for session timeout configuration
+          TIMEOUT=$(grep -r "SessionTimeout\|ExpireTimeSpan\|IdleTimeout" --include="*.cs" --include="*.json" . 2>/dev/null | wc -l)
+          
+          if [ "$TIMEOUT" -lt 1 ]; then
+            echo "::error::No session timeout configuration found"
+            echo "session_mgmt=fail" >> $GITHUB_OUTPUT
+          else
+            echo "session_mgmt=pass" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check MFA Implementation (§164.312(d))
+        id: mfa-check
+        run: |
+          echo "Checking HIPAA Authentication requirements..."
+          
+          # Check for MFA implementation
+          MFA=$(grep -r "TwoFactor\|MFA\|MultiFactor\|Authenticator" --include="*.cs" --include="*.json" . 2>/dev/null | wc -l)
+          
+          if [ "$MFA" -lt 1 ]; then
+            echo "::warning::MFA implementation not found"
+            echo "mfa=warning" >> $GITHUB_OUTPUT
+          else
+            echo "mfa=pass" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Generate HIPAA compliance report
+        id: hipaa-check
+        run: |
+          cat > hipaa-report.json << EOF
+          {
+            "audit_date": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "framework": "HIPAA Security Rule",
+            "controls": {
+              "access_controls": "${{ steps.access-controls.outputs.access_controls }}",
+              "audit_logging": "${{ steps.audit-logging.outputs.audit_logging }}",
+              "encryption": "${{ steps.encryption.outputs.encryption }}",
+              "session_management": "${{ steps.session-mgmt.outputs.session_mgmt }}",
+              "mfa": "${{ steps.mfa-check.outputs.mfa }}"
+            }
+          }
+          EOF
+          
+          # Count findings
+          FINDINGS=$(grep -c "warning\|fail" hipaa-report.json || echo "0")
+          echo "findings=$FINDINGS" >> $GITHUB_OUTPUT
+          
+          if grep -q "fail" hipaa-report.json; then
+            echo "status=fail" >> $GITHUB_OUTPUT
+          elif grep -q "warning" hipaa-report.json; then
+            echo "status=warning" >> $GITHUB_OUTPUT
+          else
+            echo "status=pass" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Upload HIPAA audit report
+        uses: actions/upload-artifact@v4
+        with:
+          name: hipaa-compliance-report
+          path: hipaa-report.json
+          retention-days: ${{ env.AUDIT_RETENTION_DAYS }}
+
+  # ===========================================================================
+  # SOC 2 COMPLIANCE AUDIT
+  # ===========================================================================
+  soc2-audit:
+    name: SOC 2 Compliance Audit
+    runs-on: ubuntu-latest
+    if: github.event.inputs.audit_type == 'full' || github.event.inputs.audit_type == 'soc2' || github.event_name == 'schedule'
+    outputs:
+      compliance_status: ${{ steps.soc2-check.outputs.status }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check CC6 - Logical Access Controls
+        id: cc6-check
+        run: |
+          echo "Checking SOC 2 CC6 - Logical and Physical Access Controls..."
+          
+          # Check for RBAC implementation
+          RBAC=$(find . -name "*.cs" -type f -exec grep -l "Role\|Authorize\|Permission" {} \; | wc -l)
+          
+          if [ "$RBAC" -lt 5 ]; then
+            echo "cc6=warning" >> $GITHUB_OUTPUT
+          else
+            echo "cc6=pass" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check CC7 - System Operations
+        id: cc7-check
+        run: |
+          echo "Checking SOC 2 CC7 - System Operations..."
+          
+          # Check for monitoring configuration
+          MONITORING=$(find . \( -name "*.yaml" -o -name "*.yml" \) -exec grep -l "prometheus\|grafana\|alert" {} \; | wc -l)
+          
+          if [ "$MONITORING" -lt 2 ]; then
+            echo "cc7=warning" >> $GITHUB_OUTPUT
+          else
+            echo "cc7=pass" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check CC8 - Change Management
+        id: cc8-check
+        run: |
+          echo "Checking SOC 2 CC8 - Change Management..."
+          
+          # Check for CI/CD workflows
+          CICD=$(find .github/workflows -name "*.yml" 2>/dev/null | wc -l)
+          
+          if [ "$CICD" -lt 2 ]; then
+            echo "cc8=warning" >> $GITHUB_OUTPUT
+          else
+            echo "cc8=pass" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check CC9 - Risk Mitigation
+        id: cc9-check
+        run: |
+          echo "Checking SOC 2 CC9 - Risk Mitigation..."
+          
+          # Check for backup and DR configuration
+          DR=$(find . \( -name "*.yaml" -o -name "*.yml" -o -name "*.tf" \) -exec grep -l "backup\|disaster\|recovery" {} \; | wc -l)
+          
+          if [ "$DR" -lt 1 ]; then
+            echo "cc9=warning" >> $GITHUB_OUTPUT
+          else
+            echo "cc9=pass" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Generate SOC 2 compliance report
+        id: soc2-check
+        run: |
+          cat > soc2-report.json << EOF
+          {
+            "audit_date": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "framework": "SOC 2 Type II",
+            "trust_services_criteria": {
+              "CC6_logical_access": "${{ steps.cc6-check.outputs.cc6 }}",
+              "CC7_system_operations": "${{ steps.cc7-check.outputs.cc7 }}",
+              "CC8_change_management": "${{ steps.cc8-check.outputs.cc8 }}",
+              "CC9_risk_mitigation": "${{ steps.cc9-check.outputs.cc9 }}"
+            }
+          }
+          EOF
+          
+          if grep -q "fail" soc2-report.json; then
+            echo "status=fail" >> $GITHUB_OUTPUT
+          elif grep -q "warning" soc2-report.json; then
+            echo "status=warning" >> $GITHUB_OUTPUT
+          else
+            echo "status=pass" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Upload SOC 2 audit report
+        uses: actions/upload-artifact@v4
+        with:
+          name: soc2-compliance-report
+          path: soc2-report.json
+          retention-days: 1095  # 3 years
+
+  # ===========================================================================
+  # FDA 21 CFR PART 11 AUDIT
+  # ===========================================================================
+  fda-audit:
+    name: FDA 21 CFR Part 11 Audit
+    runs-on: ubuntu-latest
+    if: github.event.inputs.audit_type == 'full' || github.event.inputs.audit_type == 'fda' || github.event_name == 'schedule'
+    outputs:
+      compliance_status: ${{ steps.fda-check.outputs.status }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check Electronic Records (§11.10)
+        id: electronic-records
+        run: |
+          echo "Checking FDA 21 CFR Part 11 - Electronic Records..."
+          
+          # Check for audit trail implementation
+          AUDIT_TRAIL=$(find . -name "*.cs" -type f -exec grep -l "AuditTrail\|ChangeHistory\|ModificationLog" {} \; | wc -l)
+          
+          if [ "$AUDIT_TRAIL" -lt 3 ]; then
+            echo "electronic_records=warning" >> $GITHUB_OUTPUT
+          else
+            echo "electronic_records=pass" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check Electronic Signatures (§11.50)
+        id: electronic-signatures
+        run: |
+          echo "Checking FDA 21 CFR Part 11 - Electronic Signatures..."
+          
+          # Check for electronic signature implementation
+          ESIG=$(find . -name "*.cs" -type f -exec grep -l "ElectronicSignature\|DigitalSignature\|SignedBy" {} \; | wc -l)
+          
+          if [ "$ESIG" -lt 2 ]; then
+            echo "electronic_signatures=warning" >> $GITHUB_OUTPUT
+          else
+            echo "electronic_signatures=pass" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check Signature Components (§11.200)
+        id: signature-components
+        run: |
+          echo "Checking FDA 21 CFR Part 11 - Signature Components..."
+          
+          # Check for two-factor authentication
+          TWO_FACTOR=$(grep -r "Password\|PIN\|Biometric\|Token" --include="*.cs" . 2>/dev/null | wc -l)
+          
+          if [ "$TWO_FACTOR" -lt 2 ]; then
+            echo "signature_components=warning" >> $GITHUB_OUTPUT
+          else
+            echo "signature_components=pass" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check Controls (§11.300)
+        id: controls
+        run: |
+          echo "Checking FDA 21 CFR Part 11 - Controls..."
+          
+          # Check for password controls
+          PASSWORD_CTRL=$(grep -r "PasswordPolicy\|LockoutPolicy\|PasswordExpir" --include="*.cs" --include="*.json" . 2>/dev/null | wc -l)
+          
+          if [ "$PASSWORD_CTRL" -lt 1 ]; then
+            echo "controls=warning" >> $GITHUB_OUTPUT
+          else
+            echo "controls=pass" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Generate FDA compliance report
+        id: fda-check
+        run: |
+          cat > fda-report.json << EOF
+          {
+            "audit_date": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "framework": "FDA 21 CFR Part 11",
+            "requirements": {
+              "electronic_records_11_10": "${{ steps.electronic-records.outputs.electronic_records }}",
+              "electronic_signatures_11_50": "${{ steps.electronic-signatures.outputs.electronic_signatures }}",
+              "signature_components_11_200": "${{ steps.signature-components.outputs.signature_components }}",
+              "controls_11_300": "${{ steps.controls.outputs.controls }}"
+            }
+          }
+          EOF
+          
+          if grep -q "fail" fda-report.json; then
+            echo "status=fail" >> $GITHUB_OUTPUT
+          elif grep -q "warning" fda-report.json; then
+            echo "status=warning" >> $GITHUB_OUTPUT
+          else
+            echo "status=pass" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Upload FDA audit report
+        uses: actions/upload-artifact@v4
+        with:
+          name: fda-compliance-report
+          path: fda-report.json
+          retention-days: 5475  # 15 years for FDA
+
+  # ===========================================================================
+  # COMPLIANCE REPORT GENERATION
+  # ===========================================================================
+  generate-report:
+    name: Generate Compliance Report
+    needs: [hipaa-audit, soc2-audit, fda-audit]
+    runs-on: ubuntu-latest
+    if: always() && (github.event.inputs.generate_report == 'true' || github.event_name == 'schedule')
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: compliance-reports
+
+      - name: Generate consolidated report
+        id: consolidated
+        run: |
+          # Create consolidated compliance report
+          cat > compliance-report.md << EOF
+          # MedinovAI Healthcare LIS Compliance Report
+          
+          **Generated:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          **Repository:** ${{ github.repository }}
+          **Branch:** ${{ github.ref_name }}
+          **Commit:** ${{ github.sha }}
+          
+          ## Executive Summary
+          
+          | Framework | Status |
+          |-----------|--------|
+          | HIPAA Security Rule | ${{ needs.hipaa-audit.outputs.compliance_status || 'N/A' }} |
+          | SOC 2 Type II | ${{ needs.soc2-audit.outputs.compliance_status || 'N/A' }} |
+          | FDA 21 CFR Part 11 | ${{ needs.fda-audit.outputs.compliance_status || 'N/A' }} |
+          
+          ## Detailed Findings
+          
+          ### HIPAA Security Rule
+          
+          $(cat compliance-reports/hipaa-compliance-report/hipaa-report.json 2>/dev/null | python3 -c "import sys,json; d=json.load(sys.stdin); print('\n'.join([f'- **{k}**: {v}' for k,v in d.get('controls',{}).items()]))" 2>/dev/null || echo "Report not available")
+          
+          ### SOC 2 Type II
+          
+          $(cat compliance-reports/soc2-compliance-report/soc2-report.json 2>/dev/null | python3 -c "import sys,json; d=json.load(sys.stdin); print('\n'.join([f'- **{k}**: {v}' for k,v in d.get('trust_services_criteria',{}).items()]))" 2>/dev/null || echo "Report not available")
+          
+          ### FDA 21 CFR Part 11
+          
+          $(cat compliance-reports/fda-compliance-report/fda-report.json 2>/dev/null | python3 -c "import sys,json; d=json.load(sys.stdin); print('\n'.join([f'- **{k}**: {v}' for k,v in d.get('requirements',{}).items()]))" 2>/dev/null || echo "Report not available")
+          
+          ## Remediation Actions
+          
+          Please review any warnings or failures above and implement necessary controls.
+          
+          ---
+          *This report is automatically generated for compliance documentation purposes.*
+          EOF
+
+      - name: Upload consolidated report
+        uses: actions/upload-artifact@v4
+        with:
+          name: consolidated-compliance-report
+          path: compliance-report.md
+          retention-days: ${{ env.AUDIT_RETENTION_DAYS }}
+
+      - name: Create compliance issue if failures
+        if: contains(needs.*.outputs.compliance_status, 'fail')
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: '🚨 Compliance Audit Failure - ' + new Date().toISOString().split('T')[0],
+              body: `## Compliance Audit Failure Detected
+              
+              The automated compliance audit has detected failures that require immediate attention.
+              
+              **Audit Date:** ${new Date().toISOString()}
+              **Run ID:** ${context.runId}
+              
+              ### Status
+              - HIPAA: ${{ needs.hipaa-audit.outputs.compliance_status || 'N/A' }}
+              - SOC 2: ${{ needs.soc2-audit.outputs.compliance_status || 'N/A' }}
+              - FDA: ${{ needs.fda-audit.outputs.compliance_status || 'N/A' }}
+              
+              Please review the compliance report artifacts and implement necessary remediation.
+              
+              [View Audit Run](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})
+              `,
+              labels: ['compliance', 'high-priority', 'security']
+            });
+
+      - name: Send Slack notification
+        if: contains(needs.*.outputs.compliance_status, 'fail') || contains(needs.*.outputs.compliance_status, 'warning')
+        uses: slackapi/slack-github-action@v1.25.0
+        with:
+          channel-id: ${{ secrets.SLACK_COMPLIANCE_CHANNEL }}
+          slack-message: |
+            *Compliance Audit Report*
+            
+            📋 *HIPAA:* ${{ needs.hipaa-audit.outputs.compliance_status || 'N/A' }}
+            📋 *SOC 2:* ${{ needs.soc2-audit.outputs.compliance_status || 'N/A' }}
+            📋 *FDA 21 CFR Part 11:* ${{ needs.fda-audit.outputs.compliance_status || 'N/A' }}
+            
+            <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Full Report>
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}

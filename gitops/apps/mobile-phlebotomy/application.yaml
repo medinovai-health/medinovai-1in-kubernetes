@@ -1,0 +1,199 @@
+# MedinovAI Mobile Phlebotomy - ArgoCD Application
+# Mobile specimen collection and chain of custody management
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: mobile-phlebotomy
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: mobile-phlebotomy
+    app.kubernetes.io/part-of: medinovai
+    app.kubernetes.io/component: mobile
+    medinovai.com/product: phlebotomy
+    medinovai.com/compliance: hipaa
+  annotations:
+    notifications.argoproj.io/subscribe.on-sync-succeeded.slack: medinovai-deployments
+    notifications.argoproj.io/subscribe.on-sync-failed.slack: medinovai-alerts
+    notifications.argoproj.io/subscribe.on-health-degraded.pagerduty: medinovai-oncall
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: medinovai-healthcare
+  
+  source:
+    repoURL: https://github.com/medinovai/mobile-phlebotomy.git
+    targetRevision: HEAD
+    path: deploy/kubernetes/overlays/production
+    
+    kustomize:
+      namePrefix: phlebotomy-
+      commonLabels:
+        medinovai.com/managed-by: argocd
+      images:
+        - name: medinovai/phlebotomy-api
+          newTag: latest
+        - name: medinovai/phlebotomy-sync
+          newTag: latest
+  
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: mobile-phlebotomy
+  
+  syncPolicy:
+    automated:
+      prune: false
+      selfHeal: true
+      allowEmpty: false
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
+      - ServerSideApply=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+  
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas
+    - group: ""
+      kind: Secret
+      jsonPointers:
+        - /data
+  
+  revisionHistoryLimit: 10
+  
+  info:
+    - name: Documentation
+      value: https://docs.medinovai.com/mobile-phlebotomy
+    - name: Support
+      value: https://support.medinovai.com
+    - name: Compliance
+      value: HIPAA, Chain of Custody
+---
+# Mobile Phlebotomy API Service
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: phlebotomy-api
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: phlebotomy-api
+    app.kubernetes.io/part-of: mobile-phlebotomy
+    medinovai.com/tier: api
+spec:
+  project: medinovai-healthcare
+  source:
+    repoURL: https://github.com/medinovai/mobile-phlebotomy.git
+    targetRevision: HEAD
+    path: deploy/kubernetes/components/api
+    helm:
+      releaseName: phlebotomy-api
+      valueFiles:
+        - values.yaml
+        - values-production.yaml
+      parameters:
+        - name: image.repository
+          value: medinovai/phlebotomy-api
+        - name: replicaCount
+          value: "2"
+        - name: resources.limits.memory
+          value: "1Gi"
+        - name: resources.limits.cpu
+          value: "500m"
+        - name: autoscaling.enabled
+          value: "true"
+        - name: autoscaling.minReplicas
+          value: "2"
+        - name: autoscaling.maxReplicas
+          value: "8"
+        # Mobile-specific configurations
+        - name: offline.syncEnabled
+          value: "true"
+        - name: offline.conflictResolution
+          value: "server-wins"
+        - name: gps.trackingEnabled
+          value: "true"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: mobile-phlebotomy
+  syncPolicy:
+    automated:
+      selfHeal: true
+---
+# Mobile Sync Service - Handles offline data synchronization
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: phlebotomy-sync
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: phlebotomy-sync
+    app.kubernetes.io/part-of: mobile-phlebotomy
+    medinovai.com/tier: sync
+spec:
+  project: medinovai-healthcare
+  source:
+    repoURL: https://github.com/medinovai/mobile-phlebotomy.git
+    targetRevision: HEAD
+    path: deploy/kubernetes/components/sync
+    helm:
+      releaseName: phlebotomy-sync
+      valueFiles:
+        - values.yaml
+      parameters:
+        - name: image.repository
+          value: medinovai/phlebotomy-sync
+        - name: replicaCount
+          value: "2"
+        - name: resources.limits.memory
+          value: "2Gi"
+        - name: sync.batchSize
+          value: "100"
+        - name: sync.intervalSeconds
+          value: "30"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: mobile-phlebotomy
+  syncPolicy:
+    automated:
+      selfHeal: true
+---
+# Notification Service - Push notifications for phlebotomists
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: phlebotomy-notifications
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: phlebotomy-notifications
+    app.kubernetes.io/part-of: mobile-phlebotomy
+    medinovai.com/tier: notifications
+spec:
+  project: medinovai-healthcare
+  source:
+    repoURL: https://github.com/medinovai/mobile-phlebotomy.git
+    targetRevision: HEAD
+    path: deploy/kubernetes/components/notifications
+    helm:
+      releaseName: phlebotomy-notifications
+      valueFiles:
+        - values.yaml
+      parameters:
+        - name: image.repository
+          value: medinovai/phlebotomy-notifications
+        - name: firebase.enabled
+          value: "true"
+        - name: apns.enabled
+          value: "true"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: mobile-phlebotomy
+  syncPolicy:
+    automated:
+      selfHeal: true

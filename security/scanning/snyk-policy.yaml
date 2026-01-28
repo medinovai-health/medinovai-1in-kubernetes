@@ -1,0 +1,308 @@
+# MedinovAI Healthcare LIS - Snyk Security Policy
+# Dependency vulnerability scanning and license compliance
+# Compliant with: HIPAA, SOC2, FDA 21 CFR Part 11
+
+# Policy version
+version: v1.25.0
+
+# Organization settings
+organization:
+  name: medinovai-healthcare
+  group: enterprise-healthcare
+
+# Severity configuration
+severity-threshold: medium
+
+# Fail conditions for CI/CD
+fail-on:
+  - upgradable
+  - patchable
+
+# Ignore rules with documented justifications
+ignore:
+  # Example: Ignore specific vulnerability with justification
+  # SNYK-JS-EXAMPLE-123456:
+  #   - '*':
+  #       reason: "Mitigated by network isolation - PHI systems are air-gapped"
+  #       expires: 2026-06-01
+
+# Language-specific configurations
+language-settings:
+  # .NET configuration
+  dotnet:
+    target-frameworks:
+      - net8.0
+    scan-all-projects: true
+    exclude:
+      - "**/*.Tests.csproj"
+      - "**/test/**"
+
+  # Node.js configuration
+  node:
+    yarn-workspaces: true
+    all-projects: true
+    dev-dependencies: false
+    exclude:
+      - "**/node_modules/**"
+      - "**/__tests__/**"
+
+  # Python configuration
+  python:
+    command: pip
+    skip-unresolved: false
+
+# Container scanning
+container:
+  # Base image policies
+  base-images:
+    # Approved base images for healthcare
+    approved:
+      - mcr.microsoft.com/dotnet/aspnet:8.0
+      - mcr.microsoft.com/dotnet/sdk:8.0
+      - node:20-alpine
+      - python:3.12-slim
+
+    # Prohibited base images
+    prohibited:
+      - "*:latest"
+      - "*:dev"
+      - "*:debug"
+
+  # Dockerfile scanning
+  dockerfile:
+    enabled: true
+    custom-rules:
+      - name: no-root-user
+        description: "Containers must not run as root"
+        rule: "USER should not be root or 0"
+        severity: high
+
+      - name: healthcheck-required
+        description: "Healthcare containers must have health checks"
+        rule: "HEALTHCHECK instruction required"
+        severity: medium
+
+      - name: no-secrets-in-env
+        description: "No secrets in environment variables"
+        rule: "ENV should not contain password, secret, key, token"
+        severity: critical
+
+# Infrastructure as Code scanning
+iac:
+  enabled: true
+  
+  # Terraform settings
+  terraform:
+    var-file: terraform.tfvars
+    target-providers:
+      - aws
+      - azurerm
+      - google
+
+  # Kubernetes settings
+  kubernetes:
+    enabled: true
+    
+  # CloudFormation settings
+  cloudformation:
+    enabled: true
+
+# License compliance for healthcare
+license:
+  # Strict license policy for medical software
+  policy: strict
+
+  # Approved licenses
+  approved:
+    - MIT
+    - Apache-2.0
+    - BSD-2-Clause
+    - BSD-3-Clause
+    - ISC
+    - 0BSD
+
+  # Licenses requiring legal review
+  review-required:
+    - LGPL-2.1
+    - LGPL-3.0
+    - MPL-2.0
+    - EPL-1.0
+    - EPL-2.0
+
+  # Prohibited licenses
+  prohibited:
+    - GPL-2.0
+    - GPL-3.0
+    - AGPL-3.0
+    - SSPL-1.0
+    - CPAL-1.0
+    - OSL-3.0
+
+# Custom rules for healthcare compliance
+custom-rules:
+  # HIPAA-specific rules
+  hipaa:
+    - id: HIPAA-001
+      name: phi-encryption
+      description: "Ensure PHI data is encrypted"
+      severity: critical
+      path: "src/**/*.cs"
+      pattern: "EncryptPHI|DecryptPHI"
+      require: true
+
+    - id: HIPAA-002
+      name: audit-logging
+      description: "Ensure audit logging for PHI access"
+      severity: critical
+      path: "src/**/*.cs"
+      pattern: "IAuditLogger|AuditLog"
+      require: true
+
+    - id: HIPAA-003
+      name: access-control
+      description: "Ensure role-based access control"
+      severity: high
+      path: "src/**/*.cs"
+      pattern: "\\[Authorize\\]|RequireRole"
+      require: true
+
+  # FDA 21 CFR Part 11 rules
+  fda-21cfr11:
+    - id: FDA-001
+      name: electronic-signature
+      description: "Electronic signatures must be validated"
+      severity: critical
+      path: "src/**/*.cs"
+      pattern: "IElectronicSignature|ValidateSignature"
+      require: true
+
+    - id: FDA-002
+      name: audit-trail
+      description: "Complete audit trail required"
+      severity: critical
+      path: "src/**/*.cs"
+      pattern: "AuditTrail|RecordModification"
+      require: true
+
+# Vulnerability management
+vulnerability:
+  # Auto-fix settings
+  auto-fix:
+    enabled: true
+    pr-creation: true
+    max-prs: 10
+    
+  # Prioritization
+  prioritize:
+    - reachable
+    - exploitable
+    - phi-exposure
+
+  # SLA for remediation (healthcare requires faster response)
+  sla:
+    critical:
+      remediation-days: 1
+      escalation-hours: 4
+    high:
+      remediation-days: 7
+      escalation-hours: 24
+    medium:
+      remediation-days: 30
+      escalation-hours: 72
+    low:
+      remediation-days: 90
+      escalation-hours: 168
+
+# Reporting
+reporting:
+  # Report formats
+  formats:
+    - json
+    - sarif
+    - html
+
+  # Report destinations
+  destinations:
+    - type: file
+      path: ./reports/snyk-report.sarif
+    - type: github
+      repository: medinovai/medinovai-lis
+    - type: jira
+      project: SECURITY
+      issue-type: Vulnerability
+
+  # Summary reports
+  summary:
+    enabled: true
+    frequency: weekly
+    recipients:
+      - security@medinovai.com
+      - compliance@medinovai.com
+
+# Notifications
+notifications:
+  slack:
+    enabled: true
+    webhook: "${SNYK_SLACK_WEBHOOK}"
+    channels:
+      critical: "#security-critical"
+      high: "#security-high"
+      summary: "#security-weekly"
+
+  email:
+    enabled: true
+    recipients:
+      critical:
+        - security@medinovai.com
+        - on-call@medinovai.com
+      summary:
+        - team@medinovai.com
+
+# Integration settings
+integrations:
+  # GitHub integration
+  github:
+    enabled: true
+    automated-fixes: true
+    security-alerts: true
+    
+  # Jira integration
+  jira:
+    enabled: true
+    project-key: SEC
+    auto-create-issues: true
+    
+  # IDE plugins
+  ide:
+    vscode: true
+    jetbrains: true
+    visual-studio: true
+
+# Exclusions
+exclude:
+  # Global exclusions
+  global:
+    - "**/test/**"
+    - "**/tests/**"
+    - "**/*.test.*"
+    - "**/*.spec.*"
+    - "**/mock/**"
+    - "**/fixture/**"
+
+  # Path exclusions
+  paths:
+    - docs/
+    - scripts/development/
+    - .github/
+
+# Monitoring
+monitoring:
+  # Runtime monitoring
+  runtime:
+    enabled: true
+    sample-rate: 100
+
+  # Dependency monitoring
+  dependencies:
+    enabled: true
+    scan-frequency: daily

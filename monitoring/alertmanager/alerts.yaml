@@ -1,0 +1,429 @@
+# MedinovAI LIS - Alertmanager Configuration and Alert Rules
+# HIPAA-compliant alerting with healthcare-specific severity levels
+# Critical alerts for patient safety and system availability
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: alertmanager-config
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: alertmanager
+    app.kubernetes.io/part-of: medinovai-monitoring
+data:
+  alertmanager.yml: |
+    global:
+      # SMTP configuration
+      smtp_smarthost: 'smtp.sendgrid.net:587'
+      smtp_from: 'alerts@medinovai.com'
+      smtp_auth_username: 'apikey'
+      smtp_auth_password_file: '/etc/alertmanager/secrets/smtp-password'
+      smtp_require_tls: true
+      
+      # Slack configuration
+      slack_api_url_file: '/etc/alertmanager/secrets/slack-webhook'
+      
+      # PagerDuty configuration
+      pagerduty_url: 'https://events.pagerduty.com/v2/enqueue'
+      
+      # Resolve timeout
+      resolve_timeout: 5m
+    
+    # Templates
+    templates:
+      - '/etc/alertmanager/templates/*.tmpl'
+    
+    # Routing tree
+    route:
+      receiver: 'default-receiver'
+      group_by: ['alertname', 'severity', 'namespace']
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 4h
+      
+      routes:
+        # Critical alerts - immediate notification
+        - receiver: 'critical-pagerduty'
+          match:
+            severity: critical
+          group_wait: 0s
+          repeat_interval: 1h
+          continue: true
+        
+        # Critical alerts also go to Slack
+        - receiver: 'critical-slack'
+          match:
+            severity: critical
+          continue: true
+        
+        # Patient safety alerts - highest priority
+        - receiver: 'patient-safety-pagerduty'
+          match:
+            category: patient-safety
+          group_wait: 0s
+          repeat_interval: 30m
+        
+        # Warning alerts
+        - receiver: 'warning-slack'
+          match:
+            severity: warning
+          group_wait: 1m
+          repeat_interval: 4h
+        
+        # Database alerts
+        - receiver: 'database-team'
+          match:
+            component: database
+          group_by: ['alertname', 'instance']
+        
+        # HL7 integration alerts
+        - receiver: 'integration-team'
+          match:
+            component: hl7
+          group_by: ['alertname', 'interface']
+    
+    # Receivers
+    receivers:
+      - name: 'default-receiver'
+        email_configs:
+          - to: 'lis-alerts@medinovai.com'
+            send_resolved: true
+        slack_configs:
+          - channel: '#lis-alerts'
+            send_resolved: true
+            title: '{{ template "slack.default.title" . }}'
+            text: '{{ template "slack.default.text" . }}'
+      
+      - name: 'critical-pagerduty'
+        pagerduty_configs:
+          - service_key_file: '/etc/alertmanager/secrets/pagerduty-key'
+            severity: critical
+            description: '{{ template "pagerduty.default.description" . }}'
+            details:
+              firing: '{{ template "pagerduty.default.instances" .Alerts.Firing }}'
+              resolved: '{{ template "pagerduty.default.instances" .Alerts.Resolved }}'
+      
+      - name: 'critical-slack'
+        slack_configs:
+          - channel: '#lis-critical'
+            send_resolved: true
+            color: '{{ if eq .Status "firing" }}danger{{ else }}good{{ end }}'
+            title: '[{{ .Status | toUpper }}] {{ .CommonLabels.alertname }}'
+            text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+      
+      - name: 'patient-safety-pagerduty'
+        pagerduty_configs:
+          - service_key_file: '/etc/alertmanager/secrets/pagerduty-key-safety'
+            severity: critical
+            description: 'PATIENT SAFETY: {{ .CommonLabels.alertname }}'
+            client: 'MedinovAI LIS'
+            client_url: 'https://grafana.medinovai.com'
+        webhook_configs:
+          - url: 'https://api.medinovai.com/webhooks/safety-alert'
+            send_resolved: true
+      
+      - name: 'warning-slack'
+        slack_configs:
+          - channel: '#lis-warnings'
+            send_resolved: true
+            color: 'warning'
+            title: '{{ .CommonLabels.alertname }}'
+            text: '{{ range .Alerts }}{{ .Annotations.summary }}{{ end }}'
+      
+      - name: 'database-team'
+        email_configs:
+          - to: 'dba-team@medinovai.com'
+            send_resolved: true
+        slack_configs:
+          - channel: '#lis-database'
+            send_resolved: true
+      
+      - name: 'integration-team'
+        email_configs:
+          - to: 'integration-team@medinovai.com'
+            send_resolved: true
+        slack_configs:
+          - channel: '#lis-integrations'
+            send_resolved: true
+    
+    # Inhibition rules
+    inhibit_rules:
+      # If critical, suppress warnings for same alertname
+      - source_match:
+          severity: 'critical'
+        target_match:
+          severity: 'warning'
+        equal: ['alertname', 'namespace', 'instance']
+      
+      # If cluster is down, suppress individual service alerts
+      - source_match:
+          alertname: 'KubernetesClusterDown'
+        target_match_re:
+          alertname: 'LIS.*Down'
+        equal: ['namespace']
+---
+# PrometheusRule for LIS Alert Rules
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: lis-alert-rules
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: lis-alerts
+    app.kubernetes.io/part-of: medinovai-monitoring
+    release: prometheus
+spec:
+  groups:
+    # Critical Patient Safety Alerts
+    - name: lis_patient_safety_alerts
+      rules:
+        - alert: CriticalValueNotNotified
+          expr: lis_critical_values_pending > 0 and lis_critical_value_age_minutes > 15
+          for: 5m
+          labels:
+            severity: critical
+            category: patient-safety
+            component: results
+          annotations:
+            summary: "Critical value pending notification for >15 minutes"
+            description: "{{ $value }} critical values have been pending notification for more than 15 minutes. Immediate action required for patient safety."
+            runbook_url: "https://docs.medinovai.com/runbooks/critical-values"
+        
+        - alert: ResultReleaseDelayed
+          expr: histogram_quantile(0.95, rate(lis_result_release_duration_seconds_bucket[5m])) > 3600
+          for: 10m
+          labels:
+            severity: warning
+            category: patient-safety
+            component: results
+          annotations:
+            summary: "Result release taking longer than expected"
+            description: "P95 result release time is {{ $value | humanizeDuration }}, which exceeds the 1-hour target."
+        
+        - alert: QCFailureNotAddressed
+          expr: lis_qc_failures_unaddressed > 0 and lis_qc_failure_age_minutes > 30
+          for: 5m
+          labels:
+            severity: critical
+            category: patient-safety
+            component: quality-control
+          annotations:
+            summary: "QC failure not addressed within 30 minutes"
+            description: "{{ $value }} QC failures have been unaddressed for more than 30 minutes. Testing may be affected."
+    
+    # Service Availability Alerts
+    - name: lis_availability_alerts
+      rules:
+        - alert: LISAPIDown
+          expr: up{job="lis-api"} == 0
+          for: 1m
+          labels:
+            severity: critical
+            component: api
+          annotations:
+            summary: "LIS API is down"
+            description: "LIS API instance {{ $labels.instance }} has been down for more than 1 minute."
+            runbook_url: "https://docs.medinovai.com/runbooks/api-down"
+        
+        - alert: LISAPIHighErrorRate
+          expr: lis:http_errors:rate5m / lis:http_requests:rate5m > 0.01
+          for: 5m
+          labels:
+            severity: critical
+            component: api
+          annotations:
+            summary: "LIS API error rate exceeds 1%"
+            description: "Error rate is {{ $value | humanizePercentage }} which exceeds the 1% threshold."
+        
+        - alert: LISAPIHighLatency
+          expr: lis:http_request_duration_seconds:p95 > 1
+          for: 5m
+          labels:
+            severity: warning
+            component: api
+          annotations:
+            summary: "LIS API latency is high"
+            description: "P95 latency is {{ $value | humanizeDuration }} which exceeds the 1s threshold."
+        
+        - alert: LISAvailabilityBelowSLO
+          expr: lis:availability:ratio5m < 0.999
+          for: 5m
+          labels:
+            severity: critical
+            component: api
+          annotations:
+            summary: "LIS availability below SLO (99.9%)"
+            description: "Current availability is {{ $value | humanizePercentage }} which is below the 99.9% SLO."
+        
+        - alert: ErrorBudgetLow
+          expr: lis:slo:error_budget_remaining < 0.25
+          for: 15m
+          labels:
+            severity: warning
+            component: slo
+          annotations:
+            summary: "Error budget is running low"
+            description: "Only {{ $value | humanizePercentage }} of the monthly error budget remains."
+    
+    # Database Alerts
+    - name: lis_database_alerts
+      rules:
+        - alert: MySQLDown
+          expr: mysql_up == 0
+          for: 1m
+          labels:
+            severity: critical
+            component: database
+          annotations:
+            summary: "MySQL database is down"
+            description: "MySQL instance {{ $labels.instance }} has been down for more than 1 minute."
+            runbook_url: "https://docs.medinovai.com/runbooks/mysql-down"
+        
+        - alert: MySQLConnectionPoolExhausted
+          expr: lis:db_connections:utilization > 0.9
+          for: 5m
+          labels:
+            severity: critical
+            component: database
+          annotations:
+            summary: "MySQL connection pool nearly exhausted"
+            description: "Connection pool utilization is {{ $value | humanizePercentage }}."
+        
+        - alert: MySQLSlowQueries
+          expr: rate(mysql_global_status_slow_queries[5m]) > 1
+          for: 10m
+          labels:
+            severity: warning
+            component: database
+          annotations:
+            summary: "High rate of slow MySQL queries"
+            description: "{{ $value | humanize }} slow queries per second detected."
+        
+        - alert: MySQLReplicationLag
+          expr: mysql_slave_status_seconds_behind_master > 30
+          for: 5m
+          labels:
+            severity: warning
+            component: database
+          annotations:
+            summary: "MySQL replication lag detected"
+            description: "Replication is {{ $value | humanizeDuration }} behind master."
+    
+    # Cache Alerts
+    - name: lis_cache_alerts
+      rules:
+        - alert: RedisDown
+          expr: redis_up == 0
+          for: 1m
+          labels:
+            severity: critical
+            component: cache
+          annotations:
+            summary: "Redis cache is down"
+            description: "Redis instance {{ $labels.instance }} has been down for more than 1 minute."
+        
+        - alert: RedisCacheHitRateLow
+          expr: lis:cache_hit_ratio < 0.8
+          for: 15m
+          labels:
+            severity: warning
+            component: cache
+          annotations:
+            summary: "Redis cache hit rate is low"
+            description: "Cache hit rate is {{ $value | humanizePercentage }} which is below 80%."
+        
+        - alert: RedisMemoryHigh
+          expr: lis:cache_memory_utilization > 0.9
+          for: 5m
+          labels:
+            severity: warning
+            component: cache
+          annotations:
+            summary: "Redis memory utilization is high"
+            description: "Memory utilization is {{ $value | humanizePercentage }}."
+    
+    # HL7 Integration Alerts
+    - name: lis_hl7_alerts
+      rules:
+        - alert: HL7InterfaceDown
+          expr: lis_hl7_interface_up == 0
+          for: 2m
+          labels:
+            severity: critical
+            component: hl7
+          annotations:
+            summary: "HL7 interface is down"
+            description: "HL7 interface {{ $labels.interface }} has been down for more than 2 minutes."
+        
+        - alert: HL7MessageBacklog
+          expr: lis_hl7_queue_depth > 1000
+          for: 10m
+          labels:
+            severity: warning
+            component: hl7
+          annotations:
+            summary: "HL7 message backlog detected"
+            description: "{{ $value }} messages pending in HL7 queue {{ $labels.queue }}."
+        
+        - alert: HL7MessageProcessingErrors
+          expr: rate(lis_hl7_messages_failed_total[5m]) > 0.1
+          for: 5m
+          labels:
+            severity: warning
+            component: hl7
+          annotations:
+            summary: "HL7 message processing errors"
+            description: "{{ $value | humanize }} HL7 messages failing per second."
+    
+    # Infrastructure Alerts
+    - name: lis_infrastructure_alerts
+      rules:
+        - alert: PodRestartingFrequently
+          expr: increase(kube_pod_container_status_restarts_total{namespace=~"lis-.*"}[1h]) > 3
+          for: 5m
+          labels:
+            severity: warning
+            component: kubernetes
+          annotations:
+            summary: "Pod restarting frequently"
+            description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} has restarted {{ $value }} times in the last hour."
+        
+        - alert: PodNotReady
+          expr: kube_pod_status_ready{namespace=~"lis-.*", condition="true"} == 0
+          for: 5m
+          labels:
+            severity: warning
+            component: kubernetes
+          annotations:
+            summary: "Pod not ready"
+            description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} has been not ready for more than 5 minutes."
+        
+        - alert: HighCPUUsage
+          expr: sum(rate(container_cpu_usage_seconds_total{namespace=~"lis-.*"}[5m])) by (pod) / sum(kube_pod_container_resource_limits{namespace=~"lis-.*", resource="cpu"}) by (pod) > 0.9
+          for: 10m
+          labels:
+            severity: warning
+            component: kubernetes
+          annotations:
+            summary: "High CPU usage"
+            description: "Pod {{ $labels.pod }} is using {{ $value | humanizePercentage }} of its CPU limit."
+        
+        - alert: HighMemoryUsage
+          expr: sum(container_memory_working_set_bytes{namespace=~"lis-.*"}) by (pod) / sum(kube_pod_container_resource_limits{namespace=~"lis-.*", resource="memory"}) by (pod) > 0.9
+          for: 10m
+          labels:
+            severity: warning
+            component: kubernetes
+          annotations:
+            summary: "High memory usage"
+            description: "Pod {{ $labels.pod }} is using {{ $value | humanizePercentage }} of its memory limit."
+        
+        - alert: PersistentVolumeSpaceLow
+          expr: kubelet_volume_stats_available_bytes{namespace=~"lis-.*"} / kubelet_volume_stats_capacity_bytes{namespace=~"lis-.*"} < 0.1
+          for: 5m
+          labels:
+            severity: critical
+            component: storage
+          annotations:
+            summary: "Persistent volume space low"
+            description: "PVC {{ $labels.persistentvolumeclaim }} has less than 10% space remaining."

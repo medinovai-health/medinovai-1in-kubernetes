@@ -1,0 +1,109 @@
+# MedinovAI LIS Infrastructure - Base Namespace Configuration
+# Healthcare-compliant Kubernetes namespace with resource quotas and limits
+# Supports multi-environment deployment with HIPAA/ISO 13485 compliance
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: lis-platform
+  labels:
+    app.kubernetes.io/name: medinovai-lis
+    app.kubernetes.io/part-of: medinovai-platform
+    app.kubernetes.io/managed-by: argocd
+    compliance/hipaa: "true"
+    compliance/iso-13485: "true"
+    environment: "{{ .Values.environment }}"
+  annotations:
+    description: "MedinovAI Laboratory Information System Platform"
+    owner: "platform-team@medinovai.com"
+    scheduler.alpha.kubernetes.io/node-selector: node-type=healthcare
+---
+# Resource Quota - Ensures fair resource distribution and prevents resource exhaustion
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: lis-platform-quota
+  namespace: lis-platform
+  labels:
+    app.kubernetes.io/name: medinovai-lis
+    app.kubernetes.io/component: resource-management
+spec:
+  hard:
+    # Compute resources
+    requests.cpu: "50"
+    requests.memory: 100Gi
+    limits.cpu: "100"
+    limits.memory: 200Gi
+    # Object counts
+    pods: "200"
+    services: "50"
+    secrets: "100"
+    configmaps: "100"
+    persistentvolumeclaims: "50"
+    # Service types
+    services.loadbalancers: "5"
+    services.nodeports: "10"
+---
+# LimitRange - Default resource limits for containers
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: lis-platform-limits
+  namespace: lis-platform
+  labels:
+    app.kubernetes.io/name: medinovai-lis
+    app.kubernetes.io/component: resource-management
+spec:
+  limits:
+    - type: Container
+      default:
+        cpu: "500m"
+        memory: "512Mi"
+      defaultRequest:
+        cpu: "100m"
+        memory: "128Mi"
+      max:
+        cpu: "8"
+        memory: "16Gi"
+      min:
+        cpu: "25m"
+        memory: "32Mi"
+    - type: Pod
+      max:
+        cpu: "16"
+        memory: "32Gi"
+    - type: PersistentVolumeClaim
+      min:
+        storage: 1Gi
+      max:
+        storage: 1Ti
+---
+# Staging Namespace
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: lis-staging
+  labels:
+    app.kubernetes.io/name: medinovai-lis
+    app.kubernetes.io/part-of: medinovai-platform
+    app.kubernetes.io/managed-by: argocd
+    compliance/hipaa: "true"
+    compliance/iso-13485: "true"
+    environment: staging
+  annotations:
+    description: "MedinovAI LIS - Staging Environment"
+    owner: "platform-team@medinovai.com"
+---
+# Development Namespace
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: lis-development
+  labels:
+    app.kubernetes.io/name: medinovai-lis
+    app.kubernetes.io/part-of: medinovai-platform
+    app.kubernetes.io/managed-by: argocd
+    environment: development
+  annotations:
+    description: "MedinovAI LIS - Development Environment"
+    owner: "platform-team@medinovai.com"

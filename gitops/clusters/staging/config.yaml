@@ -1,0 +1,261 @@
+# MedinovAI Staging Cluster Configuration
+# Pre-production validation environment
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cluster-config
+  namespace: argocd
+  labels:
+    cluster: staging
+    environment: staging
+    medinovai.com/managed-by: gitops
+data:
+  # Cluster identification
+  cluster.name: "medinovai-staging"
+  cluster.environment: "staging"
+  cluster.region: "us-east-1"
+  cluster.provider: "aws-eks"
+  
+  # Healthcare compliance settings (same as prod for validation)
+  compliance.hipaa: "enabled"
+  compliance.hitrust: "enabled"
+  compliance.soc2: "enabled"
+  compliance.pci-dss: "enabled"
+  
+  # Staging availability configuration
+  ha.enabled: "true"
+  ha.minReplicas: "2"
+  ha.multiAZ: "true"
+  ha.drEnabled: "false"
+  
+  # Resource limits for staging
+  resources.defaultCpuRequest: "50m"
+  resources.defaultMemoryRequest: "128Mi"
+  resources.defaultCpuLimit: "1000m"
+  resources.defaultMemoryLimit: "2Gi"
+  
+  # Network configuration
+  network.ingressClass: "nginx"
+  network.tlsEnabled: "true"
+  network.tlsMinVersion: "TLSv1.2"
+  network.mTLSEnabled: "true"
+  
+  # Storage configuration
+  storage.defaultClass: "gp3-encrypted"
+  storage.backupEnabled: "true"
+  storage.backupRetentionDays: "30"
+  storage.snapshotSchedule: "0 0 * * *"
+---
+# Staging ArgoCD Project
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: medinovai-staging
+  namespace: argocd
+  labels:
+    environment: staging
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  description: MedinovAI Healthcare Staging Applications
+  
+  # Source repositories
+  sourceRepos:
+    - 'https://github.com/medinovai/*'
+    - 'https://charts.medinovai.com/*'
+  
+  # Destination clusters and namespaces
+  destinations:
+    - namespace: 'lis-platform-staging'
+      server: https://staging.k8s.medinovai.com
+    - namespace: 'mobile-phlebotomy-staging'
+      server: https://staging.k8s.medinovai.com
+    - namespace: 'ctms-staging'
+      server: https://staging.k8s.medinovai.com
+    - namespace: 'billing-staging'
+      server: https://staging.k8s.medinovai.com
+    - namespace: 'monitoring'
+      server: https://staging.k8s.medinovai.com
+    - namespace: 'logging'
+      server: https://staging.k8s.medinovai.com
+  
+  # Cluster resource whitelist
+  clusterResourceWhitelist:
+    - group: ''
+      kind: Namespace
+    - group: 'rbac.authorization.k8s.io'
+      kind: ClusterRole
+    - group: 'rbac.authorization.k8s.io'
+      kind: ClusterRoleBinding
+    - group: 'networking.k8s.io'
+      kind: IngressClass
+    - group: 'cert-manager.io'
+      kind: ClusterIssuer
+  
+  # Roles for team access
+  roles:
+    - name: staging-admin
+      description: Full access to staging applications
+      policies:
+        - p, proj:medinovai-staging:staging-admin, applications, *, medinovai-staging/*, allow
+        - p, proj:medinovai-staging:staging-admin, logs, get, medinovai-staging/*, allow
+      groups:
+        - medinovai:platform-team
+        - medinovai:sre-team
+        - medinovai:developers
+    
+    - name: staging-deployer
+      description: Deploy access for staging
+      policies:
+        - p, proj:medinovai-staging:staging-deployer, applications, *, medinovai-staging/*, allow
+      groups:
+        - medinovai:developers
+        - medinovai:qa-team
+  
+  # Sync windows - more permissive for staging
+  syncWindows:
+    # Allow deployments 24/7 for staging
+    - kind: allow
+      schedule: '* * * * *'
+      duration: 24h
+      applications:
+        - '*'
+      manualSync: true
+  
+  # Orphaned resources monitoring
+  orphanedResources:
+    warn: true
+---
+# Staging Cluster Registration
+apiVersion: v1
+kind: Secret
+metadata:
+  name: staging-cluster-secret
+  namespace: argocd
+  labels:
+    argocd.argoproj.io/secret-type: cluster
+type: Opaque
+stringData:
+  name: staging
+  server: https://staging.k8s.medinovai.com
+  config: |
+    {
+      "tlsClientConfig": {
+        "insecure": false,
+        "caData": "BASE64_CA_DATA",
+        "certData": "BASE64_CERT_DATA",
+        "keyData": "BASE64_KEY_DATA"
+      }
+    }
+---
+# Staging Resource Quotas
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: staging-quota
+  namespace: lis-platform-staging
+spec:
+  hard:
+    requests.cpu: "20"
+    requests.memory: "40Gi"
+    limits.cpu: "40"
+    limits.memory: "80Gi"
+    persistentvolumeclaims: "30"
+    pods: "100"
+    services: "30"
+    secrets: "50"
+    configmaps: "50"
+---
+# Staging Applications with auto-sync
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: lis-platform-staging
+  namespace: argocd
+  labels:
+    environment: staging
+    app.kubernetes.io/name: lis-platform
+spec:
+  project: medinovai-staging
+  source:
+    repoURL: https://github.com/medinovai/medinovai-lis-platform.git
+    targetRevision: develop
+    path: deploy/kubernetes/overlays/staging
+  destination:
+    server: https://staging.k8s.medinovai.com
+    namespace: lis-platform-staging
+  syncPolicy:
+    automated:
+      prune: true  # Auto-prune in staging
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: mobile-phlebotomy-staging
+  namespace: argocd
+  labels:
+    environment: staging
+spec:
+  project: medinovai-staging
+  source:
+    repoURL: https://github.com/medinovai/mobile-phlebotomy.git
+    targetRevision: develop
+    path: deploy/kubernetes/overlays/staging
+  destination:
+    server: https://staging.k8s.medinovai.com
+    namespace: mobile-phlebotomy-staging
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ctms-staging
+  namespace: argocd
+  labels:
+    environment: staging
+spec:
+  project: medinovai-staging
+  source:
+    repoURL: https://github.com/medinovai/ctms.git
+    targetRevision: develop
+    path: deploy/kubernetes/overlays/staging
+  destination:
+    server: https://staging.k8s.medinovai.com
+    namespace: ctms-staging
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: billing-staging
+  namespace: argocd
+  labels:
+    environment: staging
+spec:
+  project: medinovai-staging
+  source:
+    repoURL: https://github.com/medinovai/billing.git
+    targetRevision: develop
+    path: deploy/kubernetes/overlays/staging
+  destination:
+    server: https://staging.k8s.medinovai.com
+    namespace: billing-staging
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

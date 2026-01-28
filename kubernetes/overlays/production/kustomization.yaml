@@ -1,0 +1,71 @@
+# MedinovAI LIS - Production Overlay
+# Kustomize overlay for production environment
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: lis-platform
+
+namePrefix: prod-
+
+commonLabels:
+  environment: production
+  app.kubernetes.io/part-of: medinovai-lis
+  compliance/hipaa: "true"
+  compliance/iso-13485: "true"
+
+commonAnnotations:
+  deployment.kubernetes.io/environment: production
+  compliance.medinovai.com/reviewed: "true"
+
+resources:
+  - ../../base
+
+# Production-specific patches
+patches:
+  # Increase replicas for production
+  - patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 5
+    target:
+      kind: Deployment
+      name: lis-api
+  
+  # Production resource limits
+  - patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/resources
+        value:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "4Gi"
+            cpu: "4000m"
+    target:
+      kind: Deployment
+      name: lis-api
+
+# ConfigMap generators
+configMapGenerator:
+  - name: lis-api-env
+    behavior: merge
+    literals:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - LOG_LEVEL=Information
+      - ENABLE_SWAGGER=false
+      - ENABLE_DETAILED_ERRORS=false
+
+# Secret generators (reference external secrets in production)
+secretGenerator: []
+
+# Image configuration
+images:
+  - name: medinovai/lis-api
+    newTag: v1.0.0
+
+# Replicas configuration
+replicas:
+  - name: lis-api
+    count: 5

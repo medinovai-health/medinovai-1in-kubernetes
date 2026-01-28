@@ -1,0 +1,409 @@
+# Canary Rollout Configuration
+# Progressive delivery using Argo Rollouts for healthcare-safe deployments
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: argo-rollouts
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: argo-rollouts
+    app.kubernetes.io/component: progressive-delivery
+    medinovai.com/infrastructure: core
+  annotations:
+    argocd.argoproj.io/sync-wave: "-6"
+spec:
+  project: infrastructure
+  source:
+    repoURL: https://argoproj.github.io/argo-helm
+    chart: argo-rollouts
+    targetRevision: 2.34.1
+    helm:
+      releaseName: argo-rollouts
+      values: |
+        # Controller configuration
+        controller:
+          replicas: 2
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+        
+        # Dashboard
+        dashboard:
+          enabled: true
+          replicas: 1
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi
+        
+        # Metrics
+        metrics:
+          enabled: true
+          serviceMonitor:
+            enabled: true
+            namespace: monitoring
+  
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argo-rollouts
+  
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+---
+# Analysis Template - Healthcare Service Health Check
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: healthcare-service-health
+  namespace: lis-platform
+  labels:
+    medinovai.com/analysis-type: health
+spec:
+  metrics:
+    # Success rate must be above 99.5% for healthcare
+    - name: success-rate
+      interval: 1m
+      count: 10
+      successCondition: result[0] >= 0.995
+      failureLimit: 2
+      provider:
+        prometheus:
+          address: http://prometheus-server.monitoring:9090
+          query: |
+            sum(rate(http_requests_total{namespace="{{args.namespace}}", status=~"2.*"}[5m])) /
+            sum(rate(http_requests_total{namespace="{{args.namespace}}"}[5m]))
+    
+    # Latency P99 must be under 500ms
+    - name: latency-p99
+      interval: 1m
+      count: 10
+      successCondition: result[0] <= 500
+      failureLimit: 2
+      provider:
+        prometheus:
+          address: http://prometheus-server.monitoring:9090
+          query: |
+            histogram_quantile(0.99, sum(rate(http_request_duration_milliseconds_bucket{namespace="{{args.namespace}}"}[5m])) by (le))
+    
+    # Error rate must be below 0.1%
+    - name: error-rate
+      interval: 1m
+      count: 10
+      successCondition: result[0] <= 0.001
+      failureLimit: 1
+      provider:
+        prometheus:
+          address: http://prometheus-server.monitoring:9090
+          query: |
+            sum(rate(http_requests_total{namespace="{{args.namespace}}", status=~"5.*"}[5m])) /
+            sum(rate(http_requests_total{namespace="{{args.namespace}}"}[5m]))
+    
+    # No critical alerts during rollout
+    - name: no-critical-alerts
+      interval: 2m
+      count: 5
+      successCondition: result[0] == 0
+      failureLimit: 0
+      provider:
+        prometheus:
+          address: http://prometheus-server.monitoring:9090
+          query: |
+            count(ALERTS{namespace="{{args.namespace}}", severity="critical", alertstate="firing"}) or vector(0)
+  
+  args:
+    - name: namespace
+---
+# Analysis Template - Database Health
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: database-health
+  namespace: lis-platform
+  labels:
+    medinovai.com/analysis-type: database
+spec:
+  metrics:
+    # Database connection pool health
+    - name: connection-pool-health
+      interval: 1m
+      count: 5
+      successCondition: result[0] >= 0.8
+      failureLimit: 1
+      provider:
+        prometheus:
+          address: http://prometheus-server.monitoring:9090
+          query: |
+            (sqlserver_database_connection_pool_size{namespace="{{args.namespace}}"} - 
+             sqlserver_database_active_connections{namespace="{{args.namespace}}"}) /
+            sqlserver_database_connection_pool_size{namespace="{{args.namespace}}"}
+    
+    # Query latency under threshold
+    - name: query-latency
+      interval: 1m
+      count: 5
+      successCondition: result[0] <= 100
+      failureLimit: 2
+      provider:
+        prometheus:
+          address: http://prometheus-server.monitoring:9090
+          query: |
+            histogram_quantile(0.95, sum(rate(database_query_duration_milliseconds_bucket{namespace="{{args.namespace}}"}[5m])) by (le))
+  
+  args:
+    - name: namespace
+---
+# Analysis Template - Functional Tests
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: functional-tests
+  namespace: lis-platform
+  labels:
+    medinovai.com/analysis-type: functional
+spec:
+  metrics:
+    - name: smoke-tests
+      count: 1
+      failureLimit: 0
+      provider:
+        job:
+          spec:
+            backoffLimit: 0
+            template:
+              spec:
+                containers:
+                  - name: smoke-test
+                    image: medinovai/lis-smoke-tests:latest
+                    env:
+                      - name: TARGET_URL
+                        value: "http://{{args.service}}.{{args.namespace}}.svc.cluster.local"
+                      - name: TEST_SUITE
+                        value: "smoke"
+                    resources:
+                      requests:
+                        cpu: 100m
+                        memory: 256Mi
+                      limits:
+                        cpu: 500m
+                        memory: 512Mi
+                restartPolicy: Never
+  args:
+    - name: service
+    - name: namespace
+---
+# LIS Platform Canary Rollout
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: lis-api-rollout
+  namespace: lis-platform
+  labels:
+    app.kubernetes.io/name: lis-api
+    medinovai.com/rollout-type: canary
+spec:
+  replicas: 5
+  revisionHistoryLimit: 5
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: lis-api
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: lis-api
+    spec:
+      containers:
+        - name: lis-api
+          image: medinovai/lis-api:latest
+          ports:
+            - containerPort: 8080
+          resources:
+            requests:
+              cpu: 200m
+              memory: 512Mi
+            limits:
+              cpu: 1000m
+              memory: 2Gi
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+  
+  strategy:
+    canary:
+      # Healthcare-safe canary strategy
+      # Very gradual rollout with extensive validation
+      
+      # Canary service for traffic splitting
+      canaryService: lis-api-canary
+      stableService: lis-api-stable
+      
+      # Traffic routing via NGINX
+      trafficRouting:
+        nginx:
+          stableIngress: lis-api-ingress
+          additionalIngressAnnotations:
+            canary-by-header: X-Canary
+            canary-by-header-value: "true"
+      
+      # Gradual rollout steps
+      steps:
+        # Step 1: 1% traffic, run analysis
+        - setWeight: 1
+        - pause:
+            duration: 5m
+        - analysis:
+            templates:
+              - templateName: healthcare-service-health
+            args:
+              - name: namespace
+                value: lis-platform
+        
+        # Step 2: 5% traffic
+        - setWeight: 5
+        - pause:
+            duration: 10m
+        - analysis:
+            templates:
+              - templateName: healthcare-service-health
+              - templateName: database-health
+            args:
+              - name: namespace
+                value: lis-platform
+        
+        # Step 3: 10% traffic, run functional tests
+        - setWeight: 10
+        - pause:
+            duration: 15m
+        - analysis:
+            templates:
+              - templateName: healthcare-service-health
+              - templateName: functional-tests
+            args:
+              - name: namespace
+                value: lis-platform
+              - name: service
+                value: lis-api-canary
+        
+        # Step 4: 25% traffic
+        - setWeight: 25
+        - pause:
+            duration: 20m
+        - analysis:
+            templates:
+              - templateName: healthcare-service-health
+            args:
+              - name: namespace
+                value: lis-platform
+        
+        # Step 5: 50% traffic - manual approval for healthcare
+        - setWeight: 50
+        - pause: {}  # Manual approval required
+        
+        # Step 6: 75% traffic
+        - setWeight: 75
+        - pause:
+            duration: 30m
+        - analysis:
+            templates:
+              - templateName: healthcare-service-health
+            args:
+              - name: namespace
+                value: lis-platform
+        
+        # Step 7: 100% traffic
+        - setWeight: 100
+      
+      # Anti-affinity for canary pods
+      antiAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution: {}
+      
+      # Scale down delay
+      scaleDownDelaySeconds: 30
+      
+      # Abort on failure
+      abortScaleDownDelaySeconds: 30
+      
+      # Dynamic scaling
+      dynamicStableScale: true
+---
+# Blue-Green Rollout for Critical Services
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: lis-worker-rollout
+  namespace: lis-platform
+  labels:
+    app.kubernetes.io/name: lis-worker
+    medinovai.com/rollout-type: blue-green
+spec:
+  replicas: 3
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: lis-worker
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: lis-worker
+    spec:
+      containers:
+        - name: lis-worker
+          image: medinovai/lis-worker:latest
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1Gi
+            limits:
+              cpu: 2000m
+              memory: 4Gi
+  
+  strategy:
+    blueGreen:
+      # Blue-green strategy for zero-downtime
+      activeService: lis-worker-active
+      previewService: lis-worker-preview
+      
+      # Auto-promotion after successful analysis
+      autoPromotionEnabled: false  # Manual promotion for healthcare
+      
+      # Scale down delay
+      scaleDownDelaySeconds: 300  # 5 minutes for graceful shutdown
+      
+      # Pre-promotion analysis
+      prePromotionAnalysis:
+        templates:
+          - templateName: healthcare-service-health
+        args:
+          - name: namespace
+            value: lis-platform
+      
+      # Post-promotion analysis
+      postPromotionAnalysis:
+        templates:
+          - templateName: healthcare-service-health
+        args:
+          - name: namespace
+            value: lis-platform
+      
+      # Anti-affinity
+      antiAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution: {}

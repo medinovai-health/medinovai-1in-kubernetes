@@ -1,0 +1,241 @@
+# MedinovAI LIS Services - ArgoCD Application
+# GitOps deployment for LIS microservices
+# Includes billing, notification, HL7, and reporting services
+
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: lis-billing-service
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: lis-billing-service
+    app.kubernetes.io/part-of: medinovai-lis
+    app.kubernetes.io/component: billing
+    compliance/hipaa: "true"
+  annotations:
+    notifications.argoproj.io/subscribe.on-sync-succeeded.slack: lis-deployments
+    notifications.argoproj.io/subscribe.on-sync-failed.slack: lis-deployments
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: medinovai-lis
+  
+  source:
+    repoURL: https://github.com/medinovai/lis-services.git
+    targetRevision: main
+    path: billing-service/kubernetes
+    
+    kustomize:
+      namePrefix: lis-
+      commonLabels:
+        app.kubernetes.io/part-of: medinovai-lis
+        compliance/hipaa: "true"
+      commonAnnotations:
+        deployment.kubernetes.io/revision: "1"
+  
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: lis-platform
+  
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=false
+      - PruneLast=true
+      - ApplyOutOfSyncOnly=true
+    retry:
+      limit: 3
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 2m
+  
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: lis-notification-service
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: lis-notification-service
+    app.kubernetes.io/part-of: medinovai-lis
+    app.kubernetes.io/component: notification
+    compliance/hipaa: "true"
+  annotations:
+    notifications.argoproj.io/subscribe.on-sync-succeeded.slack: lis-deployments
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: medinovai-lis
+  
+  source:
+    repoURL: https://github.com/medinovai/lis-services.git
+    targetRevision: main
+    path: notification-service/kubernetes
+    
+    kustomize:
+      namePrefix: lis-
+      commonLabels:
+        app.kubernetes.io/part-of: medinovai-lis
+  
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: lis-platform
+  
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=false
+      - ApplyOutOfSyncOnly=true
+    retry:
+      limit: 3
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 2m
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: lis-hl7-service
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: lis-hl7-service
+    app.kubernetes.io/part-of: medinovai-lis
+    app.kubernetes.io/component: hl7
+    compliance/hipaa: "true"
+  annotations:
+    notifications.argoproj.io/subscribe.on-sync-succeeded.slack: lis-deployments
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: medinovai-lis
+  
+  source:
+    repoURL: https://github.com/medinovai/lis-services.git
+    targetRevision: main
+    path: hl7-service/kubernetes
+    
+    kustomize:
+      namePrefix: lis-
+      commonLabels:
+        app.kubernetes.io/part-of: medinovai-lis
+        integration/type: hl7
+  
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: lis-platform
+  
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=false
+      - ApplyOutOfSyncOnly=true
+    retry:
+      limit: 3
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 2m
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: lis-reporting-service
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: lis-reporting-service
+    app.kubernetes.io/part-of: medinovai-lis
+    app.kubernetes.io/component: reporting
+    compliance/hipaa: "true"
+  annotations:
+    notifications.argoproj.io/subscribe.on-sync-succeeded.slack: lis-deployments
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: medinovai-lis
+  
+  source:
+    repoURL: https://github.com/medinovai/lis-services.git
+    targetRevision: main
+    path: reporting-service/kubernetes
+    
+    kustomize:
+      namePrefix: lis-
+      commonLabels:
+        app.kubernetes.io/part-of: medinovai-lis
+  
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: lis-platform
+  
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=false
+      - ApplyOutOfSyncOnly=true
+    retry:
+      limit: 3
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 2m
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: lis-worker-services
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: lis-worker-services
+    app.kubernetes.io/part-of: medinovai-lis
+    app.kubernetes.io/component: worker
+    compliance/hipaa: "true"
+  annotations:
+    notifications.argoproj.io/subscribe.on-sync-succeeded.slack: lis-deployments
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: medinovai-lis
+  
+  source:
+    repoURL: https://github.com/medinovai/lis-services.git
+    targetRevision: main
+    path: worker-services/kubernetes
+    
+    kustomize:
+      namePrefix: lis-
+      commonLabels:
+        app.kubernetes.io/part-of: medinovai-lis
+        app.kubernetes.io/component: worker
+  
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: lis-platform
+  
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=false
+      - ApplyOutOfSyncOnly=true
+    retry:
+      limit: 3
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 2m

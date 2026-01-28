@@ -1,0 +1,363 @@
+# ArgoCD Notifications Configuration
+# Multi-channel notifications for deployment events
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-notifications-cm
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: argocd-notifications
+    app.kubernetes.io/component: notifications
+data:
+  # Notification services configuration
+  service.slack: |
+    token: $slack-token
+    username: ArgoCD
+    icon: https://argoproj.github.io/argo-cd/assets/logo.png
+  
+  service.pagerduty: |
+    serviceKeys:
+      medinovai-oncall: $pagerduty-integration-key
+  
+  service.github: |
+    appID: $github-app-id
+    installationID: $github-installation-id
+    privateKey: $github-private-key
+  
+  service.email: |
+    host: smtp.medinovai.com
+    port: 587
+    username: $email-username
+    password: $email-password
+    from: argocd@medinovai.com
+  
+  service.webhook.teams: |
+    url: $teams-webhook-url
+    headers:
+      - name: Content-Type
+        value: application/json
+  
+  # Notification templates
+  template.app-deployed: |
+    message: |
+      :white_check_mark: *{{.app.metadata.name}}* has been deployed to {{.app.spec.destination.namespace}}
+      
+      *Environment:* {{.app.spec.destination.server}}
+      *Revision:* {{.app.status.sync.revision | substr 0 7}}
+      *Sync Status:* {{.app.status.sync.status}}
+      *Health:* {{.app.status.health.status}}
+      
+      <{{.context.argocdUrl}}/applications/{{.app.metadata.name}}|View in ArgoCD>
+    slack:
+      attachments: |
+        [{
+          "color": "#18be52",
+          "title": "{{.app.metadata.name}}",
+          "title_link": "{{.context.argocdUrl}}/applications/{{.app.metadata.name}}",
+          "fields": [
+            {"title": "Environment", "value": "{{.app.spec.destination.namespace}}", "short": true},
+            {"title": "Revision", "value": "{{.app.status.sync.revision | substr 0 7}}", "short": true},
+            {"title": "Health", "value": "{{.app.status.health.status}}", "short": true},
+            {"title": "Sync", "value": "{{.app.status.sync.status}}", "short": true}
+          ]
+        }]
+  
+  template.app-sync-failed: |
+    message: |
+      :x: *{{.app.metadata.name}}* sync FAILED
+      
+      *Environment:* {{.app.spec.destination.namespace}}
+      *Error:* {{.app.status.operationState.message}}
+      
+      <{{.context.argocdUrl}}/applications/{{.app.metadata.name}}|View in ArgoCD>
+    slack:
+      attachments: |
+        [{
+          "color": "#E96D76",
+          "title": "Sync Failed: {{.app.metadata.name}}",
+          "title_link": "{{.context.argocdUrl}}/applications/{{.app.metadata.name}}",
+          "fields": [
+            {"title": "Environment", "value": "{{.app.spec.destination.namespace}}", "short": true},
+            {"title": "Error", "value": "{{.app.status.operationState.message | substr 0 200}}", "short": false}
+          ]
+        }]
+    pagerduty:
+      description: "ArgoCD sync failed for {{.app.metadata.name}}"
+      severity: critical
+      class: deployment
+      component: argocd
+  
+  template.app-health-degraded: |
+    message: |
+      :warning: *{{.app.metadata.name}}* health is DEGRADED
+      
+      *Environment:* {{.app.spec.destination.namespace}}
+      *Health Status:* {{.app.status.health.status}}
+      *Message:* {{.app.status.health.message}}
+      
+      <{{.context.argocdUrl}}/applications/{{.app.metadata.name}}|View in ArgoCD>
+    slack:
+      attachments: |
+        [{
+          "color": "#EFAF41",
+          "title": "Health Degraded: {{.app.metadata.name}}",
+          "title_link": "{{.context.argocdUrl}}/applications/{{.app.metadata.name}}",
+          "fields": [
+            {"title": "Environment", "value": "{{.app.spec.destination.namespace}}", "short": true},
+            {"title": "Health", "value": "{{.app.status.health.status}}", "short": true},
+            {"title": "Message", "value": "{{.app.status.health.message}}", "short": false}
+          ]
+        }]
+    pagerduty:
+      description: "Application health degraded for {{.app.metadata.name}}"
+      severity: warning
+      class: health
+      component: argocd
+  
+  template.app-sync-running: |
+    message: |
+      :arrows_counterclockwise: *{{.app.metadata.name}}* sync started
+      
+      *Environment:* {{.app.spec.destination.namespace}}
+      *Revision:* {{.app.status.operationState.operation.sync.revision | substr 0 7}}
+      
+      <{{.context.argocdUrl}}/applications/{{.app.metadata.name}}|View in ArgoCD>
+    slack:
+      attachments: |
+        [{
+          "color": "#0DADEA",
+          "title": "Sync Started: {{.app.metadata.name}}",
+          "title_link": "{{.context.argocdUrl}}/applications/{{.app.metadata.name}}",
+          "fields": [
+            {"title": "Environment", "value": "{{.app.spec.destination.namespace}}", "short": true},
+            {"title": "Revision", "value": "{{.app.status.operationState.operation.sync.revision | substr 0 7}}", "short": true}
+          ]
+        }]
+  
+  template.pr-preview-deployed: |
+    message: |
+      :rocket: Preview environment ready for PR #{{.app.metadata.labels.medinovai-com/pr-number}}
+      
+      *Branch:* {{.app.metadata.labels.medinovai-com/branch}}
+      *Preview URL:* https://pr-{{.app.metadata.labels.medinovai-com/pr-number}}.preview.medinovai.com
+      
+      <{{.context.argocdUrl}}/applications/{{.app.metadata.name}}|View in ArgoCD>
+    github:
+      repoURLPath: "{{.app.spec.source.repoURL}}"
+      status:
+        state: success
+        label: "ArgoCD Preview"
+        targetURL: "https://pr-{{.app.metadata.labels.medinovai-com/pr-number}}.preview.medinovai.com"
+  
+  template.canary-step-completed: |
+    message: |
+      :chart_with_upwards_trend: Canary step completed for *{{.app.metadata.name}}*
+      
+      *Current Weight:* {{.app.status.sync.revision}}%
+      *Analysis:* Passed
+      
+      <{{.context.argocdUrl}}/applications/{{.app.metadata.name}}|View in ArgoCD>
+  
+  template.canary-analysis-failed: |
+    message: |
+      :rotating_light: Canary analysis FAILED for *{{.app.metadata.name}}*
+      
+      *Environment:* {{.app.spec.destination.namespace}}
+      *Status:* Automatic rollback initiated
+      
+      <{{.context.argocdUrl}}/applications/{{.app.metadata.name}}|View in ArgoCD>
+    slack:
+      attachments: |
+        [{
+          "color": "#E96D76",
+          "title": "Canary Failed: {{.app.metadata.name}}",
+          "title_link": "{{.context.argocdUrl}}/applications/{{.app.metadata.name}}"
+        }]
+    pagerduty:
+      description: "Canary analysis failed for {{.app.metadata.name}} - automatic rollback"
+      severity: critical
+      class: deployment
+      component: argocd
+  
+  template.production-deployment-request: |
+    email:
+      subject: "[ACTION REQUIRED] Production Deployment Request: {{.app.metadata.name}}"
+      body: |
+        <h2>Production Deployment Request</h2>
+        <p>A deployment is pending for <strong>{{.app.metadata.name}}</strong></p>
+        
+        <table>
+          <tr><td><strong>Application:</strong></td><td>{{.app.metadata.name}}</td></tr>
+          <tr><td><strong>Environment:</strong></td><td>{{.app.spec.destination.namespace}}</td></tr>
+          <tr><td><strong>Revision:</strong></td><td>{{.app.status.sync.revision}}</td></tr>
+          <tr><td><strong>Current Status:</strong></td><td>{{.app.status.sync.status}}</td></tr>
+        </table>
+        
+        <p><a href="{{.context.argocdUrl}}/applications/{{.app.metadata.name}}">Review in ArgoCD</a></p>
+        
+        <p>This deployment requires manual approval. Please review and approve in ArgoCD.</p>
+  
+  # Triggers - when to send notifications
+  trigger.on-deployed: |
+    - when: app.status.operationState.phase in ['Succeeded'] and app.status.health.status == 'Healthy'
+      send: [app-deployed]
+  
+  trigger.on-sync-failed: |
+    - when: app.status.operationState.phase in ['Error', 'Failed']
+      send: [app-sync-failed]
+  
+  trigger.on-health-degraded: |
+    - when: app.status.health.status == 'Degraded'
+      send: [app-health-degraded]
+  
+  trigger.on-sync-running: |
+    - when: app.status.operationState.phase in ['Running']
+      send: [app-sync-running]
+  
+  trigger.on-sync-status-unknown: |
+    - when: app.status.sync.status == 'Unknown'
+      oncePer: app.metadata.name
+      send: [app-sync-failed]
+  
+  trigger.on-preview-deployed: |
+    - when: app.metadata.labels.medinovai-com/env-type == 'preview' and app.status.health.status == 'Healthy'
+      send: [pr-preview-deployed]
+  
+  # Default subscriptions for healthcare notifications
+  subscriptions: |
+    # All production apps notify deployment channel
+    - recipients:
+        - slack:medinovai-deployments
+      triggers:
+        - on-deployed
+        - on-sync-running
+      selector:
+        matchLabels:
+          environment: production
+    
+    # All apps notify alerts channel on failure
+    - recipients:
+        - slack:medinovai-alerts
+        - pagerduty:medinovai-oncall
+      triggers:
+        - on-sync-failed
+        - on-health-degraded
+    
+    # Preview environments notify GitHub
+    - recipients:
+        - github
+      triggers:
+        - on-preview-deployed
+      selector:
+        matchLabels:
+          medinovai.com/env-type: preview
+    
+    # Production deployment requests go to release managers
+    - recipients:
+        - email:release-managers@medinovai.com
+      triggers:
+        - on-sync-status-unknown
+      selector:
+        matchLabels:
+          environment: production
+
+  # Context for templates
+  context: |
+    argocdUrl: https://argocd.medinovai.com
+    environmentType: production
+---
+# ArgoCD Notifications Secret
+apiVersion: v1
+kind: Secret
+metadata:
+  name: argocd-notifications-secret
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: argocd-notifications
+type: Opaque
+stringData:
+  # Placeholder values - actual values should come from external-secrets
+  slack-token: "xoxb-PLACEHOLDER"
+  pagerduty-integration-key: "PLACEHOLDER"
+  github-app-id: "PLACEHOLDER"
+  github-installation-id: "PLACEHOLDER"
+  github-private-key: "PLACEHOLDER"
+  email-username: "argocd@medinovai.com"
+  email-password: "PLACEHOLDER"
+  teams-webhook-url: "PLACEHOLDER"
+---
+# Slack Channel ConfigMap for easy management
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: notification-channels
+  namespace: argocd
+  labels:
+    medinovai.com/config-type: notification-channels
+data:
+  channels.yaml: |
+    slack:
+      deployments:
+        channel: "#medinovai-deployments"
+        description: "Successful deployment notifications"
+      alerts:
+        channel: "#medinovai-alerts"
+        description: "Failed deployments and health degradation"
+      releases:
+        channel: "#medinovai-releases"
+        description: "Production release announcements"
+      preview:
+        channel: "#medinovai-preview"
+        description: "Preview environment notifications"
+    
+    pagerduty:
+      oncall:
+        service: "medinovai-oncall"
+        description: "Critical deployment failures"
+        escalation: "immediate"
+    
+    email:
+      release-managers:
+        address: "release-managers@medinovai.com"
+        description: "Production deployment approvals"
+      platform-team:
+        address: "platform-team@medinovai.com"
+        description: "Infrastructure notifications"
+---
+# External Secret for Notification Credentials
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: argocd-notifications-credentials
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: argocd-notifications
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    name: aws-secrets-manager
+    kind: ClusterSecretStore
+  target:
+    name: argocd-notifications-secret
+    creationPolicy: Merge
+  data:
+    - secretKey: slack-token
+      remoteRef:
+        key: medinovai/argocd/notifications
+        property: slack_token
+    - secretKey: pagerduty-integration-key
+      remoteRef:
+        key: medinovai/argocd/notifications
+        property: pagerduty_key
+    - secretKey: github-app-id
+      remoteRef:
+        key: medinovai/argocd/github-app
+        property: app_id
+    - secretKey: github-installation-id
+      remoteRef:
+        key: medinovai/argocd/github-app
+        property: installation_id
+    - secretKey: github-private-key
+      remoteRef:
+        key: medinovai/argocd/github-app
+        property: private_key

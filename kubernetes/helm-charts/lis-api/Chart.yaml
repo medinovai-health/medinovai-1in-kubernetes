@@ -1,0 +1,42 @@
+apiVersion: v2
+name: lis-api
+description: MedinovAI Laboratory Information System API - Healthcare-compliant microservice
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+
+keywords:
+  - healthcare
+  - laboratory
+  - lis
+  - api
+  - medinovai
+  - hipaa
+  - iso-13485
+
+maintainers:
+  - name: MedinovAI Platform Team
+    email: platform@medinovai.com
+    url: https://medinovai.com
+
+home: https://github.com/medinovai/lis-api
+sources:
+  - https://github.com/medinovai/lis-api
+
+icon: https://medinovai.com/assets/lis-api-icon.png
+
+annotations:
+  category: Healthcare
+  compliance: "ISO 13485, HIPAA, GDPR"
+  artifacthub.io/license: Proprietary
+  artifacthub.io/maintainers: |
+    - name: MedinovAI
+      email: platform@medinovai.com
+  artifacthub.io/signKey: |
+    fingerprint: XXXX
+    url: https://medinovai.com/pgp-key.asc
+
+dependencies:
+  - name: common
+    version: "2.x.x"
+    repository: "https://charts.bitnami.com/bitnami"

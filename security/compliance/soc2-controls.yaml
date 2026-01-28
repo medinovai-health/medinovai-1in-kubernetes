@@ -1,0 +1,577 @@
+# MedinovAI Healthcare LIS - SOC 2 Type II Controls
+# Trust Services Criteria for Security, Availability, Processing Integrity,
+# Confidentiality, and Privacy
+
+apiVersion: compliance.medinovai.com/v1
+kind: SOC2ComplianceControls
+metadata:
+  name: soc2-trust-services-criteria
+  version: "2026.1"
+  framework: "AICPA TSC 2017"
+  lastUpdated: "2026-01-27"
+  owner: compliance@medinovai.com
+
+spec:
+  # ============================================================================
+  # CC1 - CONTROL ENVIRONMENT
+  # ============================================================================
+  controlEnvironment:
+    - id: CC1.1
+      name: "COSO Principle 1 - Commitment to Integrity"
+      description: "The entity demonstrates a commitment to integrity and ethical values"
+      criteria:
+        - "Code of conduct established and communicated"
+        - "Ethics training required for all personnel"
+        - "Violations reported and addressed"
+      implementation:
+        automated: false
+        documentation:
+          - CODE-OF-CONDUCT
+          - ETHICS-POLICY
+        evidence:
+          - training-records
+          - incident-reports
+
+    - id: CC1.2
+      name: "COSO Principle 2 - Board Independence"
+      description: "Board of directors demonstrates independence and exercises oversight"
+      criteria:
+        - "Board structure and independence documented"
+        - "Security oversight responsibilities defined"
+      implementation:
+        automated: false
+        documentation:
+          - BOARD-CHARTER
+          - SECURITY-COMMITTEE-CHARTER
+
+    - id: CC1.3
+      name: "COSO Principle 3 - Management Structure"
+      description: "Management establishes structures, reporting lines, and authorities"
+      criteria:
+        - "Organizational structure documented"
+        - "Security responsibilities assigned"
+        - "Reporting relationships clear"
+      implementation:
+        automated: true
+        tools:
+          - org-chart-management
+          - role-definition-system
+
+    - id: CC1.4
+      name: "COSO Principle 4 - Competence Commitment"
+      description: "Entity demonstrates commitment to attract, develop, and retain competent individuals"
+      criteria:
+        - "Job descriptions include security requirements"
+        - "Background checks performed"
+        - "Security training provided"
+      implementation:
+        automated: true
+        tools:
+          - hr-system
+          - background-check-api
+          - training-management
+
+    - id: CC1.5
+      name: "COSO Principle 5 - Accountability"
+      description: "Entity holds individuals accountable for security responsibilities"
+      criteria:
+        - "Performance evaluations include security metrics"
+        - "Security incidents tracked to individuals"
+        - "Remediation actions documented"
+      implementation:
+        automated: true
+        tools:
+          - incident-management
+          - performance-tracking
+
+  # ============================================================================
+  # CC2 - COMMUNICATION AND INFORMATION
+  # ============================================================================
+  communicationInformation:
+    - id: CC2.1
+      name: "Quality Information"
+      description: "Entity obtains or generates quality information to support internal control"
+      criteria:
+        - "Security metrics collected and analyzed"
+        - "Vulnerability data aggregated"
+        - "Incident data complete and accurate"
+      implementation:
+        automated: true
+        tools:
+          - security-dashboard
+          - metrics-aggregation
+          - siem
+
+    - id: CC2.2
+      name: "Internal Communication"
+      description: "Entity internally communicates information to support internal control"
+      criteria:
+        - "Security policies communicated to all staff"
+        - "Incident notifications distributed"
+        - "Security updates shared regularly"
+      implementation:
+        automated: true
+        tools:
+          - policy-management
+          - notification-system
+          - security-bulletin
+
+    - id: CC2.3
+      name: "External Communication"
+      description: "Entity communicates with external parties regarding internal control"
+      criteria:
+        - "Security status communicated to customers"
+        - "Regulatory notifications sent as required"
+        - "Vendor security requirements communicated"
+      implementation:
+        automated: true
+        tools:
+          - customer-portal
+          - regulatory-reporting
+          - vendor-management
+
+  # ============================================================================
+  # CC3 - RISK ASSESSMENT
+  # ============================================================================
+  riskAssessment:
+    - id: CC3.1
+      name: "Security Objectives"
+      description: "Entity specifies objectives with sufficient clarity"
+      criteria:
+        - "Security objectives documented"
+        - "Risk tolerance defined"
+        - "Objectives measurable"
+      implementation:
+        automated: false
+        documentation:
+          - SECURITY-OBJECTIVES
+          - RISK-APPETITE-STATEMENT
+
+    - id: CC3.2
+      name: "Risk Identification"
+      description: "Entity identifies risks to achievement of objectives"
+      criteria:
+        - "Threat modeling performed"
+        - "Vulnerability assessments conducted"
+        - "Risk register maintained"
+      implementation:
+        automated: true
+        tools:
+          - threat-modeling
+          - vulnerability-scanner
+          - risk-register
+        frequency: continuous
+        verification:
+          script: "./security/scripts/soc2/risk-assessment-check.sh"
+
+    - id: CC3.3
+      name: "Fraud Risk Assessment"
+      description: "Entity considers potential for fraud in assessing risks"
+      criteria:
+        - "Fraud scenarios identified"
+        - "Controls for fraud prevention implemented"
+        - "Fraud detection mechanisms in place"
+      implementation:
+        automated: true
+        tools:
+          - anomaly-detection
+          - fraud-detection
+          - behavioral-analytics
+
+    - id: CC3.4
+      name: "Change Identification"
+      description: "Entity identifies and assesses changes that could impact internal control"
+      criteria:
+        - "Change management process documented"
+        - "Security impact assessed for changes"
+        - "Changes tracked and audited"
+      implementation:
+        automated: true
+        tools:
+          - change-management
+          - security-review-workflow
+          - audit-logging
+
+  # ============================================================================
+  # CC4 - MONITORING ACTIVITIES
+  # ============================================================================
+  monitoringActivities:
+    - id: CC4.1
+      name: "Ongoing Evaluation"
+      description: "Entity selects and develops ongoing evaluations"
+      criteria:
+        - "Continuous monitoring implemented"
+        - "Security metrics tracked"
+        - "Automated alerts configured"
+      implementation:
+        automated: true
+        tools:
+          - prometheus
+          - grafana
+          - alertmanager
+          - siem
+        verification:
+          check: "Monitoring coverage >= 95%"
+          script: "./security/scripts/soc2/monitoring-coverage.sh"
+
+    - id: CC4.2
+      name: "Deficiency Communication"
+      description: "Entity evaluates and communicates internal control deficiencies"
+      criteria:
+        - "Deficiencies identified and documented"
+        - "Remediation plans created"
+        - "Progress tracked"
+      implementation:
+        automated: true
+        tools:
+          - deficiency-tracker
+          - remediation-workflow
+          - reporting-dashboard
+
+  # ============================================================================
+  # CC5 - CONTROL ACTIVITIES
+  # ============================================================================
+  controlActivities:
+    - id: CC5.1
+      name: "Control Selection"
+      description: "Entity selects and develops control activities"
+      criteria:
+        - "Controls mapped to risks"
+        - "Control effectiveness measured"
+        - "Gap analysis performed"
+      implementation:
+        automated: true
+        tools:
+          - control-framework
+          - risk-control-mapping
+
+    - id: CC5.2
+      name: "Technology Controls"
+      description: "Entity selects and develops technology controls"
+      criteria:
+        - "Technical controls documented"
+        - "Controls tested regularly"
+        - "Effectiveness verified"
+      implementation:
+        automated: true
+        tools:
+          - semgrep
+          - trivy
+          - snyk
+          - gitleaks
+        verification:
+          script: "./security/scripts/soc2/control-testing.sh"
+
+    - id: CC5.3
+      name: "Policy Controls"
+      description: "Entity deploys control activities through policies"
+      criteria:
+        - "Policies documented and approved"
+        - "Policies communicated"
+        - "Compliance verified"
+      implementation:
+        automated: true
+        tools:
+          - policy-management
+          - policy-enforcement
+
+  # ============================================================================
+  # CC6 - LOGICAL AND PHYSICAL ACCESS CONTROLS
+  # ============================================================================
+  accessControls:
+    - id: CC6.1
+      name: "Logical Access Security"
+      description: "Entity implements logical access security software and processes"
+      criteria:
+        - "Access control implemented"
+        - "Authentication required"
+        - "Access logged"
+      implementation:
+        automated: true
+        tools:
+          - identity-provider
+          - access-management
+          - audit-logging
+        verification:
+          check: "All endpoints require authentication"
+          script: "./security/scripts/soc2/access-control-check.sh"
+
+    - id: CC6.2
+      name: "User Registration"
+      description: "Prior to issuing system credentials, entity registers users"
+      criteria:
+        - "User registration process documented"
+        - "Identity verification performed"
+        - "Approval workflow implemented"
+      implementation:
+        automated: true
+        tools:
+          - user-provisioning
+          - identity-verification
+          - approval-workflow
+
+    - id: CC6.3
+      name: "Credential Management"
+      description: "Entity manages credentials for infrastructure and software"
+      criteria:
+        - "Credentials securely stored"
+        - "Rotation policies enforced"
+        - "Access to credentials controlled"
+      implementation:
+        automated: true
+        tools:
+          - secrets-manager
+          - credential-rotation
+          - access-control
+        verification:
+          check: "No hardcoded credentials"
+          tool: gitleaks
+
+    - id: CC6.4
+      name: "Access Removal"
+      description: "Entity removes access when no longer needed"
+      criteria:
+        - "Access review performed regularly"
+        - "Termination process includes access removal"
+        - "Access changes audited"
+      implementation:
+        automated: true
+        tools:
+          - access-review
+          - hr-integration
+          - automated-deprovisioning
+        frequency: quarterly
+
+    - id: CC6.5
+      name: "Physical Access Restrictions"
+      description: "Entity restricts physical access to facilities"
+      criteria:
+        - "Physical access controls implemented"
+        - "Access logged"
+        - "Visitor management in place"
+      implementation:
+        automated: false
+        documentation:
+          - PHYSICAL-ACCESS-POLICY
+
+    - id: CC6.6
+      name: "External Access Protection"
+      description: "Entity implements controls to prevent unauthorized access from external sources"
+      criteria:
+        - "Network perimeter secured"
+        - "Intrusion detection implemented"
+        - "DDoS protection enabled"
+      implementation:
+        automated: true
+        tools:
+          - firewall
+          - ids-ips
+          - ddos-protection
+          - waf
+
+    - id: CC6.7
+      name: "Data Transmission Protection"
+      description: "Entity restricts transmission and movement of data"
+      criteria:
+        - "Data encrypted in transit"
+        - "Data transfer controls implemented"
+        - "Data loss prevention enabled"
+      implementation:
+        automated: true
+        tools:
+          - tls-enforcement
+          - dlp
+          - data-transfer-controls
+        requirements:
+          minimumTLS: "1.2"
+          preferredTLS: "1.3"
+
+    - id: CC6.8
+      name: "Malicious Software Prevention"
+      description: "Entity implements controls to prevent introduction of malicious software"
+      criteria:
+        - "Vulnerability scanning performed"
+        - "Malware detection implemented"
+        - "Software integrity verified"
+      implementation:
+        automated: true
+        tools:
+          - trivy
+          - snyk
+          - software-composition-analysis
+        frequency: continuous
+
+  # ============================================================================
+  # CC7 - SYSTEM OPERATIONS
+  # ============================================================================
+  systemOperations:
+    - id: CC7.1
+      name: "Vulnerability Management"
+      description: "Entity manages vulnerabilities to meet security commitments"
+      criteria:
+        - "Vulnerabilities identified and tracked"
+        - "Remediation timelines defined"
+        - "Patch management implemented"
+      implementation:
+        automated: true
+        tools:
+          - vulnerability-management
+          - patch-management
+          - remediation-tracking
+        sla:
+          critical: 24 hours
+          high: 7 days
+          medium: 30 days
+          low: 90 days
+
+    - id: CC7.2
+      name: "Security Monitoring"
+      description: "Entity monitors system components for anomalies"
+      criteria:
+        - "Monitoring implemented"
+        - "Anomaly detection enabled"
+        - "Alerts configured"
+      implementation:
+        automated: true
+        tools:
+          - siem
+          - anomaly-detection
+          - alertmanager
+
+    - id: CC7.3
+      name: "Incident Response"
+      description: "Entity evaluates security events to determine incidents"
+      criteria:
+        - "Security events analyzed"
+        - "Incidents classified"
+        - "Response procedures followed"
+      implementation:
+        automated: true
+        tools:
+          - incident-management
+          - event-correlation
+          - playbook-automation
+
+    - id: CC7.4
+      name: "Incident Containment"
+      description: "Entity responds to identified security incidents"
+      criteria:
+        - "Containment procedures defined"
+        - "Eradication performed"
+        - "Recovery verified"
+      implementation:
+        automated: true
+        tools:
+          - incident-response
+          - automated-containment
+          - forensics
+
+    - id: CC7.5
+      name: "Recovery"
+      description: "Entity identifies and resolves identified security incidents"
+      criteria:
+        - "Recovery procedures documented"
+        - "Systems restored"
+        - "Lessons learned captured"
+      implementation:
+        automated: true
+        tools:
+          - disaster-recovery
+          - backup-restore
+          - post-incident-review
+
+  # ============================================================================
+  # CC8 - CHANGE MANAGEMENT
+  # ============================================================================
+  changeManagement:
+    - id: CC8.1
+      name: "Change Authorization"
+      description: "Entity authorizes, designs, develops, and tests changes"
+      criteria:
+        - "Changes authorized before implementation"
+        - "Security review performed"
+        - "Testing required"
+      implementation:
+        automated: true
+        tools:
+          - change-management
+          - code-review
+          - ci-cd-pipeline
+        requirements:
+          - pull-request-required
+          - security-scan-passed
+          - tests-passed
+          - approval-required
+
+  # ============================================================================
+  # CC9 - RISK MITIGATION
+  # ============================================================================
+  riskMitigation:
+    - id: CC9.1
+      name: "Risk Mitigation Activities"
+      description: "Entity identifies and mitigates risks from business disruption"
+      criteria:
+        - "Business continuity plan documented"
+        - "Disaster recovery tested"
+        - "Dependencies identified"
+      implementation:
+        automated: true
+        tools:
+          - disaster-recovery
+          - backup-verification
+        testing: quarterly
+
+    - id: CC9.2
+      name: "Vendor Risk Management"
+      description: "Entity assesses and manages risks from vendors"
+      criteria:
+        - "Vendor security assessments performed"
+        - "Contracts include security requirements"
+        - "Vendor performance monitored"
+      implementation:
+        automated: true
+        tools:
+          - vendor-management
+          - security-questionnaire
+
+# Automated evidence collection
+evidenceCollection:
+  schedule: continuous
+  retention: 3 years
+  
+  artifacts:
+    - type: access-logs
+      source: identity-provider
+      retention: 1 year
+      
+    - type: security-scan-reports
+      source: ci-cd-pipeline
+      retention: 3 years
+      
+    - type: change-records
+      source: change-management
+      retention: 3 years
+      
+    - type: incident-reports
+      source: incident-management
+      retention: 5 years
+      
+    - type: configuration-snapshots
+      source: infrastructure
+      retention: 1 year
+
+# Audit readiness
+auditReadiness:
+  reporting:
+    frequency: monthly
+    format: pdf
+    recipients:
+      - compliance@medinovai.com
+      - audit@medinovai.com
+      
+  dashboards:
+    - name: soc2-compliance-status
+      url: /dashboards/soc2
+      
+    - name: control-effectiveness
+      url: /dashboards/controls

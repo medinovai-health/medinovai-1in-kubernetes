@@ -1,0 +1,625 @@
+# MedinovAI Healthcare LIS - Network Security Policy
+# Network security requirements for healthcare infrastructure
+# Compliant with: HIPAA, SOC2, PCI-DSS, NIST 800-53
+
+apiVersion: policy.medinovai.com/v1
+kind: NetworkSecurityPolicy
+metadata:
+  name: healthcare-network-security-policy
+  version: "2026.1"
+  lastUpdated: "2026-01-27"
+  owner: security@medinovai.com
+  compliance:
+    - HIPAA
+    - SOC2
+    - NIST-800-53
+    - CIS-Kubernetes-Benchmark
+
+spec:
+  # ============================================================================
+  # NETWORK SEGMENTATION
+  # ============================================================================
+  networkSegmentation:
+    # Network zones for healthcare
+    zones:
+      - name: dmz
+        description: "Public-facing services (load balancers, WAF)"
+        securityLevel: public
+        allowedIngress:
+          - internet
+        allowedEgress:
+          - api-zone
+        services:
+          - load-balancer
+          - waf
+          - cdn
+
+      - name: api-zone
+        description: "API gateway and public APIs"
+        securityLevel: controlled
+        allowedIngress:
+          - dmz
+        allowedEgress:
+          - application-zone
+          - cache-zone
+        services:
+          - api-gateway
+          - public-api
+
+      - name: application-zone
+        description: "Application services (no direct external access)"
+        securityLevel: restricted
+        allowedIngress:
+          - api-zone
+        allowedEgress:
+          - database-zone
+          - cache-zone
+          - messaging-zone
+          - external-integrations
+        services:
+          - lis-api
+          - billing-service
+          - notification-service
+          - reporting-service
+
+      - name: phi-zone
+        description: "PHI processing services (highest security)"
+        securityLevel: critical
+        allowedIngress:
+          - application-zone
+        allowedEgress:
+          - database-zone
+        services:
+          - patient-service
+          - result-service
+          - critical-value-service
+        additionalControls:
+          - encryption-required
+          - audit-all-traffic
+          - dlp-enabled
+
+      - name: database-zone
+        description: "Database services (no external access)"
+        securityLevel: critical
+        allowedIngress:
+          - application-zone
+          - phi-zone
+        allowedEgress: []
+        services:
+          - postgresql
+          - mongodb
+          - redis
+
+      - name: cache-zone
+        description: "Caching layer"
+        securityLevel: restricted
+        allowedIngress:
+          - application-zone
+          - api-zone
+        allowedEgress: []
+        services:
+          - redis-cache
+          - memcached
+
+      - name: messaging-zone
+        description: "Message queues and event streaming"
+        securityLevel: restricted
+        allowedIngress:
+          - application-zone
+        allowedEgress:
+          - application-zone
+        services:
+          - rabbitmq
+          - kafka
+
+      - name: management-zone
+        description: "Management and monitoring services"
+        securityLevel: controlled
+        allowedIngress:
+          - vpn
+        allowedEgress:
+          - all-zones
+        services:
+          - prometheus
+          - grafana
+          - elasticsearch
+          - kibana
+
+  # ============================================================================
+  # KUBERNETES NETWORK POLICIES
+  # ============================================================================
+  kubernetesNetworkPolicies:
+    # Default deny all traffic
+    defaultDenyAll:
+      enabled: true
+      template: |
+        apiVersion: networking.k8s.io/v1
+        kind: NetworkPolicy
+        metadata:
+          name: default-deny-all
+          namespace: {{ .Namespace }}
+        spec:
+          podSelector: {}
+          policyTypes:
+            - Ingress
+            - Egress
+
+    # Allow DNS
+    allowDns:
+      enabled: true
+      template: |
+        apiVersion: networking.k8s.io/v1
+        kind: NetworkPolicy
+        metadata:
+          name: allow-dns
+          namespace: {{ .Namespace }}
+        spec:
+          podSelector: {}
+          policyTypes:
+            - Egress
+          egress:
+            - to:
+                - namespaceSelector:
+                    matchLabels:
+                      kubernetes.io/metadata.name: kube-system
+              ports:
+                - protocol: UDP
+                  port: 53
+                - protocol: TCP
+                  port: 53
+
+    # PHI Service Network Policy
+    phiServicePolicy:
+      template: |
+        apiVersion: networking.k8s.io/v1
+        kind: NetworkPolicy
+        metadata:
+          name: phi-service-policy
+          namespace: {{ .Namespace }}
+          labels:
+            compliance: hipaa
+            data-classification: phi
+        spec:
+          podSelector:
+            matchLabels:
+              app: {{ .ServiceName }}
+              data-classification: phi
+          policyTypes:
+            - Ingress
+            - Egress
+          ingress:
+            - from:
+                - namespaceSelector:
+                    matchLabels:
+                      zone: application
+                - podSelector:
+                    matchLabels:
+                      authorized-phi-access: "true"
+              ports:
+                - protocol: TCP
+                  port: 8080
+          egress:
+            - to:
+                - namespaceSelector:
+                    matchLabels:
+                      zone: database
+              ports:
+                - protocol: TCP
+                  port: 5432
+            - to:
+                - namespaceSelector:
+                    matchLabels:
+                      kubernetes.io/metadata.name: kube-system
+              ports:
+                - protocol: UDP
+                  port: 53
+
+    # Database Network Policy
+    databasePolicy:
+      template: |
+        apiVersion: networking.k8s.io/v1
+        kind: NetworkPolicy
+        metadata:
+          name: database-policy
+          namespace: {{ .Namespace }}
+        spec:
+          podSelector:
+            matchLabels:
+              app: postgresql
+          policyTypes:
+            - Ingress
+          ingress:
+            - from:
+                - namespaceSelector:
+                    matchLabels:
+                      zone: application
+                - namespaceSelector:
+                    matchLabels:
+                      zone: phi
+              ports:
+                - protocol: TCP
+                  port: 5432
+
+  # ============================================================================
+  # TLS/ENCRYPTION REQUIREMENTS
+  # ============================================================================
+  transportSecurity:
+    # TLS configuration
+    tls:
+      minimumVersion: "TLS1.2"
+      preferredVersion: "TLS1.3"
+      
+      cipherSuites:
+        allowed:
+          # TLS 1.3 cipher suites
+          - TLS_AES_256_GCM_SHA384
+          - TLS_CHACHA20_POLY1305_SHA256
+          - TLS_AES_128_GCM_SHA256
+          # TLS 1.2 cipher suites (when 1.3 not available)
+          - TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384
+          - TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256
+          - TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384
+          - TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256
+        
+        prohibited:
+          - TLS_RSA_*
+          - "*_CBC_*"
+          - "*_SHA"
+          - "*_MD5"
+          - "*_RC4_*"
+          - "*_DES_*"
+          - "*_3DES_*"
+
+      certificates:
+        minimumKeyLength:
+          rsa: 2048
+          ecdsa: 256
+        
+        validity:
+          maximum: "365 days"
+          recommended: "90 days"
+        
+        renewal:
+          automated: true
+          provider: "cert-manager"
+          issuer: "Let's Encrypt"
+
+    # Mutual TLS (mTLS)
+    mtls:
+      enabled: true
+      serviceMesh: "Istio"
+      mode: "STRICT"
+      
+      exceptions:
+        - service: "health-check"
+          reason: "Load balancer health checks"
+
+    # Internal service communication
+    internalCommunication:
+      encryption: required
+      protocol: mTLS
+      certificateRotation: automatic
+
+  # ============================================================================
+  # FIREWALL RULES
+  # ============================================================================
+  firewallRules:
+    # Ingress rules
+    ingress:
+      - name: allow-https
+        priority: 100
+        action: allow
+        source: 0.0.0.0/0
+        destination: dmz
+        ports: [443]
+        protocol: tcp
+        description: "Allow HTTPS from internet"
+
+      - name: allow-health-checks
+        priority: 200
+        action: allow
+        source: 
+          - load-balancer-ip-range
+        destination: all
+        ports: [8080]
+        protocol: tcp
+        description: "Allow health checks from load balancer"
+
+      - name: deny-all-other-ingress
+        priority: 65535
+        action: deny
+        source: 0.0.0.0/0
+        destination: all
+        ports: all
+        protocol: all
+        description: "Default deny all ingress"
+
+    # Egress rules
+    egress:
+      - name: allow-dns
+        priority: 100
+        action: allow
+        source: all
+        destination: dns-servers
+        ports: [53]
+        protocol: [tcp, udp]
+        description: "Allow DNS resolution"
+
+      - name: allow-https-egress
+        priority: 200
+        action: allow
+        source: all
+        destination: 0.0.0.0/0
+        ports: [443]
+        protocol: tcp
+        description: "Allow HTTPS egress for external APIs"
+
+      - name: allow-ntp
+        priority: 300
+        action: allow
+        source: all
+        destination: ntp-servers
+        ports: [123]
+        protocol: udp
+        description: "Allow NTP time sync"
+
+      - name: deny-all-other-egress
+        priority: 65535
+        action: deny
+        source: all
+        destination: 0.0.0.0/0
+        ports: all
+        protocol: all
+        description: "Default deny all egress"
+
+  # ============================================================================
+  # LOAD BALANCER CONFIGURATION
+  # ============================================================================
+  loadBalancer:
+    type: application
+    
+    # SSL/TLS configuration
+    ssl:
+      policy: ELBSecurityPolicy-TLS13-1-2-2021-06
+      certificate: ACM
+      
+    # Security headers
+    headers:
+      add:
+        - name: Strict-Transport-Security
+          value: "max-age=31536000; includeSubDomains; preload"
+        - name: X-Content-Type-Options
+          value: "nosniff"
+        - name: X-Frame-Options
+          value: "DENY"
+        - name: X-XSS-Protection
+          value: "1; mode=block"
+        - name: Content-Security-Policy
+          value: "default-src 'self'"
+        - name: Referrer-Policy
+          value: "strict-origin-when-cross-origin"
+
+    # Access logging
+    accessLogs:
+      enabled: true
+      bucket: medinovai-lb-access-logs
+      prefix: healthcare-lis
+
+    # Health checks
+    healthChecks:
+      path: /health
+      interval: 30
+      timeout: 5
+      healthyThreshold: 2
+      unhealthyThreshold: 3
+
+  # ============================================================================
+  # WEB APPLICATION FIREWALL (WAF)
+  # ============================================================================
+  waf:
+    enabled: true
+    provider: "AWS WAF"
+    
+    # Managed rule groups
+    managedRules:
+      - name: AWSManagedRulesCommonRuleSet
+        priority: 1
+        overrideAction: none
+        
+      - name: AWSManagedRulesKnownBadInputsRuleSet
+        priority: 2
+        overrideAction: none
+        
+      - name: AWSManagedRulesSQLiRuleSet
+        priority: 3
+        overrideAction: none
+        
+      - name: AWSManagedRulesLinuxRuleSet
+        priority: 4
+        overrideAction: none
+
+    # Custom rules for healthcare
+    customRules:
+      - name: BlockSuspiciousPHIAccess
+        priority: 10
+        action: block
+        statement:
+          rateBasedStatement:
+            limit: 100
+            aggregateKeyType: IP
+        description: "Block high-rate PHI access attempts"
+
+      - name: BlockBadBots
+        priority: 20
+        action: block
+        statement:
+          regexPatternSetReferenceStatement:
+            arn: arn:aws:wafv2:*:*:regional/regexpatternset/BadBots/*
+            fieldToMatch:
+              singleHeader:
+                name: user-agent
+            textTransformations:
+              - priority: 0
+                type: LOWERCASE
+
+    # Rate limiting
+    rateLimiting:
+      enabled: true
+      rules:
+        - name: global-rate-limit
+          limit: 2000
+          window: 5 minutes
+          action: block
+          
+        - name: api-rate-limit
+          limit: 100
+          window: 1 minute
+          action: block
+          scope: "/api/*"
+
+    # IP reputation
+    ipReputation:
+      enabled: true
+      blockLists:
+        - AWSManagedIPReputationList
+      
+    # Geo blocking (if required)
+    geoBlocking:
+      enabled: false
+      # allowedCountries:
+      #   - US
+      #   - CA
+
+  # ============================================================================
+  # DDoS PROTECTION
+  # ============================================================================
+  ddosProtection:
+    enabled: true
+    provider: "AWS Shield Advanced"
+    
+    # Protection groups
+    protectionGroups:
+      - name: healthcare-lis-protection
+        resources:
+          - load-balancer
+          - api-gateway
+          - cloudfront
+        
+    # Response team
+    responseTeam:
+      enabled: true
+      contacts:
+        - security@medinovai.com
+        - oncall@medinovai.com
+
+  # ============================================================================
+  # INTRUSION DETECTION/PREVENTION
+  # ============================================================================
+  intrusionDetection:
+    enabled: true
+    
+    # Network monitoring
+    networkMonitoring:
+      enabled: true
+      provider: "VPC Flow Logs"
+      analysis: "Amazon GuardDuty"
+      
+    # Alerts
+    alerts:
+      - name: suspicious-network-activity
+        severity: high
+        notification:
+          - slack: "#security-alerts"
+          - pagerduty: security-oncall
+          
+      - name: potential-data-exfiltration
+        severity: critical
+        notification:
+          - slack: "#security-critical"
+          - pagerduty: security-oncall
+          - email: security@medinovai.com
+
+  # ============================================================================
+  # VPN CONFIGURATION
+  # ============================================================================
+  vpn:
+    # Site-to-site VPN
+    siteToSite:
+      enabled: true
+      connections:
+        - name: office-to-cloud
+          type: ipsec
+          encryption: AES-256
+          authentication: PSK/Certificates
+          
+    # Client VPN
+    clientVpn:
+      enabled: true
+      provider: "AWS Client VPN"
+      authentication:
+        type: certificate
+        mfa: required
+      authorization:
+        type: directory-service
+        groups:
+          - VPN-Users
+          - Administrators
+
+  # ============================================================================
+  # DNS SECURITY
+  # ============================================================================
+  dnsSecurity:
+    # DNSSEC
+    dnssec:
+      enabled: true
+      
+    # DNS filtering
+    dnsFiltering:
+      enabled: true
+      provider: "Route53 Resolver DNS Firewall"
+      
+      blockLists:
+        - aws-managed-domains-malware
+        - aws-managed-domains-botnet
+        
+    # Private DNS
+    privateDns:
+      enabled: true
+      zone: "medinovai.internal"
+
+# Monitoring and alerting
+monitoring:
+  networkMetrics:
+    - bytes-in
+    - bytes-out
+    - packets-dropped
+    - connection-count
+    - latency
+    
+  alerts:
+    - name: high-packet-drop
+      condition: "packets-dropped > 1%"
+      severity: warning
+      
+    - name: unusual-traffic-pattern
+      condition: "anomaly-detected"
+      severity: high
+      
+    - name: network-latency-high
+      condition: "latency > 100ms"
+      severity: warning
+
+# Compliance verification
+complianceVerification:
+  automated: true
+  frequency: daily
+  
+  checks:
+    - name: tls-configuration
+      script: "./security/scripts/network/verify-tls.sh"
+      
+    - name: network-segmentation
+      script: "./security/scripts/network/verify-segmentation.sh"
+      
+    - name: firewall-rules
+      script: "./security/scripts/network/verify-firewall.sh"

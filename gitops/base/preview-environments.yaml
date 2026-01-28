@@ -1,0 +1,262 @@
+# Preview Environments ApplicationSet
+# Automatically creates ephemeral environments for pull requests
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: preview-environments
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: preview-environments
+    app.kubernetes.io/component: gitops
+    medinovai.com/env-type: preview
+spec:
+  # Generate applications from GitHub pull requests
+  generators:
+    # LIS Platform PR previews
+    - pullRequest:
+        github:
+          owner: medinovai
+          repo: medinovai-lis-platform
+          tokenRef:
+            secretName: github-token
+            key: token
+          labels:
+            - preview
+            - ready-for-review
+        requeueAfterSeconds: 60
+      selector:
+        matchLabels:
+          enable-preview: "true"
+    
+    # Mobile Phlebotomy PR previews
+    - pullRequest:
+        github:
+          owner: medinovai
+          repo: mobile-phlebotomy
+          tokenRef:
+            secretName: github-token
+            key: token
+          labels:
+            - preview
+        requeueAfterSeconds: 60
+    
+    # CTMS PR previews
+    - pullRequest:
+        github:
+          owner: medinovai
+          repo: ctms
+          tokenRef:
+            secretName: github-token
+            key: token
+          labels:
+            - preview
+        requeueAfterSeconds: 60
+    
+    # Billing PR previews
+    - pullRequest:
+        github:
+          owner: medinovai
+          repo: billing
+          tokenRef:
+            secretName: github-token
+            key: token
+          labels:
+            - preview
+        requeueAfterSeconds: 60
+  
+  template:
+    metadata:
+      name: 'preview-{{branch}}-{{number}}'
+      namespace: argocd
+      labels:
+        app.kubernetes.io/name: 'preview-{{branch}}'
+        app.kubernetes.io/instance: 'pr-{{number}}'
+        medinovai.com/env-type: preview
+        medinovai.com/pr-number: '{{number}}'
+        medinovai.com/branch: '{{branch}}'
+      annotations:
+        # Auto-delete after PR is merged/closed
+        argocd.argoproj.io/finalizer: foreground
+        # Notifications
+        notifications.argoproj.io/subscribe.on-sync-succeeded.github: ""
+        notifications.argoproj.io/subscribe.on-sync-failed.github: ""
+    spec:
+      project: medinovai-dev
+      
+      source:
+        repoURL: 'https://github.com/medinovai/{{repo}}.git'
+        targetRevision: '{{head_sha}}'
+        path: deploy/kubernetes/overlays/preview
+        
+        # Kustomize with PR-specific customizations
+        kustomize:
+          namePrefix: 'pr-{{number}}-'
+          commonLabels:
+            preview.medinovai.com/pr: '{{number}}'
+            preview.medinovai.com/branch: '{{branch}}'
+          images:
+            - name: 'medinovai/{{repo}}'
+              newTag: 'pr-{{number}}'
+      
+      destination:
+        server: https://dev.k8s.medinovai.com
+        namespace: 'preview-{{number}}'
+      
+      # Aggressive sync for previews
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+          allowEmpty: false
+        syncOptions:
+          - CreateNamespace=true
+          - PrunePropagationPolicy=foreground
+          - PruneLast=true
+        retry:
+          limit: 3
+          backoff:
+            duration: 5s
+            factor: 2
+            maxDuration: 1m
+      
+      # Resource constraints for preview environments
+      info:
+        - name: PR
+          value: 'https://github.com/medinovai/{{repo}}/pull/{{number}}'
+        - name: Preview URL
+          value: 'https://pr-{{number}}.preview.medinovai.com'
+---
+# Preview Environment Cleanup CronJob
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: preview-cleanup
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: preview-cleanup
+spec:
+  schedule: "0 */4 * * *"  # Every 4 hours
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: argocd-application-controller
+          containers:
+            - name: cleanup
+              image: argoproj/argocd:v2.10.0
+              command:
+                - /bin/bash
+                - -c
+                - |
+                  # Get all preview applications
+                  apps=$(argocd app list -l medinovai.com/env-type=preview -o name)
+                  
+                  for app in $apps; do
+                    # Check if app has been idle for more than 24 hours
+                    last_sync=$(argocd app get $app -o json | jq -r '.status.operationState.finishedAt')
+                    
+                    if [ -n "$last_sync" ]; then
+                      last_sync_epoch=$(date -d "$last_sync" +%s 2>/dev/null || date -jf "%Y-%m-%dT%H:%M:%SZ" "$last_sync" +%s)
+                      current_epoch=$(date +%s)
+                      diff=$((current_epoch - last_sync_epoch))
+                      
+                      # 86400 seconds = 24 hours
+                      if [ $diff -gt 86400 ]; then
+                        echo "Deleting stale preview: $app"
+                        argocd app delete $app --yes
+                      fi
+                    fi
+                  done
+              env:
+                - name: ARGOCD_SERVER
+                  value: argocd-server:443
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 64Mi
+                limits:
+                  cpu: 100m
+                  memory: 128Mi
+          restartPolicy: OnFailure
+---
+# Preview Environment Resource Quota Template
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: preview-quota-template
+  namespace: preview-template
+  labels:
+    medinovai.com/quota-type: preview
+spec:
+  hard:
+    requests.cpu: "2"
+    requests.memory: "4Gi"
+    limits.cpu: "4"
+    limits.memory: "8Gi"
+    persistentvolumeclaims: "5"
+    pods: "20"
+    services: "10"
+---
+# Preview Environment Network Policy
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: preview-network-policy
+  namespace: preview-template
+  labels:
+    medinovai.com/policy-type: preview
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Allow from ingress controller
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+  egress:
+    # Allow DNS
+    - to:
+        - namespaceSelector: {}
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+    # Allow to mock services
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: mock-services
+---
+# Preview Environment Ingress Template (used by Kustomize)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: preview-ingress-template
+  namespace: preview-template
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: letsencrypt-staging
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - "*.preview.medinovai.com"
+      secretName: preview-wildcard-tls
+  rules:
+    - host: "pr-PLACEHOLDER.preview.medinovai.com"
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: web
+                port:
+                  number: 80

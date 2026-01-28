@@ -1,0 +1,303 @@
+# MedinovAI Billing - ArgoCD Application
+# Revenue Cycle Management and Medical Billing
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: billing
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: billing
+    app.kubernetes.io/part-of: medinovai
+    app.kubernetes.io/component: rcm
+    medinovai.com/product: billing
+    medinovai.com/compliance: hipaa,pci-dss
+  annotations:
+    notifications.argoproj.io/subscribe.on-sync-succeeded.slack: medinovai-deployments
+    notifications.argoproj.io/subscribe.on-sync-failed.slack: medinovai-alerts
+    notifications.argoproj.io/subscribe.on-health-degraded.pagerduty: medinovai-oncall
+    # PCI-DSS compliance annotations
+    medinovai.com/payment-processing: enabled
+    medinovai.com/encryption: aes-256
+    medinovai.com/audit-logging: required
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: medinovai-healthcare
+  
+  source:
+    repoURL: https://github.com/medinovai/billing.git
+    targetRevision: HEAD
+    path: deploy/kubernetes/overlays/production
+    
+    kustomize:
+      namePrefix: billing-
+      commonLabels:
+        medinovai.com/managed-by: argocd
+      images:
+        - name: medinovai/billing-api
+          newTag: latest
+        - name: medinovai/billing-claims
+          newTag: latest
+        - name: medinovai/billing-payments
+          newTag: latest
+        - name: medinovai/billing-eligibility
+          newTag: latest
+  
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: billing
+  
+  syncPolicy:
+    automated:
+      prune: false
+      selfHeal: true
+      allowEmpty: false
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
+      - ServerSideApply=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+  
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas
+    - group: ""
+      kind: Secret
+      jsonPointers:
+        - /data
+  
+  revisionHistoryLimit: 15
+  
+  info:
+    - name: Documentation
+      value: https://docs.medinovai.com/billing
+    - name: Support
+      value: https://support.medinovai.com
+    - name: Compliance
+      value: HIPAA, PCI-DSS
+---
+# Billing API Service
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: billing-api
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: billing-api
+    app.kubernetes.io/part-of: billing
+    medinovai.com/tier: api
+spec:
+  project: medinovai-healthcare
+  source:
+    repoURL: https://github.com/medinovai/billing.git
+    targetRevision: HEAD
+    path: deploy/kubernetes/components/api
+    helm:
+      releaseName: billing-api
+      valueFiles:
+        - values.yaml
+        - values-production.yaml
+      parameters:
+        - name: image.repository
+          value: medinovai/billing-api
+        - name: replicaCount
+          value: "3"
+        - name: resources.limits.memory
+          value: "2Gi"
+        - name: resources.limits.cpu
+          value: "1000m"
+        - name: autoscaling.enabled
+          value: "true"
+        - name: autoscaling.minReplicas
+          value: "3"
+        - name: autoscaling.maxReplicas
+          value: "12"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: billing
+  syncPolicy:
+    automated:
+      selfHeal: true
+---
+# Claims Processing Service
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: billing-claims
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: billing-claims
+    app.kubernetes.io/part-of: billing
+    medinovai.com/tier: claims
+spec:
+  project: medinovai-healthcare
+  source:
+    repoURL: https://github.com/medinovai/billing.git
+    targetRevision: HEAD
+    path: deploy/kubernetes/components/claims
+    helm:
+      releaseName: billing-claims
+      valueFiles:
+        - values.yaml
+      parameters:
+        - name: image.repository
+          value: medinovai/billing-claims
+        - name: replicaCount
+          value: "3"
+        - name: resources.limits.memory
+          value: "4Gi"
+        # Claims processing configuration
+        - name: claims.edi837.enabled
+          value: "true"
+        - name: claims.edi835.enabled
+          value: "true"
+        - name: claims.cciEdits.enabled
+          value: "true"
+        - name: claims.apcGrouper.enabled
+          value: "true"
+        - name: claims.batchProcessing
+          value: "true"
+        - name: claims.clearinghouse.primary
+          value: "change-healthcare"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: billing
+  syncPolicy:
+    automated:
+      selfHeal: true
+---
+# Payment Processing Service (PCI-DSS Compliant)
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: billing-payments
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: billing-payments
+    app.kubernetes.io/part-of: billing
+    medinovai.com/tier: payments
+    medinovai.com/pci-scope: in-scope
+spec:
+  project: medinovai-healthcare
+  source:
+    repoURL: https://github.com/medinovai/billing.git
+    targetRevision: HEAD
+    path: deploy/kubernetes/components/payments
+    helm:
+      releaseName: billing-payments
+      valueFiles:
+        - values.yaml
+        - values-pci.yaml
+      parameters:
+        - name: image.repository
+          value: medinovai/billing-payments
+        - name: replicaCount
+          value: "2"
+        - name: resources.limits.memory
+          value: "1Gi"
+        # PCI-DSS specific settings
+        - name: security.encryption
+          value: "aes-256-gcm"
+        - name: security.tokenization
+          value: "true"
+        - name: security.keyRotation
+          value: "90days"
+        - name: payments.stripe.enabled
+          value: "true"
+        - name: payments.ach.enabled
+          value: "true"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: billing
+  syncPolicy:
+    automated:
+      selfHeal: true
+---
+# Eligibility Verification Service
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: billing-eligibility
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: billing-eligibility
+    app.kubernetes.io/part-of: billing
+    medinovai.com/tier: eligibility
+spec:
+  project: medinovai-healthcare
+  source:
+    repoURL: https://github.com/medinovai/billing.git
+    targetRevision: HEAD
+    path: deploy/kubernetes/components/eligibility
+    helm:
+      releaseName: billing-eligibility
+      valueFiles:
+        - values.yaml
+      parameters:
+        - name: image.repository
+          value: medinovai/billing-eligibility
+        - name: replicaCount
+          value: "2"
+        - name: resources.limits.memory
+          value: "1Gi"
+        # Eligibility configuration
+        - name: eligibility.edi270.enabled
+          value: "true"
+        - name: eligibility.edi271.enabled
+          value: "true"
+        - name: eligibility.realtime
+          value: "true"
+        - name: eligibility.batchSchedule
+          value: "0 6 * * *"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: billing
+  syncPolicy:
+    automated:
+      selfHeal: true
+---
+# Denial Management Service
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: billing-denials
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: billing-denials
+    app.kubernetes.io/part-of: billing
+    medinovai.com/tier: denials
+spec:
+  project: medinovai-healthcare
+  source:
+    repoURL: https://github.com/medinovai/billing.git
+    targetRevision: HEAD
+    path: deploy/kubernetes/components/denials
+    helm:
+      releaseName: billing-denials
+      valueFiles:
+        - values.yaml
+      parameters:
+        - name: image.repository
+          value: medinovai/billing-denials
+        - name: replicaCount
+          value: "2"
+        - name: denials.autoAppeal
+          value: "true"
+        - name: denials.rootCauseAnalysis
+          value: "true"
+        - name: denials.mlPrediction
+          value: "true"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: billing
+  syncPolicy:
+    automated:
+      selfHeal: true

@@ -1,0 +1,399 @@
+# MedinovAI Healthcare LIS - Security Gate Workflow
+# Automated security scanning before deployment
+# Compliant with: HIPAA, SOC2, FDA 21 CFR Part 11
+
+name: Security Gate
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - 'release/**'
+  pull_request:
+    branches:
+      - main
+      - develop
+  workflow_dispatch:
+    inputs:
+      skip_gates:
+        description: 'Skip security gates (requires security team approval)'
+        required: false
+        default: 'false'
+
+permissions:
+  contents: read
+  security-events: write
+  pull-requests: write
+  issues: write
+
+env:
+  SECURITY_SCAN_TIMEOUT: 30m
+  FAIL_ON_CRITICAL: true
+  FAIL_ON_HIGH: true
+
+jobs:
+  # ===========================================================================
+  # SECRET SCANNING
+  # ===========================================================================
+  secret-scanning:
+    name: Secret Detection
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_CONFIG: .agent/polyrepo-scaffold/medinovai-infrastructure/security/scanning/gitleaks-config.yaml
+
+      - name: Run TruffleHog
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+          extra_args: --only-verified
+
+      - name: Upload SARIF results
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: gitleaks-report.sarif
+          category: secret-scanning
+
+  # ===========================================================================
+  # SAST - STATIC APPLICATION SECURITY TESTING
+  # ===========================================================================
+  sast-scanning:
+    name: SAST Scanning
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Semgrep
+        uses: returntocorp/semgrep-action@v1
+        with:
+          config: >-
+            p/security-audit
+            p/owasp-top-ten
+            p/cwe-top-25
+            .agent/polyrepo-scaffold/medinovai-infrastructure/security/scanning/semgrep-rules.yaml
+          generateSarif: "1"
+        env:
+          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+
+      - name: Upload Semgrep SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: semgrep.sarif
+          category: sast-semgrep
+
+      - name: Run CodeQL Analysis
+        uses: github/codeql-action/init@v3
+        with:
+          languages: csharp, javascript
+          config-file: .github/codeql/codeql-config.yml
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: sast-codeql
+
+  # ===========================================================================
+  # DEPENDENCY SCANNING
+  # ===========================================================================
+  dependency-scanning:
+    name: Dependency Vulnerability Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Snyk for .NET
+        uses: snyk/actions/dotnet@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: >-
+            --severity-threshold=medium
+            --policy-path=.agent/polyrepo-scaffold/medinovai-infrastructure/security/scanning/snyk-policy.yaml
+            --sarif-file-output=snyk-dotnet.sarif
+
+      - name: Run Snyk for Node.js
+        uses: snyk/actions/node@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: >-
+            --severity-threshold=medium
+            --sarif-file-output=snyk-node.sarif
+
+      - name: Upload Snyk SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: snyk-dotnet.sarif
+          category: dependency-dotnet
+
+      - name: Run OWASP Dependency Check
+        uses: dependency-check/Dependency-Check_Action@main
+        with:
+          project: 'medinovai-lis'
+          path: '.'
+          format: 'SARIF'
+          args: >-
+            --enableExperimental
+            --failOnCVSS 7
+
+      - name: Upload Dependency Check SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: dependency-check-report.sarif
+          category: dependency-owasp
+
+  # ===========================================================================
+  # CONTAINER SCANNING
+  # ===========================================================================
+  container-scanning:
+    name: Container Security Scan
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build container image
+        run: |
+          docker build -t medinovai-lis:${{ github.sha }} -f Dockerfile.medinovai .
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'medinovai-lis:${{ github.sha }}'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+          vuln-type: 'os,library'
+          ignore-unfixed: false
+          timeout: '30m'
+
+      - name: Upload Trivy SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-results.sarif
+          category: container-trivy
+
+      - name: Run Grype scanner
+        uses: anchore/scan-action@v3
+        with:
+          image: 'medinovai-lis:${{ github.sha }}'
+          fail-build: true
+          severity-cutoff: high
+          output-format: sarif
+
+      - name: Upload Grype SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: results.sarif
+          category: container-grype
+
+      - name: Scan Dockerfile
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: Dockerfile.medinovai
+          failure-threshold: error
+
+  # ===========================================================================
+  # INFRASTRUCTURE AS CODE SCANNING
+  # ===========================================================================
+  iac-scanning:
+    name: Infrastructure as Code Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Checkov
+        uses: bridgecrewio/checkov-action@v12
+        with:
+          directory: .
+          framework: kubernetes,dockerfile,helm,terraform
+          soft_fail: false
+          output_format: sarif
+          output_file_path: checkov-results.sarif
+          skip_check: CKV_K8S_21  # Skip specific checks if justified
+
+      - name: Upload Checkov SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: checkov-results.sarif
+          category: iac-checkov
+
+      - name: Run Trivy IaC scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'config'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-iac.sarif'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+
+      - name: Upload Trivy IaC SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-iac.sarif
+          category: iac-trivy
+
+  # ===========================================================================
+  # LICENSE COMPLIANCE
+  # ===========================================================================
+  license-scanning:
+    name: License Compliance Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run FOSSA
+        uses: fossa-contrib/fossa-action@v3
+        with:
+          fossa-api-key: ${{ secrets.FOSSA_API_KEY }}
+          run-tests: true
+
+      - name: Check prohibited licenses
+        run: |
+          # Check for prohibited licenses in healthcare context
+          PROHIBITED_LICENSES="GPL-3.0 AGPL-3.0 SSPL-1.0"
+          
+          for license in $PROHIBITED_LICENSES; do
+            if grep -r "$license" package.json *.csproj 2>/dev/null; then
+              echo "::error::Prohibited license found: $license"
+              exit 1
+            fi
+          done
+
+  # ===========================================================================
+  # SECURITY GATE DECISION
+  # ===========================================================================
+  security-gate:
+    name: Security Gate Decision
+    needs:
+      - secret-scanning
+      - sast-scanning
+      - dependency-scanning
+      - container-scanning
+      - iac-scanning
+      - license-scanning
+    runs-on: ubuntu-latest
+    if: always()
+    outputs:
+      gate-passed: ${{ steps.evaluate.outputs.passed }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Evaluate security gate
+        id: evaluate
+        run: |
+          # Check if any security job failed
+          FAILED=false
+          
+          if [ "${{ needs.secret-scanning.result }}" != "success" ]; then
+            echo "::error::Secret scanning failed - CRITICAL"
+            FAILED=true
+          fi
+          
+          if [ "${{ needs.sast-scanning.result }}" != "success" ]; then
+            echo "::error::SAST scanning failed"
+            FAILED=true
+          fi
+          
+          if [ "${{ needs.dependency-scanning.result }}" != "success" ]; then
+            echo "::error::Dependency scanning failed"
+            FAILED=true
+          fi
+          
+          if [ "${{ needs.container-scanning.result }}" != "success" ]; then
+            echo "::warning::Container scanning failed (non-blocking for non-main branches)"
+            if [ "${{ github.ref }}" == "refs/heads/main" ]; then
+              FAILED=true
+            fi
+          fi
+          
+          if [ "${{ needs.iac-scanning.result }}" != "success" ]; then
+            echo "::warning::IaC scanning failed"
+            FAILED=true
+          fi
+          
+          if [ "${{ needs.license-scanning.result }}" != "success" ]; then
+            echo "::error::License compliance failed"
+            FAILED=true
+          fi
+          
+          if [ "$FAILED" = true ]; then
+            echo "passed=false" >> $GITHUB_OUTPUT
+            echo "::error::Security gate FAILED - deployment blocked"
+            exit 1
+          else
+            echo "passed=true" >> $GITHUB_OUTPUT
+            echo "::notice::Security gate PASSED"
+          fi
+
+      - name: Create security badge
+        if: always()
+        uses: schneegans/dynamic-badges-action@v1.7.0
+        with:
+          auth: ${{ secrets.GIST_SECRET }}
+          gistID: ${{ secrets.SECURITY_BADGE_GIST_ID }}
+          filename: security-gate-status.json
+          label: Security Gate
+          message: ${{ steps.evaluate.outputs.passed == 'true' && 'Passed' || 'Failed' }}
+          color: ${{ steps.evaluate.outputs.passed == 'true' && 'green' || 'red' }}
+
+      - name: Comment on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const passed = '${{ steps.evaluate.outputs.passed }}' === 'true';
+            
+            const body = passed 
+              ? '## ✅ Security Gate Passed\n\nAll security checks completed successfully.\n\n- Secret Scanning: ✅\n- SAST: ✅\n- Dependency Scan: ✅\n- Container Scan: ✅\n- IaC Scan: ✅\n- License Check: ✅'
+              : '## ❌ Security Gate Failed\n\nSecurity issues detected. Please review the security tab for details.\n\n**This PR cannot be merged until all security issues are resolved.**';
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });
+
+      - name: Send Slack notification
+        if: failure() && github.ref == 'refs/heads/main'
+        uses: slackapi/slack-github-action@v1.25.0
+        with:
+          channel-id: ${{ secrets.SLACK_SECURITY_CHANNEL }}
+          slack-message: |
+            🚨 *Security Gate Failed on Main Branch*
+            
+            Repository: ${{ github.repository }}
+            Commit: ${{ github.sha }}
+            Author: ${{ github.actor }}
+            
+            Please review immediately: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}

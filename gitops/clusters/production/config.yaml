@@ -1,0 +1,246 @@
+# MedinovAI Production Cluster Configuration
+# Healthcare-grade production environment
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cluster-config
+  namespace: argocd
+  labels:
+    cluster: production
+    environment: production
+    medinovai.com/managed-by: gitops
+data:
+  # Cluster identification
+  cluster.name: "medinovai-prod"
+  cluster.environment: "production"
+  cluster.region: "us-east-1"
+  cluster.provider: "aws-eks"
+  
+  # Healthcare compliance settings
+  compliance.hipaa: "enabled"
+  compliance.hitrust: "enabled"
+  compliance.soc2: "enabled"
+  compliance.pci-dss: "enabled"
+  
+  # High availability configuration
+  ha.enabled: "true"
+  ha.minReplicas: "3"
+  ha.multiAZ: "true"
+  ha.drEnabled: "true"
+  ha.drRegion: "us-west-2"
+  
+  # Resource limits for production
+  resources.defaultCpuRequest: "100m"
+  resources.defaultMemoryRequest: "256Mi"
+  resources.defaultCpuLimit: "2000m"
+  resources.defaultMemoryLimit: "4Gi"
+  
+  # Network configuration
+  network.ingressClass: "nginx"
+  network.tlsEnabled: "true"
+  network.tlsMinVersion: "TLSv1.2"
+  network.mTLSEnabled: "true"
+  
+  # Storage configuration
+  storage.defaultClass: "gp3-encrypted"
+  storage.backupEnabled: "true"
+  storage.backupRetentionDays: "365"
+  storage.snapshotSchedule: "0 */6 * * *"
+---
+# Production ArgoCD Project
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: medinovai-healthcare
+  namespace: argocd
+  labels:
+    environment: production
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  description: MedinovAI Healthcare Production Applications
+  
+  # Source repositories
+  sourceRepos:
+    - 'https://github.com/medinovai/*'
+    - 'https://charts.medinovai.com/*'
+  
+  # Destination clusters and namespaces
+  destinations:
+    - namespace: 'lis-platform'
+      server: https://kubernetes.default.svc
+    - namespace: 'mobile-phlebotomy'
+      server: https://kubernetes.default.svc
+    - namespace: 'ctms'
+      server: https://kubernetes.default.svc
+    - namespace: 'billing'
+      server: https://kubernetes.default.svc
+    - namespace: 'monitoring'
+      server: https://kubernetes.default.svc
+    - namespace: 'logging'
+      server: https://kubernetes.default.svc
+  
+  # Cluster resource whitelist
+  clusterResourceWhitelist:
+    - group: ''
+      kind: Namespace
+    - group: 'rbac.authorization.k8s.io'
+      kind: ClusterRole
+    - group: 'rbac.authorization.k8s.io'
+      kind: ClusterRoleBinding
+    - group: 'networking.k8s.io'
+      kind: IngressClass
+    - group: 'cert-manager.io'
+      kind: ClusterIssuer
+  
+  # Namespace resource blacklist (production safety)
+  namespaceResourceBlacklist:
+    - group: ''
+      kind: ResourceQuota
+    - group: ''
+      kind: LimitRange
+  
+  # Roles for team access
+  roles:
+    - name: production-admin
+      description: Full access to production applications
+      policies:
+        - p, proj:medinovai-healthcare:production-admin, applications, *, medinovai-healthcare/*, allow
+        - p, proj:medinovai-healthcare:production-admin, logs, get, medinovai-healthcare/*, allow
+      groups:
+        - medinovai:platform-team
+        - medinovai:sre-team
+    
+    - name: production-readonly
+      description: Read-only access to production
+      policies:
+        - p, proj:medinovai-healthcare:production-readonly, applications, get, medinovai-healthcare/*, allow
+        - p, proj:medinovai-healthcare:production-readonly, logs, get, medinovai-healthcare/*, allow
+      groups:
+        - medinovai:developers
+        - medinovai:qa-team
+    
+    - name: production-deployer
+      description: Deploy access (sync only, no delete)
+      policies:
+        - p, proj:medinovai-healthcare:production-deployer, applications, get, medinovai-healthcare/*, allow
+        - p, proj:medinovai-healthcare:production-deployer, applications, sync, medinovai-healthcare/*, allow
+      groups:
+        - medinovai:release-managers
+  
+  # Sync windows - production deployment windows
+  syncWindows:
+    # Allow deployments Mon-Thu 6 AM - 10 PM ET
+    - kind: allow
+      schedule: '0 6 * * 1-4'
+      duration: 16h
+      applications:
+        - '*'
+      manualSync: true
+    
+    # Deny deployments on weekends (except emergencies)
+    - kind: deny
+      schedule: '0 0 * * 0,6'
+      duration: 24h
+      applications:
+        - '*'
+      manualSync: false
+    
+    # Allow critical hotfixes anytime
+    - kind: allow
+      schedule: '* * * * *'
+      duration: 24h
+      applications:
+        - '*-hotfix'
+      manualSync: true
+  
+  # Orphaned resources monitoring
+  orphanedResources:
+    warn: true
+    ignore:
+      - group: ''
+        kind: ConfigMap
+        name: kube-root-ca.crt
+---
+# Production Cluster Secret (template - actual values from sealed-secrets)
+apiVersion: v1
+kind: Secret
+metadata:
+  name: production-cluster-secret
+  namespace: argocd
+  labels:
+    argocd.argoproj.io/secret-type: cluster
+type: Opaque
+stringData:
+  name: production
+  server: https://kubernetes.default.svc
+  config: |
+    {
+      "tlsClientConfig": {
+        "insecure": false,
+        "caData": "BASE64_CA_DATA",
+        "certData": "BASE64_CERT_DATA",
+        "keyData": "BASE64_KEY_DATA"
+      }
+    }
+---
+# Production Resource Quotas
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: production-quota
+  namespace: lis-platform
+spec:
+  hard:
+    requests.cpu: "50"
+    requests.memory: "100Gi"
+    limits.cpu: "100"
+    limits.memory: "200Gi"
+    persistentvolumeclaims: "50"
+    pods: "200"
+    services: "50"
+    secrets: "100"
+    configmaps: "100"
+---
+# Production Network Policy - Default deny all
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: lis-platform
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+---
+# Production Network Policy - Allow internal communication
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-internal
+  namespace: lis-platform
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              medinovai.com/product: lis
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              medinovai.com/product: lis
+    # Allow DNS resolution
+    - to:
+        - namespaceSelector: {}
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53

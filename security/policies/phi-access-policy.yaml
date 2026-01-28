@@ -1,0 +1,666 @@
+# MedinovAI Healthcare LIS - PHI Access Policy
+# Protected Health Information Access Control and Monitoring
+# Compliant with: HIPAA Privacy Rule, HIPAA Security Rule, HITECH Act
+
+apiVersion: policy.medinovai.com/v1
+kind: PHIAccessPolicy
+metadata:
+  name: healthcare-phi-access-policy
+  version: "2026.1"
+  lastUpdated: "2026-01-27"
+  owner: privacy@medinovai.com
+  compliance:
+    - HIPAA-Privacy-Rule
+    - HIPAA-Security-Rule
+    - HITECH-Act
+    - State-Privacy-Laws
+
+spec:
+  # ============================================================================
+  # PHI DATA CLASSIFICATION
+  # ============================================================================
+  dataClassification:
+    # HIPAA 18 Identifiers
+    hipaaIdentifiers:
+      - id: PHI-001
+        name: Names
+        description: "Patient names (full or partial)"
+        classification: PHI
+        maskingRule: "First initial + masked"
+        
+      - id: PHI-002
+        name: Geographic Data
+        description: "Address, city, county, zip code (smaller than state)"
+        classification: PHI
+        maskingRule: "State only"
+        
+      - id: PHI-003
+        name: Dates
+        description: "Birth date, admission date, discharge date, death date"
+        classification: PHI
+        maskingRule: "Year only"
+        note: "Ages over 89 grouped as 90+"
+        
+      - id: PHI-004
+        name: Phone Numbers
+        description: "Telephone numbers"
+        classification: PHI
+        maskingRule: "Full mask"
+        
+      - id: PHI-005
+        name: Fax Numbers
+        description: "Fax numbers"
+        classification: PHI
+        maskingRule: "Full mask"
+        
+      - id: PHI-006
+        name: Email Addresses
+        description: "Electronic mail addresses"
+        classification: PHI
+        maskingRule: "Domain only"
+        
+      - id: PHI-007
+        name: Social Security Numbers
+        description: "Social Security numbers"
+        classification: PHI-Critical
+        maskingRule: "Last 4 only"
+        
+      - id: PHI-008
+        name: Medical Record Numbers
+        description: "Medical record numbers"
+        classification: PHI
+        maskingRule: "Tokenize"
+        
+      - id: PHI-009
+        name: Health Plan Beneficiary Numbers
+        description: "Health plan beneficiary numbers"
+        classification: PHI
+        maskingRule: "Tokenize"
+        
+      - id: PHI-010
+        name: Account Numbers
+        description: "Account numbers"
+        classification: PHI
+        maskingRule: "Last 4 only"
+        
+      - id: PHI-011
+        name: Certificate/License Numbers
+        description: "Certificate/license numbers"
+        classification: PHI
+        maskingRule: "Full mask"
+        
+      - id: PHI-012
+        name: Vehicle Identifiers
+        description: "Vehicle identifiers and serial numbers"
+        classification: PHI
+        maskingRule: "Full mask"
+        
+      - id: PHI-013
+        name: Device Identifiers
+        description: "Device identifiers and serial numbers"
+        classification: PHI
+        maskingRule: "Full mask"
+        
+      - id: PHI-014
+        name: Web URLs
+        description: "Web Universal Resource Locators (URLs)"
+        classification: PHI
+        maskingRule: "Domain only"
+        
+      - id: PHI-015
+        name: IP Addresses
+        description: "Internet Protocol (IP) address numbers"
+        classification: PHI
+        maskingRule: "Full mask"
+        
+      - id: PHI-016
+        name: Biometric Identifiers
+        description: "Biometric identifiers, including finger and voice prints"
+        classification: PHI-Critical
+        maskingRule: "Full mask"
+        
+      - id: PHI-017
+        name: Full Face Photos
+        description: "Full face photographic images"
+        classification: PHI
+        maskingRule: "Not displayed"
+        
+      - id: PHI-018
+        name: Unique Identifiers
+        description: "Any other unique identifying number, characteristic, or code"
+        classification: PHI
+        maskingRule: "Tokenize"
+
+    # Additional sensitive data
+    sensitiveData:
+      - name: Lab Results
+        classification: PHI
+        sensitivity: high
+        
+      - name: Diagnosis Codes
+        classification: PHI
+        sensitivity: high
+        
+      - name: Genetic Information
+        classification: PHI-Critical
+        sensitivity: critical
+        additionalProtection: GINA
+        
+      - name: Mental Health Records
+        classification: PHI-Critical
+        sensitivity: critical
+        additionalProtection: "42 CFR Part 2"
+        
+      - name: Substance Abuse Records
+        classification: PHI-Critical
+        sensitivity: critical
+        additionalProtection: "42 CFR Part 2"
+        
+      - name: HIV/AIDS Information
+        classification: PHI-Critical
+        sensitivity: critical
+        additionalProtection: State-specific
+
+  # ============================================================================
+  # ACCESS CONTROL MODEL
+  # ============================================================================
+  accessControl:
+    # Role-Based Access Control (RBAC)
+    rbac:
+      roles:
+        - name: physician
+          description: "Attending physician with treatment relationship"
+          phiAccess:
+            scope: "patients-under-care"
+            operations: [read, create, update]
+            restrictions:
+              - "Cannot delete PHI"
+              - "Cannot export bulk data"
+            auditLevel: all
+            
+        - name: nurse
+          description: "Nursing staff with direct patient care"
+          phiAccess:
+            scope: "assigned-patients"
+            operations: [read, create]
+            restrictions:
+              - "Cannot modify physician orders"
+              - "Cannot access billing PHI"
+            auditLevel: all
+            
+        - name: lab-technologist
+          description: "Laboratory professional performing tests"
+          phiAccess:
+            scope: "lab-orders"
+            operations: [read, create, update]
+            restrictions:
+              - "Limited demographic access"
+              - "No access to non-lab records"
+            auditLevel: all
+            
+        - name: lab-technician
+          description: "Laboratory technician"
+          phiAccess:
+            scope: "specimen-processing"
+            operations: [read]
+            restrictions:
+              - "Cannot release results"
+              - "Limited to specimen identifiers"
+            auditLevel: all
+            
+        - name: medical-records
+          description: "Medical records staff"
+          phiAccess:
+            scope: "all-patients"
+            operations: [read]
+            restrictions:
+              - "Read-only access"
+              - "Cannot access real-time clinical data"
+            auditLevel: all
+            
+        - name: billing-staff
+          description: "Billing and coding staff"
+          phiAccess:
+            scope: "billing-relevant"
+            operations: [read]
+            dataElements:
+              - "Diagnosis codes"
+              - "Procedure codes"
+              - "Service dates"
+              - "Minimum necessary demographics"
+            restrictions:
+              - "No clinical results"
+              - "No clinical notes"
+            auditLevel: all
+            
+        - name: administrator
+          description: "System administrator"
+          phiAccess:
+            scope: "technical-only"
+            operations: [none]
+            restrictions:
+              - "No direct PHI access"
+              - "System configuration only"
+            auditLevel: all
+            
+        - name: privacy-officer
+          description: "Privacy and compliance officer"
+          phiAccess:
+            scope: "audit-investigation"
+            operations: [read]
+            restrictions:
+              - "Investigation purposes only"
+              - "Requires documented justification"
+            auditLevel: enhanced
+            
+        - name: research
+          description: "Research staff"
+          phiAccess:
+            scope: "irb-approved"
+            operations: [read]
+            restrictions:
+              - "De-identified data preferred"
+              - "IRB approval required"
+              - "Limited data set when possible"
+            auditLevel: enhanced
+
+    # Attribute-Based Access Control (ABAC)
+    abac:
+      attributes:
+        user:
+          - department
+          - location
+          - employmentStatus
+          - trainingStatus
+          - clearanceLevel
+          
+        resource:
+          - dataClassification
+          - sensitivityLevel
+          - patientUnit
+          - recordType
+          
+        environment:
+          - timeOfAccess
+          - accessLocation
+          - deviceType
+          - networkZone
+          
+        action:
+          - operationType
+          - bulkOperation
+          - exportDestination
+
+      policies:
+        - name: treatment-relationship-required
+          condition: |
+            user.role in ["physician", "nurse"] AND
+            resource.patient IN user.assignedPatients AND
+            environment.location == "clinical-area"
+          action: allow
+          
+        - name: break-glass-emergency
+          condition: |
+            context.isEmergency == true AND
+            user.hasBreakGlassPrivilege == true
+          action: allow-with-audit
+          postAction:
+            - "Immediate audit alert"
+            - "Supervisor notification"
+            - "Justification required within 24h"
+            
+        - name: bulk-access-prevention
+          condition: |
+            action.isBulkOperation == true AND
+            user.role NOT IN ["privacy-officer", "research"]
+          action: deny
+
+    # Minimum Necessary Standard
+    minimumNecessary:
+      enabled: true
+      
+      policies:
+        - name: billing-access
+          role: billing-staff
+          allowedFields:
+            - patientId
+            - dateOfService
+            - procedureCodes
+            - diagnosisCodes
+            - insuranceInfo
+          deniedFields:
+            - clinicalNotes
+            - labResults
+            - medications
+            
+        - name: lab-technician-access
+          role: lab-technician
+          allowedFields:
+            - specimenId
+            - testCodes
+            - collectionInfo
+          deniedFields:
+            - fullDemographics
+            - insuranceInfo
+            - otherResults
+
+  # ============================================================================
+  # AUDIT REQUIREMENTS
+  # ============================================================================
+  auditRequirements:
+    # What to audit
+    auditEvents:
+      - event: phi-view
+        description: "Any PHI viewed on screen"
+        details:
+          - timestamp
+          - userId
+          - patientId
+          - dataElementsViewed
+          - accessReason
+          - workstationId
+          - ipAddress
+          
+      - event: phi-create
+        description: "New PHI record created"
+        details:
+          - timestamp
+          - userId
+          - patientId
+          - dataElementsCreated
+          - sourceSystem
+          
+      - event: phi-update
+        description: "PHI record modified"
+        details:
+          - timestamp
+          - userId
+          - patientId
+          - fieldChanged
+          - previousValue
+          - newValue
+          - changeReason
+          
+      - event: phi-export
+        description: "PHI exported or downloaded"
+        details:
+          - timestamp
+          - userId
+          - patientIds
+          - exportFormat
+          - destination
+          - businessJustification
+          
+      - event: phi-print
+        description: "PHI printed"
+        details:
+          - timestamp
+          - userId
+          - patientId
+          - documentType
+          - printerLocation
+          
+      - event: phi-transmit
+        description: "PHI transmitted electronically"
+        details:
+          - timestamp
+          - userId
+          - patientId
+          - recipient
+          - transmissionMethod
+          - encryptionStatus
+          
+      - event: phi-access-denied
+        description: "PHI access attempt denied"
+        details:
+          - timestamp
+          - userId
+          - patientId
+          - attemptedAction
+          - denyReason
+
+    # Audit retention
+    retention:
+      minimum: 6 years
+      recommended: 7 years
+      storage:
+        primary: "Encrypted database"
+        archive: "Immutable cloud storage"
+      
+    # Audit review
+    auditReview:
+      automated:
+        frequency: real-time
+        anomalyDetection: true
+        alerts:
+          - "Unusual access volume"
+          - "Access outside normal hours"
+          - "VIP patient access"
+          - "Unauthorized access attempts"
+          
+      manual:
+        frequency: monthly
+        sampleSize: "Statistical sample"
+        reviewers: "Privacy team"
+        
+      random:
+        frequency: weekly
+        selection: "Random user selection"
+        depth: "Full access review"
+
+  # ============================================================================
+  # CONSENT MANAGEMENT
+  # ============================================================================
+  consentManagement:
+    # Consent types
+    consentTypes:
+      - name: treatment
+        description: "Consent for treatment"
+        required: true
+        expiration: "Episode of care"
+        
+      - name: disclosure
+        description: "Consent for disclosure to third parties"
+        required: true
+        expiration: "As specified"
+        revocable: true
+        
+      - name: research
+        description: "Consent for research use"
+        required: true
+        expiration: "As specified"
+        revocable: true
+        
+      - name: marketing
+        description: "Consent for marketing communications"
+        required: true
+        expiration: "Until revoked"
+        revocable: true
+
+    # Consent enforcement
+    enforcement:
+      realTime: true
+      systemIntegration: true
+      accessBlocking: true
+      
+    # Consent tracking
+    tracking:
+      auditTrail: true
+      versionHistory: true
+      expirationAlerts: true
+
+  # ============================================================================
+  # BREAK-GLASS PROCEDURES
+  # ============================================================================
+  breakGlass:
+    # When allowed
+    criteria:
+      - "Medical emergency requiring immediate access"
+      - "Patient life-threatening situation"
+      - "Normal access channels unavailable"
+      
+    # Procedure
+    procedure:
+      - step: 1
+        action: "User initiates break-glass request"
+        requirements:
+          - "Select emergency reason"
+          - "Acknowledge policy"
+          
+      - step: 2
+        action: "System grants temporary access"
+        duration: "4 hours maximum"
+        scope: "Specific patient only"
+        
+      - step: 3
+        action: "Immediate notification sent"
+        recipients:
+          - "Privacy officer"
+          - "Supervisor"
+          - "Security team"
+          
+      - step: 4
+        action: "Mandatory justification"
+        deadline: "24 hours"
+        review: "Privacy officer review"
+        
+      - step: 5
+        action: "Post-access audit"
+        timing: "Within 48 hours"
+        documentation: "Required"
+
+    # Monitoring
+    monitoring:
+      realTimeAlert: true
+      dashboardWidget: true
+      weeklyReport: true
+      
+    # Abuse prevention
+    abusePrevention:
+      maxUsagePerUser: "3 per month"
+      escalation: "After 2 uses"
+      discipline: "Per HR policy"
+
+  # ============================================================================
+  # TECHNICAL CONTROLS
+  # ============================================================================
+  technicalControls:
+    # Encryption
+    encryption:
+      atRest:
+        required: true
+        algorithm: AES-256
+        keyManagement: HSM
+        
+      inTransit:
+        required: true
+        protocol: TLS 1.3
+        minimumVersion: TLS 1.2
+
+    # Session management
+    sessionManagement:
+      timeout: 15 minutes
+      reauthentication: "On PHI access after idle"
+      concurrentSessions: 1
+      sessionLogging: true
+
+    # Data masking
+    dataMasking:
+      defaultMasking: true
+      unmaskOnDemand: true
+      unmaskAudit: true
+      
+      rules:
+        ssn:
+          display: "***-**-1234"
+          fullAccess: "Authorized roles only"
+          
+        dob:
+          display: "**/**/1990"
+          fullAccess: "Clinical roles"
+          
+        address:
+          display: "City, State"
+          fullAccess: "Authorized roles"
+
+    # Data loss prevention
+    dlp:
+      enabled: true
+      
+      policies:
+        - name: prevent-bulk-export
+          trigger: "More than 10 records"
+          action: "Block and alert"
+          
+        - name: prevent-external-transfer
+          trigger: "PHI to external destination"
+          action: "Block and require approval"
+          
+        - name: prevent-print-abuse
+          trigger: "Excessive printing"
+          action: "Alert and review"
+
+  # ============================================================================
+  # PATIENT RIGHTS
+  # ============================================================================
+  patientRights:
+    # Access rights
+    accessRights:
+      - right: "Access to records"
+        implementation: "Patient portal"
+        timeline: "30 days"
+        
+      - right: "Request amendments"
+        implementation: "Amendment workflow"
+        timeline: "60 days"
+        
+      - right: "Accounting of disclosures"
+        implementation: "Disclosure report"
+        timeline: "60 days"
+        
+      - right: "Request restrictions"
+        implementation: "Restriction flags"
+        timeline: "Immediate"
+        
+      - right: "Confidential communications"
+        implementation: "Preferred contact method"
+        timeline: "Immediate"
+
+    # VIP/Restricted access
+    vipAccess:
+      enabled: true
+      
+      features:
+        - "Enhanced audit logging"
+        - "Access alerts"
+        - "Restricted user list"
+        - "Break-glass only access"
+
+# Compliance verification
+complianceVerification:
+  automated: true
+  
+  checks:
+    - name: access-audit-completeness
+      script: "./security/scripts/phi/audit-completeness.sh"
+      
+    - name: minimum-necessary-enforcement
+      script: "./security/scripts/phi/minimum-necessary.sh"
+      
+    - name: consent-verification
+      script: "./security/scripts/phi/consent-check.sh"
+      
+    - name: encryption-verification
+      script: "./security/scripts/phi/encryption-check.sh"
+
+# Training requirements
+training:
+  required:
+    - "HIPAA Privacy training"
+    - "HIPAA Security training"
+    - "PHI handling procedures"
+    - "Breach notification procedures"
+    
+  frequency: annual
+  verification: "Competency assessment"
+  tracking: "LMS integration"

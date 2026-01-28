@@ -1,0 +1,264 @@
+# MedinovAI Healthcare LIS - Gitleaks Secret Scanning Configuration
+# Prevents accidental exposure of secrets, credentials, and PHI
+# Compliant with: HIPAA, SOC2, PCI-DSS
+
+title: "MedinovAI Healthcare Secret Scanning Rules"
+version: "8.18.0"
+
+# Extend from default gitleaks rules
+[extend]
+useDefault = true
+
+# ============================================================================
+# HEALTHCARE-SPECIFIC RULES
+# ============================================================================
+
+# PHI/PII Detection Rules
+[[rules]]
+id = "social-security-number"
+description = "Social Security Number detected"
+regex = '''\b\d{3}-\d{2}-\d{4}\b'''
+secretGroup = 0
+keywords = ["ssn", "social", "security"]
+tags = ["phi", "pii", "hipaa"]
+entropy = 0
+
+[[rules]]
+id = "medical-record-number"
+description = "Medical Record Number pattern detected"
+regex = '''(?i)(mrn|medical.?record.?number|patient.?id)[:\s=]+[A-Z0-9]{6,12}'''
+secretGroup = 0
+keywords = ["mrn", "medical", "record", "patient"]
+tags = ["phi", "hipaa"]
+
+[[rules]]
+id = "health-insurance-id"
+description = "Health Insurance ID detected"
+regex = '''(?i)(insurance.?id|member.?id|policy.?number)[:\s=]+[A-Z0-9]{8,15}'''
+secretGroup = 0
+keywords = ["insurance", "member", "policy"]
+tags = ["phi", "hipaa"]
+
+[[rules]]
+id = "npi-number"
+description = "National Provider Identifier detected"
+regex = '''\b[12]\d{9}\b'''
+secretGroup = 0
+keywords = ["npi", "provider", "identifier"]
+tags = ["healthcare", "pii"]
+
+# ============================================================================
+# DATABASE & CONNECTION STRINGS
+# ============================================================================
+
+[[rules]]
+id = "database-connection-string"
+description = "Database connection string detected"
+regex = '''(?i)(server|data.?source|host)\s*=\s*[^;\s]+\s*;\s*(database|initial.?catalog)\s*=\s*[^;\s]+'''
+secretGroup = 0
+keywords = ["connection", "database", "server", "sqlserver", "postgresql", "mysql"]
+tags = ["database", "credentials"]
+
+[[rules]]
+id = "mongodb-connection"
+description = "MongoDB connection string detected"
+regex = '''mongodb(\+srv)?:\/\/[^:]+:[^@]+@[^\/]+'''
+secretGroup = 0
+keywords = ["mongodb", "mongo"]
+tags = ["database", "credentials"]
+
+[[rules]]
+id = "redis-connection"
+description = "Redis connection string detected"
+regex = '''redis:\/\/[^:]+:[^@]+@[^\/]+'''
+secretGroup = 0
+keywords = ["redis", "cache"]
+tags = ["database", "credentials"]
+
+# ============================================================================
+# API KEYS & TOKENS
+# ============================================================================
+
+[[rules]]
+id = "generic-api-key"
+description = "Generic API key detected"
+regex = '''(?i)(api[_-]?key|apikey|api[_-]?secret)['\"]?\s*[:=]\s*['\"]?[a-zA-Z0-9_-]{20,}['\"]?'''
+secretGroup = 0
+keywords = ["api", "key", "secret"]
+tags = ["api", "credentials"]
+
+[[rules]]
+id = "jwt-token"
+description = "JWT token detected"
+regex = '''eyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]+'''
+secretGroup = 0
+keywords = ["jwt", "token", "bearer"]
+tags = ["token", "auth"]
+
+[[rules]]
+id = "oauth-token"
+description = "OAuth token detected"
+regex = '''(?i)(oauth|access[_-]?token|refresh[_-]?token)['\"]?\s*[:=]\s*['\"]?[a-zA-Z0-9_-]{20,}['\"]?'''
+secretGroup = 0
+keywords = ["oauth", "access", "token", "refresh"]
+tags = ["token", "auth"]
+
+# ============================================================================
+# CLOUD PROVIDER CREDENTIALS
+# ============================================================================
+
+[[rules]]
+id = "aws-access-key"
+description = "AWS Access Key ID"
+regex = '''(A3T[A-Z0-9]|AKIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ASIA)[A-Z0-9]{16}'''
+secretGroup = 0
+keywords = ["aws", "access", "key"]
+tags = ["aws", "cloud", "credentials"]
+
+[[rules]]
+id = "aws-secret-key"
+description = "AWS Secret Access Key"
+regex = '''(?i)aws[_-]?secret[_-]?access[_-]?key['\"]?\s*[:=]\s*['\"]?[A-Za-z0-9/+=]{40}['\"]?'''
+secretGroup = 0
+keywords = ["aws", "secret"]
+tags = ["aws", "cloud", "credentials"]
+
+[[rules]]
+id = "azure-storage-key"
+description = "Azure Storage Account Key"
+regex = '''(?i)(accountkey|storage[_-]?key)['\"]?\s*[:=]\s*['\"]?[A-Za-z0-9+/]{86}==['\"]?'''
+secretGroup = 0
+keywords = ["azure", "storage", "accountkey"]
+tags = ["azure", "cloud", "credentials"]
+
+[[rules]]
+id = "azure-connection-string"
+description = "Azure Connection String"
+regex = '''DefaultEndpointsProtocol=https?;AccountName=[^;]+;AccountKey=[A-Za-z0-9+/]{86}=='''
+secretGroup = 0
+keywords = ["azure", "connection", "endpoint"]
+tags = ["azure", "cloud", "credentials"]
+
+[[rules]]
+id = "gcp-service-account"
+description = "GCP Service Account Key"
+regex = '''(?i)"type"\s*:\s*"service_account"'''
+secretGroup = 0
+keywords = ["gcp", "google", "service", "account"]
+tags = ["gcp", "cloud", "credentials"]
+
+# ============================================================================
+# ENCRYPTION KEYS
+# ============================================================================
+
+[[rules]]
+id = "private-key"
+description = "Private key detected"
+regex = '''-----BEGIN (RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----'''
+secretGroup = 0
+keywords = ["private", "key", "rsa", "ec"]
+tags = ["crypto", "key"]
+
+[[rules]]
+id = "encryption-key"
+description = "Encryption key detected"
+regex = '''(?i)(encryption[_-]?key|aes[_-]?key|secret[_-]?key)['\"]?\s*[:=]\s*['\"]?[A-Fa-f0-9]{32,}['\"]?'''
+secretGroup = 0
+keywords = ["encryption", "aes", "secret", "key"]
+tags = ["crypto", "key"]
+
+# ============================================================================
+# HEALTHCARE-SPECIFIC INTEGRATIONS
+# ============================================================================
+
+[[rules]]
+id = "hl7-fhir-credentials"
+description = "HL7 FHIR API credentials detected"
+regex = '''(?i)(fhir[_-]?client[_-]?secret|fhir[_-]?api[_-]?key)['\"]?\s*[:=]\s*['\"]?[a-zA-Z0-9_-]{20,}['\"]?'''
+secretGroup = 0
+keywords = ["fhir", "hl7", "client", "secret"]
+tags = ["healthcare", "api", "credentials"]
+
+[[rules]]
+id = "epic-credentials"
+description = "Epic EHR credentials detected"
+regex = '''(?i)(epic[_-]?client[_-]?id|epic[_-]?private[_-]?key)['\"]?\s*[:=]\s*['\"]?[a-zA-Z0-9_-]{20,}['\"]?'''
+secretGroup = 0
+keywords = ["epic", "ehr", "client"]
+tags = ["healthcare", "ehr", "credentials"]
+
+[[rules]]
+id = "cerner-credentials"
+description = "Cerner EHR credentials detected"
+regex = '''(?i)(cerner[_-]?client[_-]?secret|cerner[_-]?api[_-]?key)['\"]?\s*[:=]\s*['\"]?[a-zA-Z0-9_-]{20,}['\"]?'''
+secretGroup = 0
+keywords = ["cerner", "ehr", "client"]
+tags = ["healthcare", "ehr", "credentials"]
+
+# ============================================================================
+# INTERNAL SERVICES
+# ============================================================================
+
+[[rules]]
+id = "internal-service-token"
+description = "Internal service token detected"
+regex = '''(?i)(service[_-]?token|internal[_-]?key|microservice[_-]?secret)['\"]?\s*[:=]\s*['\"]?[a-zA-Z0-9_-]{20,}['\"]?'''
+secretGroup = 0
+keywords = ["service", "internal", "microservice", "token"]
+tags = ["internal", "credentials"]
+
+[[rules]]
+id = "webhook-secret"
+description = "Webhook secret detected"
+regex = '''(?i)(webhook[_-]?secret|signing[_-]?secret)['\"]?\s*[:=]\s*['\"]?[a-zA-Z0-9_-]{20,}['\"]?'''
+secretGroup = 0
+keywords = ["webhook", "signing", "secret"]
+tags = ["webhook", "credentials"]
+
+# ============================================================================
+# ALLOWLISTS
+# ============================================================================
+
+[allowlist]
+description = "Global allowlist"
+paths = [
+    '''(.*)?test(.*)?\.(cs|ts|js|py)$''',
+    '''(.*)?spec(.*)?\.(cs|ts|js|py)$''',
+    '''(.*)?mock(.*)?\.(cs|ts|js|py)$''',
+    '''\.md$''',
+    '''package-lock\.json$''',
+    '''yarn\.lock$''',
+    '''pnpm-lock\.yaml$''',
+]
+commits = []
+regexTarget = "match"
+
+# Allow placeholder values
+regexes = [
+    '''(example|sample|placeholder|dummy|test|fake|mock)''',
+    '''your[_-]?(api[_-]?key|secret|token)''',
+    '''<[A-Z_]+>''',  # Placeholder format
+    '''\$\{[A-Z_]+\}''',  # Environment variable reference
+    '''%[A-Z_]+%''',  # Windows env var format
+]
+
+# ============================================================================
+# ENTROPY SETTINGS
+# ============================================================================
+
+# High entropy detection for unknown secret patterns
+[[rules]]
+id = "high-entropy-string"
+description = "High entropy string detected (potential secret)"
+regex = '''[A-Za-z0-9+/=]{40,}'''
+secretGroup = 0
+entropy = 4.5
+tags = ["entropy", "potential-secret"]
+
+# ============================================================================
+# REPORTING
+# ============================================================================
+
+[output]
+format = "sarif"
+file = "gitleaks-report.sarif"

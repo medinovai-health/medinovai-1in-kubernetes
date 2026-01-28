@@ -1,0 +1,641 @@
+# MedinovAI Healthcare LIS - FDA 21 CFR Part 11 Compliance
+# Electronic Records and Electronic Signatures
+# Clinical Laboratory Electronic Records Requirements
+
+apiVersion: compliance.medinovai.com/v1
+kind: FDA21CFRPart11Compliance
+metadata:
+  name: fda-21cfr11-compliance-controls
+  version: "2026.1"
+  regulation: "21 CFR Part 11"
+  lastUpdated: "2026-01-27"
+  owner: compliance@medinovai.com
+  applicability:
+    - Laboratory Information Systems (LIS)
+    - Quality Management Systems (QMS)
+    - Document Control Systems
+    - Electronic Lab Notebooks (ELN)
+
+spec:
+  # ============================================================================
+  # SUBPART B - ELECTRONIC RECORDS (§11.10)
+  # ============================================================================
+  electronicRecords:
+    # §11.10(a) - Validation
+    validation:
+      - id: FDA-11.10-A-001
+        name: System Validation
+        requirement: "Systems must be validated to ensure accuracy, reliability, consistent intended performance, and the ability to discern invalid or altered records"
+        criteria:
+          - "Installation Qualification (IQ) completed"
+          - "Operational Qualification (OQ) completed"
+          - "Performance Qualification (PQ) completed"
+          - "Validation documentation maintained"
+        implementation:
+          automated: true
+          tools:
+            - validation-framework
+            - automated-testing
+            - qualification-tracking
+          evidence:
+            - IQ-Protocol
+            - OQ-Protocol
+            - PQ-Protocol
+            - Validation-Summary-Report
+          verification:
+            check: "All critical functions validated"
+            script: "./security/scripts/fda/validation-check.sh"
+
+    # §11.10(b) - Record Generation
+    recordGeneration:
+      - id: FDA-11.10-B-001
+        name: Accurate Record Copies
+        requirement: "Ability to generate accurate and complete copies of records in both human readable and electronic form"
+        criteria:
+          - "Records exportable to PDF/human-readable format"
+          - "Electronic export maintains data integrity"
+          - "All record fields included in exports"
+        implementation:
+          automated: true
+          tools:
+            - record-export-service
+            - pdf-generator
+            - data-integrity-verification
+          formats:
+            - PDF (human-readable)
+            - JSON (electronic)
+            - XML (electronic)
+            - CSV (tabular data)
+          verification:
+            check: "Record exports complete and accurate"
+            script: "./security/scripts/fda/record-export-check.sh"
+
+    # §11.10(c) - Record Protection
+    recordProtection:
+      - id: FDA-11.10-C-001
+        name: Record Retention and Protection
+        requirement: "Protection of records to enable accurate and ready retrieval throughout retention period"
+        criteria:
+          - "Records protected from unauthorized modification"
+          - "Backup and recovery procedures in place"
+          - "Records retrievable for required retention period"
+        implementation:
+          automated: true
+          tools:
+            - database-encryption
+            - backup-service
+            - disaster-recovery
+          retention:
+            labResults: 10 years
+            qualityRecords: 15 years
+            auditTrails: 15 years
+          verification:
+            check: "Records protected and retrievable"
+            script: "./security/scripts/fda/record-protection-check.sh"
+
+    # §11.10(d) - System Access Limitation
+    systemAccessLimitation:
+      - id: FDA-11.10-D-001
+        name: Access Control
+        requirement: "Limiting system access to authorized individuals"
+        criteria:
+          - "Role-based access control implemented"
+          - "Access restricted to authorized personnel"
+          - "Access attempts logged"
+        implementation:
+          automated: true
+          tools:
+            - identity-provider
+            - rbac-system
+            - access-logging
+          roles:
+            - Laboratory Director
+            - Quality Manager
+            - Lab Technologist
+            - Lab Technician
+            - Reviewer
+            - ReadOnly
+          verification:
+            check: "Access limited to authorized users"
+            code: |
+              // All endpoints must have authorization
+              [Authorize(Roles = "...")]
+              public class ResultsController { }
+
+    # §11.10(e) - Audit Trails
+    auditTrails:
+      - id: FDA-11.10-E-001
+        name: Secure Computer-Generated Audit Trails
+        requirement: "Use of secure, computer-generated, time-stamped audit trails to independently record the date and time of operator entries and actions"
+        criteria:
+          - "All record creates, modifies, deletes logged"
+          - "Timestamps from validated time source"
+          - "Previous values retained"
+          - "Audit trails cannot be modified"
+        implementation:
+          automated: true
+          tools:
+            - audit-logging-service
+            - immutable-audit-store
+            - time-synchronization
+          requirements:
+            timeSource: "NTP-synchronized"
+            retention: "15 years minimum"
+            immutability: "Write-once storage"
+          auditFields:
+            - timestamp
+            - userId
+            - action
+            - tableName
+            - recordId
+            - previousValue
+            - newValue
+            - reason
+            - workstationId
+          verification:
+            check: "Audit trails complete and immutable"
+            script: "./security/scripts/fda/audit-trail-check.sh"
+
+      - id: FDA-11.10-E-002
+        name: Audit Trail Documentation
+        requirement: "Documentation of changes to records shall not obscure previously recorded information"
+        criteria:
+          - "Original values preserved"
+          - "Change history viewable"
+          - "Reason for change recorded"
+        implementation:
+          automated: true
+          tools:
+            - change-tracking
+            - history-viewer
+          verification:
+            check: "Historical values accessible"
+            query: |
+              SELECT * FROM AuditLog 
+              WHERE TableName = 'LabResults' 
+              AND PreviousValue IS NOT NULL
+
+      - id: FDA-11.10-E-003
+        name: Audit Trail Retention
+        requirement: "Audit trail documentation shall be retained for period at least as long as the electronic records"
+        criteria:
+          - "Audit trails retained with records"
+          - "No orphaned records"
+          - "Retention verified"
+        implementation:
+          automated: true
+          tools:
+            - retention-policy-enforcer
+            - archival-verification
+          verification:
+            check: "Audit retention equals record retention"
+            script: "./security/scripts/fda/audit-retention-check.sh"
+
+    # §11.10(f) - Operational System Checks
+    operationalChecks:
+      - id: FDA-11.10-F-001
+        name: Sequence and Event Checks
+        requirement: "Use of operational system checks to enforce permitted sequencing of steps and events"
+        criteria:
+          - "Workflow sequences enforced"
+          - "Required steps cannot be skipped"
+          - "Dependencies validated"
+        implementation:
+          automated: true
+          tools:
+            - workflow-engine
+            - state-machine
+            - validation-service
+          workflows:
+            resultEntry:
+              steps:
+                - sampleReceived
+                - sampleProcessed
+                - resultEntered
+                - resultReviewed
+                - resultReleased
+              enforcement: strict
+            qualityControl:
+              steps:
+                - qcPerformed
+                - qcEvaluated
+                - qcApproved
+              enforcement: strict
+          verification:
+            check: "Workflow sequences enforced"
+            script: "./security/scripts/fda/workflow-check.sh"
+
+    # §11.10(g) - Authority Checks
+    authorityChecks:
+      - id: FDA-11.10-G-001
+        name: Authority Verification
+        requirement: "Use of authority checks to ensure only authorized individuals can use the system, electronically sign, access the operation or device"
+        criteria:
+          - "Role-based permissions enforced"
+          - "Signing authority verified"
+          - "Device access controlled"
+        implementation:
+          automated: true
+          tools:
+            - authorization-service
+            - permission-checker
+            - device-management
+          permissions:
+            - createRecord
+            - modifyRecord
+            - deleteRecord
+            - signRecord
+            - releaseResult
+            - approveQC
+            - amendRecord
+          verification:
+            check: "Authority checks enforced"
+            code: |
+              // Signing requires specific permission
+              [RequirePermission(Permission.SignRecord)]
+              public async Task SignResult(...)
+
+    # §11.10(h) - Device Checks
+    deviceChecks:
+      - id: FDA-11.10-H-001
+        name: Device Authentication
+        requirement: "Use of device checks to determine validity of source of data input or operational instruction"
+        criteria:
+          - "Input devices authenticated"
+          - "Data source validated"
+          - "Interface integrity verified"
+        implementation:
+          automated: true
+          tools:
+            - device-authentication
+            - interface-validation
+            - instrument-integration
+          verification:
+            check: "Device authentication enabled"
+            script: "./security/scripts/fda/device-check.sh"
+
+    # §11.10(i) - Training
+    training:
+      - id: FDA-11.10-I-001
+        name: Personnel Training
+        requirement: "Determination that persons who develop, maintain, or use electronic systems have education, training, and experience"
+        criteria:
+          - "Training requirements documented"
+          - "Training records maintained"
+          - "Competency verified"
+        implementation:
+          automated: true
+          tools:
+            - training-management
+            - competency-tracking
+          requirements:
+            - System operation training
+            - Part 11 compliance training
+            - Role-specific training
+          verification:
+            check: "All users trained"
+            script: "./security/scripts/fda/training-check.sh"
+
+    # §11.10(j) - Written Policies
+    writtenPolicies:
+      - id: FDA-11.10-J-001
+        name: Electronic Signature Accountability
+        requirement: "Establishment and adherence to written policies that hold individuals accountable for actions under their electronic signatures"
+        criteria:
+          - "Electronic signature policy documented"
+          - "Accountability procedures defined"
+          - "Policy acknowledgment recorded"
+        implementation:
+          automated: false
+          documentation:
+            - ELECTRONIC-SIGNATURE-POLICY
+            - SIGNATURE-ACCOUNTABILITY-PROCEDURE
+          acknowledgment:
+            required: true
+            frequency: annual
+
+    # §11.10(k) - System Documentation
+    systemDocumentation:
+      - id: FDA-11.10-K-001
+        name: System Documentation Controls
+        requirement: "Use of appropriate controls over systems documentation including distribution, access, and use"
+        criteria:
+          - "Documentation version controlled"
+          - "Access to documentation controlled"
+          - "Distribution tracked"
+        implementation:
+          automated: true
+          tools:
+            - document-management
+            - version-control
+            - access-control
+          verification:
+            check: "Documentation controlled"
+            script: "./security/scripts/fda/documentation-check.sh"
+
+  # ============================================================================
+  # SUBPART C - ELECTRONIC SIGNATURES (§11.50, §11.70, §11.100, §11.200, §11.300)
+  # ============================================================================
+  electronicSignatures:
+    # §11.50 - Signature Manifestation
+    signatureManifestation:
+      - id: FDA-11.50-001
+        name: Signature Display
+        requirement: "Signed electronic records shall contain information associated with signing clearly indicating name, date/time, and meaning"
+        criteria:
+          - "Printed name of signer displayed"
+          - "Date and time of signature displayed"
+          - "Meaning/purpose of signature displayed"
+        implementation:
+          automated: true
+          components:
+            signatureDisplay:
+              fields:
+                - signerName
+                - signatureDateTime
+                - signatureMeaning
+              meanings:
+                - "Reviewed and Approved"
+                - "Verified"
+                - "Performed By"
+                - "Released By"
+                - "Amended By"
+          verification:
+            check: "Signature information complete"
+            code: |
+              public class ElectronicSignature {
+                  public string SignerName { get; set; }
+                  public DateTime SignatureDateTime { get; set; }
+                  public string SignatureMeaning { get; set; }
+              }
+
+    # §11.70 - Signature/Record Linking
+    signatureRecordLinking:
+      - id: FDA-11.70-001
+        name: Signature Binding
+        requirement: "Electronic signatures and handwritten signatures executed to electronic records shall be linked to their respective records"
+        criteria:
+          - "Signature cryptographically bound to record"
+          - "Signatures cannot be copied to other records"
+          - "Link integrity verifiable"
+        implementation:
+          automated: true
+          tools:
+            - cryptographic-signature-service
+            - signature-verification
+          requirements:
+            algorithm: "RSA-SHA256 or ECDSA"
+            binding: "Record hash included in signature"
+          verification:
+            check: "Signatures properly bound"
+            script: "./security/scripts/fda/signature-binding-check.sh"
+
+    # §11.100 - General Requirements
+    generalRequirements:
+      - id: FDA-11.100-A-001
+        name: Signature Uniqueness
+        requirement: "Each electronic signature shall be unique to one individual"
+        criteria:
+          - "User IDs unique and not reused"
+          - "Credentials non-transferable"
+          - "Identity verified at issuance"
+        implementation:
+          automated: true
+          tools:
+            - identity-management
+            - unique-id-enforcement
+          verification:
+            check: "All user IDs unique"
+            query: |
+              SELECT UserId, COUNT(*) 
+              FROM Users 
+              GROUP BY UserId 
+              HAVING COUNT(*) > 1
+
+      - id: FDA-11.100-B-001
+        name: Identity Verification
+        requirement: "Before establishing or assigning electronic signature, verify identity of individual"
+        criteria:
+          - "Identity verification performed"
+          - "Verification documented"
+          - "Verification method appropriate"
+        implementation:
+          automated: true
+          tools:
+            - identity-verification
+            - document-verification
+          methods:
+            - Government ID verification
+            - Background check
+            - Manager attestation
+
+      - id: FDA-11.100-C-001
+        name: Certification to FDA
+        requirement: "Persons using electronic signatures shall certify to FDA that signatures are intended to be legally binding"
+        criteria:
+          - "Certification submitted to FDA"
+          - "Certification on file"
+        implementation:
+          automated: false
+          documentation:
+            - FDA-CERTIFICATION-LETTER
+          status: submitted
+
+    # §11.200 - Electronic Signature Components
+    signatureComponents:
+      - id: FDA-11.200-A-001
+        name: Two-Component Signature
+        requirement: "Electronic signatures shall employ at least two distinct identification components"
+        criteria:
+          - "User ID component (something you know)"
+          - "Password component (something you know)"
+          - "Or biometric (something you are)"
+        implementation:
+          automated: true
+          tools:
+            - multi-factor-authentication
+            - biometric-authentication
+          requirements:
+            minimumFactors: 2
+            supportedFactors:
+              - userId/password
+              - biometric
+              - hardware token
+          verification:
+            check: "Two-factor authentication enforced"
+            script: "./security/scripts/fda/signature-components-check.sh"
+
+      - id: FDA-11.200-A-002
+        name: Continuous Session Signature
+        requirement: "When within single continuous session, first signing requires all components, subsequent only one"
+        criteria:
+          - "First signature requires full authentication"
+          - "Session signatures require re-authentication"
+          - "Session timeout enforced"
+        implementation:
+          automated: true
+          tools:
+            - session-management
+            - signature-workflow
+          sessionConfig:
+            timeout: 15 minutes
+            firstSignature: fullAuthentication
+            subsequentSignature: passwordOnly
+          verification:
+            check: "Session signature rules enforced"
+
+      - id: FDA-11.200-A-003
+        name: Non-Continuous Session Signature
+        requirement: "When not within single continuous session, each signing requires all components"
+        criteria:
+          - "Each signature independently verified"
+          - "No session carry-over"
+          - "Full authentication required"
+        implementation:
+          automated: true
+          tools:
+            - stateless-authentication
+            - signature-verification
+
+    # §11.300 - Controls for Identification Codes/Passwords
+    identificationControls:
+      - id: FDA-11.300-A-001
+        name: Code/Password Uniqueness
+        requirement: "Maintaining uniqueness of each combined identification code and password"
+        criteria:
+          - "Combination globally unique"
+          - "No duplicate combinations"
+          - "Historical uniqueness maintained"
+        implementation:
+          automated: true
+          tools:
+            - credential-management
+            - uniqueness-enforcement
+
+      - id: FDA-11.300-B-001
+        name: Code/Password Issuance
+        requirement: "Ensuring identification codes and passwords are issued periodically"
+        criteria:
+          - "Password expiration enforced"
+          - "Rotation schedule defined"
+          - "Complexity requirements met"
+        implementation:
+          automated: true
+          tools:
+            - password-policy
+            - credential-rotation
+          policy:
+            maxAge: 90 days
+            minLength: 12 characters
+            complexity: high
+            historyCount: 12
+          verification:
+            check: "Password policy enforced"
+            script: "./security/scripts/fda/password-policy-check.sh"
+
+      - id: FDA-11.300-C-001
+        name: Loss Management
+        requirement: "Following loss management procedures for electronically deauthorizing lost, stolen, missing tokens, cards, etc."
+        criteria:
+          - "Revocation procedures documented"
+          - "Immediate deactivation capability"
+          - "Loss reporting mechanism"
+        implementation:
+          automated: true
+          tools:
+            - credential-revocation
+            - emergency-deactivation
+          procedures:
+            - Immediate credential suspension
+            - Incident investigation
+            - Credential reissuance
+            - Audit trail review
+
+      - id: FDA-11.300-D-001
+        name: Transaction Safeguards
+        requirement: "Use of transaction safeguards to prevent unauthorized use of passwords and identification codes"
+        criteria:
+          - "Lockout after failed attempts"
+          - "Anomaly detection"
+          - "Alert on suspicious activity"
+        implementation:
+          automated: true
+          tools:
+            - brute-force-protection
+            - anomaly-detection
+            - alerting
+          config:
+            maxAttempts: 5
+            lockoutDuration: 30 minutes
+            alertThreshold: 3
+          verification:
+            check: "Transaction safeguards active"
+            script: "./security/scripts/fda/transaction-safeguards-check.sh"
+
+      - id: FDA-11.300-E-001
+        name: Device Testing
+        requirement: "Initial and periodic testing of devices that bear or generate identification code or password information"
+        criteria:
+          - "Devices tested at deployment"
+          - "Periodic testing performed"
+          - "Test results documented"
+        implementation:
+          automated: true
+          tools:
+            - device-testing
+            - test-scheduling
+          frequency: quarterly
+
+# Validation protocol
+validationProtocol:
+  installationQualification:
+    - Hardware inventory verified
+    - Software inventory verified
+    - Network configuration documented
+    - Security configuration documented
+
+  operationalQualification:
+    - All functions tested per specifications
+    - Access controls verified
+    - Audit trails verified
+    - Electronic signatures verified
+    - Data integrity verified
+
+  performanceQualification:
+    - System performs under expected load
+    - Response times acceptable
+    - Concurrent user support verified
+    - Data throughput verified
+
+# Automated compliance verification
+automatedChecks:
+  schedule: daily
+  
+  checks:
+    - name: audit-trail-integrity
+      script: "./security/scripts/fda/audit-trail-integrity.sh"
+      
+    - name: signature-binding-verification
+      script: "./security/scripts/fda/signature-binding.sh"
+      
+    - name: access-control-verification
+      script: "./security/scripts/fda/access-control.sh"
+      
+    - name: password-policy-compliance
+      script: "./security/scripts/fda/password-policy.sh"
+      
+    - name: session-management-verification
+      script: "./security/scripts/fda/session-management.sh"
+
+# Evidence requirements
+evidenceRequirements:
+  retention: 15 years minimum
+  
+  artifacts:
+    - validationDocumentation
+    - auditTrails
+    - trainingRecords
+    - systemDocumentation
+    - changeControlRecords
+    - incidentRecords
+    - periodicReviewRecords

@@ -1,0 +1,444 @@
+# MedinovAI Healthcare LIS - Container Security Policy
+# Security requirements for containerized healthcare applications
+# Compliant with: HIPAA, SOC2, CIS Docker Benchmark, NIST
+
+apiVersion: policy.medinovai.com/v1
+kind: ContainerSecurityPolicy
+metadata:
+  name: healthcare-container-security-policy
+  version: "2026.1"
+  lastUpdated: "2026-01-27"
+  owner: security@medinovai.com
+  compliance:
+    - HIPAA
+    - SOC2
+    - CIS-Docker-Benchmark-v1.6
+    - NIST-800-190
+
+spec:
+  # ============================================================================
+  # BASE IMAGE REQUIREMENTS
+  # ============================================================================
+  baseImages:
+    # Approved base images for healthcare workloads
+    approved:
+      dotnet:
+        - registry: mcr.microsoft.com
+          image: dotnet/aspnet
+          tags: ["8.0", "8.0-alpine", "8.0-jammy"]
+          reason: "Official Microsoft .NET runtime images"
+        - registry: mcr.microsoft.com
+          image: dotnet/sdk
+          tags: ["8.0", "8.0-alpine"]
+          reason: "Official Microsoft .NET SDK for builds"
+          buildOnly: true
+
+      node:
+        - registry: docker.io
+          image: node
+          tags: ["20-alpine", "20-slim", "22-alpine"]
+          reason: "Official Node.js LTS images"
+
+      python:
+        - registry: docker.io
+          image: python
+          tags: ["3.12-slim", "3.12-alpine"]
+          reason: "Official Python runtime images"
+
+      base:
+        - registry: gcr.io/distroless
+          image: static-debian12
+          tags: ["nonroot", "latest"]
+          reason: "Minimal distroless images for production"
+        - registry: gcr.io/distroless
+          image: cc-debian12
+          tags: ["nonroot", "latest"]
+          reason: "Distroless with C libraries"
+
+    # Prohibited base images
+    prohibited:
+      - pattern: "*:latest"
+        reason: "Latest tag is mutable and unpredictable"
+      - pattern: "*:dev"
+        reason: "Development images not for production"
+      - pattern: "*:debug"
+        reason: "Debug images contain unnecessary tools"
+      - pattern: "docker.io/library/ubuntu:*"
+        reason: "Full OS images too large; use slim variants"
+      - pattern: "*:unstable"
+        reason: "Unstable versions not for production"
+
+    # Required vulnerability scan
+    scanning:
+      required: true
+      maxCritical: 0
+      maxHigh: 0
+      maxMedium: 5
+      scanBeforeDeploy: true
+
+  # ============================================================================
+  # BUILD SECURITY REQUIREMENTS
+  # ============================================================================
+  buildSecurity:
+    # Dockerfile requirements
+    dockerfile:
+      requirements:
+        - id: BUILD-001
+          name: "Non-root user"
+          description: "Containers must not run as root"
+          rule: "USER instruction must be present and not root/0"
+          severity: critical
+          enforcement: block
+
+        - id: BUILD-002
+          name: "Health check"
+          description: "Containers must have health checks"
+          rule: "HEALTHCHECK instruction required"
+          severity: high
+          enforcement: block
+
+        - id: BUILD-003
+          name: "No secrets in build"
+          description: "No secrets in Dockerfile"
+          rule: "No ENV with password, secret, key, token"
+          severity: critical
+          enforcement: block
+
+        - id: BUILD-004
+          name: "Pinned versions"
+          description: "Base images must have pinned versions"
+          rule: "FROM must use specific tag, not latest"
+          severity: high
+          enforcement: block
+
+        - id: BUILD-005
+          name: "Multi-stage builds"
+          description: "Use multi-stage builds to minimize image size"
+          rule: "Production image should not contain build tools"
+          severity: medium
+          enforcement: warn
+
+        - id: BUILD-006
+          name: "No shell"
+          description: "Distroless images preferred for production"
+          rule: "Final image should minimize shell access"
+          severity: medium
+          enforcement: warn
+
+        - id: BUILD-007
+          name: "Minimal packages"
+          description: "Only install required packages"
+          rule: "Use --no-install-recommends for apt"
+          severity: medium
+          enforcement: warn
+
+    # Example compliant Dockerfile
+    exampleDockerfile: |
+      # Build stage
+      FROM mcr.microsoft.com/dotnet/sdk:8.0-alpine AS build
+      WORKDIR /src
+      COPY ["src/", "./"]
+      RUN dotnet restore && dotnet publish -c Release -o /app
+
+      # Runtime stage
+      FROM mcr.microsoft.com/dotnet/aspnet:8.0-alpine AS runtime
+      WORKDIR /app
+
+      # Security: Create non-root user
+      RUN addgroup -g 1000 appgroup && \
+          adduser -u 1000 -G appgroup -D appuser
+
+      # Copy published application
+      COPY --from=build /app .
+
+      # Security: Set permissions
+      RUN chown -R appuser:appgroup /app
+
+      # Security: Switch to non-root user
+      USER appuser
+
+      # Health check
+      HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+        CMD wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1
+
+      # Environment
+      ENV ASPNETCORE_URLS=http://+:8080
+      EXPOSE 8080
+
+      ENTRYPOINT ["dotnet", "MyApp.dll"]
+
+  # ============================================================================
+  # RUNTIME SECURITY REQUIREMENTS
+  # ============================================================================
+  runtimeSecurity:
+    # Security context requirements
+    securityContext:
+      pod:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+        
+      container:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities:
+          drop:
+            - ALL
+          add: []  # No capabilities should be added
+
+    # Resource limits (required for all containers)
+    resourceLimits:
+      required: true
+      defaults:
+        cpu:
+          request: "100m"
+          limit: "1000m"
+        memory:
+          request: "128Mi"
+          limit: "512Mi"
+      
+      # Healthcare workload profiles
+      profiles:
+        api:
+          cpu:
+            request: "250m"
+            limit: "2000m"
+          memory:
+            request: "256Mi"
+            limit: "1Gi"
+        worker:
+          cpu:
+            request: "500m"
+            limit: "4000m"
+          memory:
+            request: "512Mi"
+            limit: "2Gi"
+        database:
+          cpu:
+            request: "1000m"
+            limit: "4000m"
+          memory:
+            request: "2Gi"
+            limit: "8Gi"
+
+    # Network policies
+    networkPolicies:
+      required: true
+      defaultDeny: true
+      allowedEgress:
+        - dns: true
+        - https: true
+        - database: "within-namespace"
+        - redis: "within-namespace"
+      
+    # Volume mounts
+    volumeMounts:
+      prohibited:
+        - /etc/passwd
+        - /etc/shadow
+        - /etc/hosts
+        - /var/run/docker.sock
+        - /proc
+        - /sys
+      
+      requireReadOnly:
+        - /app
+        - /config
+
+    # Environment variables
+    environmentVariables:
+      prohibited:
+        patterns:
+          - "*PASSWORD*"
+          - "*SECRET*"
+          - "*KEY*"
+          - "*TOKEN*"
+          - "*CREDENTIAL*"
+        exception: "Use Kubernetes secrets or external secret management"
+      
+      required:
+        - name: "TZ"
+          value: "UTC"
+        - name: "LANG"
+          value: "en_US.UTF-8"
+
+  # ============================================================================
+  # IMAGE REGISTRY REQUIREMENTS
+  # ============================================================================
+  registrySecurity:
+    # Approved registries
+    allowedRegistries:
+      - mcr.microsoft.com
+      - gcr.io/distroless
+      - ghcr.io/medinovai
+      - registry.medinovai.com
+
+    # Registry requirements
+    requirements:
+      - id: REG-001
+        name: "Private registry"
+        description: "Use private registry for application images"
+        enforcement: block
+
+      - id: REG-002
+        name: "Image signing"
+        description: "All images must be signed"
+        enforcement: block
+        tools:
+          - cosign
+          - notation
+
+      - id: REG-003
+        name: "Vulnerability scanning"
+        description: "Images scanned before push"
+        enforcement: block
+
+      - id: REG-004
+        name: "No public registries"
+        description: "Don't pull directly from public registries in production"
+        enforcement: warn
+
+    # Image signing
+    imageSigning:
+      required: true
+      provider: cosign
+      keyManagement: AWS KMS
+      verifyOnDeploy: true
+
+  # ============================================================================
+  # SECRETS MANAGEMENT
+  # ============================================================================
+  secretsManagement:
+    # Kubernetes secrets
+    kubernetesSecrets:
+      encryption:
+        required: true
+        provider: "AWS KMS"
+      
+      rotation:
+        required: true
+        frequency: "90 days"
+
+    # External secrets
+    externalSecrets:
+      providers:
+        - AWS Secrets Manager
+        - HashiCorp Vault
+      
+      preferred: "AWS Secrets Manager"
+      
+    # Prohibited practices
+    prohibited:
+      - "Secrets in environment variables"
+      - "Secrets in ConfigMaps"
+      - "Secrets in Dockerfile"
+      - "Secrets in source code"
+
+  # ============================================================================
+  # LOGGING AND MONITORING
+  # ============================================================================
+  loggingMonitoring:
+    # Container logging
+    logging:
+      driver: json-file
+      options:
+        maxSize: "100m"
+        maxFile: "5"
+      
+      requirements:
+        - "Log to stdout/stderr only"
+        - "No PHI in logs"
+        - "Structured JSON format"
+        - "Include correlation IDs"
+
+    # Security monitoring
+    monitoring:
+      required:
+        - "Container resource usage"
+        - "Network connections"
+        - "Process execution"
+        - "File system changes"
+      
+      alerts:
+        - name: "Privilege escalation attempt"
+          severity: critical
+        - name: "Unexpected process execution"
+          severity: high
+        - name: "Network anomaly"
+          severity: high
+        - name: "Resource exhaustion"
+          severity: medium
+
+  # ============================================================================
+  # ORCHESTRATION SECURITY (Kubernetes)
+  # ============================================================================
+  orchestrationSecurity:
+    # Pod Security Standards
+    podSecurityStandards:
+      enforce: restricted
+      audit: restricted
+      warn: restricted
+
+    # Service account
+    serviceAccount:
+      automountServiceAccountToken: false
+      customServiceAccount: required
+
+    # RBAC
+    rbac:
+      leastPrivilege: true
+      noClusterAdmin: true
+      namespaceScoped: true
+
+    # Network policies
+    networkPolicies:
+      defaultDeny: true
+      required: true
+
+# Enforcement configuration
+enforcement:
+  mode: enforce  # enforce, audit, warn
+  
+  exceptions:
+    # Process for requesting exceptions
+    process:
+      - "Submit security exception request"
+      - "Security team review"
+      - "Risk assessment"
+      - "Time-limited approval"
+      - "Compensating controls documented"
+    
+    # Maximum exception duration
+    maxDuration: "90 days"
+
+# Compliance mapping
+complianceMapping:
+  HIPAA:
+    - "§164.312(a)(1) - Access Control"
+    - "§164.312(b) - Audit Controls"
+    - "§164.312(c)(1) - Integrity"
+    - "§164.312(e)(1) - Transmission Security"
+  
+  SOC2:
+    - "CC6.1 - Logical Access Security"
+    - "CC6.6 - External Access Protection"
+    - "CC6.8 - Malicious Software Prevention"
+    - "CC7.1 - Vulnerability Management"
+
+# Automated enforcement
+automatedEnforcement:
+  admissionController:
+    enabled: true
+    provider: "OPA Gatekeeper"
+    
+  cicdGates:
+    enabled: true
+    blockOnViolation: true
+    
+  scanning:
+    preDeployment: true
+    continuous: true
+    frequency: daily

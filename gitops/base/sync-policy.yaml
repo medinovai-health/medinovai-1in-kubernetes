@@ -1,0 +1,333 @@
+# ArgoCD Sync Policies and Automation Configuration
+# Defines how applications are synchronized across environments
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-sync-policies
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: argocd
+    app.kubernetes.io/component: sync-policies
+    medinovai.com/config-type: sync
+data:
+  # Healthcare sync policy documentation
+  policy.md: |
+    # MedinovAI GitOps Sync Policies
+    
+    ## Production Environment
+    - Manual sync required for all production changes
+    - Auto-prune disabled (manual resource cleanup)
+    - Self-heal enabled for drift correction
+    - Sync windows: Mon-Thu 6AM-10PM ET only
+    
+    ## Staging Environment
+    - Auto-sync enabled with prune
+    - Self-heal enabled
+    - No sync windows (24/7 deployment)
+    
+    ## Development Environment
+    - Auto-sync enabled with prune
+    - Self-heal enabled
+    - No sync windows (24/7 deployment)
+    - Feature branch tracking enabled
+---
+# Infrastructure ArgoCD Project
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: infrastructure
+  namespace: argocd
+  labels:
+    medinovai.com/project-type: infrastructure
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  description: Infrastructure Components (ingress, cert-manager, secrets, etc.)
+  
+  sourceRepos:
+    - 'https://kubernetes.github.io/ingress-nginx'
+    - 'https://charts.jetstack.io'
+    - 'https://bitnami-labs.github.io/sealed-secrets'
+    - 'https://charts.external-secrets.io'
+    - 'https://argoproj.github.io/argo-helm'
+    - 'https://github.com/medinovai/*'
+  
+  destinations:
+    - namespace: '*'
+      server: https://kubernetes.default.svc
+    - namespace: '*'
+      server: https://staging.k8s.medinovai.com
+    - namespace: '*'
+      server: https://dev.k8s.medinovai.com
+  
+  clusterResourceWhitelist:
+    - group: '*'
+      kind: '*'
+  
+  namespaceResourceWhitelist:
+    - group: '*'
+      kind: '*'
+  
+  roles:
+    - name: infra-admin
+      description: Infrastructure administrators
+      policies:
+        - p, proj:infrastructure:infra-admin, applications, *, infrastructure/*, allow
+        - p, proj:infrastructure:infra-admin, clusters, get, infrastructure/*, allow
+        - p, proj:infrastructure:infra-admin, repositories, get, infrastructure/*, allow
+      groups:
+        - medinovai:platform-team
+        - medinovai:sre-team
+---
+# Sync Wave Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sync-wave-config
+  namespace: argocd
+  labels:
+    medinovai.com/config-type: sync-waves
+data:
+  # Sync wave order (lower numbers sync first)
+  wave.order: |
+    Wave -10: cert-manager (TLS certificates)
+    Wave -8:  ingress-nginx (ingress controller)
+    Wave -6:  argo-rollouts (progressive delivery)
+    Wave -5:  sealed-secrets, external-secrets (secrets management)
+    Wave -3:  namespaces, network policies
+    Wave 0:   core application components
+    Wave 5:   secondary services
+    Wave 10:  monitoring, logging
+---
+# Automated Sync Configuration for All Products
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: product-applications
+  namespace: argocd
+  labels:
+    medinovai.com/appset-type: products
+spec:
+  generators:
+    - list:
+        elements:
+          # LIS Platform
+          - product: lis-platform
+            repo: medinovai-lis-platform
+            namespace: lis-platform
+            productionBranch: main
+            stagingBranch: develop
+            devBranch: develop
+            syncPolicy: conservative  # Healthcare requires manual prod sync
+          
+          # Mobile Phlebotomy
+          - product: mobile-phlebotomy
+            repo: mobile-phlebotomy
+            namespace: mobile-phlebotomy
+            productionBranch: main
+            stagingBranch: develop
+            devBranch: develop
+            syncPolicy: conservative
+          
+          # CTMS
+          - product: ctms
+            repo: ctms
+            namespace: ctms
+            productionBranch: main
+            stagingBranch: develop
+            devBranch: develop
+            syncPolicy: conservative
+          
+          # Billing
+          - product: billing
+            repo: billing
+            namespace: billing
+            productionBranch: main
+            stagingBranch: develop
+            devBranch: develop
+            syncPolicy: conservative
+  
+  template:
+    metadata:
+      name: '{{product}}'
+      namespace: argocd
+      labels:
+        app.kubernetes.io/name: '{{product}}'
+        medinovai.com/product: '{{product}}'
+        medinovai.com/sync-policy: '{{syncPolicy}}'
+      finalizers:
+        - resources-finalizer.argocd.argoproj.io
+    spec:
+      project: medinovai-healthcare
+      source:
+        repoURL: 'https://github.com/medinovai/{{repo}}.git'
+        targetRevision: '{{productionBranch}}'
+        path: deploy/kubernetes/overlays/production
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: '{{namespace}}'
+      syncPolicy:
+        # Production: manual sync, no auto-prune
+        automated:
+          prune: false
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
+          - PrunePropagationPolicy=foreground
+          - ServerSideApply=true
+        retry:
+          limit: 5
+          backoff:
+            duration: 5s
+            factor: 2
+            maxDuration: 3m
+---
+# Diff Customization - Ignore dynamic fields
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-cm
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: argocd
+data:
+  # Resource customizations for healthcare apps
+  resource.customizations: |
+    # Ignore differences in autoscaling replicas
+    apps/Deployment:
+      ignoreDifferences: |
+        jsonPointers:
+          - /spec/replicas
+    
+    # Ignore differences in HPA
+    autoscaling/HorizontalPodAutoscaler:
+      ignoreDifferences: |
+        jsonPointers:
+          - /spec/minReplicas
+          - /spec/maxReplicas
+          - /status
+    
+    # Ignore secret data (managed by external-secrets)
+    /Secret:
+      ignoreDifferences: |
+        jsonPointers:
+          - /data
+          - /stringData
+    
+    # Ignore service account token secrets
+    v1/ServiceAccount:
+      ignoreDifferences: |
+        jsonPointers:
+          - /secrets
+    
+    # Custom health checks for CRDs
+    argoproj.io/Rollout:
+      health.lua: |
+        hs = {}
+        if obj.status ~= nil then
+          if obj.status.phase == "Healthy" then
+            hs.status = "Healthy"
+            hs.message = "Rollout is healthy"
+          elseif obj.status.phase == "Paused" then
+            hs.status = "Suspended"
+            hs.message = "Rollout is paused"
+          elseif obj.status.phase == "Progressing" then
+            hs.status = "Progressing"
+            hs.message = "Rollout is progressing"
+          elseif obj.status.phase == "Degraded" then
+            hs.status = "Degraded"
+            hs.message = "Rollout is degraded"
+          end
+        end
+        return hs
+    
+    external-secrets.io/ExternalSecret:
+      health.lua: |
+        hs = {}
+        if obj.status ~= nil then
+          if obj.status.conditions ~= nil then
+            for i, condition in ipairs(obj.status.conditions) do
+              if condition.type == "Ready" and condition.status == "True" then
+                hs.status = "Healthy"
+                hs.message = "Secret is synced"
+                return hs
+              end
+            end
+          end
+        end
+        hs.status = "Progressing"
+        hs.message = "Waiting for secret sync"
+        return hs
+  
+  # Repository credentials template
+  repository.credentials: |
+    - url: https://github.com/medinovai
+      type: git
+      passwordSecret:
+        name: github-token
+        key: token
+      usernameSecret:
+        name: github-token
+        key: username
+  
+  # RBAC configuration
+  accounts.admin: apiKey,login
+  accounts.readonly: login
+  accounts.deployer: apiKey,login
+  
+  # URL configuration
+  url: https://argocd.medinovai.com
+  
+  # Application reconciliation timeout
+  timeout.reconciliation: 180s
+  
+  # Enable status badge
+  statusbadge.enabled: "true"
+---
+# RBAC Policy ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-rbac-cm
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: argocd
+data:
+  policy.csv: |
+    # Admin role - full access
+    p, role:admin, applications, *, */*, allow
+    p, role:admin, clusters, *, *, allow
+    p, role:admin, repositories, *, *, allow
+    p, role:admin, projects, *, *, allow
+    p, role:admin, accounts, *, *, allow
+    p, role:admin, gpgkeys, *, *, allow
+    p, role:admin, logs, *, */*, allow
+    p, role:admin, exec, create, */*, allow
+    
+    # Read-only role
+    p, role:readonly, applications, get, */*, allow
+    p, role:readonly, clusters, get, *, allow
+    p, role:readonly, repositories, get, *, allow
+    p, role:readonly, projects, get, *, allow
+    p, role:readonly, logs, get, */*, allow
+    
+    # Deployer role - can sync but not delete
+    p, role:deployer, applications, get, */*, allow
+    p, role:deployer, applications, sync, */*, allow
+    p, role:deployer, applications, action/*, */*, allow
+    p, role:deployer, logs, get, */*, allow
+    
+    # Production deployer - stricter controls
+    p, role:prod-deployer, applications, get, medinovai-healthcare/*, allow
+    p, role:prod-deployer, applications, sync, medinovai-healthcare/*, allow
+    p, role:prod-deployer, logs, get, medinovai-healthcare/*, allow
+    
+    # Group mappings
+    g, medinovai:platform-team, role:admin
+    g, medinovai:sre-team, role:admin
+    g, medinovai:developers, role:deployer
+    g, medinovai:qa-team, role:readonly
+    g, medinovai:release-managers, role:prod-deployer
+  
+  policy.default: role:readonly
+  scopes: '[groups, email]'

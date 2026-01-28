@@ -1,0 +1,254 @@
+# MedinovAI Healthcare LIS - Trivy Container Security Configuration
+# Vulnerability scanning for containers and infrastructure
+# Compliant with: HIPAA, SOC2, CIS Benchmarks
+
+# Global scan configuration
+scan:
+  # Scan targets
+  target:
+    - image
+    - filesystem
+    - config
+    - kubernetes
+
+  # Severity thresholds - healthcare requires stricter controls
+  severity:
+    - CRITICAL
+    - HIGH
+    - MEDIUM
+
+  # Exit code configuration
+  exit-code: 1
+
+  # Ignore unfixed vulnerabilities only for LOW severity
+  ignore-unfixed: false
+
+# Vulnerability scanning
+vulnerability:
+  # Vulnerability types to scan
+  type:
+    - os
+    - library
+
+  # Ignore specific CVEs (with documented justification)
+  ignorefile: .trivyignore
+
+  # Skip vulnerabilities in dev dependencies for container scanning
+  skip-dirs:
+    - node_modules
+    - .nuget/packages
+
+# Container image scanning
+image:
+  # Scan configuration
+  removed-pkgs: true
+  input: []
+
+  # Platform specification
+  platform: linux/amd64
+
+# Filesystem scanning
+filesystem:
+  # Paths to scan
+  paths:
+    - ./src
+    - ./config
+
+# Configuration scanning (IaC)
+config:
+  # File patterns to scan
+  file-patterns:
+    - "Dockerfile*"
+    - "docker-compose*.yml"
+    - "*.yaml"
+    - "*.tf"
+    - "*.json"
+
+  # Policy paths
+  policy:
+    - ./security/policies
+
+  # Namespaces for policy enforcement
+  namespaces:
+    - medinovai
+    - healthcare
+    - hipaa
+
+# Kubernetes scanning
+kubernetes:
+  # Components to scan
+  components:
+    - workload
+    - infra
+    - rbac
+
+  # Compliance checks
+  compliance:
+    - nsa
+    - pss-baseline
+    - pss-restricted
+
+# Secret scanning
+secret:
+  # Enable secret scanning
+  enable: true
+
+  # Secret patterns for healthcare
+  config-path: ./security/scanning/secret-patterns.yaml
+
+# License scanning
+license:
+  # Prohibited licenses for healthcare
+  prohibited:
+    - GPL-3.0
+    - AGPL-3.0
+    - SSPL-1.0
+
+  # License confidence threshold
+  confidence-level: 0.9
+
+# SBOM generation
+sbom:
+  # Generate SBOM in CycloneDX format
+  format: cyclonedx
+  output: sbom.json
+
+# Reporting
+report:
+  # Output format
+  format: sarif
+
+  # Template for custom reports
+  template: "@./security/reports/trivy-template.html"
+
+  # Output file
+  output: trivy-report.sarif
+
+# Caching
+cache:
+  # Cache directory
+  dir: /tmp/trivy-cache
+
+  # Cache TTL
+  ttl: 24h
+
+  # Clear cache before scan
+  clear: false
+
+# Database
+db:
+  # Repository for vulnerability database
+  repository: ghcr.io/aquasecurity/trivy-db
+
+  # Skip database update (for air-gapped environments)
+  skip-db-update: false
+
+  # Java database for JAR scanning
+  java-db-repository: ghcr.io/aquasecurity/trivy-java-db
+
+# Healthcare-specific policies
+custom-policies:
+  # HIPAA compliance checks
+  hipaa:
+    enabled: true
+    policies:
+      - name: phi-encryption-required
+        description: "PHI data must be encrypted at rest"
+        severity: CRITICAL
+        check: |
+          package hipaa.encryption
+          deny[msg] {
+            input.spec.containers[_].volumeMounts[_].mountPath == "/data/phi"
+            not input.spec.volumes[_].secret
+            msg := "PHI volume must use encrypted secrets"
+          }
+
+      - name: audit-logging-required
+        description: "All containers must have audit logging enabled"
+        severity: HIGH
+        check: |
+          package hipaa.audit
+          deny[msg] {
+            container := input.spec.containers[_]
+            not container.env[_].name == "AUDIT_LOGGING_ENABLED"
+            msg := sprintf("Container %s must have audit logging enabled", [container.name])
+          }
+
+      - name: session-timeout
+        description: "Session timeout must be configured"
+        severity: MEDIUM
+        check: |
+          package hipaa.session
+          deny[msg] {
+            container := input.spec.containers[_]
+            env_names := [e.name | e := container.env[_]]
+            not "SESSION_TIMEOUT_MINUTES" in env_names
+            msg := sprintf("Container %s must have session timeout configured", [container.name])
+          }
+
+  # SOC2 compliance checks
+  soc2:
+    enabled: true
+    policies:
+      - name: resource-limits-required
+        description: "All containers must have resource limits"
+        severity: HIGH
+        check: |
+          package soc2.resources
+          deny[msg] {
+            container := input.spec.containers[_]
+            not container.resources.limits
+            msg := sprintf("Container %s must have resource limits", [container.name])
+          }
+
+      - name: read-only-root-filesystem
+        description: "Containers should use read-only root filesystem"
+        severity: MEDIUM
+        check: |
+          package soc2.filesystem
+          warn[msg] {
+            container := input.spec.containers[_]
+            not container.securityContext.readOnlyRootFilesystem
+            msg := sprintf("Container %s should use read-only root filesystem", [container.name])
+          }
+
+  # CIS Benchmark checks
+  cis:
+    enabled: true
+    benchmark: kubernetes-1.8
+    level: 2
+
+# Vulnerability thresholds for CI/CD gates
+gates:
+  # Block deployment if these thresholds are exceeded
+  critical: 0
+  high: 0
+  medium: 10
+  low: 50
+
+  # Grace period for newly discovered vulnerabilities (days)
+  grace-period: 7
+
+# Integration settings
+integrations:
+  # GitHub integration
+  github:
+    enabled: true
+    security-alerts: true
+    dependabot: true
+
+  # Slack notifications
+  slack:
+    enabled: true
+    webhook-url: "${SLACK_SECURITY_WEBHOOK}"
+    channels:
+      critical: "#security-critical"
+      high: "#security-alerts"
+
+  # PagerDuty for critical vulnerabilities
+  pagerduty:
+    enabled: true
+    service-key: "${PAGERDUTY_SERVICE_KEY}"
+    severity-mapping:
+      CRITICAL: critical
+      HIGH: error

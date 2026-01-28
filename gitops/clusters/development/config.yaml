@@ -1,0 +1,300 @@
+# MedinovAI Development Cluster Configuration
+# Developer environment for testing and iteration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cluster-config
+  namespace: argocd
+  labels:
+    cluster: development
+    environment: development
+    medinovai.com/managed-by: gitops
+data:
+  # Cluster identification
+  cluster.name: "medinovai-dev"
+  cluster.environment: "development"
+  cluster.region: "us-east-1"
+  cluster.provider: "aws-eks"
+  
+  # Development compliance settings (reduced for dev speed)
+  compliance.hipaa: "enabled"
+  compliance.hitrust: "disabled"
+  compliance.soc2: "disabled"
+  compliance.pci-dss: "disabled"
+  
+  # Development availability configuration
+  ha.enabled: "false"
+  ha.minReplicas: "1"
+  ha.multiAZ: "false"
+  ha.drEnabled: "false"
+  
+  # Resource limits for development (lower limits)
+  resources.defaultCpuRequest: "25m"
+  resources.defaultMemoryRequest: "64Mi"
+  resources.defaultCpuLimit: "500m"
+  resources.defaultMemoryLimit: "1Gi"
+  
+  # Network configuration
+  network.ingressClass: "nginx"
+  network.tlsEnabled: "true"
+  network.tlsMinVersion: "TLSv1.2"
+  network.mTLSEnabled: "false"  # Disabled for easier debugging
+  
+  # Storage configuration
+  storage.defaultClass: "gp3"
+  storage.backupEnabled: "false"
+  storage.snapshotSchedule: ""
+  
+  # Development features
+  dev.debugEnabled: "true"
+  dev.hotReloadEnabled: "true"
+  dev.mockServicesEnabled: "true"
+---
+# Development ArgoCD Project
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: medinovai-dev
+  namespace: argocd
+  labels:
+    environment: development
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  description: MedinovAI Healthcare Development Applications
+  
+  # Source repositories
+  sourceRepos:
+    - 'https://github.com/medinovai/*'
+    - 'https://charts.medinovai.com/*'
+    - '*'  # Allow any repo for development
+  
+  # Destination clusters and namespaces - more permissive for dev
+  destinations:
+    - namespace: '*'
+      server: https://dev.k8s.medinovai.com
+  
+  # Cluster resource whitelist - more permissive for dev
+  clusterResourceWhitelist:
+    - group: '*'
+      kind: '*'
+  
+  # Roles for team access - developers have full access
+  roles:
+    - name: dev-admin
+      description: Full access to development
+      policies:
+        - p, proj:medinovai-dev:dev-admin, applications, *, medinovai-dev/*, allow
+        - p, proj:medinovai-dev:dev-admin, logs, get, medinovai-dev/*, allow
+        - p, proj:medinovai-dev:dev-admin, exec, create, medinovai-dev/*, allow
+      groups:
+        - medinovai:platform-team
+        - medinovai:sre-team
+        - medinovai:developers
+        - medinovai:qa-team
+  
+  # No sync windows for development - deploy anytime
+  syncWindows: []
+  
+  # Orphaned resources - less strict for dev
+  orphanedResources:
+    warn: false
+---
+# Development Cluster Registration
+apiVersion: v1
+kind: Secret
+metadata:
+  name: dev-cluster-secret
+  namespace: argocd
+  labels:
+    argocd.argoproj.io/secret-type: cluster
+type: Opaque
+stringData:
+  name: development
+  server: https://dev.k8s.medinovai.com
+  config: |
+    {
+      "tlsClientConfig": {
+        "insecure": false,
+        "caData": "BASE64_CA_DATA",
+        "certData": "BASE64_CERT_DATA",
+        "keyData": "BASE64_KEY_DATA"
+      }
+    }
+---
+# Development Resource Quotas (per namespace)
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: dev-quota
+  namespace: lis-platform-dev
+spec:
+  hard:
+    requests.cpu: "10"
+    requests.memory: "20Gi"
+    limits.cpu: "20"
+    limits.memory: "40Gi"
+    persistentvolumeclaims: "20"
+    pods: "50"
+    services: "20"
+    secrets: "30"
+    configmaps: "30"
+---
+# Development LimitRange (prevent runaway resources)
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: dev-limits
+  namespace: lis-platform-dev
+spec:
+  limits:
+    - type: Container
+      default:
+        cpu: "500m"
+        memory: "512Mi"
+      defaultRequest:
+        cpu: "50m"
+        memory: "64Mi"
+      max:
+        cpu: "2"
+        memory: "4Gi"
+    - type: PersistentVolumeClaim
+      max:
+        storage: "20Gi"
+---
+# Development Applications - feature branch tracking
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: lis-platform-dev
+  namespace: argocd
+  labels:
+    environment: development
+    app.kubernetes.io/name: lis-platform
+spec:
+  project: medinovai-dev
+  source:
+    repoURL: https://github.com/medinovai/medinovai-lis-platform.git
+    targetRevision: develop
+    path: deploy/kubernetes/overlays/development
+    helm:
+      parameters:
+        - name: replicaCount
+          value: "1"
+        - name: resources.limits.memory
+          value: "512Mi"
+        - name: resources.limits.cpu
+          value: "500m"
+  destination:
+    server: https://dev.k8s.medinovai.com
+    namespace: lis-platform-dev
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: mobile-phlebotomy-dev
+  namespace: argocd
+  labels:
+    environment: development
+spec:
+  project: medinovai-dev
+  source:
+    repoURL: https://github.com/medinovai/mobile-phlebotomy.git
+    targetRevision: develop
+    path: deploy/kubernetes/overlays/development
+  destination:
+    server: https://dev.k8s.medinovai.com
+    namespace: mobile-phlebotomy-dev
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ctms-dev
+  namespace: argocd
+  labels:
+    environment: development
+spec:
+  project: medinovai-dev
+  source:
+    repoURL: https://github.com/medinovai/ctms.git
+    targetRevision: develop
+    path: deploy/kubernetes/overlays/development
+  destination:
+    server: https://dev.k8s.medinovai.com
+    namespace: ctms-dev
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: billing-dev
+  namespace: argocd
+  labels:
+    environment: development
+spec:
+  project: medinovai-dev
+  source:
+    repoURL: https://github.com/medinovai/billing.git
+    targetRevision: develop
+    path: deploy/kubernetes/overlays/development
+  destination:
+    server: https://dev.k8s.medinovai.com
+    namespace: billing-dev
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+---
+# Mock Services for Development
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: mock-services
+  namespace: argocd
+  labels:
+    environment: development
+    app.kubernetes.io/component: mocks
+spec:
+  project: medinovai-dev
+  source:
+    repoURL: https://github.com/medinovai/medinovai-infrastructure.git
+    targetRevision: HEAD
+    path: mocks/kubernetes
+    helm:
+      parameters:
+        - name: mockHl7.enabled
+          value: "true"
+        - name: mockEdi.enabled
+          value: "true"
+        - name: mockFhir.enabled
+          value: "true"
+        - name: mockPayment.enabled
+          value: "true"
+  destination:
+    server: https://dev.k8s.medinovai.com
+    namespace: mock-services
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

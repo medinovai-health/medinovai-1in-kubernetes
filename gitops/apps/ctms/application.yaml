@@ -1,0 +1,251 @@
+# MedinovAI CTMS - ArgoCD Application
+# Clinical Trial Management System
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ctms
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: ctms
+    app.kubernetes.io/part-of: medinovai
+    app.kubernetes.io/component: clinical-trials
+    medinovai.com/product: ctms
+    medinovai.com/compliance: hipaa,21cfr11,gcp
+  annotations:
+    notifications.argoproj.io/subscribe.on-sync-succeeded.slack: medinovai-deployments
+    notifications.argoproj.io/subscribe.on-sync-failed.slack: medinovai-alerts
+    notifications.argoproj.io/subscribe.on-health-degraded.pagerduty: medinovai-oncall
+    # 21 CFR Part 11 compliance annotations
+    medinovai.com/audit-trail: required
+    medinovai.com/electronic-signatures: enabled
+    medinovai.com/data-integrity: validated
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: medinovai-healthcare
+  
+  source:
+    repoURL: https://github.com/medinovai/ctms.git
+    targetRevision: HEAD
+    path: deploy/kubernetes/overlays/production
+    
+    kustomize:
+      namePrefix: ctms-
+      commonLabels:
+        medinovai.com/managed-by: argocd
+        medinovai.com/regulatory: 21cfr11
+      images:
+        - name: medinovai/ctms-api
+          newTag: latest
+        - name: medinovai/ctms-worker
+          newTag: latest
+        - name: medinovai/ctms-reports
+          newTag: latest
+  
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: ctms
+  
+  syncPolicy:
+    automated:
+      prune: false  # Regulatory requirement - no auto-pruning
+      selfHeal: true
+      allowEmpty: false
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
+      - ServerSideApply=true
+      - Validate=true  # Strict validation for clinical trials
+    retry:
+      limit: 3
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 5m
+  
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas
+    - group: ""
+      kind: Secret
+      jsonPointers:
+        - /data
+  
+  revisionHistoryLimit: 20  # Extended history for audit compliance
+  
+  info:
+    - name: Documentation
+      value: https://docs.medinovai.com/ctms
+    - name: Support
+      value: https://support.medinovai.com
+    - name: Compliance
+      value: HIPAA, 21 CFR Part 11, ICH-GCP
+    - name: Validation-Status
+      value: IQ/OQ/PQ Validated
+---
+# CTMS API Service
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ctms-api
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: ctms-api
+    app.kubernetes.io/part-of: ctms
+    medinovai.com/tier: api
+spec:
+  project: medinovai-healthcare
+  source:
+    repoURL: https://github.com/medinovai/ctms.git
+    targetRevision: HEAD
+    path: deploy/kubernetes/components/api
+    helm:
+      releaseName: ctms-api
+      valueFiles:
+        - values.yaml
+        - values-production.yaml
+      parameters:
+        - name: image.repository
+          value: medinovai/ctms-api
+        - name: replicaCount
+          value: "3"
+        - name: resources.limits.memory
+          value: "2Gi"
+        - name: resources.limits.cpu
+          value: "1000m"
+        - name: autoscaling.enabled
+          value: "true"
+        - name: autoscaling.minReplicas
+          value: "3"
+        - name: autoscaling.maxReplicas
+          value: "10"
+        # 21 CFR Part 11 specific settings
+        - name: auditTrail.enabled
+          value: "true"
+        - name: auditTrail.retentionYears
+          value: "15"
+        - name: electronicSignatures.enabled
+          value: "true"
+        - name: electronicSignatures.manifestationRequired
+          value: "true"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: ctms
+  syncPolicy:
+    automated:
+      selfHeal: true
+---
+# CTMS Protocol Management Worker
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ctms-worker
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: ctms-worker
+    app.kubernetes.io/part-of: ctms
+    medinovai.com/tier: worker
+spec:
+  project: medinovai-healthcare
+  source:
+    repoURL: https://github.com/medinovai/ctms.git
+    targetRevision: HEAD
+    path: deploy/kubernetes/components/worker
+    helm:
+      releaseName: ctms-worker
+      valueFiles:
+        - values.yaml
+      parameters:
+        - name: image.repository
+          value: medinovai/ctms-worker
+        - name: replicaCount
+          value: "2"
+        - name: resources.limits.memory
+          value: "4Gi"
+        - name: worker.protocolVersioning
+          value: "true"
+        - name: worker.amendmentTracking
+          value: "true"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: ctms
+  syncPolicy:
+    automated:
+      selfHeal: true
+---
+# CTMS Regulatory Reporting Service
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ctms-reports
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: ctms-reports
+    app.kubernetes.io/part-of: ctms
+    medinovai.com/tier: reports
+spec:
+  project: medinovai-healthcare
+  source:
+    repoURL: https://github.com/medinovai/ctms.git
+    targetRevision: HEAD
+    path: deploy/kubernetes/components/reports
+    helm:
+      releaseName: ctms-reports
+      valueFiles:
+        - values.yaml
+      parameters:
+        - name: image.repository
+          value: medinovai/ctms-reports
+        - name: replicaCount
+          value: "2"
+        - name: reports.fdaSubmissions
+          value: "true"
+        - name: reports.irbReporting
+          value: "true"
+        - name: reports.safetyReporting
+          value: "true"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: ctms
+  syncPolicy:
+    automated:
+      selfHeal: true
+---
+# CTMS Subject Enrollment Service
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ctms-enrollment
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: ctms-enrollment
+    app.kubernetes.io/part-of: ctms
+    medinovai.com/tier: enrollment
+spec:
+  project: medinovai-healthcare
+  source:
+    repoURL: https://github.com/medinovai/ctms.git
+    targetRevision: HEAD
+    path: deploy/kubernetes/components/enrollment
+    helm:
+      releaseName: ctms-enrollment
+      valueFiles:
+        - values.yaml
+      parameters:
+        - name: image.repository
+          value: medinovai/ctms-enrollment
+        - name: enrollment.consentManagement
+          value: "true"
+        - name: enrollment.eligibilityScreening
+          value: "true"
+        - name: enrollment.randomization
+          value: "true"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: ctms
+  syncPolicy:
+    automated:
+      selfHeal: true

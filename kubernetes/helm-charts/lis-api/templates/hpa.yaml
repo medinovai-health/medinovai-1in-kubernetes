@@ -1,0 +1,102 @@
+{{- /*
+MedinovAI LIS API - Horizontal Pod Autoscaler
+Auto-scaling configuration for healthcare workloads
+*/ -}}
+{{- if .Values.autoscaling.enabled }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "lis-api.fullname" . }}
+  namespace: {{ .Values.global.namespace | default .Release.Namespace }}
+  labels:
+    {{- include "lis-api.labels" . | nindent 4 }}
+  annotations:
+    description: "HPA for LIS API - maintains high availability for healthcare workloads"
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "lis-api.fullname" . }}
+  minReplicas: {{ .Values.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.autoscaling.maxReplicas }}
+  metrics:
+    {{- if .Values.autoscaling.targetCPUUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.autoscaling.targetCPUUtilizationPercentage }}
+    {{- end }}
+    {{- if .Values.autoscaling.targetMemoryUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.autoscaling.targetMemoryUtilizationPercentage }}
+    {{- end }}
+    # Custom metrics for healthcare-specific scaling
+    {{- if .Values.autoscaling.customMetrics }}
+    {{- range .Values.autoscaling.customMetrics }}
+    - type: Pods
+      pods:
+        metric:
+          name: {{ .name }}
+        target:
+          type: AverageValue
+          averageValue: {{ .targetAverageValue }}
+    {{- end }}
+    {{- end }}
+  {{- if .Values.autoscaling.behavior }}
+  behavior:
+    {{- if .Values.autoscaling.behavior.scaleDown }}
+    scaleDown:
+      stabilizationWindowSeconds: {{ .Values.autoscaling.behavior.scaleDown.stabilizationWindowSeconds | default 300 }}
+      policies:
+        {{- range .Values.autoscaling.behavior.scaleDown.policies }}
+        - type: {{ .type }}
+          value: {{ .value }}
+          periodSeconds: {{ .periodSeconds }}
+        {{- end }}
+      selectPolicy: {{ .Values.autoscaling.behavior.scaleDown.selectPolicy | default "Min" }}
+    {{- end }}
+    {{- if .Values.autoscaling.behavior.scaleUp }}
+    scaleUp:
+      stabilizationWindowSeconds: {{ .Values.autoscaling.behavior.scaleUp.stabilizationWindowSeconds | default 0 }}
+      policies:
+        {{- range .Values.autoscaling.behavior.scaleUp.policies }}
+        - type: {{ .type }}
+          value: {{ .value }}
+          periodSeconds: {{ .periodSeconds }}
+        {{- end }}
+      selectPolicy: {{ .Values.autoscaling.behavior.scaleUp.selectPolicy | default "Max" }}
+    {{- end }}
+  {{- end }}
+{{- end }}
+---
+{{- /*
+Pod Disruption Budget - Ensures availability during updates/maintenance
+*/ -}}
+{{- if .Values.podDisruptionBudget.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "lis-api.fullname" . }}
+  namespace: {{ .Values.global.namespace | default .Release.Namespace }}
+  labels:
+    {{- include "lis-api.labels" . | nindent 4 }}
+  annotations:
+    description: "PDB for LIS API - ensures minimum availability during disruptions"
+spec:
+  {{- if .Values.podDisruptionBudget.minAvailable }}
+  minAvailable: {{ .Values.podDisruptionBudget.minAvailable }}
+  {{- else if .Values.podDisruptionBudget.maxUnavailable }}
+  maxUnavailable: {{ .Values.podDisruptionBudget.maxUnavailable }}
+  {{- else }}
+  minAvailable: 1
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "lis-api.selectorLabels" . | nindent 6 }}
+{{- end }}
