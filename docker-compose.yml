@@ -1,10 +1,12 @@
-version: '3.8'
+'''version: '3.8'
 
 services:
-  medinovai-event-bus:
-    build: .
-    image: medinovai-event-bus
-    container_name: medinovai-event-bus
+  medinovai-real-time-stream-bus:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: myonsite-healthcare/medinovai-real-time-stream-bus:latest
+    container_name: medinovai-real-time-stream-bus
     restart: unless-stopped
     env_file:
       - .env
@@ -13,9 +15,9 @@ services:
     ports:
       - "3000:3000"
     healthcheck:
-      test: ["CMD", "node", "healthcheck.js"]
+      test: ["CMD", "node", "dist/healthcheck.js"]
       interval: 30s
-      timeout: 30s
+      timeout: 10s
       retries: 3
       start_period: 5s
     logging:
@@ -23,12 +25,18 @@ services:
       options:
         max-size: "10m"
         max-file: "5"
+        tag: "{{.ImageName}}|{{.Name}}|{{.ImageFullID}}|{{.ContainerID}}"
     deploy:
       resources:
         limits:
           cpus: '0.5'
           memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
 
 networks:
   medinovai-network:
     driver: bridge
+    name: medinovai-network
+'''
