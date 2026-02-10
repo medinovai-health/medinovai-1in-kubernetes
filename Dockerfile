@@ -1,29 +1,42 @@
+'''# Use a slim, secure base image
 FROM node:20-alpine AS builder
 
+# Set working directory
 WORKDIR /usr/src/app
 
+# Copy package files and install dependencies
 COPY package*.json ./
+RUN npm install --production
 
-RUN npm install
-
+# Copy application source
 COPY . .
 
-RUN npm run build
-
+# --- Second Stage: Final image ---
 FROM node:20-alpine
 
+# Set working directory
 WORKDIR /usr/src/app
 
-COPY --from=builder /usr/src/app/package*.json ./
+# Copy dependencies and built artifacts from builder stage
+COPY --from=builder /usr/src/app/node_modules ./node_modules
 COPY --from=builder /usr/src/app/dist ./dist
 
-RUN npm install --only=production
+# Create a non-root user for security
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+USER appuser
 
-USER node
-
+# Add metadata labels
 LABEL maintainer="devops@medinovai.com"
-LABEL version="1.0"
+LABEL version="1.0.0"
+LABEL description="MedinovAI Real-Time Stream Bus"
 
-HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 CMD ["node", "healthcheck.js"]
+# Health check to ensure service is running
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+  CMD [ "node", "dist/healthcheck.js" ]
 
-CMD ["node", "dist/main.js"]
+# Expose the application port
+EXPOSE 3000
+
+# Start the application
+CMD [ "node", "dist/main.js" ]
+'''
