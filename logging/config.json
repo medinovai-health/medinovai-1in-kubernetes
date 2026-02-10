@@ -1,0 +1,18 @@
+{
+  "log_level": "info",
+  "format": "json",
+  "rotation": {
+    "max_size": "100MB",
+    "max_files": 10,
+    "compress": true
+  },
+  "correlation_id": {
+    "header": "X-Correlation-ID",
+    "enabled": true
+  },
+  "hipaa_audit": {
+    "enabled": true,
+    "log_level": "audit",
+    "log_file": "/var/log/medinovai/hipaa_audit.log"
+  }
+}

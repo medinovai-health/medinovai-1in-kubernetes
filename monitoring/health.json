@@ -1,0 +1,13 @@
+{
+  "endpoint": "/health",
+  "method": "GET",
+  "expected_response": {
+    "status": "ok"
+  },
+  "timeout": "5s",
+  "interval": "30s",
+  "dependencies": [
+    "database",
+    "redis"
+  ]
+}
