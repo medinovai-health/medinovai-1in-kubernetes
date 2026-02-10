@@ -1,0 +1,24 @@
+{
+  "endpoint": "/health",
+  "method": "GET",
+  "expected_response": {
+    "status_code": 200,
+    "body": {
+      "status": "ok"
+    }
+  },
+  "timeout": "5s",
+  "interval": "30s",
+  "dependency_checks": [
+    {
+      "name": "database",
+      "endpoint": "/health/db",
+      "timeout": "2s"
+    },
+    {
+      "name": "redis",
+      "endpoint": "/health/redis",
+      "timeout": "2s"
+    }
+  ]
+}
