@@ -1,24 +1,29 @@
-# MedinovAI Standard Python Dockerfile
-FROM python:3.11-slim
+FROM node:20-alpine AS builder
 
-WORKDIR /app
+WORKDIR /usr/src/app
 
-RUN apt-get update && apt-get install -y \
-    gcc \
-    && rm -rf /var/lib/apt/lists/*
+COPY package*.json ./
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN npm install
 
 COPY . .
 
-RUN useradd --create-home --shell /bin/bash app \
-    && chown -R app:app /app
-USER app
+RUN npm run build
 
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8000/health || exit 1
+FROM node:20-alpine
 
-EXPOSE 8000
+WORKDIR /usr/src/app
 
-CMD ["python", "src/main.py"]
+COPY --from=builder /usr/src/app/package*.json ./
+COPY --from=builder /usr/src/app/dist ./dist
+
+RUN npm install --only=production
+
+USER node
+
+LABEL maintainer="devops@medinovai.com"
+LABEL version="1.0"
+
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 CMD ["node", "healthcheck.js"]
+
+CMD ["node", "dist/main.js"]

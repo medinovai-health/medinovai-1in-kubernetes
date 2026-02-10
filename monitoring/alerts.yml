@@ -1,0 +1,38 @@
+groups:
+- name: MedinovAI Event Bus Alerts
+  rules:
+  - alert: HighErrorRate
+    expr: rate(http_requests_total{status=~"5.."}[5m]) > 0.1
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      summary: "High error rate on {{ $labels.instance }}"
+      description: "{{ $labels.instance }} is experiencing a high error rate."
+
+  - alert: HighLatency
+    expr: histogram_quantile(0.99, rate(http_request_duration_seconds_bucket[5m])) > 1
+    for: 1m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High latency on {{ $labels.instance }}"
+      description: "{{ $labels.instance }} is experiencing high latency."
+
+  - alert: HighMemoryUsage
+    expr: (sum(container_memory_usage_bytes{container_name="medinovai-event-bus"}) / sum(container_spec_memory_limit_bytes{container_name="medinovai-event-bus"})) * 100 > 80
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High memory usage on {{ $labels.instance }}"
+      description: "{{ $labels.instance }} is using more than 80% of its memory."
+
+  - alert: HighDiskUsage
+    expr: (node_filesystem_avail_bytes * 100) / node_filesystem_size_bytes < 10
+    for: 5m
+    labels:
+      severity: critical
+    annotations:
+      summary: "High disk usage on {{ $labels.instance }}"
+      description: "{{ $labels.instance }} has less than 10% disk space available."
