@@ -1,0 +1,27 @@
+# Dependencies
+/node_modules
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Environment variables
+.env
+
+# Build artifacts
+dist/
+build/
+
+# Test coverage
+coverage/
+.coverage
+
+# IDE files
+.idea/
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
