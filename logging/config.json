@@ -1,0 +1,16 @@
+{
+  "structured_logging": true,
+  "log_level": "INFO",
+  "log_rotation": {
+    "enabled": true,
+    "max_size_mb": 100,
+    "backup_count": 10
+  },
+  "correlation_id": {
+    "header": "X-Correlation-ID"
+  },
+  "hipaa_audit": {
+    "enabled": true,
+    "log_sensitive_data": false
+  }
+}
