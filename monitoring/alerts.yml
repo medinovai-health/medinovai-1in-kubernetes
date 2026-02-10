@@ -3,36 +3,36 @@ groups:
   rules:
   - alert: HighErrorRate
     expr: rate(http_requests_total{status=~"5.."}[5m]) > 0.05
-    for: 1m
+    for: 5m
     labels:
       severity: critical
     annotations:
-      summary: "High error rate detected"
-      description: "The error rate is {{ $value }}%, which is above the 5% threshold."
+      summary: "High error rate detected in {{ $labels.service }}"
+      description: "The error rate for {{ $labels.service }} is over 5% for the last 5 minutes."
 
   - alert: HighLatency
-    expr: histogram_quantile(0.99, rate(http_request_duration_seconds_bucket[5m])) > 1
-    for: 1m
+    expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 1
+    for: 5m
     labels:
       severity: warning
     annotations:
-      summary: "High latency detected"
-      description: "The 99th percentile latency is {{ $value }}s, which is above the 1s threshold."
+      summary: "High latency detected in {{ $labels.service }}"
+      description: "The 95th percentile latency for {{ $labels.service }} is over 1s for the last 5 minutes."
 
   - alert: HighMemoryUsage
-    expr: (sum(container_memory_usage_bytes{container!=""}) by (pod) / sum(kube_pod_container_resource_limits{resource="memory"}) by (pod)) * 100 > 80
-    for: 5m
+    expr: (sum(container_memory_usage_bytes{container!=""}) by (container)) / (sum(container_spec_memory_limit_bytes{container!=""}) by (container)) * 100 > 80
+    for: 10m
     labels:
       severity: warning
     annotations:
-      summary: "High memory usage detected"
-      description: "Memory usage is at {{ $value }}%, which is above the 80% threshold."
+      summary: "High memory usage detected in {{ $labels.container }}"
+      description: "{{ $labels.container }} has been using over 80% of its memory for the last 10 minutes."
 
-  - alert: HighDiskUsage
-    expr: (node_filesystem_avail_bytes / node_filesystem_size_bytes) * 100 < 10
-    for: 5m
+  - alert: LowDiskSpace
+    expr: (node_filesystem_avail_bytes{mountpoint!="/boot"} / node_filesystem_size_bytes{mountpoint!="/boot"}) * 100 < 10
+    for: 30m
     labels:
       severity: critical
     annotations:
-      summary: "High disk usage detected"
-      description: "Disk usage is at {{ $value }}%, which is below the 10% threshold."
+      summary: "Low disk space on {{ $labels.instance }}"
+      description: "The disk space on {{ $labels.instance }} is below 10%."
