@@ -1,0 +1,120 @@
+openapi: 3.1.0
+info:
+  title: MedinovAI Infrastructure Service
+  version: 1.0.0
+  description: API for managing MedinovAI infrastructure resources.
+servers:
+  - url: https://api.medinovai.com/v1/infrastructure
+paths:
+  /provision:
+    post:
+      summary: Provision a new infrastructure resource.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProvisionRequest'
+      responses:
+        '202':
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProvisioningJob'
+  /resources/{resource_id}:
+    get:
+      summary: Get resource details.
+      parameters:
+        - name: resource_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Resource'
+    delete:
+      summary: Decommission a resource.
+      parameters:
+        - name: resource_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '202':
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DecommissioningJob'
+  /resources:
+    get:
+      summary: List all provisioned resources.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Resource'
+  /resources/{resource_id}/actions/rotate-credentials:
+    post:
+      summary: Rotate resource credentials.
+      parameters:
+        - name: resource_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '202':
+          description: Accepted
+components:
+  schemas:
+    ProvisionRequest:
+      type: object
+      properties:
+        resourceType:
+          type: string
+        region:
+          type: string
+        size:
+          type: string
+    ProvisioningJob:
+      type: object
+      properties:
+        jobId:
+          type: string
+        status:
+          type: string
+    Resource:
+      type: object
+      properties:
+        resourceId:
+          type: string
+        status:
+          type: string
+    DecommissioningJob:
+      type: object
+      properties:
+        jobId:
+          type: string
+        status:
+          type: string
+  securitySchemes:
+    oAuth2:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://api.medinovai.com/v1/identity/token
+          scopes: {}
+security:
+  - oAuth2: []
