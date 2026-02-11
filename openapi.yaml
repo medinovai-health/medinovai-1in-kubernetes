@@ -1,0 +1,95 @@
+_***/
+openapi: 3.1.0
+info:
+  title: MedinovAI Real-Time Stream Bus
+  version: 1.0.0
+  description: API for real-time streaming of healthcare data.
+paths:
+  /events:
+    post:
+      summary: Ingest a new event
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Event'
+      responses:
+        '202':
+          description: Event accepted
+  /events/{streamId}:
+    get:
+      summary: Subscribe to an event stream
+      parameters:
+        - name: streamId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Event stream
+          content:
+            text/event-stream:
+              schema:
+                type: string
+  /streams:
+    get:
+      summary: List all streams
+      responses:
+        '200':
+          description: A list of streams
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Stream'
+    post:
+      summary: Create a new stream
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Stream'
+      responses:
+        '201':
+          description: Stream created
+  /streams/{streamId}:
+    delete:
+      summary: Delete a stream
+      parameters:
+        - name: streamId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Stream deleted
+components:
+  schemas:
+    Event:
+      type: object
+      properties:
+        streamId:
+          type: string
+        eventType:
+          type: string
+        payload:
+          type: object
+    Stream:
+      type: object
+      properties:
+        streamId:
+          type: string
+        description:
+          type: string
+  securitySchemes:
+    oAuth2:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: /auth/token
+          scopes: {}
