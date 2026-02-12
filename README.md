@@ -1,54 +1,62 @@
-# MedinovAI LIS Infrastructure
+# MedinovAI Infrastructure
 
-DevOps infrastructure repository for the MedinovAI Laboratory Information System (LIS) platform.
+[![HIPAA Compliant](https://img.shields.io/badge/HIPAA-Compliant-green.svg)](./SECURITY.md)
+[![Kubernetes](https://img.shields.io/badge/Kubernetes-1.28+-blue.svg)](https://kubernetes.io/)
+[![Terraform](https://img.shields.io/badge/Terraform-1.5+-purple.svg)](https://terraform.io/)
+[![License](https://img.shields.io/badge/License-Proprietary-red.svg)](./LICENSE)
+
+DevOps infrastructure repository for the MedinovAI Laboratory Information System (LIS) platform. Part of the myonsite-healthcare ecosystem.
+
+---
 
 ## Overview
 
-This repository contains all infrastructure-as-code (IaC) and DevOps configurations for deploying and managing the MedinovAI LIS platform in a healthcare-compliant manner.
+This repository contains all infrastructure-as-code (IaC) and DevOps configurations for deploying and managing the MedinovAI LIS platform in a healthcare-compliant manner. It provides Kubernetes manifests, Terraform modules, ArgoCD GitOps definitions, Docker configurations, and comprehensive monitoring for secure, scalable deployments.
 
-## Repository Structure
+**Key capabilities:**
+- **GitOps** – ArgoCD-driven continuous deployment
+- **Multi-cloud** – Terraform modules for AKS/EKS/GKE
+- **Healthcare compliance** – HIPAA, FDA 21 CFR Part 11, SOC 2
+- **Zero-trust networking** – Network policies and RBAC
+
+---
+
+## Architecture
 
 ```
-medinovai-infrastructure/
-├── kubernetes/
-│   ├── base/                    # Base Kubernetes manifests
-│   │   ├── namespace.yaml       # Namespace definitions with quotas
-│   │   ├── configmap.yaml       # Application configurations
-│   │   ├── secrets.yaml         # Secret templates (use external secrets in prod)
-│   │   └── network-policy.yaml  # Zero-trust network policies
-│   ├── overlays/                # Kustomize overlays per environment
-│   └── helm-charts/
-│       └── lis-api/             # LIS API Helm chart
-│           ├── Chart.yaml
-│           ├── values.yaml
-│           └── templates/
-├── terraform/
-│   ├── modules/
-│   │   ├── kubernetes-cluster/  # AKS/EKS/GKE module
-│   │   ├── database/            # MySQL Flexible Server module
-│   │   └── redis/               # Azure Cache for Redis module
-│   └── environments/            # Per-environment configurations
-├── docker/
-│   ├── Dockerfile.lis-api       # Production-ready API Dockerfile
-│   └── docker-compose.yml       # Local development environment
-├── argocd/
-│   ├── applications/            # ArgoCD Application definitions
-│   │   ├── lis-platform.yaml
-│   │   └── lis-services.yaml
-│   └── applicationsets/         # Dynamic ApplicationSets
-│       └── product-apps.yaml
-├── monitoring/
-│   ├── prometheus/              # Prometheus configuration
-│   ├── grafana/                 # Grafana dashboards
-│   └── alertmanager/            # Alert rules and routing
-└── .github/
-    └── workflows/
-        ├── ci.yml               # Continuous Integration
-        ├── cd.yml               # Continuous Deployment
-        └── security-scan.yml    # Security scanning
++----------------------------------------------------+
+|                  GitHub Repository                   |
+|           (medinovai-infrastructure)                |
++------------------------+----------------------------+
+                         | CI/CD (GitHub Actions)
+                         v
++------------------------+----------------------------+
+|            Container Registry (ACR)                  |
++------------------------+----------------------------+
+                         | Deployment
+                         v
++------------------------+----------------------------+
+|         Kubernetes Cluster (AKS)                     |
+|  +------------------+   +----------------------+    |
+|  |   ArgoCD         +-->+   LIS Services       |    |
+|  |   (GitOps)       |   |   (API, Workers)     |    |
+|  +------------------+   +----------------------+    |
++----------------------------------------------------+
 ```
 
-## Prerequisites
+**Technology Stack:**
+- **Orchestration:** Kubernetes (Azure Kubernetes Service)
+- **IaC:** Terraform, Kustomize, Helm
+- **CI/CD:** GitHub Actions
+- **GitOps:** ArgoCD
+- **Containerization:** Docker
+- **Monitoring:** Prometheus, Grafana, Alertmanager
+
+---
+
+## Getting Started
+
+### Prerequisites
 
 - **Kubernetes**: v1.28+
 - **Helm**: v3.13+
@@ -56,8 +64,6 @@ medinovai-infrastructure/
 - **kubectl**: v1.28+
 - **Azure CLI** (for Azure deployments)
 - **ArgoCD**: v2.9+ (for GitOps)
-
-## Quick Start
 
 ### Local Development
 
@@ -69,7 +75,7 @@ docker-compose up -d
 # Access services
 # - API: http://localhost:8080
 # - Grafana: http://localhost:3000 (admin/admin)
-# - RabbitMQ Management: http://localhost:15672 (lis_app/rabbitmq_dev_password)
+# - RabbitMQ: http://localhost:15672
 # - Kibana: http://localhost:5601
 ```
 
@@ -77,11 +83,7 @@ docker-compose up -d
 
 ```bash
 # Deploy using Helm
-helm upgrade --install lis-api kubernetes/helm-charts/lis-api \
-  --namespace lis-platform \
-  --create-namespace \
-  -f kubernetes/helm-charts/lis-api/values.yaml \
-  -f kubernetes/helm-charts/lis-api/values-production.yaml
+helm upgrade --install lis-api kubernetes/helm-charts/lis-api   --namespace lis-platform   --create-namespace   -f kubernetes/helm-charts/lis-api/values.yaml
 
 # Or using ArgoCD
 kubectl apply -f argocd/applications/lis-platform.yaml
@@ -90,121 +92,98 @@ kubectl apply -f argocd/applications/lis-platform.yaml
 ### Provision Infrastructure
 
 ```bash
-# Initialize Terraform
 cd terraform/environments/production
 terraform init
-
-# Plan changes
 terraform plan -var-file=vars/production.tfvars
-
-# Apply changes
 terraform apply -var-file=vars/production.tfvars
 ```
 
-## Healthcare Compliance
+---
 
-This infrastructure is designed to meet healthcare compliance requirements:
+## API Reference
 
-### HIPAA Compliance
+This repository does not directly expose APIs. It deploys services that do. API contracts for deployed services are summarized in [docs/API_CONTRACTS.md](./docs/API_CONTRACTS.md). See [openapi.yaml](./openapi.yaml) for API specifications.
 
-- **Access Control (164.312(a)(1))**: Network policies enforce zero-trust access
-- **Audit Controls (164.312(b))**: Comprehensive logging and audit trails
-- **Transmission Security (164.312(e)(1))**: TLS encryption for all traffic
-- **Encryption (164.312(a)(2)(iv))**: Data encrypted at rest and in transit
+---
 
-### ISO 13485 Compliance
+## Development
 
-- **Document Control**: GitOps ensures version control
-- **Traceability**: All changes tracked through git history
-- **Change Management**: PR reviews and approval gates
+### Repository Structure
 
-## Security Features
+```
+medinovai-infrastructure/
+├── kubernetes/          # Base manifests, overlays, Helm charts
+├── terraform/           # Cloud resource modules (K8s, DB, Redis)
+├── argocd/              # ArgoCD applications and ApplicationSets
+├── docker/              # Dockerfiles and docker-compose
+├── gitops/              # GitOps base configs (clusters, apps)
+├── monitoring/          # Prometheus, Grafana, Alertmanager
+├── security/            # Compliance, policies, scanning
+└── docs/                # Architecture and API documentation
+```
 
-1. **Zero-Trust Network Policies**: All traffic denied by default
-2. **Pod Security Standards**: Non-root containers, read-only filesystems
-3. **Secret Management**: External Secrets Operator integration
-4. **Vulnerability Scanning**: Trivy, Checkov, TFSec in CI/CD
-5. **HIPAA Compliance Checks**: Automated policy validation
+### Environment Configuration
 
-## Monitoring & Alerting
+| Environment | Namespace       | Auto-Deploy | Approval   |
+|-------------|-----------------|-------------|------------|
+| Development | lis-development | Yes         | No         |
+| Staging     | lis-staging     | Yes         | No         |
+| Production  | lis-platform    | No          | Required   |
 
-### Dashboards
+---
 
-- **LIS Platform Dashboard**: Overall system health and SLOs
-- **API Performance**: Request rates, latencies, error rates
-- **Database Metrics**: Connection pools, query performance
-- **Cache Metrics**: Hit ratios, memory utilization
+## Deployment
 
-### Alert Categories
+Deployments are automated via GitOps with ArgoCD:
 
-1. **Critical/Patient Safety**: Immediate PagerDuty notification
-2. **Service Availability**: Slack + email notification
-3. **Performance Degradation**: Warning notifications
-4. **Infrastructure Issues**: Team-specific routing
+1. **Push to main** → CI builds and pushes images
+2. **ArgoCD sync** → Detects manifest changes
+3. **Auto-deploy** → Staging deploys automatically
+4. **Production** → Requires manual approval gate
 
-## CI/CD Pipelines
+**Rollback:**
+```bash
+argocd app sync lis-platform --revision <previous-sync-rev> --prune
+```
 
-### Continuous Integration
+---
 
-- Kubernetes manifest validation (kubeval, helm lint)
-- Terraform validation and formatting
-- Security scanning (Trivy, Checkov, TFSec, KICS)
-- Policy compliance (OPA/Conftest)
-- Secret scanning (Gitleaks, TruffleHog)
+## Security & Compliance
 
-### Continuous Deployment
+### HIPAA Technical Safeguards
 
-- Automated staging deployments
-- Manual production approvals
-- ArgoCD GitOps synchronization
-- Automated rollback on failures
-- Health check verification
+| Control            | Implementation                                  |
+|--------------------|--------------------------------------------------|
+| Access Control     | Zero-trust network policies, RBAC                |
+| Audit Controls     | Comprehensive logging and audit trails           |
+| Transmission       | TLS encryption for all traffic                   |
+| Encryption         | Data encrypted at rest and in transit            |
 
-## Environment Configuration
+### Security Features
 
-| Environment | Namespace | Auto-Deploy | Approval |
-|-------------|-----------|-------------|----------|
-| Development | lis-development | Yes | No |
-| Staging | lis-staging | Yes | No |
-| Production | lis-platform | No | Required |
+1. **Zero-Trust Network Policies** – Deny-by-default
+2. **Pod Security Standards** – Non-root, read-only filesystems
+3. **Secret Management** – External Secrets Operator
+4. **Vulnerability Scanning** – Trivy, Checkov, TFSec in CI/CD
+5. **Compliance** – FDA 21 CFR 11, SOC 2 controls
+
+See [SECURITY.md](./SECURITY.md) and [security/](./security/) for details.
+
+---
 
 ## Contributing
 
-1. Create a feature branch from `develop`
+1. Create a feature branch from `main` or `develop`
 2. Make changes and ensure CI passes
 3. Create PR with comprehensive description
 4. Obtain required approvals
 5. Merge to `develop` (auto-deploys to staging)
-6. After validation, merge to `main` (requires production approval)
+6. For production, merge to `main` (approval required)
 
-## Troubleshooting
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for full guidelines.
 
-### Common Issues
-
-**Pods not starting:**
-```bash
-kubectl describe pod <pod-name> -n lis-platform
-kubectl logs <pod-name> -n lis-platform
-```
-
-**ArgoCD sync issues:**
-```bash
-argocd app get lis-platform
-argocd app sync lis-platform --prune
-```
-
-**Terraform state issues:**
-```bash
-terraform state list
-terraform state show <resource>
-```
-
-## Support
-
-- **Documentation**: https://docs.medinovai.com/infrastructure
-- **Issues**: Create GitHub issue with `infrastructure` label
-- **Emergency**: Contact platform@medinovai.com
+---
 
 ## License
 
-Proprietary - MedinovAI Healthcare Systems
+Proprietary – MedinovAI Healthcare Systems / myonsite-healthcare. All rights reserved.
