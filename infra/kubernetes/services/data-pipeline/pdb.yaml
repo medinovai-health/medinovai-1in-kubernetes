@@ -1,0 +1,14 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: data-pipeline
+  namespace: medinovai-services
+  labels:
+    app.kubernetes.io/name: data-pipeline
+    app.kubernetes.io/component: pipeline
+    app.kubernetes.io/part-of: medinovai
+spec:
+  minAvailable: 50%
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: data-pipeline

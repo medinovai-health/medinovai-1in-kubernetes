@@ -1,0 +1,65 @@
+name: Nightly Health Audit
+
+on:
+  schedule:
+    - cron: "0 4 * * *"
+  workflow_dispatch:
+
+jobs:
+  health-audit:
+    name: Health Audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run health check
+        run: scripts/monitoring/health_check_all.sh
+
+  cert-check:
+    name: Certificate Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run certificate renewal check
+        run: scripts/maintenance/cert_renewal.sh --check-only
+
+  backup-verify:
+    name: Backup Verification
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Verify database backup
+        run: scripts/maintenance/db_backup.sh --verify --environment production
+
+  compliance-check:
+    name: Compliance Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate compliance
+        run: scripts/validation/validate_compliance.sh
+
+  notify:
+    name: Notify
+    runs-on: ubuntu-latest
+    needs: [health-audit, cert-check, backup-verify, compliance-check]
+    if: always()
+    steps:
+      - name: Post results to Slack (placeholder)
+        run: |
+          echo "Nightly Health Audit Results Summary"
+          echo "===================================="
+          echo "health-audit: ${{ needs.health-audit.result }}"
+          echo "cert-check: ${{ needs.cert-check.result }}"
+          echo "backup-verify: ${{ needs.backup-verify.result }}"
+          echo "compliance-check: ${{ needs.compliance-check.result }}"
+          echo ""
+          echo "Placeholder: Add Slack webhook notification here"
+          echo "Example: curl -X POST -H 'Content-type: application/json' --data '{\"text\":\"Nightly audit complete\"}' \$SLACK_WEBHOOK_URL"

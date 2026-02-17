@@ -1,0 +1,77 @@
+# Docker Compose for local development of the MedinovAI platform
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: medinovai
+      POSTGRES_USER: medinovai
+      POSTGRES_PASSWORD: localdev
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U medinovai -d medinovai"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - medinovai-dev
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    command: redis-server --requirepass localdev
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "localdev", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - medinovai-dev
+
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - medinovai-dev
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    depends_on:
+      - prometheus
+    networks:
+      - medinovai-dev
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    ports:
+      - "1025:1025"   # SMTP
+      - "8025:8025"   # Web UI
+    networks:
+      - medinovai-dev
+
+  localstack:
+    image: localstack/localstack:latest
+    ports:
+      - "4566:4566"
+    environment:
+      SERVICES: s3,secretsmanager,sqs,sns
+    networks:
+      - medinovai-dev
+
+volumes:
+  postgres-data:
+
+networks:
+  medinovai-dev:
+    driver: bridge

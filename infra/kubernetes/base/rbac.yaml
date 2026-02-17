@@ -1,0 +1,100 @@
+# RBAC for MedinovAI Services
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: api-gateway
+  namespace: medinovai-services
+  labels:
+    app.kubernetes.io/name: api-gateway
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: auth-service
+  namespace: medinovai-services
+  labels:
+    app.kubernetes.io/name: auth-service
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: clinical-engine
+  namespace: medinovai-services
+  labels:
+    app.kubernetes.io/name: clinical-engine
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: data-pipeline
+  namespace: medinovai-services
+  labels:
+    app.kubernetes.io/name: data-pipeline
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ai-inference
+  namespace: medinovai-services
+  labels:
+    app.kubernetes.io/name: ai-inference
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: notification-service
+  namespace: medinovai-services
+  labels:
+    app.kubernetes.io/name: notification-service
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ai-inference
+  namespace: medinovai-ai
+  labels:
+    app.kubernetes.io/name: ai-inference
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: service-reader
+  namespace: medinovai-services
+  labels:
+    app.kubernetes.io/component: rbac
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "services", "configmaps"]
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: service-reader-binding
+  namespace: medinovai-services
+  labels:
+    app.kubernetes.io/component: rbac
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: service-reader
+subjects:
+  - kind: ServiceAccount
+    name: api-gateway
+    namespace: medinovai-services
+  - kind: ServiceAccount
+    name: auth-service
+    namespace: medinovai-services
+  - kind: ServiceAccount
+    name: clinical-engine
+    namespace: medinovai-services
+  - kind: ServiceAccount
+    name: data-pipeline
+    namespace: medinovai-services
+  - kind: ServiceAccount
+    name: ai-inference
+    namespace: medinovai-services
+  - kind: ServiceAccount
+    name: notification-service
+    namespace: medinovai-services

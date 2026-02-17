@@ -1,0 +1,14 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: clinical-engine
+  namespace: medinovai-services
+  labels:
+    app.kubernetes.io/name: clinical-engine
+    app.kubernetes.io/component: engine
+    app.kubernetes.io/part-of: medinovai
+spec:
+  minAvailable: 50%
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: clinical-engine

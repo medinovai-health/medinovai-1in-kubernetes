@@ -1,0 +1,37 @@
+# Dev overlay: reduced resources, single replica
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../base
+  - ../../services/api-gateway
+  - ../../services/auth-service
+  - ../../services/clinical-engine
+  - ../../services/data-pipeline
+  - ../../services/ai-inference
+  - ../../services/notification-service
+  - ../../ingress
+  - ../../monitoring/prometheus
+  - ../../monitoring/grafana
+  - ../../monitoring/alertmanager
+  - ../../monitoring/loki
+  - ../../jobs
+replicas:
+  - name: api-gateway
+    count: 1
+  - name: auth-service
+    count: 1
+  - name: clinical-engine
+    count: 1
+  - name: data-pipeline
+    count: 1
+  - name: ai-inference
+    count: 1
+  - name: notification-service
+    count: 1
+patches:
+  - path: dev-api-gateway-patch.yaml
+  - path: dev-auth-service-patch.yaml
+  - path: dev-clinical-engine-patch.yaml
+  - path: dev-data-pipeline-patch.yaml
+  - path: dev-ai-inference-patch.yaml
+  - path: dev-notification-service-patch.yaml
