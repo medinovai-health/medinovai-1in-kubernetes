@@ -1,0 +1,39 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: medinovai-system
+  labels:
+    app.kubernetes.io/managed-by: medinovai-deploy
+    environment: base
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: medinovai-services
+  labels:
+    app.kubernetes.io/managed-by: medinovai-deploy
+    environment: base
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: medinovai-data
+  labels:
+    app.kubernetes.io/managed-by: medinovai-deploy
+    environment: base
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: medinovai-ai
+  labels:
+    app.kubernetes.io/managed-by: medinovai-deploy
+    environment: base
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: medinovai-monitoring
+  labels:
+    app.kubernetes.io/managed-by: medinovai-deploy
+    environment: base

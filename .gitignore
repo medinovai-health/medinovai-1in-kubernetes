@@ -1,0 +1,73 @@
+# ─── Secrets ──────────────────────────────────────────────────────────────────
+.env
+*.env
+!.env.example
+credentials.json
+*.pem
+*.key
+*.p12
+*.pfx
+
+# ─── Terraform ────────────────────────────────────────────────────────────────
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+
+# ─── Kubernetes ───────────────────────────────────────────────────────────────
+kubeconfig
+*.kubeconfig
+
+# ─── Node.js ──────────────────────────────────────────────────────────────────
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+
+# ─── Python ───────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+dist/
+build/
+venv/
+.venv/
+
+# ─── Docker ───────────────────────────────────────────────────────────────────
+*.tar
+docker-compose.override.yml
+
+# ─── IDE ──────────────────────────────────────────────────────────────────────
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# ─── Agent State (runtime, not committed) ────────────────────────────────────
+agents/*/state/dead_letter/*.json
+agents/*/state/checkpoints/*.json
+agents/*/state/memory/*.json
+agents/*/state/slo/*.json
+agents/*/state/telemetry/*.json
+agents/*/state/outcomes/*.json
+agents/*/state/feedback/*.json
+agents/*/audit/*.jsonl
+agents/*/logs/
+
+# ─── Build artifacts ─────────────────────────────────────────────────────────
+outputs/
+logs/
+tmp/
+*.log

@@ -1,0 +1,60 @@
+name: IaC Drift Detection
+
+on:
+  schedule:
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  detect-drift:
+    name: Detect Drift (${{ matrix.environment }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        environment: [dev, staging, production]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.7"
+
+      - name: Configure cloud credentials
+        run: echo "TODO: Configure credentials from GitHub secrets"
+
+      - name: Terraform Init
+        working-directory: infra/terraform/environments/${{ matrix.environment }}
+        run: |
+          if [ -f "main.tf" ]; then
+            terraform init
+          else
+            echo "No Terraform config for ${{ matrix.environment }} yet — skipping."
+          fi
+
+      - name: Detect Drift
+        working-directory: infra/terraform/environments/${{ matrix.environment }}
+        run: |
+          if [ -f "main.tf" ]; then
+            PLAN_OUTPUT=$(terraform plan -detailed-exitcode -no-color 2>&1) || EXIT_CODE=$?
+            if [ "${EXIT_CODE:-0}" -eq 2 ]; then
+              echo "DRIFT DETECTED in ${{ matrix.environment }}!"
+              echo "$PLAN_OUTPUT"
+              echo "drift_detected=true" >> $GITHUB_ENV
+            else
+              echo "No drift in ${{ matrix.environment }}."
+              echo "drift_detected=false" >> $GITHUB_ENV
+            fi
+          else
+            echo "No Terraform config — skipping."
+            echo "drift_detected=false" >> $GITHUB_ENV
+          fi
+
+      - name: Alert on drift
+        if: env.drift_detected == 'true'
+        run: |
+          echo "ALERT: Infrastructure drift detected in ${{ matrix.environment }}"
+          echo "TODO: Send alert to Slack #eng and PagerDuty (P3)"
