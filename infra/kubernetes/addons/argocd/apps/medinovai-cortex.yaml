@@ -11,7 +11,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/myonsite-healthcare/medinovai-Cortex.git
+    repoURL: git@github.com:myonsite-healthcare/medinovai-Cortex.git
     targetRevision: main
     path: infra/kubernetes
   destination:

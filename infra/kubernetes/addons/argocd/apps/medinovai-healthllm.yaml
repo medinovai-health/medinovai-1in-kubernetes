@@ -11,7 +11,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/myonsite-healthcare/medinovai-healthLLM.git
+    repoURL: git@github.com:myonsite-healthcare/medinovai-healthLLM.git
     targetRevision: main
     path: k8s
   destination:
