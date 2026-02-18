@@ -397,6 +397,108 @@ services:
     networks:
       - ceo-network
 
+    # ─── Intelligence Services ──────────────────────────────────────────────
+  correlation-engine:
+    build:
+      context: ${ATLASOS_PATH:-../../repos/AtlasOS}/services/correlation-engine
+      dockerfile: Dockerfile
+    container_name: atlas-correlation-engine
+    depends_on:
+      vault:
+        condition: service_healthy
+      audit-chain:
+        condition: service_healthy
+    ports:
+      - "${CORRELATION_PORT:-8085}:8085"
+    environment:
+      VAULT_ADDR: "http://vault:8200"
+      VAULT_TOKEN: ${VAULT_DEV_ROOT_TOKEN_ID:-medinovai-dev-token}
+      AUDIT_SERVICE_URL: "http://audit-chain:8084"
+      MCP_VTIGER_URL: "http://mcp-vtiger:8080"
+      MCP_QUICKBOOKS_URL: "http://mcp-quickbooks:8080"
+      MCP_GOOGLE_URL: "http://mcp-google-workspace:8080"
+      MCP_LIS_URL: "http://mcp-lis:8080"
+      MCP_MATTERMOST_URL: "http://mcp-mattermost:8080"
+      CORRELATION_INTERVAL_MIN: "${CORRELATION_INTERVAL_MIN:-15}"
+    volumes:
+      - correlation-data:/data/correlations
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8085/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    restart: unless-stopped
+    networks:
+      - ceo-network
+
+  briefing-engine:
+    build:
+      context: ${ATLASOS_PATH:-../../repos/AtlasOS}/services/briefing-engine
+      dockerfile: Dockerfile
+    container_name: atlas-briefing-engine
+    depends_on:
+      vault:
+        condition: service_healthy
+      audit-chain:
+        condition: service_healthy
+      correlation-engine:
+        condition: service_healthy
+    ports:
+      - "${BRIEFING_PORT:-8086}:8086"
+    environment:
+      VAULT_ADDR: "http://vault:8200"
+      VAULT_TOKEN: ${VAULT_DEV_ROOT_TOKEN_ID:-medinovai-dev-token}
+      AUDIT_SERVICE_URL: "http://audit-chain:8084"
+      CORRELATION_ENGINE_URL: "http://correlation-engine:8085"
+      MCP_VTIGER_URL: "http://mcp-vtiger:8080"
+      MCP_QUICKBOOKS_URL: "http://mcp-quickbooks:8080"
+      MCP_GOOGLE_URL: "http://mcp-google-workspace:8080"
+      MCP_LIS_URL: "http://mcp-lis:8080"
+      MCP_MATTERMOST_URL: "http://mcp-mattermost:8080"
+      MORNING_BRIEFING_HOUR: "${MORNING_BRIEFING_HOUR:-7}"
+      EOD_BRIEFING_HOUR: "${EOD_BRIEFING_HOUR:-18}"
+    volumes:
+      - briefing-data:/data/briefings
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8086/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    restart: unless-stopped
+    networks:
+      - ceo-network
+
+  decision-tracker:
+    build:
+      context: ${ATLASOS_PATH:-../../repos/AtlasOS}/services/decision-tracker
+      dockerfile: Dockerfile
+    container_name: atlas-decision-tracker
+    depends_on:
+      vault:
+        condition: service_healthy
+      audit-chain:
+        condition: service_healthy
+    ports:
+      - "${DECISION_TRACKER_PORT:-8087}:8087"
+    environment:
+      VAULT_ADDR: "http://vault:8200"
+      VAULT_TOKEN: ${VAULT_DEV_ROOT_TOKEN_ID:-medinovai-dev-token}
+      AUDIT_SERVICE_URL: "http://audit-chain:8084"
+      CORRELATION_ENGINE_URL: "http://correlation-engine:8085"
+    volumes:
+      - decision-data:/data/decisions
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8087/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    restart: unless-stopped
+    networks:
+      - ceo-network
+
 volumes:
   vault-data:
   postgres-data:
@@ -404,6 +506,9 @@ volumes:
   atlas-data:
   audit-data:
   stirling-data:
+  correlation-data:
+  briefing-data:
+  decision-data:
 
 networks:
   ceo-network:
