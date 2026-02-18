@@ -56,7 +56,7 @@ get_category() {
         architecture-catalog|architecture-catalog-1|architecture-catalog-2) echo "platform" ;;
         architecture-catalog-3|architecture-catalog-4) echo "platform" ;;
         ++Docker-Maintenance\ |__Docker-Maintenance-1|__Docker-Maintenance-clean) echo "platform" ;;
-        vercel-clone|MedinovAI Atlas) echo "platform" ;;
+        vercel-clone|"MedinovAI Atlas") echo "platform" ;;
         myOnsiteOperationsMonitoringV1|myOnsiteOperationsMonitoringV1-1) echo "platform" ;;
         myonsite-all-code-base|myonsite-all-code-base-1) echo "platform" ;;
 

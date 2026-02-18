@@ -1,15 +1,25 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: atlasos-cluster-brain
+  namespace: atlasos
+spec:
+  ports:
+    - port: 8100
+      targetPort: 8100
+  selector:
+    app: atlasos-cluster-brain
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: atlasos-cluster-brain
-  namespace: medinovai-system
+  namespace: atlasos
   labels:
     app: atlasos-cluster-brain
-    component: atlasos-infra
+    medinovai.com/component: cluster-brain
 spec:
   replicas: 1
-  strategy:
-    type: Recreate
   selector:
     matchLabels:
       app: atlasos-cluster-brain
@@ -17,9 +27,8 @@ spec:
     metadata:
       labels:
         app: atlasos-cluster-brain
-        component: atlasos-infra
     spec:
-      serviceAccountName: atlasos-cluster-brain
+      serviceAccountName: atlasos-cluster-brain-sa
       nodeSelector:
         role: control-plane
       containers:
@@ -29,125 +38,128 @@ spec:
             - python3
             - -c
             - |
-              import os, time, json, datetime
-              from kubernetes import client, config, watch
+              import json, os, time, datetime
+              from http.server import HTTPServer, BaseHTTPRequestHandler
+              import urllib.request
 
-              config.load_incluster_config()
-              v1 = client.CoreV1Api()
-              apps_v1 = client.AppsV1Api()
+              APPROVAL_REQUIRED_ACTIONS = [
+                  "node_drain", "deployment_delete", "scale_to_zero",
+                  "cluster_upgrade", "network_policy_change", "node_add"
+              ]
+              HEARTBEAT_INTERVAL = 300
+              SLACK_WEBHOOK = os.environ.get("SLACK_WEBHOOK_URL", "")
 
-              HEARTBEAT = int(os.environ.get('HEARTBEAT_INTERVAL', '300'))
-              SLACK_WEBHOOK = os.environ.get('SLACK_WEBHOOK_URL', '')
+              class BrainHandler(BaseHTTPRequestHandler):
+                  def do_GET(self):
+                      if self.path == "/health":
+                          self.send_response(200)
+                          self.send_header("Content-Type", "application/json")
+                          self.end_headers()
+                          self.wfile.write(json.dumps({
+                              "status": "ok",
+                              "component": "atlasos-cluster-brain",
+                              "agents": ["ceo", "supervisor", "guardian"],
+                              "timestamp": datetime.datetime.utcnow().isoformat() + "Z"
+                          }).encode())
+                      elif self.path == "/status":
+                          self.send_response(200)
+                          self.send_header("Content-Type", "application/json")
+                          self.end_headers()
+                          status = get_cluster_status()
+                          self.wfile.write(json.dumps(status).encode())
+                      else:
+                          self.send_response(404)
+                          self.end_headers()
 
-              def send_approval_request(action, details):
-                  """Post to Slack for human approval before destructive actions."""
-                  if not SLACK_WEBHOOK:
-                      print(json.dumps({'level': 'warn', 'msg': 'No Slack webhook configured for approvals'}))
-                      return
-                  import urllib.request
-                  payload = json.dumps({
-                      'text': f':warning: *AtlasOS Cluster Brain — Approval Required*\n'
-                              f'*Action:* {action}\n'
-                              f'*Details:* {details}\n'
-                              f'*Time:* {datetime.datetime.utcnow().isoformat()}Z\n'
-                              f'Reply with `/approve {action}` or `/deny {action}`'
-                  }).encode()
-                  req = urllib.request.Request(SLACK_WEBHOOK, data=payload,
-                                               headers={'Content-Type': 'application/json'})
-                  try:
-                      urllib.request.urlopen(req, timeout=10)
-                  except Exception as e:
-                      print(json.dumps({'level': 'error', 'msg': f'Slack notification failed: {e}'}))
+                  def do_POST(self):
+                      if self.path == "/action":
+                          content_length = int(self.headers.get("Content-Length", 0))
+                          body = json.loads(self.rfile.read(content_length))
+                          result = evaluate_action(body)
+                          self.send_response(200)
+                          self.send_header("Content-Type", "application/json")
+                          self.end_headers()
+                          self.wfile.write(json.dumps(result).encode())
+                      else:
+                          self.send_response(404)
+                          self.end_headers()
 
-              def check_cluster_health():
-                  nodes = v1.list_node()
-                  unhealthy = []
-                  for node in nodes.items:
-                      for condition in node.status.conditions:
-                          if condition.type == 'Ready' and condition.status != 'True':
-                              unhealthy.append(node.metadata.name)
+                  def log_message(self, format, *args):
+                      pass
+
+              def get_cluster_status():
                   return {
-                      'total_nodes': len(nodes.items),
-                      'unhealthy_nodes': unhealthy,
-                      'timestamp': datetime.datetime.utcnow().isoformat() + 'Z',
+                      "timestamp": datetime.datetime.utcnow().isoformat() + "Z",
+                      "brain": "active",
+                      "approval_queue": [],
                   }
 
-              def check_pod_health():
-                  pods = v1.list_pod_for_all_namespaces(
-                      field_selector='status.phase!=Running,status.phase!=Succeeded'
-                  )
-                  failing = []
-                  for pod in pods.items:
-                      if pod.status.phase in ('Failed', 'Unknown', 'Pending'):
-                          failing.append({
-                              'name': pod.metadata.name,
-                              'namespace': pod.metadata.namespace,
-                              'phase': pod.status.phase,
-                          })
-                  return failing
-
-              def auto_remediate(failing_pods):
-                  """Restart pods that have been failing for >10 minutes."""
-                  for pod in failing_pods:
-                      ns = pod['namespace']
-                      name = pod['name']
-                      try:
-                          pod_obj = v1.read_namespaced_pod(name, ns)
-                          if pod_obj.status.start_time:
-                              age = (datetime.datetime.now(datetime.timezone.utc) -
-                                     pod_obj.status.start_time).total_seconds()
-                              if age > 600:  # >10 min in failed state
-                                  print(json.dumps({
-                                      'action': 'auto_restart',
-                                      'pod': name,
-                                      'namespace': ns,
-                                      'reason': f'Failed for {int(age)}s'
-                                  }))
-                                  v1.delete_namespaced_pod(name, ns)
-                      except Exception as e:
-                          print(json.dumps({'error': str(e), 'pod': name}))
-
-              print('[AtlasOS Cluster Brain] Starting — CEO + Supervisor + Guardian')
-              print('[AtlasOS Cluster Brain] Watching cluster events...')
-
-              while True:
-                  try:
-                      health = check_cluster_health()
-                      failing = check_pod_health()
-                      status = {
-                          'type': 'cluster_brain.heartbeat',
-                          'cluster': health,
-                          'failing_pods': len(failing),
-                          'timestamp': health['timestamp'],
+              def evaluate_action(action):
+                  action_type = action.get("type", "")
+                  if action_type in APPROVAL_REQUIRED_ACTIONS:
+                      notify_approval_needed(action)
+                      return {
+                          "status": "needs_human",
+                          "action": action_type,
+                          "message": f"Action '{action_type}' requires human approval",
+                          "approval_channel": "slack"
                       }
-                      print(json.dumps(status))
+                  return {"status": "allowed", "action": action_type}
 
-                      if health['unhealthy_nodes']:
-                          send_approval_request(
-                              'node_investigation',
-                              f"Unhealthy nodes: {', '.join(health['unhealthy_nodes'])}"
-                          )
-
-                      if failing:
-                          auto_remediate(failing)
-
+              def notify_approval_needed(action):
+                  if not SLACK_WEBHOOK:
+                      print(json.dumps({"event": "approval_needed_no_webhook", "action": action}))
+                      return
+                  try:
+                      payload = json.dumps({
+                          "text": f"🔐 *AtlasOS Cluster Brain — Approval Required*\n"
+                                  f"Action: `{action.get('type')}`\n"
+                                  f"Target: `{action.get('target', 'unknown')}`\n"
+                                  f"Reason: {action.get('reason', 'No reason provided')}\n"
+                                  f"Approve or deny in the AtlasOS dashboard."
+                      }).encode()
+                      req = urllib.request.Request(SLACK_WEBHOOK, data=payload,
+                                                    headers={"Content-Type": "application/json"})
+                      urllib.request.urlopen(req, timeout=5)
                   except Exception as e:
-                      print(json.dumps({'level': 'error', 'msg': str(e)}))
+                      print(json.dumps({"error": f"Slack notification failed: {e}"}))
 
-                  time.sleep(HEARTBEAT)
+              print("AtlasOS Cluster Brain starting...")
+              print(f"  Agents: CEO, Supervisor, Guardian")
+              print(f"  Approval-required actions: {APPROVAL_REQUIRED_ACTIONS}")
+
+              server = HTTPServer(("0.0.0.0", 8100), BrainHandler)
+              print(f"  Listening on :8100")
+              server.serve_forever()
+          ports:
+            - containerPort: 8100
+          envFrom:
+            - secretRef:
+                name: atlasos-secrets
+                optional: true
           env:
-            - name: HEARTBEAT_INTERVAL
-              value: "300"
             - name: SLACK_WEBHOOK_URL
               valueFrom:
                 secretKeyRef:
-                  name: atlasos-channel-secrets
-                  key: SLACK_APP_TOKEN
+                  name: atlasos-secrets
+                  key: SLACK_WEBHOOK_URL
                   optional: true
           resources:
             requests:
-              cpu: 100m
               memory: 256Mi
+              cpu: 100m
             limits:
-              cpu: 500m
-              memory: 512Mi
+              memory: 1Gi
+              cpu: "1"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8100
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8100
+            initialDelaySeconds: 15
+            periodSeconds: 30

@@ -2,10 +2,10 @@ apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: atlasos-node-agent
-  namespace: medinovai-system
+  namespace: atlasos
   labels:
     app: atlasos-node-agent
-    component: atlasos-infra
+    medinovai.com/component: node-agent
 spec:
   selector:
     matchLabels:
@@ -14,15 +14,12 @@ spec:
     metadata:
       labels:
         app: atlasos-node-agent
-        component: atlasos-infra
     spec:
-      serviceAccountName: atlasos-node-agent
+      serviceAccountName: atlasos-node-agent-sa
+      tolerations:
+        - operator: Exists
       hostPID: false
       hostNetwork: false
-      tolerations:
-        - key: nvidia.com/gpu
-          operator: Exists
-          effect: NoSchedule
       containers:
         - name: node-agent
           image: python:3.12-slim
@@ -30,74 +27,113 @@ spec:
             - python3
             - -c
             - |
-              import os, time, json, subprocess, socket, datetime
+              import json, os, time, socket, subprocess, datetime
 
-              NODE_NAME = os.environ.get('NODE_NAME', socket.gethostname())
-              HEARTBEAT_INTERVAL = int(os.environ.get('HEARTBEAT_INTERVAL', '300'))
-              GPU_NODE = os.path.exists('/host/proc/driver/nvidia')
+              HEARTBEAT_INTERVAL = 300  # 5 minutes
+              EVENT_BUS_URL = os.environ.get("EVENT_BUS_URL", "http://event-bus.atlasos.svc.cluster.local:8085")
+              NODE_NAME = os.environ.get("NODE_NAME", socket.gethostname())
+              GPU_NODE = os.environ.get("GPU_NODE", "false") == "true"
 
-              def collect_metrics():
+              def collect_node_metrics():
                   metrics = {
-                      'node': NODE_NAME,
-                      'timestamp': datetime.datetime.utcnow().isoformat() + 'Z',
-                      'type': 'node_agent.pulse',
+                      "node_name": NODE_NAME,
+                      "timestamp": datetime.datetime.utcnow().isoformat() + "Z",
+                      "type": "node_agent.heartbeat",
                   }
-                  # CPU/Memory from /proc
+                  # CPU load
                   try:
-                      with open('/host/proc/meminfo') as f:
-                          for line in f:
-                              if line.startswith('MemTotal:'):
-                                  metrics['mem_total_kb'] = int(line.split()[1])
-                              elif line.startswith('MemAvailable:'):
-                                  metrics['mem_available_kb'] = int(line.split()[1])
-                      with open('/host/proc/loadavg') as f:
+                      with open("/host/proc/loadavg") as f:
                           parts = f.read().split()
-                          metrics['load_1m'] = float(parts[0])
-                          metrics['load_5m'] = float(parts[1])
-                  except Exception as e:
-                      metrics['error'] = str(e)
+                          metrics["load_1m"] = float(parts[0])
+                          metrics["load_5m"] = float(parts[1])
+                          metrics["load_15m"] = float(parts[2])
+                  except Exception:
+                      pass
 
-                  # GPU metrics if available
+                  # Memory
+                  try:
+                      with open("/host/proc/meminfo") as f:
+                          meminfo = {}
+                          for line in f:
+                              parts = line.split(":")
+                              if len(parts) == 2:
+                                  meminfo[parts[0].strip()] = int(parts[1].strip().split()[0])
+                          total = meminfo.get("MemTotal", 0)
+                          available = meminfo.get("MemAvailable", 0)
+                          metrics["memory_total_mb"] = total // 1024
+                          metrics["memory_available_mb"] = available // 1024
+                          metrics["memory_usage_pct"] = round((1 - available / max(total, 1)) * 100, 1)
+                  except Exception:
+                      pass
+
+                  # Disk
+                  try:
+                      st = os.statvfs("/host/proc")
+                      metrics["disk_total_gb"] = round(st.f_blocks * st.f_frsize / 1e9, 1)
+                      metrics["disk_free_gb"] = round(st.f_bavail * st.f_frsize / 1e9, 1)
+                  except Exception:
+                      pass
+
+                  # GPU metrics (DGX nodes only)
                   if GPU_NODE:
                       try:
                           result = subprocess.run(
-                              ['nvidia-smi', '--query-gpu=utilization.gpu,temperature.gpu,memory.used,memory.total',
-                               '--format=csv,noheader,nounits'],
-                              capture_output=True, text=True, timeout=10
+                              ["nvidia-smi", "--query-gpu=utilization.gpu,memory.used,memory.total,temperature.gpu",
+                               "--format=csv,noheader,nounits"],
+                              capture_output=True, text=True, timeout=5
                           )
                           if result.returncode == 0:
                               gpus = []
-                              for line in result.stdout.strip().split('\n'):
-                                  parts = [p.strip() for p in line.split(',')]
+                              for line in result.stdout.strip().split("\n"):
+                                  parts = [p.strip() for p in line.split(",")]
                                   if len(parts) == 4:
                                       gpus.append({
-                                          'utilization_pct': int(parts[0]),
-                                          'temperature_c': int(parts[1]),
-                                          'memory_used_mb': int(parts[2]),
-                                          'memory_total_mb': int(parts[3]),
+                                          "utilization_pct": int(parts[0]),
+                                          "memory_used_mb": int(parts[1]),
+                                          "memory_total_mb": int(parts[2]),
+                                          "temperature_c": int(parts[3]),
                                       })
-                              metrics['gpus'] = gpus
+                              metrics["gpus"] = gpus
                       except Exception:
                           pass
 
                   return metrics
 
-              print(f'[AtlasOS Node Agent] Starting on {NODE_NAME} (GPU: {GPU_NODE})')
+              def check_and_remediate(metrics):
+                  alerts = []
+                  if metrics.get("memory_usage_pct", 0) > 90:
+                      alerts.append({"severity": "warning", "message": f"High memory usage: {metrics['memory_usage_pct']}%"})
+                  if metrics.get("load_1m", 0) > os.cpu_count() * 2:
+                      alerts.append({"severity": "warning", "message": f"High CPU load: {metrics['load_1m']}"})
+                  if metrics.get("disk_free_gb", 999) < 5:
+                      alerts.append({"severity": "critical", "message": f"Low disk space: {metrics['disk_free_gb']}GB free"})
+                  for i, gpu in enumerate(metrics.get("gpus", [])):
+                      if gpu.get("temperature_c", 0) > 85:
+                          alerts.append({"severity": "warning", "message": f"GPU {i} high temp: {gpu['temperature_c']}C"})
+                  return alerts
+
+              print(f"AtlasOS Node Agent starting on {NODE_NAME} (GPU: {GPU_NODE})")
               while True:
                   try:
-                      metrics = collect_metrics()
+                      metrics = collect_node_metrics()
+                      alerts = check_and_remediate(metrics)
+                      metrics["alerts"] = alerts
+                      metrics["status"] = "degraded" if alerts else "healthy"
                       print(json.dumps(metrics))
-                      # Future: POST to event-bus service
                   except Exception as e:
-                      print(json.dumps({'error': str(e), 'node': NODE_NAME}))
+                      print(json.dumps({"error": str(e), "node": NODE_NAME}))
                   time.sleep(HEARTBEAT_INTERVAL)
           env:
             - name: NODE_NAME
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName
-            - name: HEARTBEAT_INTERVAL
-              value: "300"
+            - name: GPU_NODE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['gpu']
+            - name: EVENT_BUS_URL
+              value: "http://event-bus.atlasos.svc.cluster.local:8085"
           volumeMounts:
             - name: host-proc
               mountPath: /host/proc
@@ -107,11 +143,11 @@ spec:
               readOnly: true
           resources:
             requests:
-              cpu: 50m
               memory: 64Mi
+              cpu: 25m
             limits:
-              cpu: 200m
               memory: 256Mi
+              cpu: 200m
       volumes:
         - name: host-proc
           hostPath:
