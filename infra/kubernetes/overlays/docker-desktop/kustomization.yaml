@@ -1,13 +1,7 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-# docker-desktop overlay — assembles all medinovai services for local dev
-resources:
-  - ../../services/atlas
-  - ../../services/cortex
-  - ../../services/aifactory
-  - ../../services/healthllm
-  - ../../services/lis
-  - ../../services/data-services
-  - ../../services/etmf
-  - ../../services/sales
-  - ../../addons/ollama
+# docker-desktop overlay — platform-wide resources only
+# Service namespaces are managed by individual ArgoCD apps (medinovai-cortex, etc.)
+# This overlay manages cross-cutting concerns: network policies, quotas, RBAC
+# NOTE: This file is intentionally minimal to avoid namespace ownership conflicts
+resources: []
