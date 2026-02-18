@@ -2,8 +2,13 @@ apiVersion: v1
 kind: Service
 metadata:
   name: atlas-orchestrator
-  namespace: atlasos
+  namespace: medinovai-services
+  labels:
+    app.kubernetes.io/name: atlas-orchestrator
+    app.kubernetes.io/part-of: atlasos
+    medinovai.com/tier: intelligence
 spec:
+  type: ClusterIP
   ports:
     - name: http
       port: 8888
@@ -15,30 +20,49 @@ spec:
       port: 8890
       targetPort: 8002
   selector:
-    app: atlas-orchestrator
+    app.kubernetes.io/name: atlas-orchestrator
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: atlas-state
+  namespace: medinovai-services
+  labels:
+    app.kubernetes.io/name: atlas-orchestrator
+    app.kubernetes.io/part-of: atlasos
+spec:
+  accessModes: ["ReadWriteOnce"]
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 10Gi
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: atlas-orchestrator
-  namespace: atlasos
+  namespace: medinovai-services
   labels:
-    app: atlas-orchestrator
+    app.kubernetes.io/name: atlas-orchestrator
+    app.kubernetes.io/part-of: atlasos
+    medinovai.com/tier: intelligence
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: atlas-orchestrator
+      app.kubernetes.io/name: atlas-orchestrator
   template:
     metadata:
       labels:
-        app: atlas-orchestrator
+        app.kubernetes.io/name: atlas-orchestrator
+        app.kubernetes.io/part-of: atlasos
+        medinovai.com/tier: intelligence
+      annotations:
         atlasos.medinovai.com/sidecar: "enabled"
     spec:
-      serviceAccountName: atlasos-sa
       containers:
-        - name: orchestrator
-          image: medinovai-atlas-1-orchestrator:latest
+        - name: atlas-orchestrator
+          image: medinovai-atlas-orchestrator:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8000
@@ -46,39 +70,30 @@ spec:
             - containerPort: 8002
           envFrom:
             - secretRef:
-                name: atlasos-secrets
-            - secretRef:
-                name: atlasos-infra-secrets
-          env:
-            - name: OLLAMA_HOST
-              value: "http://ollama.ai-ml.svc.cluster.local:11434"
-            - name: CHROMADB_URL
-              value: "http://chromadb.ai-ml.svc.cluster.local:8000"
-            - name: AIFACTORY_MOE_URL
-              value: "http://aifactory.ai-ml.svc.cluster.local:5000"
+                name: atlasos-api-keys
           volumeMounts:
             - name: atlas-state
               mountPath: /data/atlas
           resources:
             requests:
-              memory: 512Mi
-              cpu: 250m
+              memory: 256Mi
+              cpu: 100m
             limits:
-              memory: 2Gi
-              cpu: "2"
+              memory: 512Mi
+              cpu: 500m
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 10
       volumes:
         - name: atlas-state
           persistentVolumeClaim:
-            claimName: atlas-state-pvc
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: atlas-state-pvc
-  namespace: atlasos
-spec:
-  accessModes: ["ReadWriteOnce"]
-  storageClassName: longhorn
-  resources:
-    requests:
-      storage: 20Gi
+            claimName: atlas-state

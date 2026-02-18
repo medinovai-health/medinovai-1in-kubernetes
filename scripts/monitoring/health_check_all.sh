@@ -91,30 +91,48 @@ for svc in "${SERVICES[@]}"; do
     fi
 done
 
-# ─── 3. Database Layer ───────────────────────────────────────────────────────
+# ─── 3. Database Layer (On-Prem) ─────────────────────────────────────────────
 $JSON_MODE || echo ""
 $JSON_MODE || echo "▸ Database Layer"
 
-if command -v aws &>/dev/null; then
-    RDS_STATUS=$(aws rds describe-db-instances \
-        --query "DBInstances[?contains(DBInstanceIdentifier,'medinovai')].{ID:DBInstanceIdentifier,Status:DBInstanceStatus}" \
-        --output json 2>/dev/null || echo "[]")
+if command -v kubectl &>/dev/null; then
+    for db_pod in "postgres-primary-0" "postgres-clinical-0"; do
+        DB_STATUS=$(kubectl exec "$db_pod" -n infra -- pg_isready -U medinovai 2>/dev/null || echo "unreachable")
+        if echo "$DB_STATUS" | grep -q "accepting connections"; then
+            check "database" "$db_pod" "ok" "Accepting connections"
+        else
+            check "database" "$db_pod" "fail" "$DB_STATUS"
+        fi
+    done
 
-    if [ "$RDS_STATUS" != "[]" ]; then
-        echo "$RDS_STATUS" | python3 -c "
-import json, sys
-instances = json.load(sys.stdin)
-for inst in instances:
-    name = inst['ID']
-    status = inst['Status']
-    symbol = '✓' if status == 'available' else '✗'
-    print(f'  {symbol} [database      ] {name} — {status}')
-" 2>/dev/null
+    REDIS_STATUS=$(kubectl exec redis-0 -n infra -- redis-cli ping 2>/dev/null || echo "unreachable")
+    if [ "$REDIS_STATUS" = "PONG" ]; then
+        check "database" "redis" "ok" "PONG"
     else
-        check "database" "RDS instances" "warn" "No instances found or AWS not configured"
+        check "database" "redis" "fail" "$REDIS_STATUS"
     fi
 else
-    check "database" "RDS" "warn" "AWS CLI not available"
+    check "database" "K8s databases" "warn" "kubectl not available"
+fi
+
+# ─── 3b. Vault ───────────────────────────────────────────────────────────────
+$JSON_MODE || echo ""
+$JSON_MODE || echo "▸ Vault"
+
+if command -v kubectl &>/dev/null; then
+    VAULT_STATUS=$(kubectl exec vault-0 -n vault -- vault status -format=json 2>/dev/null || echo '{}')
+    VAULT_SEALED=$(echo "$VAULT_STATUS" | python3 -c "import sys,json; print(json.load(sys.stdin).get('sealed','unknown'))" 2>/dev/null || echo "unknown")
+    VAULT_INIT=$(echo "$VAULT_STATUS" | python3 -c "import sys,json; print(json.load(sys.stdin).get('initialized','unknown'))" 2>/dev/null || echo "unknown")
+
+    if [ "$VAULT_SEALED" = "False" ] && [ "$VAULT_INIT" = "True" ]; then
+        check "vault" "Vault" "ok" "Initialized, unsealed"
+    elif [ "$VAULT_SEALED" = "True" ]; then
+        check "vault" "Vault" "fail" "SEALED — needs unseal"
+    else
+        check "vault" "Vault" "warn" "Status: sealed=$VAULT_SEALED init=$VAULT_INIT"
+    fi
+else
+    check "vault" "Vault" "warn" "kubectl not available"
 fi
 
 # ─── 4. Monitoring Layer ─────────────────────────────────────────────────────
@@ -134,7 +152,35 @@ for component in "prometheus" "grafana" "alertmanager" "loki"; do
     fi
 done
 
-# ─── 5. Atlas Gateway ────────────────────────────────────────────────────────
+# ─── 5. AtlasOS Embedded Agents ──────────────────────────────────────────────
+$JSON_MODE || echo ""
+$JSON_MODE || echo "▸ AtlasOS Embedded Agents"
+
+if command -v kubectl &>/dev/null; then
+    # Cluster Brain
+    BRAIN_READY=$(kubectl get deployment atlasos-cluster-brain -n atlasos -o jsonpath='{.status.readyReplicas}' 2>/dev/null || echo "0")
+    if [ "$BRAIN_READY" = "1" ]; then
+        check "atlasos" "Cluster Brain" "ok" "Running"
+    else
+        check "atlasos" "Cluster Brain" "fail" "Not ready (replicas: ${BRAIN_READY:-0})"
+    fi
+
+    # Node Agents (DaemonSet)
+    NODE_AGENT_STATUS=$(kubectl get daemonset atlasos-node-agent -n atlasos -o jsonpath='{.status.numberReady}/{.status.desiredNumberScheduled}' 2>/dev/null || echo "0/0")
+    NA_READY=$(echo "$NODE_AGENT_STATUS" | cut -d/ -f1)
+    NA_DESIRED=$(echo "$NODE_AGENT_STATUS" | cut -d/ -f2)
+    if [ "$NA_READY" = "$NA_DESIRED" ] && [ "$NA_READY" != "0" ]; then
+        check "atlasos" "Node Agents" "ok" "$NODE_AGENT_STATUS running"
+    elif [ "$NA_DESIRED" = "0" ]; then
+        check "atlasos" "Node Agents" "warn" "Not scheduled"
+    else
+        check "atlasos" "Node Agents" "fail" "$NODE_AGENT_STATUS running"
+    fi
+else
+    check "atlasos" "Embedded Agents" "warn" "kubectl not available"
+fi
+
+# ─── 6. Atlas Gateway ────────────────────────────────────────────────────────
 $JSON_MODE || echo ""
 $JSON_MODE || echo "▸ Atlas Gateway"
 

@@ -232,17 +232,17 @@ ceo-stack: ## Deploy the full AtlasOS CO-CEO stack
 ceo-stack-down: ## Tear down the CO-CEO stack
 	docker compose -f $(CEO_COMPOSE) down
 
-ceo-health: ## Health check all CO-CEO services
-	@echo "── CO-CEO Service Health ──"
-	@curl -sf http://localhost:8200/v1/sys/health | python3 -c "import sys,json; d=json.load(sys.stdin); print('  Vault:              ✓ initialized=%s sealed=%s' % (d.get('initialized'),d.get('sealed')))" 2>/dev/null || echo "  Vault:              ✗ unreachable"
-	@curl -sf http://localhost:8084/health | python3 -c "import sys,json; print('  Audit Chain:        ✓ %s' % json.load(sys.stdin).get('status','?'))" 2>/dev/null || echo "  Audit Chain:        ✗ unreachable"
-	@curl -sf http://localhost:8085/health | python3 -c "import sys,json; print('  Correlation Engine: ✓ %s' % json.load(sys.stdin).get('status','?'))" 2>/dev/null || echo "  Correlation Engine: ✗ unreachable"
-	@curl -sf http://localhost:8086/health | python3 -c "import sys,json; print('  Briefing Engine:    ✓ %s' % json.load(sys.stdin).get('status','?'))" 2>/dev/null || echo "  Briefing Engine:    ✗ unreachable"
-	@curl -sf http://localhost:8087/health | python3 -c "import sys,json; print('  Decision Tracker:   ✓ %s' % json.load(sys.stdin).get('status','?'))" 2>/dev/null || echo "  Decision Tracker:   ✗ unreachable"
-	@curl -sf http://localhost:3001 > /dev/null 2>&1 && echo "  Atlas Command UI:   ✓ http://localhost:3001" || echo "  Atlas Command UI:   ✗ unreachable"
+ceo-health: ## Health check all CO-CEO services (ports 41xxx)
+	@echo "── CO-CEO Service Health (41xxx range) ──"
+	@curl -sf http://localhost:41100/v1/sys/health | python3 -c "import sys,json; d=json.load(sys.stdin); print('  Vault (41100):            ✓ init=%s sealed=%s' % (d.get('initialized'),d.get('sealed')))" 2>/dev/null || echo "  Vault (41100):            ✗"
+	@curl -sf http://localhost:41500/health | python3 -c "import sys,json; print('  Audit Chain (41500):      ✓ %s' % json.load(sys.stdin).get('status','?'))" 2>/dev/null || echo "  Audit Chain (41500):      ✗"
+	@curl -sf http://localhost:41510/health | python3 -c "import sys,json; print('  Correlation (41510):      ✓ %s' % json.load(sys.stdin).get('status','?'))" 2>/dev/null || echo "  Correlation (41510):      ✗"
+	@curl -sf http://localhost:41520/health | python3 -c "import sys,json; print('  Briefing (41520):         ✓ %s' % json.load(sys.stdin).get('status','?'))" 2>/dev/null || echo "  Briefing (41520):         ✗"
+	@curl -sf http://localhost:41530/health | python3 -c "import sys,json; print('  Decision Tracker (41530): ✓ %s' % json.load(sys.stdin).get('status','?'))" 2>/dev/null || echo "  Decision Tracker (41530): ✗"
+	@curl -sf -o /dev/null http://localhost:41000 && echo "  Atlas Command (41000):    ✓ http://localhost:41000" || echo "  Atlas Command (41000):    ✗"
 
 ceo-audit-verify: ## Verify the audit chain integrity
-	@curl -sf http://localhost:8084/audit/verify | python3 -m json.tool 2>/dev/null || echo "Audit chain unreachable"
+	@curl -sf http://localhost:41500/audit/verify | python3 -m json.tool 2>/dev/null || echo "Audit chain unreachable"
 
 ceo-logs: ## Tail logs from all CO-CEO services
 	docker compose -f $(CEO_COMPOSE) logs -f --tail=50

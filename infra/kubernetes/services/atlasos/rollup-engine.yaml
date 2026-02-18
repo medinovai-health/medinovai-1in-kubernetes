@@ -2,32 +2,46 @@ apiVersion: batch/v1
 kind: CronJob
 metadata:
   name: rollup-engine
-  namespace: atlasos
+  namespace: medinovai-services
+  labels:
+    app.kubernetes.io/name: rollup-engine
+    app.kubernetes.io/part-of: atlasos
+    medinovai.com/tier: intelligence
 spec:
   schedule: "*/15 * * * *"
   concurrencyPolicy: Forbid
   successfulJobsHistoryLimit: 3
   failedJobsHistoryLimit: 3
   jobTemplate:
+    metadata:
+      labels:
+        app.kubernetes.io/name: rollup-engine
+        app.kubernetes.io/part-of: atlasos
+        medinovai.com/tier: intelligence
     spec:
       template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: rollup-engine
+            app.kubernetes.io/part-of: atlasos
+            medinovai.com/tier: intelligence
         spec:
           containers:
-            - name: rollup
-              image: python:3.12-slim
-              command: ["python3", "-m", "rollup_engine", "company"]
+            - name: rollup-engine
+              image: medinovai-rollup-engine:latest
+              imagePullPolicy: IfNotPresent
               volumeMounts:
                 - name: atlas-state
                   mountPath: /data/atlas
               resources:
                 requests:
-                  memory: 128Mi
-                  cpu: 50m
+                  memory: 256Mi
+                  cpu: 100m
                 limits:
                   memory: 512Mi
                   cpu: 500m
           volumes:
             - name: atlas-state
               persistentVolumeClaim:
-                claimName: atlas-state-pvc
+                claimName: atlas-state
           restartPolicy: OnFailure

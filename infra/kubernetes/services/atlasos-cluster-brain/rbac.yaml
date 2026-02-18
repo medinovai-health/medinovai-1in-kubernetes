@@ -1,58 +1,52 @@
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: atlasos-cluster-brain-sa
-  namespace: atlasos
----
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: atlasos-cluster-brain
+  labels:
+    app.kubernetes.io/name: atlasos-cluster-brain
+    app.kubernetes.io/part-of: atlasos
+    medinovai.com/component: cluster-brain
 rules:
-  # Full read on cluster state
   - apiGroups: [""]
-    resources: ["nodes", "pods", "services", "namespaces", "events", "configmaps", "secrets", "persistentvolumeclaims"]
+    resources: ["pods", "services", "configmaps", "secrets"]
     verbs: ["get", "list", "watch"]
-  - apiGroups: ["apps"]
-    resources: ["deployments", "statefulsets", "daemonsets", "replicasets"]
-    verbs: ["get", "list", "watch", "update", "patch"]
-  - apiGroups: ["batch"]
-    resources: ["jobs", "cronjobs"]
-    verbs: ["get", "list", "watch", "create", "update", "patch"]
-  # Scaling
-  - apiGroups: ["autoscaling"]
-    resources: ["horizontalpodautoscalers"]
-    verbs: ["get", "list", "watch", "create", "update", "patch"]
-  # Pod disruption budgets
-  - apiGroups: ["policy"]
-    resources: ["poddisruptionbudgets"]
-    verbs: ["get", "list", "watch"]
-  # Pod eviction (for node drain)
   - apiGroups: [""]
-    resources: ["pods/eviction"]
-    verbs: ["create"]
-  # Events (write for recording actions)
-  - apiGroups: [""]
-    resources: ["events"]
-    verbs: ["create", "patch"]
-  # Network policies (read-only; changes need approval)
-  - apiGroups: ["networking.k8s.io"]
-    resources: ["networkpolicies"]
-    verbs: ["get", "list", "watch"]
-  # Node management (read + cordon/uncordon)
+    resources: ["pods"]
+    verbs: ["create", "update", "patch", "delete"]
   - apiGroups: [""]
     resources: ["nodes"]
     verbs: ["get", "list", "watch", "patch"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["get", "list", "watch", "create"]
+  - apiGroups: [""]
+    resources: ["namespaces"]
+    verbs: ["get", "list"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "replicasets", "statefulsets", "daemonsets"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["autoscaling"]
+    resources: ["horizontalpodautoscalers"]
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
+  - apiGroups: ["policy"]
+    resources: ["poddisruptionbudgets"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["batch"]
+    resources: ["jobs", "cronjobs"]
+    verbs: ["get", "list", "watch", "create", "delete"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: atlasos-cluster-brain
+  labels:
+    app.kubernetes.io/name: atlasos-cluster-brain
+    app.kubernetes.io/part-of: atlasos
 subjects:
   - kind: ServiceAccount
-    name: atlasos-cluster-brain-sa
-    namespace: atlasos
+    name: atlasos-cluster-brain
+    namespace: medinovai-atlasos
 roleRef:
-  apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
   name: atlasos-cluster-brain
+  apiGroup: rbac.authorization.k8s.io

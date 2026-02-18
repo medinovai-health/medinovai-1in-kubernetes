@@ -2,28 +2,57 @@ apiVersion: v1
 kind: Service
 metadata:
   name: audit-chain
-  namespace: atlasos
+  namespace: medinovai-services
+  labels:
+    app.kubernetes.io/name: audit-chain
+    app.kubernetes.io/part-of: atlasos
+    medinovai.com/tier: intelligence
 spec:
+  type: ClusterIP
   ports:
     - port: 8084
       targetPort: 8084
+      name: http
   selector:
-    app: audit-chain
+    app.kubernetes.io/name: audit-chain
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: audit-data
+  namespace: medinovai-services
+  labels:
+    app.kubernetes.io/name: audit-chain
+    app.kubernetes.io/part-of: atlasos
+spec:
+  accessModes: ["ReadWriteOnce"]
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 10Gi
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: audit-chain
-  namespace: atlasos
+  namespace: medinovai-services
+  labels:
+    app.kubernetes.io/name: audit-chain
+    app.kubernetes.io/part-of: atlasos
+    medinovai.com/tier: intelligence
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: audit-chain
+      app.kubernetes.io/name: audit-chain
   template:
     metadata:
       labels:
-        app: audit-chain
+        app.kubernetes.io/name: audit-chain
+        app.kubernetes.io/part-of: atlasos
+        medinovai.com/tier: intelligence
+      annotations:
+        atlasos.medinovai.com/sidecar: "enabled"
     spec:
       containers:
         - name: audit-chain
@@ -39,30 +68,24 @@ spec:
               mountPath: /data/audit
           resources:
             requests:
-              memory: 64Mi
+              memory: 128Mi
               cpu: 50m
             limits:
               memory: 256Mi
               cpu: 250m
-          readinessProbe:
+          livenessProbe:
             httpGet:
               path: /health
               port: 8084
             initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8084
+            initialDelaySeconds: 5
             periodSeconds: 10
       volumes:
         - name: audit-data
           persistentVolumeClaim:
-            claimName: audit-data-pvc
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: audit-data-pvc
-  namespace: atlasos
-spec:
-  accessModes: ["ReadWriteOnce"]
-  storageClassName: longhorn
-  resources:
-    requests:
-      storage: 10Gi
+            claimName: audit-data

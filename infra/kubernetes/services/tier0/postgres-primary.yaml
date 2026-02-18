@@ -2,53 +2,59 @@ apiVersion: v1
 kind: Service
 metadata:
   name: postgres-primary
-  namespace: infra
+  namespace: medinovai-data
   labels:
-    app: postgres-primary
+    app.kubernetes.io/name: postgres-primary
+    app.kubernetes.io/component: database
+    medinovai.com/tier: data
 spec:
   ports:
     - port: 5432
       targetPort: 5432
+      name: postgres
   selector:
-    app: postgres-primary
+    app.kubernetes.io/name: postgres-primary
 ---
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: postgres-primary
-  namespace: infra
+  namespace: medinovai-data
   labels:
-    app: postgres-primary
-    medinovai.com/tier: "0"
+    app.kubernetes.io/name: postgres-primary
+    app.kubernetes.io/component: database
+    medinovai.com/tier: data
 spec:
   serviceName: postgres-primary
   replicas: 1
   selector:
     matchLabels:
-      app: postgres-primary
+      app.kubernetes.io/name: postgres-primary
   template:
     metadata:
       labels:
-        app: postgres-primary
-        atlasos.medinovai.com/sidecar: "enabled"
+        app.kubernetes.io/name: postgres-primary
+        app.kubernetes.io/component: database
+        medinovai.com/tier: data
     spec:
-      nodeSelector:
-        role: control-plane
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: role
+                    operator: In
+                    values:
+                      - control-plane
       containers:
         - name: postgres
           image: postgres:16-alpine
           ports:
             - containerPort: 5432
+          envFrom:
+            - secretRef:
+                name: postgres-primary-credentials
           env:
-            - name: POSTGRES_DB
-              value: medinovai
-            - name: POSTGRES_USER
-              value: medinovai
-            - name: POSTGRES_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: infra-secrets
-                  key: POSTGRES_PRIMARY_PASSWORD
             - name: PGDATA
               value: /var/lib/postgresql/data/pgdata
           volumeMounts:
@@ -57,18 +63,16 @@ spec:
           resources:
             requests:
               memory: 512Mi
-              cpu: 250m
             limits:
-              memory: 2Gi
-              cpu: "1"
+              memory: 1Gi
           livenessProbe:
             exec:
-              command: ["pg_isready", "-U", "medinovai"]
+              command: ["pg_isready"]
             initialDelaySeconds: 30
             periodSeconds: 10
           readinessProbe:
             exec:
-              command: ["pg_isready", "-U", "medinovai"]
+              command: ["pg_isready"]
             initialDelaySeconds: 5
             periodSeconds: 5
   volumeClaimTemplates:

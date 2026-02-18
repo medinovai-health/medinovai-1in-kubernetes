@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: atlasos-sidecar-config
+  namespace: medinovai-atlasos
+  labels:
+    app.kubernetes.io/name: atlasos-sidecar
+    app.kubernetes.io/part-of: atlasos
+data:
+  sidecar.json: |
+    {
+      "image": "medinovai-atlasos-sidecar:latest",
+      "annotation_key": "atlasos.medinovai.com/sidecar",
+      "annotation_value": "enabled",
+      "resources": {
+        "requests": {
+          "memory": "64Mi",
+          "cpu": "50m"
+        },
+        "limits": {
+          "memory": "128Mi",
+          "cpu": "100m"
+        }
+      },
+      "event_bus_url": "http://event-bus.medinovai-services:8085",
+      "skills": ["pulse-check", "experience-capture", "circuit-breaker"]
+    }

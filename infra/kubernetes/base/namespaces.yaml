@@ -4,6 +4,15 @@ metadata:
   name: medinovai-system
   labels:
     app.kubernetes.io/managed-by: medinovai-deploy
+    medinovai.com/tier: system
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: medinovai-security
+  labels:
+    app.kubernetes.io/managed-by: medinovai-deploy
+    medinovai.com/tier: security
 ---
 apiVersion: v1
 kind: Namespace
@@ -11,6 +20,7 @@ metadata:
   name: medinovai-services
   labels:
     app.kubernetes.io/managed-by: medinovai-deploy
+    medinovai.com/tier: platform
 ---
 apiVersion: v1
 kind: Namespace
@@ -18,7 +28,7 @@ metadata:
   name: medinovai-data
   labels:
     app.kubernetes.io/managed-by: medinovai-deploy
-    phi-zone: "true"
+    medinovai.com/tier: data
 ---
 apiVersion: v1
 kind: Namespace
@@ -26,6 +36,15 @@ metadata:
   name: medinovai-ai
   labels:
     app.kubernetes.io/managed-by: medinovai-deploy
+    medinovai.com/tier: ai
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: medinovai-clinical
+  labels:
+    app.kubernetes.io/managed-by: medinovai-deploy
+    medinovai.com/tier: clinical
 ---
 apiVersion: v1
 kind: Namespace
@@ -33,24 +52,12 @@ metadata:
   name: medinovai-monitoring
   labels:
     app.kubernetes.io/managed-by: medinovai-deploy
+    medinovai.com/tier: monitoring
 ---
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: vault
+  name: medinovai-atlasos
   labels:
     app.kubernetes.io/managed-by: medinovai-deploy
----
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: external-secrets
-  labels:
-    app.kubernetes.io/managed-by: medinovai-deploy
----
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: longhorn-system
-  labels:
-    app.kubernetes.io/managed-by: medinovai-deploy
+    medinovai.com/tier: intelligence

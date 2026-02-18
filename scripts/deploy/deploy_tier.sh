@@ -1,135 +1,146 @@
 #!/usr/bin/env bash
-# ─── deploy_tier.sh ───────────────────────────────────────────────────────────
-# Deploy a specific tier of MedinovAI services to the K3s cluster.
-#
+# Deploy services by tier for the MedinovAI platform.
 # Usage:
-#   bash scripts/deploy/deploy_tier.sh 0          # Tier 0: infrastructure
-#   bash scripts/deploy/deploy_tier.sh 1          # Tier 1: security
-#   bash scripts/deploy/deploy_tier.sh atlasos    # AtlasOS services
-#   bash scripts/deploy/deploy_tier.sh gpu        # GPU inference services
-#   bash scripts/deploy/deploy_tier.sh all        # All tiers in order
-#   bash scripts/deploy/deploy_tier.sh 4 --dry-run
-# ─────────────────────────────────────────────────────────────────────────────
+#   bash scripts/deploy/deploy_tier.sh 0          # Deploy Tier 0 (databases)
+#   bash scripts/deploy/deploy_tier.sh 1          # Deploy Tier 1 (security)
+#   bash scripts/deploy/deploy_tier.sh atlasos     # Deploy AtlasOS
+#   bash scripts/deploy/deploy_tier.sh gpu         # Deploy GPU services
+#   bash scripts/deploy/deploy_tier.sh all         # Deploy all tiers in order
+#   bash scripts/deploy/deploy_tier.sh all --critical-path-only
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(dirname "$(dirname "$SCRIPT_DIR")")"
-DEPLOY_HOME="${DEPLOY_HOME:-$HOME/.medinovai-deploy}"
-KUBECONFIG="${KUBECONFIG:-$DEPLOY_HOME/kubeconfig.yaml}"
-export KUBECONFIG
+K8S_DIR="$REPO_ROOT/infra/kubernetes"
 
 TIER="${1:-}"
+CRITICAL_PATH=false
 DRY_RUN=false
-WAIT_TIMEOUT="120s"
 
 shift || true
-while [[ $# -gt 0 ]]; do
-    case $1 in
-        --dry-run)        DRY_RUN=true; shift ;;
-        --wait-timeout)   WAIT_TIMEOUT="$2"; shift 2 ;;
-        *)                shift ;;
+for arg in "$@"; do
+    case "$arg" in
+        --critical-path-only) CRITICAL_PATH=true ;;
+        --dry-run)            DRY_RUN=true ;;
     esac
 done
 
-if [ -z "$TIER" ]; then
-    echo "Usage: deploy_tier.sh <tier>"
-    echo "  Tiers: 0, 1, 2, 3, 4, 5, 6, atlasos, gpu, agents, all"
-    exit 1
-fi
-
 log() { echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] $1"; }
-
-K8S_SERVICES="$REPO_ROOT/infra/kubernetes/services"
 
 deploy_kustomize() {
     local dir="$1"
-    local label="$2"
-
+    local name="$2"
     if [ ! -d "$dir" ]; then
-        log "  SKIP: $dir does not exist yet"
+        log "  SKIP: $dir does not exist"
         return 0
     fi
-
     if $DRY_RUN; then
         log "  [DRY RUN] kubectl apply -k $dir"
-        kubectl apply -k "$dir" --dry-run=client 2>/dev/null || true
-    else
-        log "  Deploying: $label"
-        kubectl apply -k "$dir"
+        return 0
     fi
+    log "  Deploying $name..."
+    kubectl apply -k "$dir" 2>&1 | while read -r line; do
+        log "    $line"
+    done
 }
 
-health_check_namespace() {
-    local ns="$1"
-    local ready
-    ready=$(kubectl get pods -n "$ns" --no-headers 2>/dev/null | grep -c "Running" || echo "0")
-    local total
-    total=$(kubectl get pods -n "$ns" --no-headers 2>/dev/null | wc -l | xargs || echo "0")
-    log "  Health: $ns — $ready/$total pods running"
+wait_for_pods() {
+    local namespace="$1"
+    local timeout="${2:-120}"
+    log "  Waiting for pods in $namespace to be ready (${timeout}s timeout)..."
+    kubectl wait --for=condition=Ready pods --all -n "$namespace" --timeout="${timeout}s" 2>/dev/null || \
+        log "  WARNING: Some pods in $namespace are not ready yet"
 }
 
-deploy_tier() {
-    local tier="$1"
-    log "Deploying tier: $tier"
-
-    case "$tier" in
-        0)
-            deploy_kustomize "$K8S_SERVICES/tier0" "Tier 0: Databases + Infrastructure"
-            kubectl wait --for=condition=ready pod -l app=postgres-primary -n infra --timeout="$WAIT_TIMEOUT" 2>/dev/null || true
-            health_check_namespace "infra"
-            ;;
-        1)
-            deploy_kustomize "$K8S_SERVICES/tier1" "Tier 1: Security Services"
-            health_check_namespace "security"
-            ;;
-        2)
-            deploy_kustomize "$K8S_SERVICES/tier2" "Tier 2: Platform Core"
-            health_check_namespace "platform"
-            ;;
-        atlasos)
-            deploy_kustomize "$K8S_SERVICES/atlasos" "AtlasOS Services"
-            health_check_namespace "atlasos"
-            ;;
-        3)
-            deploy_kustomize "$K8S_SERVICES/tier3" "Tier 3: AI/ML + Clinical Foundation"
-            health_check_namespace "ai-ml"
-            ;;
-        gpu)
-            deploy_kustomize "$K8S_SERVICES/tier3" "GPU Inference Services"
-            health_check_namespace "ai-ml"
-            ;;
-        4)
-            deploy_kustomize "$K8S_SERVICES/tier4" "Tier 4: Domain Services"
-            health_check_namespace "clinical"
-            health_check_namespace "business"
-            ;;
-        5)
-            deploy_kustomize "$K8S_SERVICES/tier5" "Tier 5: Integration Services"
-            health_check_namespace "integrations"
-            ;;
-        6)
-            deploy_kustomize "$K8S_SERVICES/tier6" "Tier 6: UI Shell"
-            health_check_namespace "ui"
-            ;;
-        agents)
-            deploy_kustomize "$K8S_SERVICES/atlasos-node-agent" "AtlasOS Node Agents"
-            deploy_kustomize "$K8S_SERVICES/atlasos-cluster-brain" "AtlasOS Cluster Brain"
-            health_check_namespace "atlasos"
-            ;;
-        all)
-            for t in 0 1 2 atlasos 3 gpu 4 5 6 agents; do
-                deploy_tier "$t"
-                echo ""
-            done
-            ;;
-        *)
-            log "ERROR: Unknown tier '$tier'"
-            exit 1
-            ;;
-    esac
-
-    log "✓ Tier $tier deployment complete"
+deploy_tier_0() {
+    log "━━━ Tier 0: Bare Infrastructure ━━━"
+    deploy_kustomize "$K8S_DIR/base" "base resources (namespaces, RBAC, network policies)"
+    deploy_kustomize "$K8S_DIR/services/tier0" "databases (PostgreSQL, Redis, MinIO)"
+    wait_for_pods "medinovai-data" 180
 }
 
-deploy_tier "$TIER"
+deploy_tier_1() {
+    log "━━━ Tier 1: Security Foundation ━━━"
+    deploy_kustomize "$K8S_DIR/services/tier1" "security services"
+    wait_for_pods "medinovai-security" 120
+}
+
+deploy_tier_2() {
+    log "━━━ Tier 2: Platform Core ━━━"
+    deploy_kustomize "$K8S_DIR/services/tier2" "platform core services"
+    wait_for_pods "medinovai-services" 120
+}
+
+deploy_atlasos() {
+    log "━━━ AtlasOS Services ━━━"
+    deploy_kustomize "$K8S_DIR/services/atlasos" "AtlasOS services"
+    wait_for_pods "medinovai-services" 120
+}
+
+deploy_gpu() {
+    log "━━━ GPU / AI Inference ━━━"
+    deploy_kustomize "$K8S_DIR/services/tier3" "AI/ML services (Ollama, AIFactory)"
+    wait_for_pods "medinovai-ai" 180
+}
+
+deploy_tier_4() {
+    log "━━━ Tier 4: Domain Services ━━━"
+    deploy_kustomize "$K8S_DIR/services/tier4" "domain services"
+}
+
+deploy_tier_5() {
+    log "━━━ Tier 5: Integration Services ━━━"
+    deploy_kustomize "$K8S_DIR/services/tier5" "integration services"
+}
+
+deploy_tier_6() {
+    log "━━━ Tier 6: UI Shell ━━━"
+    deploy_kustomize "$K8S_DIR/services/tier6" "UI shell (medinovaios)"
+}
+
+deploy_atlasos_infra() {
+    log "━━━ AtlasOS Infrastructure Agents ━━━"
+    deploy_kustomize "$K8S_DIR/services/atlasos-node-agent" "AtlasOS node agents (DaemonSet)"
+    deploy_kustomize "$K8S_DIR/services/atlasos-cluster-brain" "AtlasOS cluster brain"
+    deploy_kustomize "$K8S_DIR/services/atlasos-sidecar" "AtlasOS sidecar config"
+}
+
+case "$TIER" in
+    0)       deploy_tier_0 ;;
+    1)       deploy_tier_1 ;;
+    2)       deploy_tier_2 ;;
+    3|gpu)   deploy_gpu ;;
+    4)       deploy_tier_4 ;;
+    5)       deploy_tier_5 ;;
+    6)       deploy_tier_6 ;;
+    atlasos) deploy_atlasos ;;
+    agents)  deploy_atlasos_infra ;;
+    all)
+        if $CRITICAL_PATH; then
+            log "Deploying critical path only (12 services)..."
+            deploy_tier_0
+            deploy_tier_1
+            deploy_tier_2
+            deploy_atlasos
+            log "Critical path deployment complete."
+        else
+            log "Deploying all tiers..."
+            deploy_tier_0
+            deploy_tier_1
+            deploy_tier_2
+            deploy_atlasos
+            deploy_gpu
+            deploy_tier_4
+            deploy_tier_5
+            deploy_tier_6
+            deploy_atlasos_infra
+            log "Full platform deployment complete."
+        fi
+        ;;
+    *)
+        echo "Usage: $0 <tier> [--dry-run] [--critical-path-only]"
+        echo "  Tiers: 0, 1, 2, 3, 4, 5, 6, atlasos, gpu, agents, all"
+        exit 1
+        ;;
+esac
