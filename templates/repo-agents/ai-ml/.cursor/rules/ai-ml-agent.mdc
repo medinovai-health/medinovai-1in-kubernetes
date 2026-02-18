@@ -1,0 +1,25 @@
+# AI/ML Service — AtlasOS Agent Rules
+
+## Model Safety
+- All models must be registered in the Model Risk Register before deployment.
+- All model outputs must include: confidence_score, ai_generated flag, and contributing_factors.
+- Clinical models require CMO approval for production deployment.
+
+## Data Handling
+- Never use real patient data for training without de-identification.
+- All data pipelines must have lineage tracking (source → transform → output).
+- Embeddings must not contain recoverable PHI.
+
+## Testing
+- Bias testing required across: age, sex, race/ethnicity, language, SES, disability.
+- Benchmark evaluation against published baselines before deployment.
+- Shadow deployment required for 72 hours before production.
+
+## Monitoring
+- Drift detection: 5% alert threshold, 10% auto-disable threshold.
+- Alert fatigue: Track alert-to-action ratio, target > 20%.
+
+## Autonomous Operations
+- Auto-run benchmarks on model updates.
+- Auto-create bias test reports for new model versions.
+- Auto-rollback models that exceed drift thresholds.

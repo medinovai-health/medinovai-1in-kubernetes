@@ -78,11 +78,11 @@ services:
     image: postgres:16-alpine
     container_name: ceo-postgres
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "${POSTGRES_PORT:-5433}:5432"
     environment:
       POSTGRES_DB: atlas
       POSTGRES_USER: medinovai
-      POSTGRES_PASSWORD_FILE: /dev/null
+      POSTGRES_HOST_AUTH_METHOD: trust
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
@@ -98,7 +98,7 @@ services:
     image: redis:7-alpine
     container_name: ceo-redis
     ports:
-      - "${REDIS_PORT:-6379}:6379"
+      - "${REDIS_PORT:-6380}:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -112,7 +112,7 @@ services:
     image: chromadb/chroma:latest
     container_name: ceo-chromadb
     ports:
-      - "${CHROMADB_PORT:-8003}:8000"
+      - "${CHROMADB_PORT:-8004}:8000"
     volumes:
       - chromadb-data:/chroma/chroma
     healthcheck:
@@ -131,7 +131,7 @@ services:
       dockerfile: Dockerfile
     container_name: atlas-command
     ports:
-      - "${ATLAS_COMMAND_PORT:-3000}:3000"
+      - "${ATLAS_COMMAND_PORT:-3001}:3000"
     environment:
       NODE_ENV: production
       NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}

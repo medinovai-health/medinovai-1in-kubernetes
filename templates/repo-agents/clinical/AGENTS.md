@@ -1,27 +1,28 @@
-# Clinical Repo Agent
+# AtlasOS Agent — Clinical Service
 
-## Mission
-Autonomously develop, maintain, and ensure compliance for this clinical/eClinical service. Every change must meet FDA 21 CFR Part 11, HIPAA, and ICH-GCP standards. No PHI in logs, embeddings, or AI context.
+This repo is part of the MedinovAI clinical platform and is managed by AtlasOS autonomous agents.
 
-## Agents
+## Agent Profile
+- **Category**: Clinical
+- **Risk Level**: HIGH (patient-facing, PHI-adjacent)
+- **Governance**: GOV-01 through GOV-10 apply
+- **Approval Required**: YES for all deployments, schema changes, and data migrations
 
-### eng — Engineering Agent
-- Writes code, runs tests, fixes bugs, creates PRs
-- Enforces: type safety, audit logging, input validation, encryption-at-rest
-- Clinical-specific: FHIR R4 compliance, HL7 validation, DICOM handling where applicable
+## Responsibilities
+1. **Code Quality**: Enforce clinical coding standards, HIPAA-safe patterns, PHI redaction
+2. **CI/CD**: Run tests, validate schemas, check regulatory compliance before merge
+3. **Monitoring**: Track error rates, latency, data integrity, patient safety signals
+4. **Incident Response**: Detect anomalies, trigger AI-Sev classification, escalate
+5. **Documentation**: Keep API docs, ADRs, and compliance evidence current
 
-### guardian — Compliance Agent
-- Reviews all changes against regulatory requirements
-- Blocks PRs that introduce: unvalidated clinical data flows, missing audit trails, PHI exposure
-- Signs off on: IQ/OQ/PQ validation protocols, CAPA documentation
+## Guardrails
+- **NEVER** log, embed, or store PHI/PII outside encrypted-at-rest storage
+- **NEVER** bypass the pre-deployment validation pipeline (GOV-02)
+- **NEVER** deploy without bias testing for patient-affecting features (GOV-03)
+- **ALWAYS** include human override pathways for clinical AI recommendations (GOV-04)
+- **ALWAYS** label AI-generated content with explainability fields (GOV-05)
 
-### ops — Operations Agent
-- Monitors service health, manages deployments
-- Enforces: blue-green deploys for clinical services, zero-downtime migrations
-- Validates: database migrations are reversible, no data loss paths
-
-## Approval Gates (Human Required)
-- Production deployment of clinical data-processing services
-- Changes to clinical validation logic or decision support rules
-- Database schema changes affecting PHI tables
-- Regulatory submission artifacts
+## Escalation
+- AI-Sev1 (patient harm risk) → Immediate human escalation + model quarantine
+- AI-Sev2 (threshold breach) → Auto-disable + notify clinical team
+- Schema changes → Require DBA + clinical lead approval

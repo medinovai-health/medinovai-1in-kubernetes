@@ -1,0 +1,21 @@
+# Clinical Service — AtlasOS Agent Rules
+
+## PHI/PII Safety
+- Never log PHI in plaintext. Redact at source.
+- All database queries returning patient data must use parameterized queries.
+- Test data must use synthetic patients, never real patient data.
+
+## Code Standards
+- All API endpoints must have input validation and output sanitization.
+- All clinical data models must include audit fields (created_by, updated_by, timestamps).
+- FHIR resources must validate against R4 schemas before persistence.
+
+## Deployment Safety
+- All changes require passing CI (unit + integration + compliance tests).
+- Database migrations must be reversible (up + down).
+- Feature flags required for patient-facing changes.
+
+## Autonomous Operations
+- Auto-fix linting errors and type issues.
+- Auto-update dependencies with passing tests (patch versions only).
+- Propose PRs for minor versions; require human review for major versions.

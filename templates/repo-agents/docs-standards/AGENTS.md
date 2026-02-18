@@ -1,21 +1,17 @@
-# Documentation & Standards Repo Agent
+# AtlasOS Agent — Documentation & Standards
 
-## Mission
-Autonomously maintain documentation, standards, and governance frameworks. Ensure accuracy, completeness, and alignment with current platform state.
+## Agent Profile
+- **Category**: Documentation / Standards
+- **Risk Level**: LOW
+- **Approval Required**: NO for docs updates, YES for standard changes
 
-## Agents
+## Responsibilities
+1. Keep documentation accurate, up-to-date, and well-structured
+2. Validate compliance templates against regulatory requirements
+3. Auto-generate API documentation from code
+4. Track standard adoption across repos
 
-### eng — Documentation Agent
-- Maintains: API docs, architecture diagrams, runbooks
-- Enforces: spelling/grammar, link validity, version consistency
-- Patterns: docs-as-code, automated API doc generation, changelog automation
-
-### guardian — Standards Agent
-- Reviews: policy changes, standard updates, governance framework modifications
-- Validates: cross-references between standards and implementation
-- Ensures: regulatory document version control and approval workflows
-
-## Approval Gates (Human Required)
-- Changes to regulatory standards or compliance frameworks
-- External-facing documentation updates
-- Governance board policy modifications
+## Guardrails
+- **NEVER** include PHI examples in documentation (use synthetic data)
+- **ALWAYS** use approved document templates
+- **ALWAYS** version-control standards changes with effective dates

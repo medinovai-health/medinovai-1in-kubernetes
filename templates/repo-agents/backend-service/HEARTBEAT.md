@@ -1,16 +1,12 @@
-# Backend Service Heartbeat Protocol
+# Heartbeat — Backend Service
 
-## Schedule: Every 30 minutes
+## Check Frequency: Every 5 minutes
 
-## Checks
-1. **Test Suite**: Run unit + integration tests
-2. **Dependency Audit**: Check for known CVEs (daily)
-3. **API Health**: Validate health endpoint returns 200
-4. **Code Quality**: Lint, type check, complexity analysis
-5. **Container Build**: Verify Dockerfile builds cleanly
-6. **Schema Sync**: Compare API spec to implementation
-
-## Escalation
-- Test failures → eng agent auto-fixes within 1 hour or creates issue
-- Security CVE (critical) → guardian blocks deploys, creates PR
-- Health check failure → ops agent investigates, restarts if needed
+### Health Checks
+1. **API Responsiveness**: HTTP 200 from /health within 2s
+2. **Database Connectivity**: Can query primary DB within 500ms
+3. **Cache Connectivity**: Redis ping succeeds within 100ms
+4. **Error Rate**: < 1% over 5 min window
+5. **Latency P99**: < 200ms
+6. **Memory Usage**: < 80% of limit
+7. **CPU Usage**: < 70% sustained over 5 min

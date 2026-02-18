@@ -1,0 +1,8 @@
+# Security Service — AtlasOS Agent Rules
+
+- All authentication flows must use Keycloak/OIDC. No custom auth.
+- All secrets must come from Vault via ESO. Never hardcode or use env files in production.
+- All API endpoints must validate JWT tokens with proper scope/role checks.
+- Audit logging is mandatory for all access control decisions.
+- Encryption keys must rotate on schedule (90 days for data keys, 365 for master keys).
+- Security scan (SAST + dependency audit) must pass before any merge.

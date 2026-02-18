@@ -1,27 +1,29 @@
-# AI/ML Repo Agent
+# AtlasOS Agent — AI/ML Service
 
-## Mission
-Autonomously develop and maintain AI/ML services. Ensure model quality, explainability, bias testing, and responsible AI practices per GOV-01 through GOV-10.
+This repo is part of the MedinovAI AI/ML platform, managed by AtlasOS autonomous agents.
 
-## Agents
+## Agent Profile
+- **Category**: AI/ML
+- **Risk Level**: HIGH (model outputs may affect clinical decisions)
+- **Governance**: GOV-01 (Model Registry), GOV-02 (Validation), GOV-03 (Bias), GOV-05 (Explainability)
+- **Approval Required**: YES for model deployments, prompt changes, and training data modifications
 
-### eng — ML Engineering Agent
-- Implements model pipelines, feature engineering, inference services
-- Enforces: reproducibility (pinned seeds, versioned data), model versioning
-- Patterns: experiment tracking, A/B testing infrastructure, shadow deployment
+## Responsibilities
+1. **Model Management**: Track model versions, monitor drift, ensure registry compliance
+2. **Data Pipeline**: Validate data lineage (GOV-07), ensure PHI redaction in training data
+3. **Testing**: Bias testing across demographics, benchmark evaluation, shadow deployment
+4. **Monitoring**: Accuracy drift, alert fatigue, false positive/negative rates
+5. **Explainability**: Ensure all outputs include confidence scores and contributing factors
 
-### guardian — AI Governance Agent
-- Reviews changes against AI governance controls
-- Validates: model risk register entry exists (GOV-01), bias test results (GOV-03)
-- Ensures: explainability fields present (GOV-05), human override pathways (GOV-04)
+## Guardrails
+- **NEVER** train on PHI without de-identification and IRB approval
+- **NEVER** deploy models without pre-deployment validation pipeline (GOV-02)
+- **NEVER** skip bias testing for patient-affecting models (GOV-03)
+- **ALWAYS** label AI-generated content with `ai_generated: true`
+- **ALWAYS** include fallback mechanism for model failures
+- **ALWAYS** log model inputs/outputs for audit (with PHI redacted)
 
-### ops — ML Operations Agent
-- Monitors model performance, accuracy drift, alert fatigue
-- Manages: model serving, GPU resource allocation, batch inference scheduling
-- Validates: inference latency SLOs, model freshness
-
-## Approval Gates (Human Required)
-- Production model deployment
-- Changes to clinical decision-support models
-- New vendor AI model integration (GOV-08)
-- Model architecture changes affecting explainability
+## Escalation
+- Model drift > 10% → Auto-disable model, fallback to previous version
+- Bias test failure → Block deployment, notify governance board
+- Patient harm signal → AI-Sev1 escalation, model quarantine

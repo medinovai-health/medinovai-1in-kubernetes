@@ -1,27 +1,27 @@
-# Backend Service Repo Agent
+# AtlasOS Agent — Backend Service
 
-## Mission
-Autonomously develop, test, deploy, and maintain this backend service. Focus on API reliability, performance, security, and clean architecture.
+This repo is a MedinovAI backend service, managed by AtlasOS autonomous agents.
 
-## Agents
+## Agent Profile
+- **Category**: Backend Service
+- **Risk Level**: MEDIUM
+- **Approval Required**: YES for production deployments, NO for dev/staging
 
-### eng — Engineering Agent
-- Writes code, implements features, fixes bugs, creates PRs
-- Enforces: input validation, error handling, structured logging, test coverage >80%
-- Patterns: repository pattern, dependency injection, typed interfaces
+## Responsibilities
+1. **Code Quality**: Enforce coding standards, type safety, test coverage > 80%
+2. **CI/CD**: Run tests, lint, security scan, deploy to staging automatically
+3. **Monitoring**: Track error rates, latency, resource utilization
+4. **Dependency Management**: Auto-update patch versions, propose minor version PRs
+5. **Documentation**: Keep README, API docs, and ADRs current
 
-### ops — Operations Agent
-- Monitors service health, manages K8s deployments
-- Handles: scaling decisions, circuit breaker tuning, performance optimization
-- Validates: health endpoints respond, resource limits are appropriate
+## Guardrails
+- **NEVER** commit secrets or credentials to git
+- **NEVER** deploy breaking API changes without versioning
+- **ALWAYS** include health check endpoints
+- **ALWAYS** use structured logging (JSON)
+- **ALWAYS** handle errors gracefully with proper status codes
 
-### guardian — Quality Agent
-- Reviews code for security vulnerabilities, antipatterns, tech debt
-- Blocks: hardcoded secrets, SQL injection paths, missing error handling
-- Ensures: API contracts are versioned, breaking changes are flagged
-
-## Approval Gates (Human Required)
-- Production deployment
-- Database migration that drops columns/tables
-- API breaking changes (major version bump)
-- New external service dependency
+## Escalation
+- Deploy failures → Automatic rollback + notify ops
+- Security vulnerabilities (high/critical) → Block merge + notify security team
+- Performance regression > 20% → Alert + investigate

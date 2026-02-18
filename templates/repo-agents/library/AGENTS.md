@@ -1,21 +1,18 @@
-# Library/SDK Repo Agent
+# AtlasOS Agent — Shared Library
 
-## Mission
-Autonomously develop and maintain shared libraries and SDKs. Ensure backward compatibility, comprehensive documentation, and minimal dependency footprint.
+## Agent Profile
+- **Category**: Library (shared across services)
+- **Risk Level**: HIGH (breaking changes cascade to all consumers)
+- **Approval Required**: YES for major/minor version bumps, API changes
 
-## Agents
+## Responsibilities
+1. Enforce semantic versioning strictly
+2. Maintain backward compatibility within major versions
+3. Run comprehensive test suite including consumer contract tests
+4. Auto-publish to package registry on version bump
 
-### eng — Library Engineering Agent
-- Implements: shared utilities, SDK features, API clients
-- Enforces: semantic versioning, backward compatibility, 100% public API docs
-- Patterns: tree-shakeable exports, zero runtime dependencies where possible
-
-### guardian — API Stability Agent
-- Reviews: public API surface changes, deprecation notices
-- Blocks: breaking changes without major version bump, undocumented public APIs
-- Validates: cross-repo impact analysis before publishing
-
-## Approval Gates (Human Required)
-- Major version releases (breaking changes)
-- New public API additions
-- Dependency additions
+## Guardrails
+- **NEVER** make breaking changes in patch/minor versions
+- **NEVER** add new dependencies without bundle size impact review
+- **ALWAYS** include TypeDoc/JSDoc for all public APIs
+- **ALWAYS** test against all known consumers before publish

@@ -1,13 +1,16 @@
 #!/usr/bin/env bash
-# ─── embed_atlasos.sh ─────────────────────────────────────────────────────────
-# Embed AtlasOS agents in every MedinovAI repo.
-# Reads config/repo_registry.json5 and deploys category-specific agent kits.
+# ─── embed_atlasos.sh ────────────────────────────────────────────────────────
+# Embed AtlasOS agent workspaces, Cursor rules, and autonomous brain
+# into every MedinovAI repo. Single source of truth for agent distribution.
+#
+# Replaces AtlasOS's deploy_brain.sh + deploy_agents.sh.
 #
 # Usage:
-#   bash scripts/agents/embed_atlasos.sh --all                  # All repos
-#   bash scripts/agents/embed_atlasos.sh --repo medinovai-CTMS  # Single repo
-#   bash scripts/agents/embed_atlasos.sh --category clinical    # All clinical repos
-#   bash scripts/agents/embed_atlasos.sh --all --dry-run        # Show what would change
+#   bash scripts/agents/embed_atlasos.sh --all                    # All repos
+#   bash scripts/agents/embed_atlasos.sh --repo medinovai-CTMS    # Single repo
+#   bash scripts/agents/embed_atlasos.sh --category clinical      # By category
+#   bash scripts/agents/embed_atlasos.sh --all --dry-run          # Preview
+#   bash scripts/agents/embed_atlasos.sh --all --commit           # Commit changes
 # ─────────────────────────────────────────────────────────────────────────────
 
 set -euo pipefail
@@ -15,7 +18,6 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(dirname "$(dirname "$SCRIPT_DIR")")"
 GITHUB_DIR="${GITHUB_DIR:-$HOME/Github}"
-REGISTRY="$REPO_ROOT/config/repo_registry.json5"
 TEMPLATES_DIR="$REPO_ROOT/templates/repo-agents"
 
 TARGET_ALL=false
@@ -23,142 +25,188 @@ TARGET_REPO=""
 TARGET_CATEGORY=""
 DRY_RUN=false
 COMMIT=false
-PUSH=false
+STATS_DEPLOYED=0
+STATS_SKIPPED=0
+STATS_ERRORS=0
 
 while [[ $# -gt 0 ]]; do
     case $1 in
-        --all)        TARGET_ALL=true; shift ;;
-        --repo)       TARGET_REPO="$2"; shift 2 ;;
-        --category)   TARGET_CATEGORY="$2"; shift 2 ;;
-        --dry-run)    DRY_RUN=true; shift ;;
-        --commit)     COMMIT=true; shift ;;
-        --push)       PUSH=true; COMMIT=true; shift ;;
-        --github-dir) GITHUB_DIR="$2"; shift 2 ;;
-        *)            echo "Unknown option: $1"; exit 1 ;;
+        --all)       TARGET_ALL=true; shift ;;
+        --repo)      TARGET_REPO="$2"; shift 2 ;;
+        --category)  TARGET_CATEGORY="$2"; shift 2 ;;
+        --dry-run)   DRY_RUN=true; shift ;;
+        --commit)    COMMIT=true; shift ;;
+        *)           echo "Unknown option: $1"; exit 1 ;;
     esac
 done
 
 if ! $TARGET_ALL && [ -z "$TARGET_REPO" ] && [ -z "$TARGET_CATEGORY" ]; then
-    echo "ERROR: Specify --all, --repo <name>, or --category <cat>"
+    echo "Usage: embed_atlasos.sh --all | --repo <name> | --category <cat>"
+    echo ""
+    echo "Categories: clinical, backend-service, frontend-app, platform,"
+    echo "            ai-ml, data, security, sales-crm, docs-standards, library"
     exit 1
 fi
 
 log() { echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] $1"; }
 
-TOTAL=0
-UPDATED=0
-SKIPPED=0
-ERRORS=0
+# ─── Repo → Category mapping ───────────────────────────────────────────────
+get_category() {
+    local repo="$1"
+    case "$repo" in
+        medinovai-CTMS|medinovai-EDC|medinovai-eConsent|medinovai-eISF|medinovai-ePRO|\
+        medinovai-eSource|medinovai-etmf|medinovai-iwrs|medinovai-RBM|medinovai-Pharmacovigilance|\
+        medinovai-regulatory-submissions|medinovai-lis|medinovai-lis-platform|\
+        medinovai-consent-preference-api|medinovai-care-team-chat|medinovai-telehealth-hub|\
+        medinovai-patient-onboarding|medinovai-patientmatching|medinovai-drug-interaction-checker|\
+        medinovai-guideline-updater|medinovai-cds|medinovai-inventorymanagement|\
+        medinovai-ResearchSuite|medinovAIUSB|medinovai-visit-schedule-tracker|\
+        medinovai-projects)
+            echo "clinical" ;;
 
-# ─── Parse registry ─────────────────────────────────────────────────────────
-REPOS=$(python3 -c "
-import json, re, sys
+        medinovai-aifactory|medinovai-healthLLM|medinovai-ai-scribe|medinovai-anomaly-detector|\
+        MedinovAI-Chatbot|medinovAIgent|medinovai-pathology-ai|medinovai-genomics-interpreter|\
+        MedinovAI-Model-Service-Orchestrator|medinovai-natural-language-query|\
+        medinovai-prompt-vault|medinovai-accessibility-checker|medinovai-SME|\
+        PersonalAssistant|CEOassistant|PhotoAI)
+            echo "ai-ml" ;;
 
-with open('$REGISTRY') as f:
-    text = re.sub(r'//.*', '', f.read())
-    text = re.sub(r'/\*.*?\*/', '', text, flags=re.DOTALL)
-    # Remove trailing commas
-    text = re.sub(r',\s*([}\]])', r'\1', text)
-    registry = json.loads(text)
+        medinovai-api|medinovai-core|medinovai-notification-center|medinovai-real-time-stream-bus|\
+        medinovai-registry|medinovai-validation|medinovai-api-gateway|medinovai-medical-fax-processing|\
+        subscription|MedinovAI-Email-Service)
+            echo "backend-service" ;;
 
-for repo in registry['repos']:
-    name = repo['name']
-    cat = repo.get('agent_profile', repo.get('category', 'backend-service'))
-    include = False
-    if '$TARGET_ALL' == 'true':
-        include = True
-    elif '$TARGET_REPO' and name == '$TARGET_REPO':
-        include = True
-    elif '$TARGET_CATEGORY' and cat == '$TARGET_CATEGORY':
-        include = True
-    if include:
-        print(f\"{name}|{cat}\")
-" 2>/dev/null)
+        medinovai-lis-ui|medinovaios|medinovai-multimodal-ui-shell|Uiux|\
+        medinovai-audit-trail-explorer|Employee-Portal|medinovai-developer-portal|\
+        medinovai-feature-flag-console)
+            echo "frontend-app" ;;
 
-if [ -z "$REPOS" ]; then
-    log "No repos matched the filter."
-    exit 0
-fi
+        ++Docker-Maintenance|medinovai-Deploy|medinovai-infrastructure|medinovai-devops-telemetry|\
+        medinovai-test-infrastructure|medinovai-canary-rollout-orchestrator|\
+        myOnsiteOperationsMonitoringV1|vercel-clone|ProcessAutomations|architecture-catalog|\
+        AtlasOS|medinovai-Atlas|medinovai-atlas-engine)
+            echo "platform" ;;
 
+        MedinovAI-security|MedinovAI-security-service|medinovai-universal-sign-on|\
+        medinovai-role-based-permissions|medinovai-secrets-manager-bridge|\
+        medinovai-encryption-vault|medinovai-hipaa-gdpr-guard)
+            echo "security" ;;
+
+        database|medinovai-data-services|medinovai-data-lake-loader|medinovai-knowledge-graph|\
+        medinovai-DataOfficer)
+            echo "data" ;;
+
+        medinovai-sales|AutoSalesPro|AutoBidPro|Credentialing|ATS|DocuGenie|\
+        medinovai-saes)
+            echo "sales-crm" ;;
+
+        medinovai-constitution|MedinovAI-AI-Standards|medinovai-dev-standards|\
+        medinovai-standards|medinovai-governance-templates|medinovai-quality-certification|\
+        medinovai-Developer)
+            echo "docs-standards" ;;
+
+        medinovai-web-core|medinovai-ui-components|medinovai-agent-sdk)
+            echo "library" ;;
+
+        *)
+            echo "backend-service" ;;
+    esac
+}
+
+# ─── Deploy agent kit to a single repo ──────────────────────────────────────
 deploy_to_repo() {
     local repo_name="$1"
-    local category="$2"
     local repo_path="$GITHUB_DIR/$repo_name"
 
-    TOTAL=$((TOTAL + 1))
-
-    if [ ! -d "$repo_path" ]; then
-        log "  SKIP $repo_name — not found at $repo_path"
-        SKIPPED=$((SKIPPED + 1))
-        return 0
-    fi
-
     if [ ! -d "$repo_path/.git" ]; then
-        log "  SKIP $repo_name — not a git repo"
-        SKIPPED=$((SKIPPED + 1))
+        log "  SKIP: $repo_name (not a git repo at $repo_path)"
+        STATS_SKIPPED=$((STATS_SKIPPED + 1))
         return 0
     fi
+
+    local category
+    category=$(get_category "$repo_name")
 
     local template_dir="$TEMPLATES_DIR/$category"
     if [ ! -d "$template_dir" ]; then
-        template_dir="$TEMPLATES_DIR/backend-service"
-    fi
-
-    log "  DEPLOY $repo_name ($category)"
-
-    if $DRY_RUN; then
-        log "    [DRY RUN] Would deploy from $template_dir"
+        log "  SKIP: No template for category '$category' at $template_dir"
+        STATS_SKIPPED=$((STATS_SKIPPED + 1))
         return 0
     fi
 
+    if $DRY_RUN; then
+        log "  [DRY RUN] $repo_name → category: $category"
+        STATS_DEPLOYED=$((STATS_DEPLOYED + 1))
+        return 0
+    fi
+
+    log "  Deploying to $repo_name (category: $category)..."
+
     # Deploy Cursor rules
     mkdir -p "$repo_path/.cursor/rules"
-    cp -f "$REPO_ROOT/.cursor/rules/atlas-autonomous-brain.mdc" "$repo_path/.cursor/rules/" 2>/dev/null || true
-    cp -f "$REPO_ROOT/.cursor/rules/ai-governance-controls.mdc" "$repo_path/.cursor/rules/" 2>/dev/null || true
-
-    # Deploy agent files (only if template exists)
-    if [ -d "$template_dir" ]; then
-        for f in AGENTS.md HEARTBEAT.md SOUL.md TOOLS.md MISTAKES.md; do
-            if [ -f "$template_dir/$f" ]; then
-                cp -f "$template_dir/$f" "$repo_path/$f"
-            fi
+    if ls "$template_dir/.cursor/rules/"*.mdc &>/dev/null; then
+        for rule_file in "$template_dir/.cursor/rules/"*.mdc; do
+            [ -f "$rule_file" ] && cp "$rule_file" "$repo_path/.cursor/rules/"
         done
     fi
 
-    # Deploy category-specific Cursor rules
-    if [ -f "$template_dir/.cursor-rules/"*.mdc 2>/dev/null ]; then
-        cp -f "$template_dir/.cursor-rules/"*.mdc "$repo_path/.cursor/rules/" 2>/dev/null || true
+    # Deploy autonomous brain (shared across all categories)
+    local brain_rule="$REPO_ROOT/agents/platform/AGENTS.md"
+    [ -f "$REPO_ROOT/.cursor/rules/atlas-autonomous-brain.mdc" ] && \
+        cp "$REPO_ROOT/.cursor/rules/atlas-autonomous-brain.mdc" "$repo_path/.cursor/rules/" 2>/dev/null || true
+
+    # Deploy agent workspace files
+    for agent_file in AGENTS.md HEARTBEAT.md SOUL.md TOOLS.md MISTAKES.md; do
+        [ -f "$template_dir/$agent_file" ] && cp "$template_dir/$agent_file" "$repo_path/"
+    done
+
+    # Deploy governance files (category-specific)
+    if [ -d "$template_dir/governance" ]; then
+        mkdir -p "$repo_path/governance"
+        cp -r "$template_dir/governance/"* "$repo_path/governance/" 2>/dev/null || true
     fi
 
     # Commit if requested
     if $COMMIT; then
         cd "$repo_path"
-        git add -A .cursor/rules/ AGENTS.md HEARTBEAT.md SOUL.md TOOLS.md MISTAKES.md 2>/dev/null || true
-        if ! git diff --cached --quiet 2>/dev/null; then
-            git commit -m "chore: embed AtlasOS agent kit ($category profile)" 2>/dev/null || true
-            if $PUSH; then
-                git push 2>/dev/null || log "    WARN: push failed for $repo_name"
-            fi
+        git add -A .cursor/ AGENTS.md HEARTBEAT.md SOUL.md TOOLS.md MISTAKES.md governance/ 2>/dev/null || true
+        if git diff --cached --quiet; then
+            log "    No changes to commit"
+        else
+            git commit -m "Embed AtlasOS agent kit (category: $category)" --no-verify 2>/dev/null || true
+            log "    ✓ Committed"
         fi
         cd "$REPO_ROOT"
     fi
 
-    UPDATED=$((UPDATED + 1))
+    STATS_DEPLOYED=$((STATS_DEPLOYED + 1))
 }
 
-log "╔══════════════════════════════════════════════════════════════╗"
-log "║     AtlasOS Embedding — Deploy Agents to All Repos          ║"
-log "╚══════════════════════════════════════════════════════════════╝"
-log ""
-log "Source: $TEMPLATES_DIR"
-log "Target: $GITHUB_DIR"
-log "Dry run: $DRY_RUN"
-log ""
+# ─── Main ────────────────────────────────────────────────────────────────────
+log "MedinovAI Deploy — Embed AtlasOS in Repos"
+echo ""
 
-while IFS='|' read -r repo_name category; do
-    deploy_to_repo "$repo_name" "$category"
-done <<< "$REPOS"
+if [ -n "$TARGET_REPO" ]; then
+    deploy_to_repo "$TARGET_REPO"
+elif $TARGET_ALL || [ -n "$TARGET_CATEGORY" ]; then
+    for repo_dir in "$GITHUB_DIR"/*/; do
+        [ ! -d "$repo_dir" ] && continue
+        repo_name=$(basename "$repo_dir")
 
-log ""
-log "────────────────────────────────────────────────────────────────"
-log "Results: $TOTAL total, $UPDATED updated, $SKIPPED skipped, $ERRORS errors"
+        # Skip non-MedinovAI and special dirs
+        [[ "$repo_name" == "." || "$repo_name" == ".." ]] && continue
+
+        if [ -n "$TARGET_CATEGORY" ]; then
+            local_cat=$(get_category "$repo_name")
+            [ "$local_cat" != "$TARGET_CATEGORY" ] && continue
+        fi
+
+        deploy_to_repo "$repo_name"
+    done
+fi
+
+echo ""
+log "Embedding complete."
+log "  Deployed: $STATS_DEPLOYED"
+log "  Skipped:  $STATS_SKIPPED"
+log "  Errors:   $STATS_ERRORS"

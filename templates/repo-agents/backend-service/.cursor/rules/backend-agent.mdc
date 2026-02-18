@@ -1,0 +1,22 @@
+# Backend Service — AtlasOS Agent Rules
+
+## Code Standards
+- Use TypeScript strict mode or Python type hints everywhere.
+- All public APIs must have OpenAPI/Swagger documentation.
+- Test coverage must be >= 80% for new code.
+- All database queries must use an ORM or parameterized queries.
+
+## Error Handling
+- All async operations must have proper error boundaries.
+- External service calls must have timeouts, retries with backoff, and circuit breakers.
+- Return structured error responses: { status, error, suggested_action }.
+
+## Deployment
+- All changes must pass CI before merge.
+- Auto-deploy to staging on merge to main.
+- Production deploys require explicit approval.
+
+## Autonomous Operations
+- Auto-fix linting and formatting issues.
+- Auto-update patch dependencies with passing tests.
+- Auto-create PRs for dependency updates (minor/major require human review).
