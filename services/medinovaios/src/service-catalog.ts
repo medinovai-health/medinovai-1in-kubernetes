@@ -4,6 +4,17 @@
 // from this catalog automatically.
 // ─────────────────────────────────────────────────────────────────────────────
 
+// Resolve the current hostname at runtime (browser-safe — never called during build)
+function host(): string {
+  return typeof window !== 'undefined' ? window.location.hostname : 'localhost';
+}
+function proto(): string {
+  return typeof window !== 'undefined' ? window.location.protocol : 'http:';
+}
+function url(port: number): string {
+  return `${proto()}//${host()}:${port}`;
+}
+
 export type ServiceCategory =
   | 'Products'
   | 'AI Platform'
@@ -47,7 +58,7 @@ export const SERVICES: ServiceDef[] = [
     description: 'Laboratory Information System — sample tracking, results, orders',
     category: 'Products',
     icon: '🔬',
-    externalUrl: `${window?.location?.protocol ?? 'http:'}//${window?.location?.hostname ?? 'localhost'}:3200`,
+    externalUrl: url(3200),
     healthPath: '/health',
     internalHealthUrl: 'http://medinovai-lis:3000/health',
     embed: false,
@@ -61,7 +72,7 @@ export const SERVICES: ServiceDef[] = [
     description: 'Healthcare logistics hub — trips, phlebotomists, AI dispatch',
     category: 'Products',
     icon: '💉',
-    externalUrl: `${window?.location?.protocol ?? 'http:'}//${window?.location?.hostname ?? 'localhost'}:3100`,
+    externalUrl: url(3100),
     healthPath: '/health',
     internalHealthUrl: 'http://medinovai-cortex:3100/health',
     embed: false,
@@ -75,7 +86,7 @@ export const SERVICES: ServiceDef[] = [
     description: 'Electronic Trial Master File — clinical trial document management',
     category: 'Products',
     icon: '📋',
-    externalUrl: `${window?.location?.protocol ?? 'http:'}//${window?.location?.hostname ?? 'localhost'}:3300`,
+    externalUrl: url(3300),
     healthPath: '/health',
     internalHealthUrl: 'http://medinovai-etmf:3000/health',
     embed: false,
@@ -89,7 +100,7 @@ export const SERVICES: ServiceDef[] = [
     description: 'AI-powered sales intelligence — 50-capability conversation agent',
     category: 'Products',
     icon: '📈',
-    externalUrl: `${window?.location?.protocol ?? 'http:'}//${window?.location?.hostname ?? 'localhost'}:3400`,
+    externalUrl: url(3400),
     healthPath: '/health',
     internalHealthUrl: 'http://medinovai-sales:3000/health',
     embed: false,
@@ -105,7 +116,7 @@ export const SERVICES: ServiceDef[] = [
     description: 'AI orchestration platform — agents, workspaces, gateway',
     category: 'AI Platform',
     icon: '🗺️',
-    externalUrl: `${window?.location?.protocol ?? 'http:'}//${window?.location?.hostname ?? 'localhost'}:3737`,
+    externalUrl: url(3737),
     healthPath: '/health',
     internalHealthUrl: 'http://atlas-agent:18789/health',
     embed: false,
@@ -120,7 +131,7 @@ export const SERVICES: ServiceDef[] = [
     description: '6 AI expert agents + Digital Twins for clinical decision support',
     category: 'AI Platform',
     icon: '🧠',
-    externalUrl: `${window?.location?.protocol ?? 'http:'}//${window?.location?.hostname ?? 'localhost'}:8000`,
+    externalUrl: url(8000),
     healthPath: '/health',
     internalHealthUrl: 'http://medinovai-healthllm:8000/health',
     embed: false,
@@ -134,7 +145,7 @@ export const SERVICES: ServiceDef[] = [
     description: 'MCP Gateway + AI inference cluster — model routing and orchestration',
     category: 'AI Platform',
     icon: '⚡',
-    externalUrl: `${window?.location?.protocol ?? 'http:'}//${window?.location?.hostname ?? 'localhost'}:8080`,
+    externalUrl: url(8080),
     healthPath: '/health',
     internalHealthUrl: 'http://medinovai-aifactory:8080/health',
     embed: false,
@@ -148,7 +159,7 @@ export const SERVICES: ServiceDef[] = [
     description: 'Browser-based chat interface for local Ollama models',
     category: 'AI Platform',
     icon: '💬',
-    externalUrl: `${window?.location?.protocol ?? 'http:'}//${window?.location?.hostname ?? 'localhost'}:8091`,
+    externalUrl: url(8091),
     healthPath: '/health',
     internalHealthUrl: 'http://medinovai-open-webui:8080/health',
     embed: true,
@@ -161,7 +172,7 @@ export const SERVICES: ServiceDef[] = [
     description: 'Local LLM inference engine — PHI-safe, fully on-device',
     category: 'AI Platform',
     icon: '🦙',
-    externalUrl: `${window?.location?.protocol ?? 'http:'}//${window?.location?.hostname ?? 'localhost'}:11435`,
+    externalUrl: url(11435),
     healthPath: '/api/tags',
     internalHealthUrl: 'http://medinovai-ollama:11434/api/tags',
     embed: false,
@@ -176,7 +187,7 @@ export const SERVICES: ServiceDef[] = [
     description: 'Metrics dashboards — system health, AI performance, business KPIs',
     category: 'Monitoring',
     icon: '📊',
-    externalUrl: `${window?.location?.protocol ?? 'http:'}//${window?.location?.hostname ?? 'localhost'}:3000`,
+    externalUrl: url(3000),
     healthPath: '/api/health',
     internalHealthUrl: 'http://medinovai-grafana:3000/api/health',
     embed: true,
@@ -189,7 +200,7 @@ export const SERVICES: ServiceDef[] = [
     description: 'Metrics collection and alerting — all services scraped every 15s',
     category: 'Monitoring',
     icon: '🔥',
-    externalUrl: `${window?.location?.protocol ?? 'http:'}//${window?.location?.hostname ?? 'localhost'}:9090`,
+    externalUrl: url(9090),
     healthPath: '/-/healthy',
     internalHealthUrl: 'http://medinovai-prometheus:9090/-/healthy',
     embed: true,
@@ -231,7 +242,7 @@ export const SERVICES: ServiceDef[] = [
     description: 'Email capture for development — all outgoing mail intercepted here',
     category: 'Dev Tools',
     icon: '📧',
-    externalUrl: `${window?.location?.protocol ?? 'http:'}//${window?.location?.hostname ?? 'localhost'}:8025`,
+    externalUrl: url(8025),
     healthPath: '/',
     internalHealthUrl: 'http://medinovai-mailhog:8025/',
     embed: true,
