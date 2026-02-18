@@ -22,6 +22,7 @@
 .PHONY: ollama-pull-default ollama-pull-default-k8s ollama-list ollama-status
 .PHONY: medinovaios-up medinovaios-build medinovaios-forward medinovaios-logs medinovaios-dev
 .PHONY: atlas-build atlas-logs atlas-start atlas-stop atlas-status atlas-ui-up k8s-status-full
+.PHONY: ceo-stack ceo-stack-down ceo-stack-logs ceo-audit-verify ceo-vault-status ceo-health
 
 ENV ?= staging
 SVC ?=
@@ -502,6 +503,45 @@ test-scripts: ## Verify all Python scripts have valid syntax
 	done; \
 	echo "Results: $$PASS passed, $$FAIL failed"; \
 	[ "$$FAIL" -eq 0 ] || exit 1
+
+# ─── CO-CEO Stack ────────────────────────────────────────────────────────────
+
+ceo-stack: ## Deploy the full AtlasOS CO-CEO stack (Vault, audit, connectors, UI)
+	docker compose -f infra/docker/docker-compose.ceo.yml up -d
+	@echo ""
+	@echo "CO-CEO Stack deployed!"
+	@echo "  Atlas Command:  http://localhost:$${ATLAS_COMMAND_PORT:-3000}"
+	@echo "  Atlas UI:       http://localhost:$${ATLAS_UI_PORT:-3737}"
+	@echo "  Atlas Gateway:  http://localhost:$${ATLAS_GATEWAY_PORT:-18789}"
+	@echo "  Vault:          http://localhost:$${VAULT_PORT:-8200}"
+	@echo "  Audit Chain:    http://localhost:$${AUDIT_PORT:-8084}"
+	@echo ""
+	@echo "Next: Open Atlas Command and configure integrations at /settings"
+
+ceo-stack-down: ## Stop the CO-CEO stack
+	docker compose -f infra/docker/docker-compose.ceo.yml down
+
+ceo-stack-logs: ## Follow CO-CEO stack logs
+	docker compose -f infra/docker/docker-compose.ceo.yml logs -f
+
+ceo-audit-verify: ## Verify audit chain integrity
+	@curl -sf http://localhost:$${AUDIT_PORT:-8084}/audit/verify | python3 -m json.tool
+
+ceo-vault-status: ## Check Vault seal status
+	@curl -sf http://localhost:$${VAULT_PORT:-8200}/v1/sys/health | python3 -m json.tool
+
+ceo-health: ## Health check all CO-CEO services
+	@echo "Checking CO-CEO services..."
+	@echo -n "  Vault:         " && curl -sf http://localhost:$${VAULT_PORT:-8200}/v1/sys/health > /dev/null && echo "✓ healthy" || echo "✗ down"
+	@echo -n "  Audit Chain:   " && curl -sf http://localhost:$${AUDIT_PORT:-8084}/health > /dev/null && echo "✓ healthy" || echo "✗ down"
+	@echo -n "  Atlas Command: " && curl -sf http://localhost:$${ATLAS_COMMAND_PORT:-3000} > /dev/null && echo "✓ healthy" || echo "✗ down"
+	@echo -n "  Atlas UI:      " && curl -sf http://localhost:$${ATLAS_UI_PORT:-3737}/api/health > /dev/null && echo "✓ healthy" || echo "✗ down"
+	@echo -n "  Atlas Gateway: " && curl -sf http://localhost:$${ATLAS_GATEWAY_PORT:-18789}/health > /dev/null && echo "✓ healthy" || echo "✗ down"
+	@echo -n "  PostgreSQL:    " && docker exec ceo-postgres pg_isready -U medinovai > /dev/null 2>&1 && echo "✓ healthy" || echo "✗ down"
+	@echo -n "  Redis:         " && docker exec ceo-redis redis-cli ping > /dev/null 2>&1 && echo "✓ healthy" || echo "✗ down"
+	@echo -n "  MCP vTiger:    " && curl -sf http://localhost:$${MCP_VTIGER_PORT:-8090}/health > /dev/null && echo "✓ healthy" || echo "✗ down/not configured"
+	@echo -n "  MCP QuickBooks:" && curl -sf http://localhost:$${MCP_QB_PORT:-8091}/health > /dev/null && echo "✓ healthy" || echo "✗ down/not configured"
+	@echo -n "  Stirling-PDF:  " && curl -sf http://localhost:$${STIRLING_PORT:-8083}/api/v1/info/status > /dev/null && echo "✓ healthy" || echo "✗ down"
 
 # ─── Cleanup ─────────────────────────────────────────────────────────────────
 

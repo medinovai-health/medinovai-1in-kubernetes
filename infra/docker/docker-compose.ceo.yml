@@ -1,0 +1,411 @@
+# ─── AtlasOS CO-CEO Stack ────────────────────────────────────────────────────
+# Full deployment for the AtlasOS CO-CEO Command Center
+# Includes: atlas-command UI, atlas gateway, audit chain, MCP connectors,
+#           HashiCorp Vault, and supporting infrastructure
+#
+# Usage:
+#   docker compose -f infra/docker/docker-compose.ceo.yml up -d
+#   make ceo-stack
+#
+# Zero-Trust: All secrets stored in Vault, never in .env
+# Audit: Every action hash-chained in audit-chain service
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+  # ─── Secrets Management ──────────────────────────────────────────────────
+  vault:
+    image: hashicorp/vault:1.15
+    container_name: medinovai-vault
+    cap_add:
+      - IPC_LOCK
+    ports:
+      - "${VAULT_PORT:-8200}:8200"
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: ${VAULT_DEV_ROOT_TOKEN_ID:-medinovai-dev-token}
+      VAULT_DEV_LISTEN_ADDRESS: "0.0.0.0:8200"
+      VAULT_ADDR: "http://0.0.0.0:8200"
+      VAULT_API_ADDR: "http://vault:8200"
+    volumes:
+      - vault-data:/vault/data
+    healthcheck:
+      test: ["CMD", "vault", "status"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - ceo-network
+
+  vault-init:
+    image: hashicorp/vault:1.15
+    container_name: medinovai-vault-init
+    depends_on:
+      vault:
+        condition: service_healthy
+    environment:
+      VAULT_ADDR: "http://vault:8200"
+      VAULT_TOKEN: ${VAULT_DEV_ROOT_TOKEN_ID:-medinovai-dev-token}
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        sleep 2
+        vault secrets enable -path=medinovai-secrets kv-v2 2>/dev/null || true
+        vault kv put medinovai-secrets/atlasos/config initialized=true created_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+        vault policy write atlasos-read - <<POLICY
+        path "medinovai-secrets/data/atlasos/*" {
+          capabilities = ["read", "list"]
+        }
+        path "medinovai-secrets/metadata/atlasos/*" {
+          capabilities = ["read", "list"]
+        }
+        POLICY
+        vault policy write atlasos-admin - <<POLICY
+        path "medinovai-secrets/data/atlasos/*" {
+          capabilities = ["create", "read", "update", "delete", "list"]
+        }
+        path "medinovai-secrets/metadata/atlasos/*" {
+          capabilities = ["read", "list", "delete"]
+        }
+        POLICY
+        echo "Vault initialized with AtlasOS secrets engine and policies"
+    networks:
+      - ceo-network
+
+  # ─── Infrastructure ──────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: ceo-postgres
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    environment:
+      POSTGRES_DB: atlas
+      POSTGRES_USER: medinovai
+      POSTGRES_PASSWORD_FILE: /dev/null
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U medinovai -d atlas"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - ceo-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: ceo-redis
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - ceo-network
+
+  chromadb:
+    image: chromadb/chroma:latest
+    container_name: ceo-chromadb
+    ports:
+      - "${CHROMADB_PORT:-8003}:8000"
+    volumes:
+      - chromadb-data:/chroma/chroma
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/heartbeat"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - ceo-network
+
+  # ─── AtlasOS CO-CEO Command Center UI ────────────────────────────────────
+  atlas-command:
+    build:
+      context: ${ATLAS_COMMAND_PATH:-../../repos/atlas-command}
+      dockerfile: Dockerfile
+    container_name: atlas-command
+    ports:
+      - "${ATLAS_COMMAND_PORT:-3000}:3000"
+    environment:
+      NODE_ENV: production
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-generate-a-real-secret}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      OPENCLAW_GATEWAY_URL: http://atlas-gateway:18789
+      OPENCLAW_TOKEN: ${OPENCLAW_TOKEN:-}
+      VAULT_ADDR: http://vault:8200
+      VAULT_TOKEN: ${VAULT_DEV_ROOT_TOKEN_ID:-medinovai-dev-token}
+    depends_on:
+      vault:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - ceo-network
+
+  # ─── AtlasOS Gateway (Agent Runtime) ─────────────────────────────────────
+  atlas-gateway:
+    build:
+      context: ${ATLASOS_PATH:-../../repos/AtlasOS}
+      dockerfile: Dockerfile
+    container_name: atlas-gateway
+    ports:
+      - "${ATLAS_GATEWAY_PORT:-18789}:18789"
+    environment:
+      PYTHONUNBUFFERED: "1"
+      VAULT_ADDR: http://vault:8200
+      VAULT_TOKEN: ${VAULT_DEV_ROOT_TOKEN_ID:-medinovai-dev-token}
+      AUDIT_SERVICE_URL: http://audit-chain:8084
+      REDIS_URL: redis://redis:6379
+      POSTGRES_URL: postgresql://medinovai@postgres:5432/atlas
+      AIFACTORY_ENDPOINT: ${AIFACTORY_ENDPOINT:-http://host.docker.internal:5000}
+      OLLAMA_HOST: ${OLLAMA_HOST:-http://host.docker.internal:11434}
+      CHROMADB_URL: http://chromadb:8000
+    volumes:
+      - atlas-data:/data
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      vault:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      audit-chain:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:18789/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+    networks:
+      - ceo-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  # ─── AtlasOS UI (Chat + Deployment) ──────────────────────────────────────
+  atlas-ui:
+    build:
+      context: ${ATLASOS_PATH:-../../repos/AtlasOS}/ui
+      dockerfile: Dockerfile
+    container_name: atlas-ui
+    ports:
+      - "${ATLAS_UI_PORT:-3737}:3737"
+    environment:
+      NODE_ENV: production
+      PORT: "3737"
+      AIFACTORY_ENDPOINT: ${AIFACTORY_ENDPOINT:-http://host.docker.internal:5000}
+      AI_MODEL: ${AI_MODEL:-qwen2.5:32b}
+      OLLAMA_HOST: ${OLLAMA_HOST:-http://host.docker.internal:11434}
+      CHROMADB_URL: http://chromadb:8000
+      POSTGRES_URL: postgresql://medinovai@postgres:5432/atlas
+      REDIS_URL: redis://redis:6379
+      VAULT_ADDR: http://vault:8200
+      AUDIT_SERVICE_URL: http://audit-chain:8084
+    volumes:
+      - atlas-data:/data
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      vault:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3737/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - ceo-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  # ─── Zero-Trust Audit Chain Service ──────────────────────────────────────
+  audit-chain:
+    build:
+      context: ${ATLASOS_PATH:-../../repos/AtlasOS}/services/audit-chain
+      dockerfile: Dockerfile
+    container_name: atlas-audit-chain
+    ports:
+      - "${AUDIT_PORT:-8084}:8084"
+    environment:
+      AUDIT_LOG_PATH: /data/audit/audit.jsonl
+      FLASK_ENV: production
+    volumes:
+      - audit-data:/data/audit
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8084/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - ceo-network
+
+  # ─── MCP Connectors ─────────────────────────────────────────────────────
+  mcp-vtiger:
+    build:
+      context: ${ATLASOS_PATH:-../../repos/AtlasOS}/services/mcp-connectors/vtiger
+      dockerfile: ../Dockerfile
+    container_name: mcp-vtiger
+    ports:
+      - "${MCP_VTIGER_PORT:-8090}:8080"
+    environment:
+      VAULT_ADDR: http://vault:8200
+      VAULT_TOKEN: ${VAULT_DEV_ROOT_TOKEN_ID:-medinovai-dev-token}
+      VAULT_SECRET_PATH: medinovai-secrets/atlasos/vtiger
+      AUDIT_SERVICE_URL: http://audit-chain:8084
+      CONNECTOR_NAME: vtiger
+    depends_on:
+      vault:
+        condition: service_healthy
+      audit-chain:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - ceo-network
+
+  mcp-quickbooks:
+    build:
+      context: ${ATLASOS_PATH:-../../repos/AtlasOS}/services/mcp-connectors/quickbooks
+      dockerfile: ../Dockerfile
+    container_name: mcp-quickbooks
+    ports:
+      - "${MCP_QB_PORT:-8091}:8080"
+    environment:
+      VAULT_ADDR: http://vault:8200
+      VAULT_TOKEN: ${VAULT_DEV_ROOT_TOKEN_ID:-medinovai-dev-token}
+      VAULT_SECRET_PATH: medinovai-secrets/atlasos/quickbooks
+      AUDIT_SERVICE_URL: http://audit-chain:8084
+      CONNECTOR_NAME: quickbooks
+    depends_on:
+      vault:
+        condition: service_healthy
+      audit-chain:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - ceo-network
+
+  mcp-google:
+    build:
+      context: ${ATLASOS_PATH:-../../repos/AtlasOS}/services/mcp-connectors
+      dockerfile: Dockerfile
+    container_name: mcp-google-workspace
+    ports:
+      - "${MCP_GOOGLE_PORT:-8092}:8080"
+    environment:
+      VAULT_ADDR: http://vault:8200
+      VAULT_TOKEN: ${VAULT_DEV_ROOT_TOKEN_ID:-medinovai-dev-token}
+      VAULT_SECRET_PATH: medinovai-secrets/atlasos/google-workspace
+      AUDIT_SERVICE_URL: http://audit-chain:8084
+      CONNECTOR_NAME: google-workspace
+    depends_on:
+      vault:
+        condition: service_healthy
+      audit-chain:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - ceo-network
+
+  mcp-lis:
+    build:
+      context: ${ATLASOS_PATH:-../../repos/AtlasOS}/services/mcp-connectors
+      dockerfile: Dockerfile
+    container_name: mcp-lis
+    ports:
+      - "${MCP_LIS_PORT:-8093}:8080"
+    environment:
+      VAULT_ADDR: http://vault:8200
+      VAULT_TOKEN: ${VAULT_DEV_ROOT_TOKEN_ID:-medinovai-dev-token}
+      VAULT_SECRET_PATH: medinovai-secrets/atlasos/lis
+      AUDIT_SERVICE_URL: http://audit-chain:8084
+      CONNECTOR_NAME: lis
+    depends_on:
+      vault:
+        condition: service_healthy
+      audit-chain:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - ceo-network
+
+  mcp-mattermost:
+    build:
+      context: ${ATLASOS_PATH:-../../repos/AtlasOS}/services/mcp-connectors
+      dockerfile: Dockerfile
+    container_name: mcp-mattermost
+    ports:
+      - "${MCP_MM_PORT:-8094}:8080"
+    environment:
+      VAULT_ADDR: http://vault:8200
+      VAULT_TOKEN: ${VAULT_DEV_ROOT_TOKEN_ID:-medinovai-dev-token}
+      VAULT_SECRET_PATH: medinovai-secrets/atlasos/mattermost
+      AUDIT_SERVICE_URL: http://audit-chain:8084
+      CONNECTOR_NAME: mattermost
+    depends_on:
+      vault:
+        condition: service_healthy
+      audit-chain:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - ceo-network
+
+  # ─── PDF Processing ──────────────────────────────────────────────────────
+  stirling-pdf:
+    image: docker.stirlingpdf.com/stirlingtools/stirling-pdf:latest
+    container_name: ceo-stirling-pdf
+    ports:
+      - "${STIRLING_PORT:-8083}:8080"
+    environment:
+      DOCKER_ENABLE_SECURITY: "false"
+      INSTALL_BOOK_AND_ADVANCED_HTML_OPS: "true"
+      LANGS: en_US
+    volumes:
+      - stirling-data:/customFiles
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/v1/info/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+    networks:
+      - ceo-network
+
+volumes:
+  vault-data:
+  postgres-data:
+  chromadb-data:
+  atlas-data:
+  audit-data:
+  stirling-data:
+
+networks:
+  ceo-network:
+    driver: bridge
+    name: medinovai-ceo-network
