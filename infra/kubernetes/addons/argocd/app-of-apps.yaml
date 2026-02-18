@@ -21,7 +21,7 @@ spec:
   project: default
 
   source:
-    repoURL: https://github.com/myonsite-healthcare/medinovai-Deploy.git
+    repoURL: git@github.com:myonsite-healthcare/medinovai-Deploy.git
     targetRevision: main
     path: infra/kubernetes/addons/argocd/apps
 
