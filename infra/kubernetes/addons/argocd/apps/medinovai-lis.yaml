@@ -11,9 +11,9 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/myonsite-healthcare/medinovai-lis.git
+    repoURL: git@github.com:myonsite-healthcare/medinovai-Deploy.git
     targetRevision: main
-    path: infra/kubernetes
+    path: infra/kubernetes/services/lis
   destination:
     server: https://kubernetes.default.svc
     namespace: medinovai-lis

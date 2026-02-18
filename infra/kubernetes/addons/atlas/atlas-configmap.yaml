@@ -1,0 +1,19 @@
+# Atlas config ConfigMap — mounts config/atlas.json5 into the container.
+# This is the secrets-free config. Secrets come from atlas-secrets Secret.
+# Synced from: config/atlas.json5
+# Update with: kubectl apply -f infra/kubernetes/addons/atlas/atlas-configmap.yaml
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: atlas-config
+  namespace: medinovai-system
+  labels:
+    app: atlas
+    app.kubernetes.io/managed-by: medinovai-deploy
+data:
+  # The config is loaded from the repo's config/atlas.json5 at deploy time.
+  # Run: make addons-atlas  to sync config + redeploy.
+  # The actual JSON content is embedded by install-addons.sh during apply.
+  atlas.json: |
+    {}

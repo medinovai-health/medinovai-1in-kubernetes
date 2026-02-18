@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: medinovai-healthllm
+  labels:
+    app.kubernetes.io/part-of: medinovai
+    medinovai.io/service: healthllm

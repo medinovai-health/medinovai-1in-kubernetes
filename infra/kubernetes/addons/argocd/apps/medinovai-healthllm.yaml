@@ -11,9 +11,9 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: git@github.com:myonsite-healthcare/medinovai-healthLLM.git
+    repoURL: git@github.com:myonsite-healthcare/medinovai-Deploy.git
     targetRevision: main
-    path: k8s
+    path: infra/kubernetes/services/healthllm
   destination:
     server: https://kubernetes.default.svc
     namespace: medinovai-ai

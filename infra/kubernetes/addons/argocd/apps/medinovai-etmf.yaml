@@ -11,9 +11,9 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: git@github.com:myonsite-healthcare/medinovai-etmf.git
+    repoURL: git@github.com:myonsite-healthcare/medinovai-Deploy.git
     targetRevision: main
-    path: infra/kubernetes
+    path: infra/kubernetes/services/etmf
   destination:
     server: https://kubernetes.default.svc
     namespace: medinovai-etmf
