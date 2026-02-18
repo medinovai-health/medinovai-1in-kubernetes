@@ -1,0 +1,36 @@
+# ArgoCD Application — points at this repo's docker-desktop overlay
+# ArgoCD will auto-sync the cluster with Git on every push to main
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: medinovai-platform
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/myonsite-healthcare/medinovai-Deploy.git
+    targetRevision: main
+    path: infra/kubernetes/overlays/docker-desktop
+
+  destination:
+    server: https://kubernetes.default.svc
+    # Namespace managed by the overlay itself (multi-namespace)
+    namespace: medinovai-services
+
+  syncPolicy:
+    automated:
+      prune: false      # Don't auto-delete resources (safety)
+      selfHeal: true    # Auto-fix drift from Git
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    retry:
+      limit: 3
+      backoff:
+        duration: 5s
+        maxDuration: 3m
+        factor: 2

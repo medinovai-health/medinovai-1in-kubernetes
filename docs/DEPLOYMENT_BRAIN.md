@@ -14,6 +14,9 @@
 2. [Quick Start (TL;DR)](#2-quick-start-tldr)
 3. [Docker Compose Infra Layer](#3-docker-compose-infra-layer)
 4. [Kubernetes App Layer](#4-kubernetes-app-layer)
+5. [Cluster Addons](#5-cluster-addons)
+6. [Tailscale Multi-Machine HA](#6-tailscale-multi-machine-ha)
+4. [Kubernetes App Layer](#4-kubernetes-app-layer)
 5. [Tailscale Multi-Machine HA](#5-tailscale-multi-machine-ha)
 6. [Scripts Reference](#6-scripts-reference)
 7. [Makefile Targets](#7-makefile-targets)
@@ -516,6 +519,109 @@ Or use per-service image replacement by updating each `patch-<service>.yaml` to 
 For the full registry, image naming follows: `<registry>/<service>:<git-sha>` for traceability.
 
 ---
+
+## 5b. Cluster Addons (Layer 3)
+
+Four addons deployed on top of the K8s app layer. All fully local — no cloud accounts required.
+
+### Architecture with Addons
+
+```
+Internet traffic → localhost:30800 → NGINX Ingress → medinovai-services pods
+                                                   ↗ api-gateway
+                                                   ↗ auth-service
+                                                   ↗ clinical-engine
+                                                   ↗ data-pipeline
+                                                   ↗ notification-service
+                                                   ↗ ai-inference
+
+GitHub repo (main) ← ArgoCD watches ← auto-syncs cluster state
+kube-state-metrics → exposes K8s objects as Prometheus metrics → local Prometheus
+Kubernetes Dashboard → visual cluster management at https://localhost:8443
+```
+
+### Addon Reference
+
+| Addon | Namespace | Helm Chart | Local URL |
+|-------|-----------|-----------|-----------|
+| NGINX Ingress | `ingress-nginx` | `ingress-nginx/ingress-nginx` | `http://localhost:30800` |
+| Kubernetes Dashboard | `kubernetes-dashboard` | kubectl apply (v2.7) | `https://localhost:8443` (port-forward) |
+| kube-state-metrics | `medinovai-monitoring` | `prometheus-community/kube-state-metrics` | internal only |
+| ArgoCD | `argocd` | `argo/argo-cd` | `http://localhost:8080` (port-forward) |
+
+### Install / Reinstall Addons
+
+```bash
+make addons-install           # install all 4 addons
+make addons-ingress           # NGINX ingress only
+make addons-dashboard         # Dashboard only
+make addons-monitoring        # kube-state-metrics only
+make addons-argocd            # ArgoCD only
+make addons-uninstall         # remove all addons
+```
+
+### Access Addons
+
+```bash
+# Kubernetes Dashboard (open in browser after running)
+make dashboard-forward        # → https://localhost:8443
+# Token is in .dashboard-token (gitignored) or run:
+kubectl -n kubernetes-dashboard get secret medinovai-dashboard-admin-token \
+  -o jsonpath="{.data.token}" | base64 --decode
+
+# ArgoCD (open in browser after running)
+make argocd-forward           # → http://localhost:8080
+# Password:
+kubectl -n argocd get secret argocd-initial-admin-secret \
+  -o jsonpath="{.data.password}" | base64 --decode
+# Login: admin / <password above>
+
+# NGINX Ingress — direct HTTP (no port-forward needed)
+curl -H "Host: medinovai.local" http://localhost:30800/
+curl -H "Host: medinovai.local" http://localhost:30800/auth
+curl -H "Host: medinovai.local" http://localhost:30800/clinical
+
+# Optional: add to /etc/hosts for hostname-based access
+# 127.0.0.1  medinovai.local
+```
+
+### NGINX Ingress Routes
+
+| Path | Routes To | Port |
+|------|-----------|------|
+| `/` | api-gateway | 3000 |
+| `/auth` | auth-service | 3000 |
+| `/clinical` | clinical-engine | 8080 |
+| `/pipeline` | data-pipeline | 8080 |
+| `/notify` | notification-service | 3000 |
+| `/ai` | ai-inference (medinovai-ai ns) | 8080 |
+
+### ArgoCD GitOps Wiring
+
+ArgoCD is configured to watch `infra/kubernetes/overlays/docker-desktop` on `main` branch.
+On every `git push` to `main`, ArgoCD auto-syncs the cluster within ~3 minutes.
+
+- **selfHeal: true** — if someone manually edits K8s objects, ArgoCD reverts to Git state
+- **prune: false** — ArgoCD won't auto-delete resources (safety guard)
+- **App manifest**: `infra/kubernetes/addons/argocd/medinovai-app.yaml`
+
+### Addon Files
+
+```
+infra/kubernetes/addons/
+├── ingress-nginx/
+│   ├── values.yaml             # Helm values (NodePort 30800/30843, single replica)
+│   └── ingress-medinovai.yaml  # Ingress routes for all services
+├── dashboard/
+│   ├── install.yaml            # Kubernetes Dashboard v2.7 upstream manifest
+│   ├── values.yaml             # (reference — using kubectl apply not Helm)
+│   └── dashboard-admin.yaml    # ServiceAccount + ClusterRoleBinding + token Secret
+├── kube-state-metrics/
+│   └── values.yaml             # Helm values (medinovai-monitoring ns, minimal resources)
+└── argocd/
+    ├── values.yaml             # Helm values (insecure mode, single replica, no SSO)
+    └── medinovai-app.yaml      # ArgoCD Application CRD → docker-desktop overlay
+```
 
 ## 13. Backup and Restore
 

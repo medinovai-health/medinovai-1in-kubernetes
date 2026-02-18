@@ -13,6 +13,8 @@
 .PHONY: docker-instantiate docker-backup docker-restore docker-seed docker-up docker-down
 .PHONY: rotate-secrets cert-check backup-verify cost-report validate-infra validate-k8s validate-compliance
 .PHONY: test-unit test-integration test-e2e lint-json lint-yaml
+.PHONY: addons-install addons-uninstall addons-ingress addons-dashboard addons-monitoring addons-argocd
+.PHONY: dashboard-forward argocd-forward cluster-status
 
 ENV ?= staging
 SVC ?=
@@ -106,6 +108,69 @@ k8s-status: ## Show all pod and service status across namespaces
 
 tailscale-config: ## Configure Tailscale networking (run before install)
 	bash scripts/bootstrap/tailscale-config.sh
+
+k8s-status-full: ## Show all pods, services, and ingresses across every namespace
+	@echo "=== PODS ==="
+	@kubectl get pods -A
+	@echo ""
+	@echo "=== SERVICES ==="
+	@kubectl get svc -A | grep -v kube-system
+	@echo ""
+	@echo "=== INGRESSES ==="
+	@kubectl get ingress -A 2>/dev/null || echo "(none)"
+
+# ─── Cluster Addons (local, no cloud accounts) ───────────────────────────────
+
+addons-install: ## Install all cluster addons (ingress, dashboard, kube-state-metrics, argocd)
+	bash scripts/bootstrap/install-addons.sh
+
+addons-ingress: ## Install NGINX Ingress Controller only
+	bash scripts/bootstrap/install-addons.sh --ingress
+
+addons-dashboard: ## Install Kubernetes Dashboard only
+	bash scripts/bootstrap/install-addons.sh --dashboard
+
+addons-monitoring: ## Install kube-state-metrics only
+	bash scripts/bootstrap/install-addons.sh --monitoring
+
+addons-argocd: ## Install ArgoCD only
+	bash scripts/bootstrap/install-addons.sh --argocd
+
+addons-uninstall: ## Remove all cluster addons
+	bash scripts/bootstrap/install-addons.sh --uninstall
+
+dashboard-forward: ## Port-forward Kubernetes Dashboard to localhost:8443 (background)
+	@echo "Opening Kubernetes Dashboard at https://localhost:8443"
+	@echo "Token: $$(cat .dashboard-token 2>/dev/null || kubectl -n kubernetes-dashboard get secret medinovai-dashboard-admin-token -o jsonpath='{.data.token}' | base64 --decode)"
+	kubectl port-forward -n kubernetes-dashboard svc/kubernetes-dashboard 8443:443 &
+
+argocd-forward: ## Port-forward ArgoCD to localhost:8080 (background)
+	@echo "Opening ArgoCD at http://localhost:8080"
+	@echo "Password: $$(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 --decode)"
+	kubectl port-forward svc/argocd-server -n argocd 8080:80 &
+
+cluster-status: ## Full cluster health check — all namespaces, addons, ingresses
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@echo "CLUSTER STATUS — $$(date)"
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@echo ""
+	@echo "[ MedinovAI Services ]"
+	@kubectl get pods -n medinovai-services -o wide 2>/dev/null || echo "namespace not found"
+	@echo ""
+	@echo "[ MedinovAI AI ]"
+	@kubectl get pods -n medinovai-ai -o wide 2>/dev/null || echo "namespace not found"
+	@echo ""
+	@echo "[ Addons ]"
+	@kubectl get pods -n ingress-nginx 2>/dev/null | tail -n +1 || echo "(ingress-nginx: not installed)"
+	@kubectl get pods -n kubernetes-dashboard 2>/dev/null | tail -n +1 || echo "(kubernetes-dashboard: not installed)"
+	@kubectl get pods -n medinovai-monitoring 2>/dev/null | tail -n +1 || echo "(monitoring: not installed)"
+	@kubectl get pods -n argocd 2>/dev/null | tail -n +1 || echo "(argocd: not installed)"
+	@echo ""
+	@echo "[ Ingresses ]"
+	@kubectl get ingress -A 2>/dev/null || echo "(none)"
+	@echo ""
+	@echo "[ NodePorts ]"
+	@kubectl get svc -A --field-selector spec.type=NodePort 2>/dev/null
 
 # ─── Infrastructure (Terraform) ──────────────────────────────────────────────
 

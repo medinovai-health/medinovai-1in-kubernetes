@@ -1,0 +1,46 @@
+# NGINX Ingress Controller — Docker Desktop (local) values
+# Helm chart: ingress-nginx/ingress-nginx
+# Tuned for single-node laptop: low resources, NodePort (no LoadBalancer)
+
+controller:
+  replicaCount: 1
+
+  # NodePort so we can reach ingress from host machine
+  service:
+    type: NodePort
+    nodePorts:
+      http: 30800
+      https: 30843
+
+  # Minimal resources for laptop
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 300m
+      memory: 256Mi
+
+  # Allow host port usage (needed for Docker Desktop single-node)
+  hostNetwork: false
+  hostPort:
+    enabled: false
+
+  # Admission webhook — disable for simplicity on local
+  admissionWebhooks:
+    enabled: false
+
+  # Single replica — no PDB needed
+  podDisruptionBudget:
+    enabled: false
+
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: false  # Enable when prometheus-operator is deployed
+
+  config:
+    # Trust forwarded headers from localhost
+    use-forwarded-headers: "true"
+    compute-full-forwarded-for: "true"
+    use-proxy-protocol: "false"

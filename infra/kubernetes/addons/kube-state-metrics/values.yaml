@@ -1,0 +1,53 @@
+# kube-state-metrics — exposes K8s object state as Prometheus metrics
+# Helm chart: prometheus-community/kube-state-metrics
+# Feeds into the existing Docker Compose Prometheus (via scrape config)
+# Lightweight: single pod, no storage needed
+
+replicaCount: 1
+
+resources:
+  requests:
+    cpu: 10m
+    memory: 32Mi
+  limits:
+    cpu: 100m
+    memory: 128Mi
+
+# Expose on ClusterIP — Prometheus scrapes it
+service:
+  type: ClusterIP
+  port: 8080
+
+# Collect all standard K8s resources
+collectors:
+  - certificatesigningrequests
+  - configmaps
+  - cronjobs
+  - daemonsets
+  - deployments
+  - endpoints
+  - horizontalpodautoscalers
+  - ingresses
+  - jobs
+  - leases
+  - limitranges
+  - mutatingwebhookconfigurations
+  - namespaces
+  - networkpolicies
+  - nodes
+  - persistentvolumeclaims
+  - persistentvolumes
+  - poddisruptionbudgets
+  - pods
+  - replicasets
+  - replicationcontrollers
+  - resourcequotas
+  - secrets
+  - services
+  - statefulsets
+  - storageclasses
+  - validatingwebhookconfigurations
+  - volumeattachments
+
+# Deploy in medinovai-monitoring namespace
+namespaceOverride: "medinovai-monitoring"

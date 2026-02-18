@@ -1,0 +1,73 @@
+# ArgoCD — GitOps controller
+# Helm chart: argo/argo-cd
+# Access: kubectl port-forward svc/argocd-server -n argocd 8080:443
+# Default admin password: kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
+
+global:
+  # Single-node laptop optimizations
+  revisionHistoryLimit: 3
+
+server:
+  replicas: 1
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+  # Disable TLS for local access (use port-forward)
+  insecure: true
+
+  service:
+    type: ClusterIP
+
+  ingress:
+    enabled: false  # Use port-forward for local
+
+repoServer:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 300m
+      memory: 256Mi
+
+applicationSet:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 10m
+      memory: 32Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
+
+controller:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+redis:
+  resources:
+    requests:
+      cpu: 10m
+      memory: 32Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+
+dex:
+  enabled: false  # Skip SSO for local dev
+
+notifications:
+  enabled: false  # Skip notifications for local dev
