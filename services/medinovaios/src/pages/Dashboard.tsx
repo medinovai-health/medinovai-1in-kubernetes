@@ -9,11 +9,10 @@ import { useHealthStatus } from '../hooks/useHealthStatus';
 import { getServiceById } from '../service-catalog';
 
 interface Props {
-  token: string;
   onLogout: () => void;
 }
 
-export function Dashboard({ token, onLogout }: Props) {
+export function Dashboard({ onLogout }: Props) {
   const [activeCategory, setActiveCategory] = useState<ServiceCategory | 'All'>('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [embeddedService, setEmbeddedService] = useState<ServiceDef | null>(null);
@@ -22,13 +21,12 @@ export function Dashboard({ token, onLogout }: Props) {
   const handleAtlasClick = () => {
     const atlasService = getServiceById('atlas');
     if (!atlasService) return;
-    const url = token && token !== 'guest'
-      ? `${atlasService.externalUrl}?token=${encodeURIComponent(token)}`
-      : atlasService.externalUrl;
-    window.open(url, '_blank', 'noopener,noreferrer');
+    // Cookie-based SSO — no token in URL. Atlas validates via its own /api/sso/me.
+    window.open(atlasService.externalUrl, '_blank', 'noopener,noreferrer');
   };
 
-  const isAuthenticated = Boolean(token && token !== 'guest');
+  // Dashboard only renders when authenticated — always true here
+  const isAuthenticated = true;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden', background: '#0a0f1e' }}>

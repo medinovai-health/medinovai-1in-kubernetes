@@ -130,25 +130,44 @@ export function Header({ searchQuery, onSearchChange, onAtlasClick, isAuthentica
           <span style={{ opacity: 0.6, fontSize: 11 }}>↗</span>
         </button>
 
-        {/* Auth state */}
+        {/* Auth state — always show sign out when authenticated */}
         {isAuthenticated && (
-          <button
-            onClick={onLogout}
-            style={{
-              padding: '6px 12px',
-              background: 'transparent',
-              border: '1px solid #1e2d40',
-              borderRadius: 7,
-              color: '#475569',
-              cursor: 'pointer',
-              fontSize: 12,
-              transition: 'all 0.15s ease',
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#ef4444'; e.currentTarget.style.color = '#ef4444'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#1e2d40'; e.currentTarget.style.color = '#475569'; }}
-          >
-            Sign out
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {/* Session status dot */}
+            <div
+              title="Session active"
+              style={{
+                width: 7,
+                height: 7,
+                borderRadius: '50%',
+                background: '#4ade80',
+                boxShadow: '0 0 6px #4ade8080',
+                flexShrink: 0,
+              }}
+            />
+            <button
+              onClick={onLogout}
+              title="Sign out of MedinovAI"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 5,
+                padding: '6px 12px',
+                background: 'transparent',
+                border: '1px solid #1e2d40',
+                borderRadius: 7,
+                color: '#475569',
+                cursor: 'pointer',
+                fontSize: 12,
+                transition: 'all 0.15s ease',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#ef4444'; e.currentTarget.style.color = '#ef4444'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#1e2d40'; e.currentTarget.style.color = '#475569'; }}
+            >
+              <span style={{ fontSize: 11 }}>⏻</span>
+              Sign out
+            </button>
+          </div>
         )}
       </div>
     </header>

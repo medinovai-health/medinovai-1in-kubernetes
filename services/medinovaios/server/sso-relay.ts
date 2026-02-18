@@ -313,6 +313,8 @@ export async function handleValidate(req: Request, res: Response) {
  * GET /api/sso/me
  * Returns user info from the valid access token cookie.
  * Used by the React SPA on mount to check session state.
+ * Includes `expiresIn` (seconds until token expiry) so the frontend
+ * can schedule its own refresh without decoding the JWT in browser.
  */
 export async function handleMe(req: Request, res: Response) {
   const accessToken = req.cookies?.[COOKIE_ACCESS] as string | undefined;
@@ -322,14 +324,16 @@ export async function handleMe(req: Request, res: Response) {
 
   try {
     const payload = await verifyJwt(accessToken);
+    const expiresIn = payload.exp ? Math.max(0, payload.exp - Math.floor(Date.now() / 1000)) : 0;
     return res.json({
       authenticated: true,
+      expiresIn,
       user: {
-        sub:      payload.sub,
-        email:    payload.email,
-        name:     payload.name ?? `${payload.given_name ?? ''} ${payload.family_name ?? ''}`.trim(),
-        username: payload.preferred_username,
-        roles:    payload.roles ?? [],
+        sub:       payload.sub,
+        email:     payload.email,
+        name:      payload.name ?? `${payload.given_name ?? ''} ${payload.family_name ?? ''}`.trim(),
+        username:  payload.preferred_username,
+        roles:     payload.roles ?? [],
         tenant_id: payload.tenant_id,
       },
     });
@@ -338,7 +342,8 @@ export async function handleMe(req: Request, res: Response) {
     if (msg.includes('expired')) {
       const refreshed = await attemptRefresh(req, res);
       if (refreshed) {
-        return res.json({ authenticated: true, refreshed: true, user: refreshed });
+        const expiresIn = refreshed.exp ? Math.max(0, refreshed.exp - Math.floor(Date.now() / 1000)) : 0;
+        return res.json({ authenticated: true, refreshed: true, expiresIn, user: refreshed });
       }
     }
     return res.status(401).json({ authenticated: false, reason: msg });
