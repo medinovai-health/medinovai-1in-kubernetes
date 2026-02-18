@@ -18,7 +18,17 @@ spec:
         app.kubernetes.io/name: auth-service
         app.kubernetes.io/component: auth
         app.kubernetes.io/part-of: medinovai
+      annotations:
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/agent-inject-secret-keycloak: "secret/medinovai/keycloak/deploy"
+        vault.hashicorp.com/agent-inject-template-keycloak: |
+          {{- with secret "secret/medinovai/keycloak/deploy" -}}
+          export KEYCLOAK_ADMIN_PASSWORD="{{ .Data.data.admin_password }}"
+          export KC_DB_PASSWORD="{{ .Data.data.db_password }}"
+          {{- end }}
+        vault.hashicorp.com/role: "auth-service"
     spec:
+      serviceAccountName: auth-service
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:

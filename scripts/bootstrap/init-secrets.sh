@@ -11,14 +11,19 @@ set -euo pipefail
 CLOUD="aws"
 ENVIRONMENT="staging"
 PROJECT="medinovai"
+VAULT_ADDR="${VAULT_ADDR:-http://localhost:8200}"
+VAULT_TOKEN="${VAULT_TOKEN:-${VAULT_DEV_ROOT_TOKEN:-medinovai-dev-token}}"
 
 while [[ $# -gt 0 ]]; do
     case $1 in
         --cloud)        CLOUD="$2"; shift 2 ;;
         --environment)  ENVIRONMENT="$2"; shift 2 ;;
+        --vault-addr)   VAULT_ADDR="$2"; shift 2 ;;
         *)              echo "Unknown option: $1"; exit 1 ;;
     esac
 done
+
+export VAULT_ADDR VAULT_TOKEN
 
 echo "╔══════════════════════════════════════════════════════════════╗"
 echo "║       Secrets Initialization — $ENVIRONMENT                 ║"
@@ -74,6 +79,38 @@ case "$CLOUD" in
                 2>/dev/null || \
             echo "  ⚠ Could not store $name (check permissions)"
         done
+        ;;
+    vault)
+        echo ""
+        echo "▸ Storing secrets in HashiCorp Vault (KV v2)..."
+        echo "  Vault address: $VAULT_ADDR"
+
+        # Ensure Vault is reachable
+        if ! vault status -address="$VAULT_ADDR" &>/dev/null; then
+            echo "  ERROR: Vault is not reachable at $VAULT_ADDR"
+            echo "  Ensure the vault container is running: docker compose up -d vault"
+            exit 1
+        fi
+
+        # Ensure KV v2 engine is enabled
+        if ! vault secrets list -format=json 2>/dev/null | grep -q '"secret/"'; then
+            vault secrets enable -path=secret kv-v2
+            echo "  ✓ KV v2 secrets engine enabled"
+        fi
+
+        # Write generated secrets into Vault KV v2
+        vault_put() {
+            local path="$1"; shift
+            vault kv put "secret/medinovai/$path" "$@" \
+                && echo "  ✓ secret/medinovai/$path" \
+                || echo "  ⚠ Failed to write secret/medinovai/$path"
+        }
+
+        vault_put "infra/postgres"       password="$DB_PASSWORD"
+        vault_put "infra/redis"          password="$REDIS_PASSWORD"
+        vault_put "infra/jwt"            secret="$JWT_SECRET"
+        vault_put "infra/api-key"        key="$API_KEY"
+        vault_put "infra/encryption"     key="$ENCRYPTION_KEY"
         ;;
     *)
         echo ""

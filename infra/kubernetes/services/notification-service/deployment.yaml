@@ -18,7 +18,17 @@ spec:
         app.kubernetes.io/name: notification-service
         app.kubernetes.io/component: notification
         app.kubernetes.io/part-of: medinovai
+      annotations:
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/agent-inject-secret-notification: "secret/medinovai/notification-service/smtp"
+        vault.hashicorp.com/agent-inject-template-notification: |
+          {{- with secret "secret/medinovai/notification-service/smtp" -}}
+          export SMTP_PASSWORD="{{ .Data.data.password }}"
+          export SMTP_API_KEY="{{ .Data.data.api_key }}"
+          {{- end }}
+        vault.hashicorp.com/role: "notification-service"
     spec:
+      serviceAccountName: notification-service
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:

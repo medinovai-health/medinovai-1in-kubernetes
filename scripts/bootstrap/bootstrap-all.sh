@@ -69,13 +69,16 @@ echo -e "${NC}"
 echo -e "${BOLD}  Full Local Stack Bootstrap${NC}  —  $(date '+%Y-%m-%d %H:%M')"
 echo ""
 
-# ── Step 0: Security Service (Keycloak IAM) ───────────────────────────────────
-# Must run BEFORE everything else — all products authenticate via Keycloak.
-step "0 / 5  Security Service  (Keycloak IAM — the single login point)"
+# ── Step 0: Security Layer (Vault + Keycloak IAM) ─────────────────────────────
+# Must run BEFORE everything else.
+# Sub-steps:
+#   0a — Clone MedinovAI-security-service (Keycloak config)
+#   0b — Start Vault, wait healthy, run init-vault.sh (idempotent)
+#   0c — Start Keycloak (depends on Vault being healthy for its own secrets)
+step "0 / 5  Security Layer  (Vault secrets store + Keycloak IAM)"
 
+# ── Step 0a: Clone security service ──────────────────────────────────────────
 SECURITY_REPO="${SECURITY_SERVICE_PATH:-$HOME/Documents/GitHub/MedinovAI-security-service}"
-
-# Clone security service if not present
 if [[ ! -d "$SECURITY_REPO/.git" ]]; then
   log "Cloning MedinovAI-security-service..."
   if git clone git@github.com:myonsite-healthcare/MedinovAI-security-service.git "$SECURITY_REPO" 2>/dev/null; then
@@ -87,8 +90,33 @@ if [[ ! -d "$SECURITY_REPO/.git" ]]; then
 else
   ok "Security service at $SECURITY_REPO"
 fi
-
 export SECURITY_SERVICE_PATH="$SECURITY_REPO"
+
+# ── Step 0b: Start Vault and initialize ───────────────────────────────────────
+log "Starting Vault..."
+docker compose -f infra/docker/docker-compose.dev.yml up -d vault 2>/dev/null || true
+
+log "Waiting for Vault to be ready (max 30s)..."
+VAULT_READY=false
+for i in $(seq 1 30); do
+  if curl -sf "http://localhost:8200/v1/sys/health" &>/dev/null; then
+    VAULT_READY=true
+    ok "Vault ready (took ~${i}s)"; break
+  fi
+  printf "."; sleep 1
+done
+echo ""
+
+if [[ "$VAULT_READY" == "true" ]]; then
+  log "Initializing Vault (idempotent)..."
+  VAULT_ADDR=http://localhost:8200 \
+  VAULT_TOKEN="${VAULT_DEV_ROOT_TOKEN:-medinovai-dev-token}" \
+  bash scripts/bootstrap/init-vault.sh 2>&1 | grep -E "✓|⚠|ERROR|Step" || true
+  ok "Vault initialized → http://localhost:8200"
+else
+  warn "Vault did not become ready — skipping init. Secrets will use .env fallbacks."
+  warn "Check: docker logs medinovai-vault"
+fi
 
 # Validate required passwords
 if [[ -z "${KEYCLOAK_ADMIN_PASSWORD:-}" ]]; then

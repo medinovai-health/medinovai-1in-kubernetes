@@ -47,6 +47,10 @@ services:
       HOOKS_TOKEN: ${HOOKS_TOKEN:-}
       OLLAMA_DEFAULT_MODEL: ${OLLAMA_DEFAULT_MODEL:-qwen2.5:1.5b}
       MEDINOVAIOS_URL: http://medinovaios:3030
+      # ── Vault (AppRole) ──────────────────────────────────────────────────────
+      VAULT_ADDR: http://vault:8200
+      VAULT_ROLE_ID: ${API_GATEWAY_VAULT_ROLE_ID:-}
+      VAULT_SECRET_ID: ${API_GATEWAY_VAULT_SECRET_ID:-}
     healthcheck:
       # Passes only after the sentinel file is written (bootstrap complete)
       test: ["CMD", "test", "-f", "/atlas-home/.deploy-complete"]
@@ -140,6 +144,25 @@ services:
       timeout: 5s
       retries: 5
       start_period: 30s
+    networks:
+      - medinovai-dev
+
+  vault:
+    image: hashicorp/vault:latest
+    platform: linux/arm64
+    container_name: medinovai-vault
+    cap_add: [IPC_LOCK]
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: ${VAULT_DEV_ROOT_TOKEN:-medinovai-dev-token}
+      VAULT_DEV_LISTEN_ADDRESS: 0.0.0.0:8200
+    ports:
+      - "8200:8200"
+    healthcheck:
+      test: ["CMD", "vault", "status", "-address=http://localhost:8200"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     networks:
       - medinovai-dev
 
@@ -343,6 +366,10 @@ services:
       ATLAS_UI_URL: ${ATLAS_UI_URL:-http://localhost:3737}
       LIS_INTERNAL_URL: http://medinovai-lis:3000
       CORTEX_INTERNAL_URL: http://medinovai-cortex:3100
+      # ── Vault (AppRole) ──────────────────────────────────────────────────────
+      VAULT_ADDR: http://vault:8200
+      VAULT_ROLE_ID: ${MEDINOVAIOS_VAULT_ROLE_ID:-}
+      VAULT_SECRET_ID: ${MEDINOVAIOS_VAULT_SECRET_ID:-}
     depends_on:
       deployer:
         condition: service_healthy
@@ -366,6 +393,7 @@ volumes:
   ollama-data:
   open-webui-data:
   atlas-ui-modules:
+  vault-data:
   keycloak-data:       # Keycloak runtime data (H2 sessions, caches — not realm config)
   # ─── Deployer volumes (populated by the deployer service on first boot) ──
   atlas-config:        # Atlas config (atlas.json, .env, workspace templates)

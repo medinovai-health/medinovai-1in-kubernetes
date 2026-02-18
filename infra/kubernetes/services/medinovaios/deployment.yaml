@@ -23,7 +23,16 @@ spec:
         app.kubernetes.io/name: medinovaios
         app.kubernetes.io/component: portal
         app.kubernetes.io/part-of: medinovai
+      annotations:
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/agent-inject-secret-keycloak: "secret/medinovai/keycloak/medinovaios"
+        vault.hashicorp.com/agent-inject-template-keycloak: |
+          {{- with secret "secret/medinovai/keycloak/medinovaios" -}}
+          export KEYCLOAK_CLIENT_SECRET="{{ .Data.data.client_secret }}"
+          {{- end }}
+        vault.hashicorp.com/role: "medinovaios"
     spec:
+      serviceAccountName: medinovaios
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:

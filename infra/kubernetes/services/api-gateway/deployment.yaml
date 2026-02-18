@@ -18,7 +18,21 @@ spec:
         app.kubernetes.io/name: api-gateway
         app.kubernetes.io/component: gateway
         app.kubernetes.io/part-of: medinovai
+      annotations:
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/agent-inject-secret-postgres: "secret/medinovai/infra/postgres"
+        vault.hashicorp.com/agent-inject-template-postgres: |
+          {{- with secret "secret/medinovai/infra/postgres" -}}
+          export DATABASE_PASSWORD="{{ .Data.data.password }}"
+          {{- end }}
+        vault.hashicorp.com/agent-inject-secret-redis: "secret/medinovai/infra/redis"
+        vault.hashicorp.com/agent-inject-template-redis: |
+          {{- with secret "secret/medinovai/infra/redis" -}}
+          export REDIS_PASSWORD="{{ .Data.data.password }}"
+          {{- end }}
+        vault.hashicorp.com/role: "api-gateway"
     spec:
+      serviceAccountName: api-gateway
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:

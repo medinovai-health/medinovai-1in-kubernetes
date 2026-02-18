@@ -18,7 +18,16 @@ spec:
         app.kubernetes.io/name: clinical-engine
         app.kubernetes.io/component: engine
         app.kubernetes.io/part-of: medinovai
+      annotations:
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/agent-inject-secret-postgres: "secret/medinovai/infra/postgres"
+        vault.hashicorp.com/agent-inject-template-postgres: |
+          {{- with secret "secret/medinovai/infra/postgres" -}}
+          export DATABASE_PASSWORD="{{ .Data.data.password }}"
+          {{- end }}
+        vault.hashicorp.com/role: "clinical-engine"
     spec:
+      serviceAccountName: clinical-engine
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:

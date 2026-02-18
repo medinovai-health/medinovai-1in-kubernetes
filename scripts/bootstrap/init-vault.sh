@@ -1,390 +1,290 @@
 #!/usr/bin/env bash
 # ─── init-vault.sh ────────────────────────────────────────────────────────────
-# Deploy and initialize HashiCorp Vault in K3s for the entire MedinovAI platform.
+# Initialize HashiCorp Vault for the MedinovAI platform.
+#
+# Idempotent: safe to re-run on every bootstrap. Checks existing state before
+# enabling engines or creating roles.
 #
 # Usage:
-#   bash scripts/bootstrap/init-vault.sh              # Deploy + initialize
-#   bash scripts/bootstrap/init-vault.sh --seed        # Seed secrets interactively
-#   bash scripts/bootstrap/init-vault.sh --unseal      # Unseal only
-#   bash scripts/bootstrap/init-vault.sh --status      # Check status
+#   bash scripts/bootstrap/init-vault.sh                    # Docker Compose dev
+#   bash scripts/bootstrap/init-vault.sh --mode k8s         # K8s (port-forward first)
+#   bash scripts/bootstrap/init-vault.sh --seed-only        # Re-seed secrets only
+#
+# Prerequisites (Docker Compose dev):
+#   1. Vault container must be running and healthy (docker compose up -d vault)
+#   2. VAULT_ADDR and VAULT_TOKEN must be set (or defaults used)
+#   3. Source .env before running: set -a && source infra/docker/.env && set +a
+#
+# Vault dev mode root token default: medinovai-dev-token
 # ─────────────────────────────────────────────────────────────────────────────
 
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(dirname "$(dirname "$SCRIPT_DIR")")"
-DEPLOY_HOME="${DEPLOY_HOME:-$HOME/.medinovai-deploy}"
-VAULT_DIR="$DEPLOY_HOME/vault"
+MODE="compose"
+SEED_ONLY=false
 
-ACTION="deploy"
-for arg in "$@"; do
-    case "$arg" in
-        --seed)   ACTION="seed" ;;
-        --unseal) ACTION="unseal" ;;
-        --status) ACTION="status" ;;
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --mode)       MODE="$2"; shift 2 ;;
+        --seed-only)  SEED_ONLY=true; shift ;;
+        *)            echo "Unknown option: $1"; exit 1 ;;
     esac
 done
 
-mkdir -p "$VAULT_DIR"
-log() { echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] $1"; }
+# ── Configuration ─────────────────────────────────────────────────────────────
+VAULT_ADDR="${VAULT_ADDR:-http://localhost:8200}"
+VAULT_TOKEN="${VAULT_TOKEN:-${VAULT_DEV_ROOT_TOKEN:-medinovai-dev-token}}"
+export VAULT_ADDR VAULT_TOKEN
 
-# ─── Deploy Vault via Helm ──────────────────────────────────────────────────
-deploy_vault() {
-    log "Deploying HashiCorp Vault to K3s..."
+# ── Helpers ───────────────────────────────────────────────────────────────────
+ok()   { echo "  ✓ $*"; }
+log()  { echo "▸ $*"; }
+warn() { echo "  ⚠ $*"; }
 
-    if helm list -n vault 2>/dev/null | grep -q "vault"; then
-        log "Vault already installed. Checking status..."
-        kubectl get pods -n vault --no-headers 2>/dev/null
-        return 0
-    fi
+vault_cmd() { vault "$@" 2>/dev/null; }
 
-    helm repo add hashicorp https://helm.releases.hashicorp.com 2>/dev/null || true
-    helm repo update hashicorp 2>/dev/null
-
-    local values_file="$REPO_ROOT/infra/kubernetes/vault/values.yaml"
-    if [ -f "$values_file" ]; then
-        helm install vault hashicorp/vault \
-            --namespace vault \
-            --create-namespace \
-            -f "$values_file" \
-            --wait --timeout 5m
-    else
-        helm install vault hashicorp/vault \
-            --namespace vault \
-            --create-namespace \
-            --set "server.standalone.enabled=true" \
-            --set "server.dataStorage.size=10Gi" \
-            --set "server.dataStorage.storageClass=longhorn" \
-            --set "server.auditStorage.enabled=true" \
-            --set "server.auditStorage.size=5Gi" \
-            --set "server.auditStorage.storageClass=longhorn" \
-            --set "injector.enabled=true" \
-            --set "ui.enabled=true" \
-            --wait --timeout 5m
-    fi
-
-    log "Vault pods deployed. Waiting for pod to be ready..."
-    kubectl wait --for=condition=Ready pod/vault-0 -n vault --timeout=120s 2>/dev/null || true
+engine_enabled() {
+    vault secrets list -format=json 2>/dev/null | grep -q "\"$1/\""
 }
 
-# ─── Initialize Vault ───────────────────────────────────────────────────────
-initialize_vault() {
-    log "Checking Vault initialization status..."
-
-    local init_status
-    init_status=$(kubectl exec vault-0 -n vault -- vault status -format=json 2>/dev/null | jq -r '.initialized' 2>/dev/null || echo "false")
-
-    if [ "$init_status" = "true" ]; then
-        log "Vault already initialized."
-        return 0
-    fi
-
-    log "Initializing Vault (5 key shares, 3 threshold)..."
-    local init_output
-    init_output=$(kubectl exec vault-0 -n vault -- vault operator init \
-        -key-shares=5 \
-        -key-threshold=3 \
-        -format=json)
-
-    echo "$init_output" > "$VAULT_DIR/init-keys.json"
-    chmod 600 "$VAULT_DIR/init-keys.json"
-
-    log "Vault initialized. Keys saved to $VAULT_DIR/init-keys.json"
-    log "CRITICAL: Back up init-keys.json securely. Loss = permanent data loss."
-
-    unseal_vault
+auth_enabled() {
+    vault auth list -format=json 2>/dev/null | grep -q "\"$1/\""
 }
 
-# ─── Unseal Vault ────────────────────────────────────────────────────────────
-unseal_vault() {
-    log "Unsealing Vault..."
+secret_exists() {
+    vault kv get "$1" &>/dev/null
+}
 
-    if [ ! -f "$VAULT_DIR/init-keys.json" ]; then
-        log "ERROR: No init keys found at $VAULT_DIR/init-keys.json"
+echo "╔══════════════════════════════════════════════════════════════╗"
+echo "║       Vault Initialization — MedinovAI Platform             ║"
+echo "║       Mode: $MODE"
+echo "╚══════════════════════════════════════════════════════════════╝"
+echo ""
+
+# ── Wait for Vault ─────────────────────────────────────────────────────────────
+log "Waiting for Vault to be ready at $VAULT_ADDR..."
+for i in $(seq 1 30); do
+    if vault status -address="$VAULT_ADDR" &>/dev/null; then
+        ok "Vault is ready"
+        break
+    fi
+    if [[ $i -eq 30 ]]; then
+        echo "ERROR: Vault not ready after 30s. Ensure the vault container is running."
         exit 1
     fi
+    printf "."
+    sleep 1
+done
+echo ""
 
-    local sealed
-    sealed=$(kubectl exec vault-0 -n vault -- vault status -format=json 2>/dev/null | jq -r '.sealed' 2>/dev/null || echo "true")
+if [[ "$SEED_ONLY" == "false" ]]; then
 
-    if [ "$sealed" = "false" ]; then
-        log "Vault already unsealed."
-        return 0
-    fi
+# ── Step 1: Enable KV v2 secrets engine ───────────────────────────────────────
+log "Step 1/4 — KV v2 secrets engine"
+if engine_enabled "secret"; then
+    ok "KV v2 already enabled at secret/"
+else
+    vault secrets enable -path=secret kv-v2
+    ok "KV v2 enabled at secret/"
+fi
 
-    for i in 0 1 2; do
-        local key
-        key=$(jq -r ".unseal_keys_b64[$i]" "$VAULT_DIR/init-keys.json")
-        kubectl exec vault-0 -n vault -- vault operator unseal "$key" >/dev/null 2>&1
-    done
+# ── Step 2: Enable AppRole auth (Docker Compose / non-K8s services) ──────────
+log "Step 2/4 — AppRole auth method"
+if auth_enabled "approle"; then
+    ok "AppRole already enabled"
+else
+    vault auth enable approle
+    ok "AppRole auth enabled"
+fi
 
-    log "Vault unsealed."
-}
-
-# ─── Configure Vault ────────────────────────────────────────────────────────
-configure_vault() {
-    log "Configuring Vault for MedinovAI platform..."
-
-    local root_token
-    root_token=$(jq -r '.root_token' "$VAULT_DIR/init-keys.json")
-
-    kubectl exec vault-0 -n vault -- sh -c "
-        export VAULT_TOKEN='$root_token'
-
-        # Enable KV v2 secrets engine
-        vault secrets enable -path=medinovai-secrets -version=2 kv 2>/dev/null || true
-
-        # Enable audit log
-        vault audit enable file file_path=/vault/audit/audit.log 2>/dev/null || true
-
-        # Enable Kubernetes auth
-        vault auth enable kubernetes 2>/dev/null || true
+# ── Step 3: Enable Kubernetes auth (K8s pods) ─────────────────────────────────
+log "Step 3/4 — Kubernetes auth method"
+if [[ "$MODE" == "k8s" ]]; then
+    if auth_enabled "kubernetes"; then
+        ok "Kubernetes auth already enabled"
+    else
+        vault auth enable kubernetes
+        # Configure K8s auth — requires the vault pod to be running in cluster
+        # or KUBERNETES_SERVICE_HOST to be set
+        K8S_HOST="${KUBERNETES_SERVICE_HOST:-https://kubernetes.default.svc}"
         vault write auth/kubernetes/config \
-            kubernetes_host='https://\$KUBERNETES_SERVICE_HOST:\$KUBERNETES_SERVICE_PORT' 2>/dev/null || true
-
-        # ─── Policies ─────────────────────────────────────────────────────
-        # AtlasOS read policy
-        vault policy write atlasos-read - <<'POLICY'
-path \"medinovai-secrets/data/atlasos/*\" {
-  capabilities = [\"read\", \"list\"]
-}
-path \"medinovai-secrets/data/infra/*\" {
-  capabilities = [\"read\"]
-}
-POLICY
-
-        # Platform services read policy
-        vault policy write platform-read - <<'POLICY'
-path \"medinovai-secrets/data/platform/*\" {
-  capabilities = [\"read\", \"list\"]
-}
-path \"medinovai-secrets/data/infra/*\" {
-  capabilities = [\"read\"]
-}
-POLICY
-
-        # Security services policy
-        vault policy write security-read - <<'POLICY'
-path \"medinovai-secrets/data/security/*\" {
-  capabilities = [\"read\", \"list\"]
-}
-POLICY
-
-        # Clinical services policy
-        vault policy write clinical-read - <<'POLICY'
-path \"medinovai-secrets/data/clinical/*\" {
-  capabilities = [\"read\", \"list\"]
-}
-path \"medinovai-secrets/data/infra/postgres-clinical\" {
-  capabilities = [\"read\"]
-}
-POLICY
-
-        # AI/ML services policy
-        vault policy write ai-ml-read - <<'POLICY'
-path \"medinovai-secrets/data/ai-ml/*\" {
-  capabilities = [\"read\", \"list\"]
-}
-POLICY
-
-        # Admin policy
-        vault policy write deploy-admin - <<'POLICY'
-path \"medinovai-secrets/*\" {
-  capabilities = [\"create\", \"read\", \"update\", \"delete\", \"list\"]
-}
-POLICY
-
-        # ─── Kubernetes Auth Roles ───────────────────────────────────────
-        vault write auth/kubernetes/role/atlasos \
-            bound_service_account_names=atlasos \
-            bound_service_account_namespaces=medinovai-services,medinovai-ai \
-            policies=atlasos-read \
-            ttl=1h
-
-        vault write auth/kubernetes/role/platform-services \
-            bound_service_account_names='*' \
-            bound_service_account_namespaces=medinovai-services \
-            policies=platform-read \
-            ttl=1h
-
-        vault write auth/kubernetes/role/security-services \
-            bound_service_account_names='*' \
-            bound_service_account_namespaces=medinovai-security \
-            policies=security-read \
-            ttl=1h
-
-        vault write auth/kubernetes/role/clinical-services \
-            bound_service_account_names='*' \
-            bound_service_account_namespaces=medinovai-clinical \
-            policies=clinical-read \
-            ttl=1h
-
-        vault write auth/kubernetes/role/ai-ml-services \
-            bound_service_account_names='*' \
-            bound_service_account_namespaces=medinovai-ai \
-            policies=ai-ml-read \
-            ttl=1h
-    "
-
-    log "Vault configured with policies and Kubernetes auth roles."
-}
-
-# ─── Seed secrets ────────────────────────────────────────────────────────────
-seed_secrets() {
-    log "Seeding secrets into Vault..."
-
-    local root_token
-    root_token=$(jq -r '.root_token' "$VAULT_DIR/init-keys.json")
-
-    export VAULT_ADDR="http://127.0.0.1:8200"
-
-    # Port-forward Vault
-    kubectl port-forward svc/vault -n vault 8200:8200 &>/dev/null &
-    local pf_pid=$!
-    sleep 3
-
-    export VAULT_TOKEN="$root_token"
-
-    # Read from existing .env if available
-    local env_file=""
-    if [ -f "$HOME/.atlas/.env" ]; then
-        env_file="$HOME/.atlas/.env"
-        log "Reading secrets from $env_file"
-    elif [ -f "$REPO_ROOT/config/.env.example" ]; then
-        env_file="$REPO_ROOT/config/.env.example"
-        log "Using .env.example as template (values will be placeholders)"
+            kubernetes_host="$K8S_HOST" \
+            disable_iss_validation=true
+        ok "Kubernetes auth enabled and configured"
     fi
+else
+    ok "Kubernetes auth skipped (compose mode)"
+fi
 
-    # Helper to put a secret, reading from env file or prompting
-    put_secret() {
-        local vault_path="$1"
-        shift
-        local kv_pairs=()
-        for pair in "$@"; do
-            local key="${pair%%=*}"
-            local default="${pair#*=}"
-            local value=""
+# ── Step 4: Per-service Vault policies ────────────────────────────────────────
+log "Step 4/4 — Per-service policies"
 
-            if [ -n "$env_file" ]; then
-                value=$(grep "^${key}=" "$env_file" 2>/dev/null | head -1 | cut -d'=' -f2- | sed 's/^["'"'"']//;s/["'"'"']$//' || echo "")
-            fi
+write_policy() {
+    local name="$1"
+    local path="$2"
+    vault policy write "$name" - <<EOF
+path "secret/data/medinovai/$path" {
+  capabilities = ["read"]
+}
+path "secret/metadata/medinovai/$path" {
+  capabilities = ["read"]
+}
+EOF
+    ok "Policy: $name → secret/medinovai/$path"
+}
 
-            if [ -z "$value" ] || [ "$value" = "$default" ]; then
-                value="$default"
-            fi
+write_policy "infra-postgres"        "infra/postgres"
+write_policy "infra-redis"           "infra/redis"
+write_policy "keycloak-deploy"       "keycloak/deploy"
+write_policy "keycloak-medinovaios"  "keycloak/medinovaios"
+write_policy "lis-keycloak"          "lis/keycloak"
+write_policy "lis-mysql"             "lis/mysql"
+write_policy "lis-jwt"               "lis/jwt"
+write_policy "registry"              "registry/*"
+write_policy "cortex"                "cortex/*"
+write_policy "sales"                 "sales/*"
+write_policy "notification-service"  "notification-service/*"
+write_policy "api-gateway"           "infra/*"
+write_policy "auth-service"          "keycloak/*"
+write_policy "clinical-engine"       "infra/*"
+write_policy "data-pipeline"         "infra/*"
+write_policy "ai-inference"          "infra/*"
+write_policy "medinovaios"           "keycloak/medinovaios"
 
-            kv_pairs+=("${key}=${value}")
-        done
+# ── AppRole: create roles per service ────────────────────────────────────────
+create_approle() {
+    local name="$1"
+    local policies="$2"
+    vault write "auth/approle/role/$name" \
+        secret_id_ttl=0 \
+        token_num_uses=0 \
+        token_ttl=1h \
+        token_max_ttl=4h \
+        token_policies="$policies"
+    ok "AppRole role: $name (policies: $policies)"
+}
 
-        vault kv put "medinovai-secrets/${vault_path}" "${kv_pairs[@]}" 2>/dev/null && \
-            log "  ✓ medinovai-secrets/${vault_path}" || \
-            log "  ✗ medinovai-secrets/${vault_path} FAILED"
+create_approle "postgres"             "infra-postgres"
+create_approle "redis"                "infra-redis"
+create_approle "keycloak-deploy"      "keycloak-deploy"
+create_approle "medinovaios"          "keycloak-medinovaios"
+create_approle "lis-keycloak"         "lis-keycloak"
+create_approle "lis-api"              "lis-keycloak,lis-mysql,lis-jwt"
+create_approle "registry"             "registry"
+create_approle "cortex"               "cortex"
+create_approle "sales"                "sales"
+create_approle "notification-service" "notification-service"
+create_approle "api-gateway"          "api-gateway"
+create_approle "auth-service"         "auth-service"
+
+# ── K8s auth: bind service accounts to policies ──────────────────────────────
+if [[ "$MODE" == "k8s" ]]; then
+    bind_k8s_role() {
+        local name="$1"
+        local ns="$2"
+        local policies="$3"
+        vault write "auth/kubernetes/role/$name" \
+            bound_service_account_names="$name" \
+            bound_service_account_namespaces="$ns" \
+            policies="$policies" \
+            ttl=1h
+        ok "K8s role: $name in $ns"
     }
 
-    log ""
-    log "─── Infrastructure secrets ───"
-    put_secret "infra/postgres-primary" \
-        "POSTGRES_URL=postgresql://medinovai:changeme@postgres-primary:5432/medinovai" \
-        "POSTGRES_PASSWORD=changeme"
+    bind_k8s_role "api-gateway"          "medinovai-services"  "api-gateway"
+    bind_k8s_role "auth-service"         "medinovai-services"  "auth-service"
+    bind_k8s_role "clinical-engine"      "medinovai-services"  "clinical-engine"
+    bind_k8s_role "data-pipeline"        "medinovai-services"  "data-pipeline"
+    bind_k8s_role "notification-service" "medinovai-services"  "notification-service"
+    bind_k8s_role "ai-inference"         "medinovai-ai"        "ai-inference"
+    bind_k8s_role "medinovaios"          "medinovai-os"        "medinovaios"
+fi
 
-    put_secret "infra/postgres-clinical" \
-        "POSTGRES_URL=postgresql://clinical:changeme@postgres-clinical:5432/clinical" \
-        "POSTGRES_PASSWORD=changeme"
+fi # end if not seed-only
 
-    put_secret "infra/redis" \
-        "REDIS_URL=redis://redis-cache:6379"
+# ── Seed secrets into Vault KV v2 ─────────────────────────────────────────────
+log "Seeding secrets into Vault KV v2..."
+echo ""
+echo "  Secrets are seeded from environment variables."
+echo "  Make sure you have sourced your .env file before running this script."
+echo ""
 
-    put_secret "infra/kafka" \
-        "KAFKA_BROKERS=kafka:9092"
-
-    put_secret "infra/elasticsearch" \
-        "ELASTICSEARCH_URL=http://elasticsearch:9200"
-
-    put_secret "infra/mongodb" \
-        "MONGODB_URL=mongodb://mongodb:27017/medinovai"
-
-    log ""
-    log "─── Security secrets ───"
-    put_secret "security/keycloak" \
-        "KEYCLOAK_ADMIN=admin" \
-        "KEYCLOAK_ADMIN_PASSWORD=changeme" \
-        "KEYCLOAK_URL=http://keycloak:8080"
-
-    put_secret "security/jwt" \
-        "JWT_SECRET=changeme-generate-a-real-secret"
-
-    log ""
-    log "─── AtlasOS secrets ───"
-    put_secret "atlasos/anthropic" "ANTHROPIC_API_KEY=sk-ant-changeme"
-    put_secret "atlasos/openai" "OPENAI_API_KEY=sk-changeme"
-    put_secret "atlasos/google-ai" "GOOGLE_AI_API_KEY=changeme"
-    put_secret "atlasos/slack" "SLACK_APP_TOKEN=xapp-changeme" "SLACK_BOT_TOKEN=xoxb-changeme"
-    put_secret "atlasos/hooks" "HOOKS_TOKEN=changeme"
-    put_secret "atlasos/threecx" \
-        "THREECX_HOST=changeme" \
-        "THREECX_CLIENT_ID=changeme" \
-        "THREECX_CLIENT_SECRET=changeme" \
-        "THREECX_EXTENSION=changeme" \
-        "THREECX_DID=changeme"
-    put_secret "atlasos/whatsapp" \
-        "WA_PHONE_NUMBER_ID=changeme" \
-        "WA_ACCESS_TOKEN=changeme" \
-        "WA_VERIFY_TOKEN=changeme"
-    put_secret "atlasos/voice" \
-        "ELEVENLABS_API_KEY=changeme" \
-        "DEEPGRAM_API_KEY=changeme"
-    put_secret "atlasos/crm" "CRM_API_KEY=changeme" "CRM_API_URL=changeme"
-    put_secret "atlasos/ticketing" "TICKETS_API_KEY=changeme" "TICKETS_API_URL=changeme"
-    put_secret "atlasos/accounting" "ACCOUNTING_API_KEY=changeme"
-    put_secret "atlasos/gmail" "GMAIL_SERVICE_ACCOUNT_JSON={}" "GMAIL_WATCH_EMAIL=changeme"
-    put_secret "atlasos/stirling-pdf" "STIRLING_PDF_API_KEY=atlas-stirling-key"
-    put_secret "atlasos/arena" "ARENA_RECORDING_ENCRYPTION_KEY=changeme"
-
-    log ""
-    log "─── AI/ML secrets ───"
-    put_secret "ai-ml/aifactory" "AIFACTORY_ENDPOINT=http://aifactory:5000"
-    put_secret "ai-ml/ollama" "OLLAMA_HOST=http://ollama:11434"
-
-    log ""
-    log "─── Platform secrets ───"
-    put_secret "platform/github" "GITHUB_WEBHOOK_SECRET=changeme"
-    put_secret "platform/notification" "SMTP_HOST=changeme" "SMTP_USER=changeme" "SMTP_PASSWORD=changeme"
-
-    # Clean up port-forward
-    kill $pf_pid 2>/dev/null || true
-
-    log ""
-    log "Secret seeding complete."
-    log "IMPORTANT: Replace 'changeme' values with real secrets:"
-    log "  vault kv put medinovai-secrets/atlasos/anthropic ANTHROPIC_API_KEY=sk-ant-real-key"
+seed_secret() {
+    local path="$1"
+    shift
+    # Check if already exists
+    if secret_exists "secret/medinovai/$path"; then
+        ok "Already exists: secret/medinovai/$path (skipping)"
+        return
+    fi
+    vault kv put "secret/medinovai/$path" "$@"
+    ok "Seeded: secret/medinovai/$path"
 }
 
-# ─── Status ─────────────────────────────────────────────────────────────────
-show_status() {
-    log "Vault status:"
-    kubectl exec vault-0 -n vault -- vault status 2>/dev/null || log "ERROR: Cannot reach Vault"
+# Infrastructure
+[[ -n "${POSTGRES_PASSWORD:-}" ]] && \
+    seed_secret "infra/postgres" password="${POSTGRES_PASSWORD}"
+[[ -n "${REDIS_PASSWORD:-}" ]] && \
+    seed_secret "infra/redis" password="${REDIS_PASSWORD}"
+
+# Keycloak (Deploy stack)
+[[ -n "${KEYCLOAK_ADMIN_PASSWORD:-}" ]] && \
+    seed_secret "keycloak/deploy" \
+        admin_password="${KEYCLOAK_ADMIN_PASSWORD}" \
+        db_password="${POSTGRES_PASSWORD:-}"
+
+# Keycloak (medinovaiOS client)
+[[ -n "${KEYCLOAK_CLIENT_SECRET:-}" ]] && \
+    seed_secret "keycloak/medinovaios" \
+        client_secret="${KEYCLOAK_CLIENT_SECRET}"
+
+# LIS Keycloak
+[[ -n "${LIS_KC_ADMIN_PASSWORD:-}" ]] && \
+    seed_secret "lis/keycloak" \
+        admin_password="${LIS_KC_ADMIN_PASSWORD}" \
+        db_password="${LIS_KC_DB_PASSWORD:-}" \
+        client_secret="${LIS_KC_CLIENT_SECRET:-}"
+
+# LIS MySQL
+[[ -n "${LIS_MYSQL_ROOT_PASSWORD:-}" ]] && \
+    seed_secret "lis/mysql" \
+        root_password="${LIS_MYSQL_ROOT_PASSWORD}" \
+        user_password="${LIS_MYSQL_PASSWORD:-}"
+
+# LIS JWT
+[[ -n "${LIS_JWT_SECRET:-}" ]] && \
+    seed_secret "lis/jwt" secret="${LIS_JWT_SECRET}"
+
+echo ""
+log "Writing AppRole credentials to infra/docker/.env (gitignored)..."
+
+ENV_FILE="$(dirname "$0")/../../infra/docker/.env"
+
+append_approle_creds() {
+    local role="$1"
+    local role_id
+    local secret_id
+    role_id=$(vault read -field=role_id "auth/approle/role/$role/role-id" 2>/dev/null || true)
+    secret_id=$(vault write -field=secret_id -f "auth/approle/role/$role/secret-id" 2>/dev/null || true)
+    if [[ -n "$role_id" && -n "$secret_id" ]]; then
+        local var_prefix
+        var_prefix=$(echo "$role" | tr '[:lower:]-' '[:upper:]_')
+        grep -q "${var_prefix}_VAULT_ROLE_ID" "$ENV_FILE" 2>/dev/null || \
+            echo "${var_prefix}_VAULT_ROLE_ID=${role_id}" >> "$ENV_FILE"
+        grep -q "${var_prefix}_VAULT_SECRET_ID" "$ENV_FILE" 2>/dev/null || \
+            echo "${var_prefix}_VAULT_SECRET_ID=${secret_id}" >> "$ENV_FILE"
+        ok "AppRole creds for $role written to .env"
+    fi
 }
 
-# ─── Main ─────────────────────────────────────────────────────────────────────
-log "╔══════════════════════════════════════════════════════════════╗"
-log "║     MedinovAI Deploy — HashiCorp Vault Setup                 ║"
-log "╚══════════════════════════════════════════════════════════════╝"
+append_approle_creds "medinovaios"
+append_approle_creds "api-gateway"
+append_approle_creds "auth-service"
+append_approle_creds "notification-service"
+append_approle_creds "registry"
 
-case "$ACTION" in
-    deploy)
-        deploy_vault
-        initialize_vault
-        configure_vault
-        log ""
-        log "Vault ready. To seed secrets: bash $0 --seed"
-        ;;
-    seed)
-        seed_secrets
-        ;;
-    unseal)
-        unseal_vault
-        ;;
-    status)
-        show_status
-        ;;
-esac
+echo ""
+echo "╔══════════════════════════════════════════════════════════════╗"
+echo "║   Vault initialization complete.                             ║"
+echo "║   Vault UI: http://localhost:8200  token: \$VAULT_DEV_ROOT_TOKEN"
+echo "╚══════════════════════════════════════════════════════════════╝"

@@ -18,7 +18,16 @@ spec:
         app.kubernetes.io/name: ai-inference
         app.kubernetes.io/component: inference
         app.kubernetes.io/part-of: medinovai
+      annotations:
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/agent-inject-secret-postgres: "secret/medinovai/infra/postgres"
+        vault.hashicorp.com/agent-inject-template-postgres: |
+          {{- with secret "secret/medinovai/infra/postgres" -}}
+          export DATABASE_PASSWORD="{{ .Data.data.password }}"
+          {{- end }}
+        vault.hashicorp.com/role: "ai-inference"
     spec:
+      serviceAccountName: ai-inference
       tolerations:
         - key: nvidia.com/gpu
           operator: Exists
