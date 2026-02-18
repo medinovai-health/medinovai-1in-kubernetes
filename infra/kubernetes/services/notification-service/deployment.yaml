@@ -30,8 +30,6 @@ spec:
                 topologyKey: kubernetes.io/hostname
       securityContext:
         runAsNonRoot: true
-        readOnlyRootFilesystem: true
-        allowPrivilegeEscalation: false
       containers:
         - name: notification-service
           image: REGISTRY/notification-service:IMAGE_TAG

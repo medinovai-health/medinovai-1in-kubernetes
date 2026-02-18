@@ -1,14 +1,27 @@
-# Docker Compose for local development of the MedinovAI platform
+# ─── Docker Compose — MedinovAI Platform (Local Development) ───────────────────
+# Full greenfield deployment with restart/crash resilience.
+name: medinovai-dev
+# All data persisted to named volumes. Survives host restarts.
+#
+# Usage:
+#   docker compose -f infra/docker/docker-compose.dev.yml up -d
+#   bash scripts/backup.sh  # Before any infra changes
+#
+# Backup location: ~/medinovai-backups/medinovai-Deploy/
+# See: docs/DOCKER_GREENFIELD_DEPLOYMENT.md
+# ─────────────────────────────────────────────────────────────────────────────
 
 services:
   postgres:
     image: postgres:16-alpine
+    container_name: medinovai-postgres
+    restart: unless-stopped
     ports:
       - "5432:5432"
     environment:
       POSTGRES_DB: medinovai
       POSTGRES_USER: medinovai
-      POSTGRES_PASSWORD: localdev
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-localdev}
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
@@ -16,44 +29,79 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+      start_period: 10s
     networks:
       - medinovai-dev
 
   redis:
     image: redis:7-alpine
+    container_name: medinovai-redis
+    restart: unless-stopped
     ports:
       - "6379:6379"
-    command: redis-server --requirepass localdev
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-localdev}
+    command: redis-server --requirepass ${REDIS_PASSWORD:-localdev} --appendonly yes
+    volumes:
+      - redis-data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "-a", "localdev", "ping"]
+      test: ["CMD-SHELL", "redis-cli -a \"$$REDIS_PASSWORD\" ping"]
       interval: 5s
       timeout: 5s
       retries: 5
+      start_period: 5s
     networks:
       - medinovai-dev
 
   prometheus:
     image: prom/prometheus:latest
+    container_name: medinovai-prometheus
+    restart: unless-stopped
     ports:
       - "9090:9090"
     volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=15d
+      - --web.enable-lifecycle
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost:9090/-/healthy"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
     networks:
       - medinovai-dev
 
   grafana:
     image: grafana/grafana:latest
+    container_name: medinovai-grafana
+    restart: unless-stopped
     ports:
       - "3000:3000"
     environment:
-      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+    volumes:
+      - grafana-data:/var/lib/grafana
     depends_on:
-      - prometheus
+      prometheus:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost:3000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     networks:
       - medinovai-dev
 
   mailhog:
     image: mailhog/mailhog:latest
+    container_name: medinovai-mailhog
+    restart: unless-stopped
     ports:
       - "1025:1025"   # SMTP
       - "8025:8025"   # Web UI
@@ -62,15 +110,24 @@ services:
 
   localstack:
     image: localstack/localstack:latest
+    container_name: medinovai-localstack
+    restart: unless-stopped
     ports:
       - "4566:4566"
     environment:
       SERVICES: s3,secretsmanager,sqs,sns
+      PERSISTENCE: 1
+    volumes:
+      - localstack-data:/var/lib/localstack
     networks:
       - medinovai-dev
 
 volumes:
   postgres-data:
+  redis-data:
+  prometheus-data:
+  grafana-data:
+  localstack-data:
 
 networks:
   medinovai-dev:

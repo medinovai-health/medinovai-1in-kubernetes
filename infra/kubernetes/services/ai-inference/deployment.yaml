@@ -34,8 +34,6 @@ spec:
                 topologyKey: kubernetes.io/hostname
       securityContext:
         runAsNonRoot: true
-        readOnlyRootFilesystem: true
-        allowPrivilegeEscalation: false
       containers:
         - name: ai-inference
           image: REGISTRY/ai-inference:IMAGE_TAG

@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: medinovai-env
+  namespace: medinovai-ai
+  labels:
+    app.kubernetes.io/managed-by: medinovai-deploy
+    environment: docker-desktop
+data:
+  NODE_ENV: "development"
+  LOG_FORMAT: "json"
+  LOG_LEVEL: "debug"
+  DATABASE_URL: "postgresql://medinovai:localdev@host.docker.internal:5432/medinovai"
+  REDIS_URL: "redis://:localdev@host.docker.internal:6379/0"
+  ENVIRONMENT: "docker-desktop"

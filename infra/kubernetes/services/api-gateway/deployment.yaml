@@ -30,8 +30,6 @@ spec:
                 topologyKey: kubernetes.io/hostname
       securityContext:
         runAsNonRoot: true
-        readOnlyRootFilesystem: true
-        allowPrivilegeEscalation: false
       containers:
         - name: api-gateway
           image: REGISTRY/api-gateway:IMAGE_TAG

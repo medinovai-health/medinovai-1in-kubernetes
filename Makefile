@@ -10,6 +10,7 @@
 
 .PHONY: help setup prerequisites install deploy validate health status logs clean
 .PHONY: plan apply drift-check deploy-service deploy-all rollback promote-canary
+.PHONY: docker-instantiate docker-backup docker-restore docker-seed docker-up docker-down
 .PHONY: rotate-secrets cert-check backup-verify cost-report validate-infra validate-k8s validate-compliance
 .PHONY: test-unit test-integration test-e2e lint-json lint-yaml
 
@@ -65,6 +66,46 @@ init-cloud: ## Initialize cloud account (state bucket, IAM bootstrap)
 	bash scripts/bootstrap/init-cloud-account.sh \
 		--cloud $(CLOUD) \
 		--region $(REGION)
+
+# ─── Docker Local Deployment ───────────────────────────────────────────────────
+
+COMPOSE_FILE ?= infra/docker/docker-compose.dev.yml
+
+docker-instantiate: ## Full Docker greenfield instantiation (local machine)
+	bash scripts/bootstrap/instantiate-docker.sh
+
+docker-backup: ## Backup DB + volumes to ~/medinovai-backups/medinovai-Deploy/
+	bash scripts/backup.sh
+
+docker-restore: ## Restore from latest backup
+	bash scripts/restore.sh --from-latest
+
+docker-seed: ## Seed fresh environment (scripts/seed.sh)
+	bash scripts/seed.sh
+
+docker-up: ## Start Docker stack
+	docker compose -f $(COMPOSE_FILE) up -d
+
+docker-down: ## Stop Docker stack (preserves volumes)
+	docker compose -f $(COMPOSE_FILE) down
+
+k8s-install: ## Clean K8s install on Docker Desktop (Tailscale-aware)
+	bash scripts/bootstrap/install-k8s.sh --context docker-desktop
+
+k8s-install-primary: ## Install as Tailscale primary (hosts postgres/redis)
+	bash scripts/bootstrap/install-k8s.sh --context docker-desktop --primary
+
+k8s-uninstall: ## Remove all MedinovAI K8s resources (preserves Docker Compose infra)
+	bash scripts/bootstrap/uninstall-k8s.sh --context docker-desktop
+
+k8s-reinstall: ## Full clean reinstall (uninstall + install)
+	bash scripts/bootstrap/uninstall-k8s.sh --context docker-desktop && bash scripts/bootstrap/install-k8s.sh --context docker-desktop
+
+k8s-status: ## Show all pod and service status across namespaces
+	kubectl get pods -n medinovai-services -o wide && kubectl get pods -n medinovai-ai -o wide
+
+tailscale-config: ## Configure Tailscale networking (run before install)
+	bash scripts/bootstrap/tailscale-config.sh
 
 # ─── Infrastructure (Terraform) ──────────────────────────────────────────────
 

@@ -189,6 +189,19 @@ Four-layer monitoring with graduated alerting:
 | **Supervisor** | Monitors all deploy agents | Intervention logging, health verification |
 | **Guardian** | Validates all deploy actions | Policy enforcement, approval gating |
 
+## Docker Local Deployment
+
+For full greenfield deployment on a single machine (survives restarts/crashes):
+
+```bash
+make docker-instantiate           # Full stack (postgres, redis, prometheus, grafana, etc.)
+make docker-backup                # Backup to ~/medinovai-backups/medinovai-Deploy/
+make docker-restore               # Restore from latest backup
+make docker-seed                  # Fresh environment from zero
+```
+
+See **[docs/DOCKER_GREENFIELD_DEPLOYMENT.md](docs/DOCKER_GREENFIELD_DEPLOYMENT.md)** for the full plan and maintenance guide.
+
 ## Quick Reference
 
 ```bash
