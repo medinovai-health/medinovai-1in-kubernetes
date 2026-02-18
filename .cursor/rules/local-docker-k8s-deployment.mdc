@@ -4,6 +4,28 @@ Learned knowledge from live deployments on this machine. Apply whenever working 
 
 ---
 
+## THE ONE COMMAND
+
+When a user asks to "install everything", "set up the stack", "deploy", or "bootstrap" on a new machine:
+
+```bash
+make up
+```
+
+That is the ONLY command needed. It runs `scripts/bootstrap/bootstrap-all.sh` which installs all 3 layers automatically, idempotently, with health checks and a final summary.
+
+Variants:
+```bash
+make up PRIMARY=true          # this machine is the DB host (Tailscale primary)
+make up DB_HOST=100.x.x.x    # secondary machine, DB lives on that Tailscale IP
+make down                     # stop gracefully, data preserved
+make nuke                     # wipe and rebuild from scratch
+```
+
+Do NOT walk the user through manual steps. Do NOT ask clarifying questions about layers. Just run `make up`.
+
+---
+
 ## Environment Layout
 
 **This machine**: `mayank-mbp25` · Tailscale IP `100.79.214.33` · Role: primary (DB node)

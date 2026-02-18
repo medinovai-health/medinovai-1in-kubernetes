@@ -2,6 +2,56 @@
 
 Autonomous deployment, instantiation, CI/CD, and monitoring system for the entire MedinovAI platform.
 
+## One-Command Install
+
+Clone this repo on any machine and run one command. Everything installs itself.
+
+```bash
+git clone git@github.com:myonsite-healthcare/medinovai-Deploy.git
+cd medinovai-Deploy
+make up
+```
+
+**That's it.** No wizard. No back-and-forth. Go get a coffee.
+
+What `make up` installs (all local, no cloud accounts needed):
+
+| Layer | Components |
+|-------|-----------|
+| Docker Compose (infra) | postgres · redis · prometheus · grafana · mailhog · localstack |
+| Kubernetes (apps) | api-gateway · auth-service · clinical-engine · data-pipeline · notification-service · ai-inference |
+| Cluster addons | NGINX Ingress · Kubernetes Dashboard · kube-state-metrics · ArgoCD |
+
+### Multi-machine / Tailscale HA
+
+```bash
+# Machine 1 (primary — hosts the shared database)
+make up PRIMARY=true
+
+# Every other machine (points at primary's Tailscale IP)
+make up DB_HOST=100.79.214.33
+```
+
+### After install — what you get
+
+| Service | URL | Credentials |
+|---------|-----|-------------|
+| Grafana | http://localhost:3000 | admin / admin |
+| Prometheus | http://localhost:9090 | — |
+| MailHog | http://localhost:8025 | — |
+| api-gateway | http://localhost:30080 | — |
+| NGINX Ingress | http://localhost:30800 | Host: medinovai.local |
+| K8s Dashboard | https://localhost:8443 | `make dashboard-forward` |
+| ArgoCD | http://localhost:8080 | `make argocd-forward` |
+
+```bash
+make cluster-status     # full health check
+make down               # stop everything (data preserved)
+make nuke               # wipe and rebuild from scratch
+```
+
+---
+
 **medinovai-Deploy** can take a brand-new bare cloud account and stand up a fully operational MedinovAI environment end-to-end -- every service, every database, every secret, every monitoring hook, every governance control -- with zero manual steps. It then owns the ongoing lifecycle: continuous deployment, health monitoring, drift detection, auto-remediation, scaling, cost optimization, compliance enforcement, and disaster recovery.
 
 ## Architecture

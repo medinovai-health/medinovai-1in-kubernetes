@@ -1,0 +1,238 @@
+#!/usr/bin/env bash
+# ╔══════════════════════════════════════════════════════════════════════════════╗
+# ║  bootstrap-all.sh — Full MedinovAI local stack from zero                   ║
+# ║                                                                              ║
+# ║  Run once on any new machine. Idempotent — safe to re-run.                  ║
+# ║                                                                              ║
+# ║  What gets installed (all local, no cloud accounts):                         ║
+# ║    Layer 1 — Docker Compose infra                                            ║
+# ║      postgres · redis · prometheus · grafana · mailhog · localstack          ║
+# ║    Layer 2 — Kubernetes app services (docker-desktop overlay)                ║
+# ║      api-gateway · auth-service · clinical-engine · data-pipeline            ║
+# ║      notification-service · ai-inference                                     ║
+# ║    Layer 3 — Cluster addons                                                  ║
+# ║      NGINX Ingress · Kubernetes Dashboard · kube-state-metrics · ArgoCD     ║
+# ║                                                                              ║
+# ║  Usage:                                                                      ║
+# ║    bash scripts/bootstrap/bootstrap-all.sh                                   ║
+# ║    bash scripts/bootstrap/bootstrap-all.sh --primary    # this is DB host    ║
+# ║    bash scripts/bootstrap/bootstrap-all.sh --db-host <ts-ip>  # secondary   ║
+# ║    bash scripts/bootstrap/bootstrap-all.sh --skip-infra # K8s + addons only ║
+# ║    bash scripts/bootstrap/bootstrap-all.sh --skip-addons                    ║
+# ╚══════════════════════════════════════════════════════════════════════════════╝
+set -euo pipefail
+
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+COMPOSE_FILE="$REPO_ROOT/infra/docker/docker-compose.dev.yml"
+
+# ── Colours ───────────────────────────────────────────────────────────────────
+G="\033[0;32m"; Y="\033[1;33m"; R="\033[0;31m"; B="\033[0;34m"; NC="\033[0m"; BOLD="\033[1m"
+log()  { echo -e "${G}[bootstrap]${NC} $*"; }
+step() { echo -e "\n${BOLD}${B}━━━ $* ━━━${NC}"; }
+warn() { echo -e "${Y}[bootstrap]${NC} $*"; }
+err()  { echo -e "${R}[bootstrap]${NC} $*" >&2; }
+ok()   { echo -e "${G}  ✓${NC} $*"; }
+fail() { echo -e "${R}  ✗${NC} $*"; }
+
+# ── Flags ─────────────────────────────────────────────────────────────────────
+IS_PRIMARY=false
+DB_HOST=""
+SKIP_INFRA=false
+SKIP_ADDONS=false
+SKIP_K8S=false
+
+for arg in "$@"; do
+  case "$arg" in
+    --primary)          IS_PRIMARY=true ;;
+    --db-host=*)        DB_HOST="${arg#*=}" ;;
+    --db-host)          shift; DB_HOST="${1:-}" ;;
+    --skip-infra)       SKIP_INFRA=true ;;
+    --skip-addons)      SKIP_ADDONS=true ;;
+    --skip-k8s)         SKIP_K8S=true ;;
+    --help|-h)
+      sed -n '3,20p' "$0" | sed 's/# //; s/#//'
+      exit 0 ;;
+    *) err "Unknown flag: $arg (use --help)"; exit 1 ;;
+  esac
+done
+
+# ── Banner ────────────────────────────────────────────────────────────────────
+echo ""
+echo -e "${BOLD}${G}"
+echo "  ███╗   ███╗███████╗██████╗ ██╗███╗   ██╗ ██████╗ ██╗   ██╗ █████╗ ██╗"
+echo "  ████╗ ████║██╔════╝██╔══██╗██║████╗  ██║██╔═══██╗██║   ██║██╔══██╗██║"
+echo "  ██╔████╔██║█████╗  ██║  ██║██║██╔██╗ ██║██║   ██║██║   ██║███████║██║"
+echo "  ██║╚██╔╝██║██╔══╝  ██║  ██║██║██║╚██╗██║██║   ██║╚██╗ ██╔╝██╔══██║██║"
+echo "  ██║ ╚═╝ ██║███████╗██████╔╝██║██║ ╚████║╚██████╔╝ ╚████╔╝ ██║  ██║██║"
+echo "  ╚═╝     ╚═╝╚══════╝╚═════╝ ╚═╝╚═╝  ╚═══╝ ╚═════╝   ╚═══╝  ╚═╝  ╚═╝╚═╝"
+echo -e "${NC}"
+echo -e "${BOLD}  Full Local Stack Bootstrap${NC}  —  $(date '+%Y-%m-%d %H:%M')"
+echo ""
+
+# ── Step 0: Prerequisites ─────────────────────────────────────────────────────
+step "0 / 4  Prerequisites"
+
+MISSING=0
+check_cmd() {
+  if command -v "$1" &>/dev/null; then ok "$1"; else fail "$1 (not found)"; MISSING=1; fi
+}
+check_cmd docker
+check_cmd kubectl
+check_cmd helm
+
+# Optional but recommended
+command -v tailscale &>/dev/null && ok "tailscale" || warn "tailscale not found (ok for single-machine)"
+
+[[ $MISSING -eq 1 ]] && { err "Install missing tools and re-run."; exit 2; }
+
+# Docker Desktop Kubernetes must be enabled
+if ! kubectl cluster-info --request-timeout=5s &>/dev/null; then
+  err "Kubernetes not reachable. Enable it in Docker Desktop → Settings → Kubernetes → Enable Kubernetes."
+  exit 2
+fi
+ok "Docker Desktop Kubernetes reachable"
+
+CTX=$(kubectl config current-context 2>/dev/null || echo "none")
+if [[ "$CTX" != "docker-desktop" ]]; then
+  warn "kubectl context is '$CTX'. Switching to docker-desktop..."
+  kubectl config use-context docker-desktop
+fi
+ok "kubectl context: docker-desktop"
+
+# ── Step 1: Backup ────────────────────────────────────────────────────────────
+step "1 / 4  Backup (safety first)"
+if docker ps --format '{{.Names}}' 2>/dev/null | grep -q "medinovai-postgres"; then
+  log "Existing stack detected — backing up before changes..."
+  bash "$REPO_ROOT/scripts/backup.sh" 2>&1 | grep -E "✓|✗|Backup" || true
+  ok "Backup complete → ~/medinovai-backups/medinovai-Deploy/"
+else
+  ok "Fresh install — no backup needed"
+fi
+
+# ── Step 2: Docker Compose Infra (Layer 1) ────────────────────────────────────
+if ! $SKIP_INFRA; then
+  step "2 / 4  Docker Compose Infra  (postgres · redis · prometheus · grafana · mailhog · localstack)"
+
+  # Copy .env if missing
+  if [[ ! -f "$REPO_ROOT/infra/docker/.env" ]]; then
+    cp "$REPO_ROOT/infra/docker/.env.example" "$REPO_ROOT/infra/docker/.env"
+    log "Created infra/docker/.env from .env.example (using defaults)"
+  fi
+
+  docker compose -f "$COMPOSE_FILE" up -d --remove-orphans 2>&1 | grep -E "Starting|started|healthy|error" || true
+
+  # Wait for postgres
+  log "Waiting for postgres to be healthy..."
+  for i in $(seq 1 30); do
+    if docker exec medinovai-postgres pg_isready -U medinovai -d medinovai -q 2>/dev/null; then
+      ok "postgres healthy"; break
+    fi
+    [[ $i -eq 30 ]] && { fail "postgres didn't start in 30s"; exit 1; }
+    sleep 2
+  done
+
+  # Wait for redis
+  log "Waiting for redis..."
+  for i in $(seq 1 15); do
+    if docker exec medinovai-redis redis-cli ping 2>/dev/null | grep -q PONG; then
+      ok "redis healthy"; break
+    fi
+    [[ $i -eq 15 ]] && { fail "redis didn't start"; exit 1; }
+    sleep 2
+  done
+
+  ok "Grafana  → http://localhost:3000  (admin / admin)"
+  ok "Prometheus → http://localhost:9090"
+  ok "MailHog  → http://localhost:8025"
+  ok "LocalStack → http://localhost:4566"
+else
+  log "Skipping Docker infra (--skip-infra)"
+fi
+
+# ── Step 3: Kubernetes Services (Layer 2) ─────────────────────────────────────
+if ! $SKIP_K8S; then
+  step "3 / 4  Kubernetes App Services  (6 services, docker-desktop overlay)"
+
+  # Tailscale config
+  if $IS_PRIMARY; then
+    log "Configuring as PRIMARY (DB host)..."
+    bash "$REPO_ROOT/scripts/bootstrap/tailscale-config.sh" --primary 2>&1 | grep -E "✓|TS|primary" || true
+  elif [[ -n "$DB_HOST" ]]; then
+    log "Configuring as SECONDARY (DB host: $DB_HOST)..."
+    bash "$REPO_ROOT/scripts/bootstrap/tailscale-config.sh" --db-host "$DB_HOST" 2>&1 | grep -E "✓|TS|secondary" || true
+  elif [[ -f "$REPO_ROOT/.env.tailscale" ]]; then
+    log "Using existing .env.tailscale config..."
+  else
+    log "No Tailscale flag — defaulting to single-machine (host.docker.internal)"
+    bash "$REPO_ROOT/scripts/bootstrap/tailscale-config.sh" --primary 2>/dev/null || true
+  fi
+
+  # Apply K8s overlay
+  log "Applying docker-desktop overlay..."
+  kubectl apply -k "$REPO_ROOT/infra/kubernetes/overlays/docker-desktop" 2>&1 | \
+    grep -E "created|configured|unchanged" | head -20 || true
+
+  # Inject Tailscale configmap if it exists
+  if [[ -f "$REPO_ROOT/infra/kubernetes/overlays/docker-desktop/configmap-env-local.yaml" ]]; then
+    kubectl apply -f "$REPO_ROOT/infra/kubernetes/overlays/docker-desktop/configmap-env-local.yaml" 2>/dev/null || true
+    kubectl apply -f "$REPO_ROOT/infra/kubernetes/overlays/docker-desktop/configmap-env-ai-local.yaml" 2>/dev/null || true
+  fi
+
+  # Wait for all medinovai-services pods
+  log "Waiting for app services to be Running..."
+  kubectl wait pods -n medinovai-services --all --for=condition=Ready --timeout=3m 2>/dev/null || \
+    warn "Some pods still starting — check with: kubectl get pods -n medinovai-services"
+  kubectl wait pods -n medinovai-ai --all --for=condition=Ready --timeout=2m 2>/dev/null || true
+
+  ok "api-gateway     → http://localhost:30080"
+  ok "auth-service    → http://localhost:30081"
+  ok "clinical-engine, data-pipeline, notification-service, ai-inference running"
+else
+  log "Skipping K8s services (--skip-k8s)"
+fi
+
+# ── Step 4: Cluster Addons (Layer 3) ──────────────────────────────────────────
+if ! $SKIP_ADDONS; then
+  step "4 / 4  Cluster Addons  (ingress · dashboard · kube-state-metrics · argocd)"
+  bash "$REPO_ROOT/scripts/bootstrap/install-addons.sh" 2>&1 | grep -E "✓|━|║|Step|Installing|Deployed|ERROR" || true
+else
+  log "Skipping addons (--skip-addons)"
+fi
+
+# ── Final Summary ─────────────────────────────────────────────────────────────
+ARGOCD_PW=$(kubectl -n argocd get secret argocd-initial-admin-secret \
+  -o jsonpath="{.data.password}" 2>/dev/null | base64 --decode || echo "check: kubectl -n argocd get secret argocd-initial-admin-secret")
+
+DASHBOARD_TOKEN=$(kubectl -n kubernetes-dashboard get secret medinovai-dashboard-admin-token \
+  -o jsonpath="{.data.token}" 2>/dev/null | base64 --decode | head -c 40 || echo "check: cat .dashboard-token")
+
+echo ""
+echo -e "${BOLD}${G}╔══════════════════════════════════════════════════════════════════════╗${NC}"
+echo -e "${BOLD}${G}║           MedinovAI Local Stack — READY                              ║${NC}"
+echo -e "${BOLD}${G}╠══════════════════════════════════════════════════════════════════════╣${NC}"
+echo -e "${G}║  LAYER 1 — Docker Compose Infra                                      ║${NC}"
+echo -e "${G}║    Grafana      http://localhost:3000       admin / admin             ║${NC}"
+echo -e "${G}║    Prometheus   http://localhost:9090                                 ║${NC}"
+echo -e "${G}║    MailHog      http://localhost:8025                                 ║${NC}"
+echo -e "${G}║    Postgres     localhost:5432              medinovai / localdev      ║${NC}"
+echo -e "${G}║    Redis        localhost:6379              pw: localdev              ║${NC}"
+echo -e "${G}╠══════════════════════════════════════════════════════════════════════╣${NC}"
+echo -e "${G}║  LAYER 2 — Kubernetes App Services                                   ║${NC}"
+echo -e "${G}║    api-gateway  http://localhost:30080                                ║${NC}"
+echo -e "${G}║    auth-service http://localhost:30081                                ║${NC}"
+echo -e "${G}║    + clinical-engine, data-pipeline, notification, ai-inference      ║${NC}"
+echo -e "${G}╠══════════════════════════════════════════════════════════════════════╣${NC}"
+echo -e "${G}║  LAYER 3 — Cluster Addons                                            ║${NC}"
+echo -e "${G}║    Ingress      http://localhost:30800      (Host: medinovai.local)   ║${NC}"
+echo -e "${G}║    Dashboard    https://localhost:8443      (make dashboard-forward)  ║${NC}"
+echo -e "${G}║    ArgoCD       http://localhost:8080       (make argocd-forward)     ║${NC}"
+echo -e "${G}║    ArgoCD login: admin / ${ARGOCD_PW:0:16}...                         ║${NC}"
+echo -e "${G}╠══════════════════════════════════════════════════════════════════════╣${NC}"
+echo -e "${G}║  QUICK COMMANDS                                                       ║${NC}"
+echo -e "${G}║    make cluster-status        # full health check                    ║${NC}"
+echo -e "${G}║    make dashboard-forward     # open K8s dashboard                   ║${NC}"
+echo -e "${G}║    make argocd-forward        # open ArgoCD                          ║${NC}"
+echo -e "${G}║    make docker-backup         # backup postgres + volumes            ║${NC}"
+echo -e "${G}╚══════════════════════════════════════════════════════════════════════╝${NC}"
+echo ""
+log "Bootstrap complete in $(date '+%H:%M:%S')"

@@ -1,25 +1,55 @@
 # ─── MedinovAI Deploy — Makefile ─────────────────────────────────────────────
 # Autonomous deployment, instantiation, CI/CD, and monitoring for MedinovAI.
 #
-# Usage:
-#   make help              Show all available commands
-#   make setup             Full setup: prerequisites + install + deploy + validate
-#   make deploy-all        Deploy all services to target environment
-#   make health            Full-stack health audit
+# ONE-SHOT INSTALL (new machine):
+#   make up                        # install everything from zero
+#   make up PRIMARY=true           # this machine hosts the shared DB
+#   make up DB_HOST=100.x.x.x     # secondary machine pointing at primary
+#
+# Teardown:
+#   make down                      # stop everything (data preserved)
+#   make nuke                      # wipe and rebuild from scratch
 # ─────────────────────────────────────────────────────────────────────────────
 
+.PHONY: up down nuke
 .PHONY: help setup prerequisites install deploy validate health status logs clean
 .PHONY: plan apply drift-check deploy-service deploy-all rollback promote-canary
 .PHONY: docker-instantiate docker-backup docker-restore docker-seed docker-up docker-down
 .PHONY: rotate-secrets cert-check backup-verify cost-report validate-infra validate-k8s validate-compliance
 .PHONY: test-unit test-integration test-e2e lint-json lint-yaml
 .PHONY: addons-install addons-uninstall addons-ingress addons-dashboard addons-monitoring addons-argocd
-.PHONY: dashboard-forward argocd-forward cluster-status
+.PHONY: dashboard-forward argocd-forward cluster-status k8s-status-full
 
 ENV ?= staging
 SVC ?=
 CLOUD ?= aws
 REGION ?= us-east-1
+
+# ─── ONE-SHOT INSTALL ────────────────────────────────────────────────────────
+# These are the only 3 commands you ever need.
+
+up: ## ONE COMMAND: Install everything from zero (docker + k8s + addons)
+	@ARGS=""; \
+	[ "$(PRIMARY)" = "true" ] && ARGS="$$ARGS --primary"; \
+	[ -n "$(DB_HOST)" ] && ARGS="$$ARGS --db-host $(DB_HOST)"; \
+	bash scripts/bootstrap/bootstrap-all.sh $$ARGS
+
+down: ## Stop everything gracefully (data preserved in volumes)
+	@echo "Stopping cluster addons..."
+	bash scripts/bootstrap/install-addons.sh --uninstall 2>/dev/null || true
+	@echo "Stopping K8s services..."
+	bash scripts/bootstrap/uninstall-k8s.sh 2>/dev/null || true
+	@echo "Stopping Docker infra..."
+	docker compose -f infra/docker/docker-compose.dev.yml stop 2>/dev/null || true
+	@echo "Done. Data preserved. Run 'make up' to restart."
+
+nuke: ## Wipe everything and rebuild from scratch (DESTROYS ALL DATA)
+	@echo "WARNING: This will destroy all local data. Press Ctrl-C to cancel..."
+	@sleep 5
+	bash scripts/bootstrap/install-addons.sh --uninstall 2>/dev/null || true
+	bash scripts/bootstrap/uninstall-k8s.sh 2>/dev/null || true
+	bash scripts/seed.sh --reset 2>/dev/null || true
+	make up
 
 # ─── Help ────────────────────────────────────────────────────────────────────
 

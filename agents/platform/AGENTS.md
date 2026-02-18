@@ -61,6 +61,28 @@ These actions ALWAYS require human approval:
 
 ---
 
+## THE ONE COMMAND — Read This First
+
+When asked to "install", "deploy", "set up", or "bootstrap" on any local machine:
+
+```bash
+make up
+```
+
+This single command installs the full 3-layer stack (Docker infra + K8s apps + cluster addons) with health checks, idempotency, and a summary of all URLs and credentials. It is safe to re-run.
+
+For multi-machine Tailscale HA:
+```bash
+make up PRIMARY=true          # machine 1 (hosts shared DB)
+make up DB_HOST=<ts-ip>       # machines 2+ (connect to primary)
+```
+
+Teardown: `make down` (graceful, data preserved) or `make nuke` (wipe everything).
+
+**Never walk users through manual steps when `make up` exists.**
+
+---
+
 ## Learned Deployment Knowledge (Live Production — Feb 2026)
 
 This section records the concrete, validated deployment patterns discovered during live greenfield deployments on developer machines. Apply these before attempting any new installation.

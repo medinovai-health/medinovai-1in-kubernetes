@@ -122,12 +122,62 @@ services:
     networks:
       - medinovai-dev
 
+  # ─── AI Layer ─────────────────────────────────────────────────────────────────
+  # Local LLM inference — PHI-safe, runs fully on-device.
+  # Default model pulled by: make ollama-pull-default (qwen2.5:1.5b ~1 GB)
+  # Models persist across restarts via ollama-data volume.
+  ollama:
+    image: ollama/ollama:latest
+    container_name: medinovai-ollama
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:11434/api/tags || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    networks:
+      - medinovai-dev
+
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: medinovai-open-webui
+    restart: unless-stopped
+    ports:
+      - "8090:8080"
+    environment:
+      # Point at sibling Ollama container — no external API calls for inference
+      OLLAMA_BASE_URL: http://ollama:11434
+      # Disable telemetry / phone-home
+      SCARF_NO_ANALYTICS: "true"
+      DO_NOT_TRACK: "true"
+      ANONYMIZED_TELEMETRY: "false"
+    volumes:
+      - open-webui-data:/app/backend/data
+    depends_on:
+      ollama:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - medinovai-dev
+
 volumes:
   postgres-data:
   redis-data:
   prometheus-data:
   grafana-data:
   localstack-data:
+  ollama-data:
+  open-webui-data:
 
 networks:
   medinovai-dev:
