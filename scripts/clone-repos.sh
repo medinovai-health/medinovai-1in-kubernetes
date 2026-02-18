@@ -54,6 +54,8 @@ declare -a REPOS=(
   "medinovai-healthLLM-1|healthLLM clone / alternate branch|ai-infra"
 
   # ── Core Platform ────────────────────────────────────────────────────────────
+  # Security service MUST be cloned first — bootstrap-all.sh Step 0 depends on it
+  "MedinovAI-security-service|Keycloak IAM: SSO, RBAC, realm config, seed scripts — clone before bootstrap|platform"
   "medinovai-Deploy|Infrastructure as code: K8s, Helm, ArgoCD, bootstrap scripts|platform"
   "medinovai-core|Shared Python library: MCP client, validation, quality gates|platform"
   "medinovai-data-services|FHIR R5 platform, patient management, analytics (:5000)|platform"

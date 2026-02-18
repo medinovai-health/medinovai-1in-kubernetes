@@ -1,45 +1,34 @@
-import { useState } from 'react';
+// Login page — redirects to Keycloak for authentication.
+// No credentials are entered here. The entire auth flow lives in Keycloak.
+// After Keycloak authenticates the user, it calls /api/sso/callback which
+// sets httpOnly cookies and redirects back here.
+
+import { useEffect, useState } from 'react';
 
 interface Props {
-  onLogin: (token: string) => void;
+  onAuthenticated: () => void;
 }
 
-export function Login({ onLogin }: Props) {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+export function Login({ onAuthenticated }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const err = params.get('error');
+    if (err) {
+      setError(decodeURIComponent(err).replace(/_/g, ' '));
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, []);
+
+  const handleLogin = () => {
     setLoading(true);
     setError('');
-
-    try {
-      const res = await fetch('/api/sso/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        setError(body.message ?? 'Invalid credentials');
-        return;
-      }
-
-      const { token } = await res.json();
-      onLogin(token);
-    } catch {
-      setError('Could not reach auth service. Ensure the platform is running.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleGuestAccess = () => {
-    // Grant read-only access without auth — for local/dev environments
-    onLogin('guest');
+    // Redirect to the server-side OIDC login handler.
+    // The server generates PKCE, stores the code_verifier, and redirects to Keycloak.
+    const returnTo = encodeURIComponent(window.location.pathname + window.location.search);
+    window.location.href = `/api/sso/login?redirect=${returnTo}`;
   };
 
   return (
@@ -87,121 +76,81 @@ export function Login({ onLogin }: Props) {
           background: '#0f172a',
           border: '1px solid #1e2d40',
           borderRadius: 14,
-          padding: 28,
+          padding: 32,
           display: 'flex',
           flexDirection: 'column',
-          gap: 18,
+          gap: 20,
+          alignItems: 'center',
+          textAlign: 'center',
         }}>
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <div>
-              <label style={{ fontSize: 12, color: '#64748b', fontWeight: 500, display: 'block', marginBottom: 6 }}>
-                Email
-              </label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@medinovai.com"
-                required
-                style={{
-                  width: '100%',
-                  padding: '10px 12px',
-                  background: '#0a0f1e',
-                  border: '1px solid #1e2d40',
-                  borderRadius: 8,
-                  color: '#e2e8f0',
-                  fontSize: 14,
-                  outline: 'none',
-                  transition: 'border-color 0.15s ease',
-                }}
-                onFocus={(e) => { e.target.style.borderColor = '#6366f1'; }}
-                onBlur={(e) => { e.target.style.borderColor = '#1e2d40'; }}
-              />
+          {error && (
+            <div style={{
+              width: '100%',
+              padding: '10px 12px',
+              background: '#ef444415',
+              border: '1px solid #ef444440',
+              borderRadius: 8,
+              fontSize: 13,
+              color: '#f87171',
+            }}>
+              {error}. Please try again.
             </div>
+          )}
 
-            <div>
-              <label style={{ fontSize: 12, color: '#64748b', fontWeight: 500, display: 'block', marginBottom: 6 }}>
-                Password
-              </label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                required
-                style={{
-                  width: '100%',
-                  padding: '10px 12px',
-                  background: '#0a0f1e',
-                  border: '1px solid #1e2d40',
-                  borderRadius: 8,
-                  color: '#e2e8f0',
-                  fontSize: 14,
-                  outline: 'none',
-                  transition: 'border-color 0.15s ease',
-                }}
-                onFocus={(e) => { e.target.style.borderColor = '#6366f1'; }}
-                onBlur={(e) => { e.target.style.borderColor = '#1e2d40'; }}
-              />
-            </div>
-
-            {error && (
-              <div style={{
-                padding: '10px 12px',
-                background: '#ef444415',
-                border: '1px solid #ef444440',
-                borderRadius: 8,
-                fontSize: 13,
-                color: '#f87171',
-              }}>
-                {error}
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={loading}
-              style={{
-                padding: '11px',
-                background: loading ? '#334155' : 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-                border: 'none',
-                borderRadius: 8,
-                color: '#fff',
-                fontSize: 14,
-                fontWeight: 600,
-                cursor: loading ? 'not-allowed' : 'pointer',
-                transition: 'opacity 0.15s ease',
-              }}
-            >
-              {loading ? 'Signing in...' : 'Sign in'}
-            </button>
-          </form>
-
-          <div style={{ textAlign: 'center', color: '#334155', fontSize: 12 }}>or</div>
+          <div style={{ color: '#94a3b8', fontSize: 14, lineHeight: 1.6 }}>
+            {loading
+              ? 'Redirecting to secure login...'
+              : 'Sign in with your MedinovAI account to access all products and services.'}
+          </div>
 
           <button
-            onClick={handleGuestAccess}
+            onClick={handleLogin}
+            disabled={loading}
             style={{
-              padding: '10px',
-              background: 'transparent',
-              border: '1px solid #1e2d40',
+              width: '100%',
+              padding: '13px',
+              background: loading ? '#334155' : 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+              border: 'none',
               borderRadius: 8,
-              color: '#64748b',
-              fontSize: 13,
-              cursor: 'pointer',
-              transition: 'all 0.15s ease',
+              color: '#fff',
+              fontSize: 15,
+              fontWeight: 600,
+              cursor: loading ? 'not-allowed' : 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              transition: 'opacity 0.15s ease',
             }}
-            onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#334155'; e.currentTarget.style.color = '#94a3b8'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#1e2d40'; e.currentTarget.style.color = '#64748b'; }}
           >
-            Continue without login (local dev)
+            {loading ? (
+              <>
+                <span style={{ display: 'inline-block', width: 16, height: 16, border: '2px solid #ffffff40', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+                Signing in...
+              </>
+            ) : (
+              <>
+                <span>⚕</span>
+                Sign in with MedinovAI
+              </>
+            )}
           </button>
+
+          <div style={{ fontSize: 11, color: '#334155' }}>
+            Single sign-on — one login for all MedinovAI products
+          </div>
         </div>
 
-        <div style={{ textAlign: 'center', fontSize: 12, color: '#334155' }}>
+        <div style={{ textAlign: 'center', fontSize: 12, color: '#1e293b' }}>
           All traffic encrypted in transit · PHI stays on-device
         </div>
       </div>
+
+      <style>{`
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 }

@@ -69,8 +69,38 @@ echo -e "${NC}"
 echo -e "${BOLD}  Full Local Stack Bootstrap${NC}  —  $(date '+%Y-%m-%d %H:%M')"
 echo ""
 
-# ── Step 0: Prerequisites ─────────────────────────────────────────────────────
-step "0 / 4  Prerequisites"
+# ── Step 0: Security Service (Keycloak IAM) ───────────────────────────────────
+# Must run BEFORE everything else — all products authenticate via Keycloak.
+step "0 / 5  Security Service  (Keycloak IAM — the single login point)"
+
+SECURITY_REPO="${SECURITY_SERVICE_PATH:-$HOME/Documents/GitHub/MedinovAI-security-service}"
+
+# Clone security service if not present
+if [[ ! -d "$SECURITY_REPO/.git" ]]; then
+  log "Cloning MedinovAI-security-service..."
+  if git clone git@github.com:myonsite-healthcare/MedinovAI-security-service.git "$SECURITY_REPO" 2>/dev/null; then
+    ok "Security service cloned to $SECURITY_REPO"
+  else
+    warn "Could not clone MedinovAI-security-service — Keycloak will use embedded defaults."
+    warn "Run: bash scripts/clone-repos.sh  then re-run bootstrap."
+  fi
+else
+  ok "Security service at $SECURITY_REPO"
+fi
+
+export SECURITY_SERVICE_PATH="$SECURITY_REPO"
+
+# Validate required passwords
+if [[ -z "${KEYCLOAK_ADMIN_PASSWORD:-}" ]]; then
+  warn "KEYCLOAK_ADMIN_PASSWORD not set in .env — using 'localdev'. CHANGE IN PRODUCTION."
+fi
+if [[ -z "${SUPERADMIN_PASSWORD:-}" ]]; then
+  warn "SUPERADMIN_PASSWORD not set in .env — SuperAdmin user will not be created automatically."
+  warn "Set SUPERADMIN_PASSWORD in infra/docker/.env and re-run: make security-seed"
+fi
+
+# ── Step 0.1: Prerequisites ────────────────────────────────────────────────────
+step "0.1 / 5  Prerequisites"
 
 MISSING=0
 check_cmd() {
@@ -79,6 +109,7 @@ check_cmd() {
 check_cmd docker
 check_cmd kubectl
 check_cmd helm
+check_cmd curl
 
 # Optional but recommended
 command -v tailscale &>/dev/null && ok "tailscale" || warn "tailscale not found (ok for single-machine)"
@@ -130,6 +161,55 @@ if ! $SKIP_INFRA; then
     [[ $i -eq 30 ]] && { fail "postgres didn't start in 30s"; exit 1; }
     sleep 2
   done
+
+  # Create keycloak database (idempotent — safe to run on every bootstrap)
+  log "Creating keycloak database in postgres..."
+  docker exec medinovai-postgres psql -U medinovai -tc \
+    "SELECT 1 FROM pg_database WHERE datname='keycloak'" 2>/dev/null | grep -q 1 || \
+    docker exec medinovai-postgres psql -U medinovai -c "CREATE DATABASE keycloak;" 2>/dev/null
+  docker exec medinovai-postgres psql -U medinovai \
+    -c "GRANT ALL PRIVILEGES ON DATABASE keycloak TO medinovai;" 2>/dev/null || true
+  ok "keycloak database ready"
+
+  # Wait for Keycloak (realm imports on startup — takes ~60-90s)
+  log "Waiting for Keycloak to be ready (realm import in progress, max 200s)..."
+  KEYCLOAK_READY=false
+  for i in $(seq 1 40); do
+    if curl -sf http://localhost:8081/health/ready &>/dev/null; then
+      KEYCLOAK_READY=true
+      ok "Keycloak ready (took ~$((i * 5))s)"; break
+    fi
+    printf "."
+    sleep 5
+  done
+  echo ""
+  if [[ "$KEYCLOAK_READY" == "true" ]]; then
+    # Seed SuperAdmin (idempotent)
+    if [[ -n "${SUPERADMIN_PASSWORD:-}" && -f "$SECURITY_REPO/scripts/seed-superadmin.sh" ]]; then
+      log "Seeding SuperAdmin user..."
+      KEYCLOAK_URL=http://localhost:8081 \
+      KEYCLOAK_ADMIN_PASSWORD="${KEYCLOAK_ADMIN_PASSWORD:-localdev}" \
+      SUPERADMIN_EMAIL="${SUPERADMIN_EMAIL:-superadmin@medinov.ai}" \
+      SUPERADMIN_PASSWORD="$SUPERADMIN_PASSWORD" \
+      bash "$SECURITY_REPO/scripts/seed-superadmin.sh" 2>&1 | grep -E "✓|✗|⚠" || true
+    fi
+
+    # Seed all product clients (idempotent)
+    if [[ -f "$SECURITY_REPO/scripts/seed-all-products.sh" ]]; then
+      log "Registering all product clients in Keycloak..."
+      KEYCLOAK_URL=http://localhost:8081 \
+      KEYCLOAK_ADMIN_PASSWORD="${KEYCLOAK_ADMIN_PASSWORD:-localdev}" \
+      DOCKER_NETWORK=medinovai-dev \
+      bash "$SECURITY_REPO/scripts/seed-all-products.sh" 2>&1 | grep -E "✓|✗|⚠|Created|Skipped" || true
+      ok "All products registered in Keycloak"
+    fi
+
+    ok "Keycloak → http://localhost:8081  (admin / \${KEYCLOAK_ADMIN_PASSWORD:-localdev})"
+  else
+    warn "Keycloak did not become ready in 200s — skipping seed."
+    warn "Check: docker logs medinovai-keycloak"
+    warn "Re-run seeding: make security-seed"
+  fi
 
   # Wait for redis
   log "Waiting for redis..."
@@ -236,8 +316,18 @@ echo ""
 echo -e "${BOLD}${G}╔══════════════════════════════════════════════════════════════════════╗${NC}"
 echo -e "${BOLD}${G}║           MedinovAI Local Stack — READY                              ║${NC}"
 echo -e "${BOLD}${G}╠══════════════════════════════════════════════════════════════════════╣${NC}"
+echo -e "${BOLD}${G}║  ★  YOUR ONE LOGIN POINT                                             ║${NC}"
+echo -e "${BOLD}${G}║     http://localhost:3030   (medinovaiOS unified portal)             ║${NC}"
+echo -e "${G}║     Email:    ${SUPERADMIN_EMAIL:-superadmin@medinov.ai}                     ║${NC}"
+echo -e "${G}║     Password: \$SUPERADMIN_PASSWORD  (set in infra/docker/.env)        ║${NC}"
+echo -e "${G}║     This is the ONLY login. All other systems follow SSO from here.  ║${NC}"
+echo -e "${G}╠══════════════════════════════════════════════════════════════════════╣${NC}"
+echo -e "${G}║  LAYER 0 — IAM (Keycloak)                                            ║${NC}"
+echo -e "${G}║    Keycloak     http://localhost:8081/admin  (internal admin only)   ║${NC}"
+echo -e "${G}║    Realm:       medinov-ai  (15 product clients registered)          ║${NC}"
+echo -e "${G}╠══════════════════════════════════════════════════════════════════════╣${NC}"
 echo -e "${G}║  LAYER 1 — Docker Compose Infra                                      ║${NC}"
-echo -e "${G}║    Grafana      http://localhost:3000       admin / admin             ║${NC}"
+echo -e "${G}║    Grafana      http://localhost:3000       (SSO via Keycloak)       ║${NC}"
 echo -e "${G}║    Prometheus   http://localhost:9090                                 ║${NC}"
 echo -e "${G}║    Mailpit      http://localhost:8025                                 ║${NC}"
 echo -e "${G}║    Postgres     localhost:5432              medinovai / localdev      ║${NC}"
@@ -245,7 +335,6 @@ echo -e "${G}║    Redis        localhost:6379              pw: localdev       
 echo -e "${G}╠══════════════════════════════════════════════════════════════════════╣${NC}"
 echo -e "${G}║  LAYER 2 — Kubernetes App Services                                   ║${NC}"
 echo -e "${G}║    api-gateway  http://localhost:30080                                ║${NC}"
-echo -e "${G}║    auth-service http://localhost:30081                                ║${NC}"
 echo -e "${G}║    + clinical-engine, data-pipeline, notification, ai-inference      ║${NC}"
 echo -e "${G}╠══════════════════════════════════════════════════════════════════════╣${NC}"
 echo -e "${G}║  LAYER 3 — Cluster Addons                                            ║${NC}"
@@ -258,12 +347,12 @@ echo -e "${BOLD}${G}║  LAYER 4 — medinovaiOS Unified Portal                 
 echo -e "${G}║    medinovaiOS  http://localhost:3030       (Docker Compose)         ║${NC}"
 echo -e "${G}║    medinovaiOS  http://localhost:30030      (K8s NodePort)           ║${NC}"
 echo -e "${G}║    medinovaiOS  http://medinovaios.local    (K8s Ingress)            ║${NC}"
-echo -e "${G}║    Every product, tool, and service in one place.                   ║${NC}"
 echo -e "${G}╠══════════════════════════════════════════════════════════════════════╣${NC}"
 echo -e "${G}║  QUICK COMMANDS                                                       ║${NC}"
+echo -e "${G}║    make security-seed         # re-seed SuperAdmin + all products    ║${NC}"
+echo -e "${G}║    make security-logs         # tail Keycloak logs                   ║${NC}"
 echo -e "${G}║    make cluster-status        # full health check                    ║${NC}"
 echo -e "${G}║    make medinovaios-forward   # port-forward medinovaiOS to :3030    ║${NC}"
-echo -e "${G}║    make dashboard-forward     # open K8s dashboard                   ║${NC}"
 echo -e "${G}║    make argocd-forward        # open ArgoCD                          ║${NC}"
 echo -e "${G}║    make docker-backup         # backup postgres + volumes            ║${NC}"
 echo -e "${G}╚══════════════════════════════════════════════════════════════════════╝${NC}"

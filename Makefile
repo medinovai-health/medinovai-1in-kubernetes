@@ -46,6 +46,41 @@ down: ## Stop everything gracefully (data preserved in volumes)
 	docker compose -f infra/docker/docker-compose.dev.yml stop 2>/dev/null || true
 	@echo "Done. Data preserved. Run 'make up' to restart."
 
+##@ Security Service (Keycloak IAM)
+
+.PHONY: security-up security-seed security-logs security-ui security-forward security-restart
+
+security-up: ## Start Keycloak via Docker Compose (builds from SECURITY_SERVICE_PATH)
+	@echo "Starting Keycloak (medinovai-keycloak)..."
+	@docker compose -f infra/docker/docker-compose.dev.yml up -d keycloak
+	@echo "Polling Keycloak health (max 200s)..."
+	@for i in $$(seq 1 40); do \
+		curl -sf http://localhost:$${KEYCLOAK_HTTP_PORT:-8081}/health/ready && echo " Ready!" && break || printf "."; \
+		sleep 5; \
+	done
+
+security-seed: ## Re-run SuperAdmin + all product client seeder against running Keycloak
+	@SECURITY_REPO="$${SECURITY_SERVICE_PATH:-$(HOME)/Documents/GitHub/MedinovAI-security-service}"; \
+	if [ ! -d "$$SECURITY_REPO" ]; then echo "Error: MedinovAI-security-service not found at $$SECURITY_REPO"; echo "Run: bash scripts/clone-repos.sh"; exit 1; fi; \
+	KEYCLOAK_URL=http://localhost:$${KEYCLOAK_HTTP_PORT:-8081} \
+	KEYCLOAK_ADMIN_PASSWORD="$${KEYCLOAK_ADMIN_PASSWORD:-localdev}" \
+	SUPERADMIN_EMAIL="$${SUPERADMIN_EMAIL:-superadmin@medinov.ai}" \
+	SUPERADMIN_PASSWORD="$${SUPERADMIN_PASSWORD:-}" \
+	bash "$$SECURITY_REPO/scripts/bootstrap.sh" --seed-only
+
+security-logs: ## Tail Keycloak container logs (Ctrl+C to stop)
+	@docker logs -f medinovai-keycloak
+
+security-ui: ## Open Keycloak admin console in your default browser
+	@open http://localhost:$${KEYCLOAK_HTTP_PORT:-8081}/admin 2>/dev/null || xdg-open http://localhost:$${KEYCLOAK_HTTP_PORT:-8081}/admin 2>/dev/null || echo "Open: http://localhost:$${KEYCLOAK_HTTP_PORT:-8081}/admin"
+
+security-forward: ## Port-forward K8s Keycloak service to localhost:8081
+	@echo "Port-forwarding Keycloak (K8s) → localhost:8081..."
+	@kubectl port-forward -n medinovai-security svc/keycloak 8081:8080
+
+security-restart: ## Restart Keycloak container (e.g. after realm config change)
+	@docker compose -f infra/docker/docker-compose.dev.yml restart keycloak
+
 nuke: ## Wipe everything and rebuild from scratch (DESTROYS ALL DATA)
 	@echo "WARNING: This will destroy all local data. Press Ctrl-C to cancel..."
 	@sleep 5

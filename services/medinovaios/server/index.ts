@@ -2,22 +2,31 @@
 // Express server that:
 //   1. Serves the built Vite SPA from /dist
 //   2. Provides /api/services/health — server-side health aggregation
-//   3. Provides /api/sso/* — SSO login + token validation
+//   3. Provides /api/sso/* — OIDC relay via Keycloak (httpOnly cookie auth)
 //   4. Accepts /api/health-push from the deploy-agent watchdog
 //   5. Exposes /health for container probes
 // ─────────────────────────────────────────────────────────────────────────────
 
 import express from 'express';
+import cookieParser from 'cookie-parser';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { getServiceHealth, pushHealthData } from './health-aggregator.js';
-import { handleLogin, handleValidate } from './sso-relay.js';
+import {
+  handleLogin,
+  handleCallback,
+  handleValidate,
+  handleMe,
+  handleLogout,
+  handleRefresh,
+} from './sso-relay.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 const PORT = parseInt(process.env.PORT ?? '3030', 10);
 
 app.use(express.json({ limit: '100kb' }));
+app.use(cookieParser());
 
 // ── CORS for dev (Vite proxy handles it in prod) ──────────────────────────────
 if (process.env.NODE_ENV !== 'production') {
@@ -57,10 +66,25 @@ app.post('/api/health-push', (req, res) => {
   return res.json({ status: 'ok' });
 });
 
-// ── SSO endpoints ─────────────────────────────────────────────────────────────
-app.post('/api/sso/login', handleLogin);
-app.post('/api/sso/validate', handleValidate);
+// ── SSO endpoints (OIDC relay via Keycloak) ───────────────────────────────────
+// GET  /api/sso/login     — generate PKCE + redirect to Keycloak
+app.get('/api/sso/login', handleLogin);
+
+// GET  /api/sso/callback  — exchange code for tokens, set httpOnly cookies
+app.get('/api/sso/callback', handleCallback);
+
+// GET  /api/sso/validate  — validate kc_access cookie (used by nginx auth_request)
+// Returns 200 + X-User-* headers on success, 401 on failure
 app.get('/api/sso/validate', handleValidate);
+
+// GET  /api/sso/me        — return decoded user from valid cookie (used by SPA on mount)
+app.get('/api/sso/me', handleMe);
+
+// POST /api/sso/logout    — clear cookies + call Keycloak backchannel logout
+app.post('/api/sso/logout', handleLogout);
+
+// GET  /api/sso/refresh   — rotate access token using refresh token
+app.get('/api/sso/refresh', handleRefresh);
 
 // ── Serve static SPA (production) ─────────────────────────────────────────────
 const distPath = path.resolve(__dirname, '..', 'dist');
@@ -77,7 +101,8 @@ app.get('*', (req, res) => {
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`[medinovaios] Server running on http://0.0.0.0:${PORT}`);
   console.log(`[medinovaios] Serving SPA from ${distPath}`);
-  console.log(`[medinovaios] Auth service: ${process.env.AUTH_SERVICE_URL ?? 'http://localhost:30081'}`);
+  console.log(`[medinovaios] Keycloak: ${process.env.KEYCLOAK_URL ?? 'http://localhost:8081'}/realms/${process.env.KEYCLOAK_REALM ?? 'medinov-ai'}`);
+  console.log(`[medinovaios] Auth flow: GET /api/sso/login → Keycloak → GET /api/sso/callback`);
 });
 
 export default app;

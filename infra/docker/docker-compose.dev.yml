@@ -216,6 +216,67 @@ services:
     networks:
       - medinovai-dev
 
+  # ─── IAM / Single Sign-On (Keycloak) ─────────────────────────────────────────
+  # Builds Keycloak from the MedinovAI-security-service sibling repo.
+  # Realm auto-imports on first start from keycloak/realm-config/ (start-dev --import-realm).
+  # SuperAdmin + product clients seeded by bootstrap-all.sh Step 0 after Keycloak is healthy.
+  #
+  # Prerequisites:
+  #   1. Clone: bash scripts/clone-repos.sh  (or git clone MedinovAI-security-service)
+  #   2. Set KEYCLOAK_ADMIN_PASSWORD + SUPERADMIN_PASSWORD in infra/docker/.env
+  #   3. bootstrap-all.sh creates the `keycloak` DB in postgres automatically
+  #
+  # Access:
+  #   Keycloak admin: http://localhost:8081/admin  (admin / $KEYCLOAK_ADMIN_PASSWORD)
+  #   Your portal:    http://localhost:3030         (superadmin@medinov.ai / $SUPERADMIN_PASSWORD)
+  keycloak:
+    build:
+      context: ${SECURITY_SERVICE_PATH:-../../../MedinovAI-security-service}/keycloak
+      dockerfile: docker/Dockerfile
+    image: medinovai-keycloak:local
+    container_name: medinovai-keycloak
+    restart: unless-stopped
+    command: start-dev --import-realm
+    ports:
+      - "${KEYCLOAK_HTTP_PORT:-8081}:8080"
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: medinovai
+      KC_DB_PASSWORD: ${POSTGRES_PASSWORD:-localdev}
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-localdev}
+      KC_HTTP_ENABLED: "true"
+      KC_HOSTNAME_STRICT: "false"
+      KC_HOSTNAME_STRICT_HTTPS: "false"
+      KC_PROXY_HEADERS: xforwarded
+      KC_HEALTH_ENABLED: "true"
+      KC_METRICS_ENABLED: "true"
+      KC_LOG_LEVEL: INFO
+      KC_SMTP_HOST: mailhog
+      KC_SMTP_PORT: 1025
+      KC_SMTP_FROM: ${SMTP_FROM:-noreply@medinov.ai}
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID:-}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN:-}
+      TWILIO_PHONE_NUMBER: ${TWILIO_PHONE_NUMBER:-}
+    volumes:
+      - ${SECURITY_SERVICE_PATH:-../../../MedinovAI-security-service}/keycloak/realm-config:/opt/keycloak/data/import:ro
+      - ${SECURITY_SERVICE_PATH:-../../../MedinovAI-security-service}/keycloak/themes:/opt/keycloak/themes:ro
+      - keycloak-data:/opt/keycloak/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mailhog:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health/ready || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 120s
+    networks:
+      - medinovai-dev
+
   # ─── Atlas UI (containerized Next.js frontend) ────────────────────────────
   # The deployer builds the UI into the atlas-ui-source named volume.
   # This service reads the pre-built output from that volume — no host path
@@ -270,12 +331,22 @@ services:
     environment:
       NODE_ENV: production
       PORT: "3030"
-      AUTH_SERVICE_URL: ${AUTH_SERVICE_URL:-http://localhost:30081}
+      # ── Keycloak OIDC (replaces old AUTH_SERVICE_URL) ────────────────────
+      # medinovaiOS is a confidential OIDC client — server-side code exchange.
+      KEYCLOAK_URL: http://medinovai-keycloak:8080
+      KEYCLOAK_REALM: medinov-ai
+      KEYCLOAK_CLIENT_ID: medinovaios
+      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:-}
+      KEYCLOAK_REDIRECT_URI: ${MEDINOVAIOS_PUBLIC_URL:-http://localhost:3030}/api/sso/callback
+      KEYCLOAK_JWKS_URI: http://medinovai-keycloak:8080/realms/medinov-ai/protocol/openid-connect/certs
+      # ── Internal service URLs ─────────────────────────────────────────────
       ATLAS_UI_URL: ${ATLAS_UI_URL:-http://localhost:3737}
       LIS_INTERNAL_URL: http://medinovai-lis:3000
       CORTEX_INTERNAL_URL: http://medinovai-cortex:3100
     depends_on:
       deployer:
+        condition: service_healthy
+      keycloak:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:3030/health || exit 1"]
@@ -295,6 +366,7 @@ volumes:
   ollama-data:
   open-webui-data:
   atlas-ui-modules:
+  keycloak-data:       # Keycloak runtime data (H2 sessions, caches — not realm config)
   # ─── Deployer volumes (populated by the deployer service on first boot) ──
   atlas-config:        # Atlas config (atlas.json, .env, workspace templates)
   atlas-workspaces:    # Agent workspace dirs (logs, outputs, state, audit)
