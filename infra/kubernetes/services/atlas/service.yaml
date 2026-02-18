@@ -1,0 +1,24 @@
+# ─── Atlas Agent Service ──────────────────────────────────────────────────────
+# ClusterIP — reachable inside the cluster as:
+#   atlas-agent.medinovai-atlas.svc.cluster.local:18789
+#
+# Port 18789 = Atlas gateway (HTTP + WebSocket)
+# ─────────────────────────────────────────────────────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: atlas-agent
+  namespace: medinovai-atlas
+  labels:
+    app.kubernetes.io/name: atlas-agent
+    app.kubernetes.io/component: agent
+    app.kubernetes.io/part-of: medinovai
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: atlas-agent
+  ports:
+    - name: gateway
+      port: 18789
+      targetPort: 18789
+      protocol: TCP

@@ -11,7 +11,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(dirname "$SCRIPT_DIR")"
-ATLAS_HOME="$HOME/.atlas"
+ATLAS_HOME="${ATLAS_HOME:-$HOME/.atlas}"
 
 echo "╔══════════════════════════════════════════════════════════════╗"
 echo "║          MedinovAI Atlas Config Deployment                         ║"
@@ -30,8 +30,8 @@ if [ -f "$ATLAS_HOME/atlas.json" ]; then
 fi
 
 # ─── Copy config ─────────────────────────────────────────────────────────────
-echo "▸ Copying config/atlas.json5 → $ATLAS_HOME/atlas.json"
-cp "$REPO_ROOT/config/atlas.json5" "$ATLAS_HOME/atlas.json"
+echo "▸ Copying config/deploy.json5 → $ATLAS_HOME/atlas.json"
+cp "$REPO_ROOT/config/deploy.json5" "$ATLAS_HOME/atlas.json"
 
 # ─── Copy .env.example if no .env exists ─────────────────────────────────────
 if [ ! -f "$ATLAS_HOME/.env" ]; then

@@ -20,6 +20,7 @@
 .PHONY: addons-install addons-uninstall addons-ingress addons-dashboard addons-monitoring addons-argocd addons-ollama addons-atlas
 .PHONY: dashboard-forward argocd-forward webui-forward atlas-forward monitoring-forward cluster-status clone-repos list-repos
 .PHONY: ollama-pull-default ollama-pull-default-k8s ollama-list ollama-status
+.PHONY: medinovaios-up medinovaios-build medinovaios-forward medinovaios-logs medinovaios-dev
 .PHONY: atlas-build atlas-logs atlas-start atlas-stop atlas-status atlas-ui-up k8s-status-full
 
 ENV ?= staging
@@ -218,6 +219,23 @@ atlas-status: ## Show Atlas status (UI, agent, model, federated network)
 
 atlas-ui-up: ## Start Atlas UI in Docker Compose (agent still runs natively)
 	docker compose -f $(COMPOSE_FILE) up -d atlas-ui
+
+medinovaios-up: ## Build and start medinovaiOS (Docker Compose)
+	docker compose -f $(COMPOSE_FILE) up -d medinovaios
+
+medinovaios-build: ## Build medinovaiOS Docker image
+	docker build -f services/medinovaios/Dockerfile -t medinovaios:local .
+	@echo "✓ medinovaios:local built"
+
+medinovaios-forward: ## Port-forward medinovaiOS (K8s) to localhost:3030 (background)
+	@echo "Opening medinovaiOS at http://localhost:3030"
+	kubectl port-forward -n medinovai-os svc/medinovaios 3030:3030 &
+
+medinovaios-logs: ## Tail medinovaiOS logs
+	docker logs -f medinovaios 2>/dev/null || kubectl logs -n medinovai-os -l app.kubernetes.io/name=medinovaios -f
+
+medinovaios-dev: ## Run medinovaiOS in dev mode (hot reload)
+	cd services/medinovaios && npm install && npm run dev
 
 atlas-build: ## Build Atlas UI Docker image (requires ~/.medinovai/atlas/ui to exist)
 	docker build -f Dockerfile.atlas \

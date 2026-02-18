@@ -13,7 +13,7 @@
 #   bash scripts/bootstrap/bootstrap-complete.sh --skip-model    # Skip model pull
 #
 # What this does:
-#   1. Start Docker Compose infra (postgres, redis, prometheus, grafana, mailhog, localstack)
+#   1. Start Docker Compose infra (postgres, redis, prometheus, grafana, mailpit, localstack)
 #   2. Start Ollama + Open WebUI (Docker Compose)
 #   3. Build Atlas image + start Atlas (Docker Compose)
 #   4. Install K8s base platform (install-k8s.sh)
@@ -178,7 +178,7 @@ echo "║  PostgreSQL    localhost:5432                               ║"
 echo "║  Redis         localhost:6379                               ║"
 echo "║  Prometheus    http://localhost:9090                        ║"
 echo "║  Grafana       http://localhost:3000  (admin/admin)         ║"
-echo "║  MailHog       http://localhost:8025                        ║"
+echo "║  Mailpit       http://localhost:8025                        ║"
 echo "║  Ollama        http://localhost:11434                       ║"
 echo "║  Open WebUI    http://localhost:8091                        ║"
 echo "║  Atlas         http://localhost:18789                       ║"

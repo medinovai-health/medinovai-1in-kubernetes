@@ -55,13 +55,19 @@ echo "  ✓ atlas installed: $(atlas --version 2>/dev/null || echo 'version chec
 
 # ─── Run Onboarding ──────────────────────────────────────────────────────────
 echo ""
-echo "▸ Running MedinovAI Atlas onboarding (installs daemon)..."
-atlas onboard --install-daemon
+if [ -f /.dockerenv ]; then
+    echo "▸ Container environment detected — skipping daemon install (not supported inside Docker)."
+    echo "  Atlas config will be written to \$ATLAS_HOME by the deployer entrypoint."
+else
+    echo "▸ Running MedinovAI Atlas onboarding (installs daemon)..."
+    atlas onboard --install-daemon
+fi
 
 # ─── Create config directory ─────────────────────────────────────────────────
 echo ""
-echo "▸ Ensuring ~/.atlas/ directory exists..."
-mkdir -p ~/.atlas
+ATLAS_HOME="${ATLAS_HOME:-$HOME/.atlas}"
+echo "▸ Ensuring $ATLAS_HOME exists..."
+mkdir -p "$ATLAS_HOME"
 
 echo ""
 echo "╔══════════════════════════════════════════════════════════════╗"

@@ -1,0 +1,49 @@
+# ─── Dockerfile.deployer ──────────────────────────────────────────────────────
+# Builds the MedinovAI self-bootstrapping deployer image.
+#
+# This container installs Atlas, writes all config and workspace files into
+# named volumes, and then exits 0.  Docker Compose `depends_on: service_healthy`
+# blocks atlas-agent and atlas-ui until it finishes.
+#
+# Build (from repo root):
+#   docker build -f Dockerfile.deployer -t medinovai-deployer:local .
+#
+# Or let Docker Compose build it:
+#   docker compose -f infra/docker/docker-compose.dev.yml up -d
+#
+# Environment variables (inject via compose .env or K8s Secret):
+#   SLACK_APP_TOKEN      — required for Slack channel listening
+#   SLACK_BOT_TOKEN      — required for Slack channel listening
+#   ANTHROPIC_API_KEY    — LLM provider (at least one required)
+#   OPENAI_API_KEY       — optional LLM fallback
+#   HOOKS_TOKEN          — webhook secret
+#   OLLAMA_DEFAULT_MODEL — defaults to qwen2.5:1.5b
+#   ATLAS_UI_SRC         — optional: path to pre-copied UI source inside the image
+# ─────────────────────────────────────────────────────────────────────────────
+
+FROM node:22-alpine
+
+# System deps: bash (scripts require bash), curl (health probes / install),
+# jq (JSON parsing in scripts), python3 (manifest parsing in deploy_service.sh)
+RUN apk add --no-cache bash curl jq python3
+
+WORKDIR /repo
+
+# Copy deploy scripts and templates at build time.
+# Source code of each service is NOT copied here — the deployer only handles
+# config, workspace scaffolding, and the Atlas CLI install.
+COPY scripts/   ./scripts/
+COPY config/    ./config/
+COPY workspaces/ ./workspaces/
+COPY docker/deployer-entrypoint.sh /entrypoint.sh
+
+RUN chmod +x /entrypoint.sh \
+    && chmod +x scripts/deploy/deploy_config.sh \
+    && chmod +x scripts/bootstrap/install_atlas.sh
+
+# Default volume mount points (overridable via compose/k8s)
+ENV ATLAS_HOME=/atlas-home
+ENV ATLAS_WORKSPACES=/atlas-workspaces
+ENV ATLAS_UI_OUT=/atlas-ui-built
+
+ENTRYPOINT ["/entrypoint.sh"]

@@ -12,6 +12,51 @@ name: medinovai-dev
 # ─────────────────────────────────────────────────────────────────────────────
 
 services:
+
+  # ─── Deployer (self-bootstrapper) ─────────────────────────────────────────
+  # Runs once on first `docker compose up`.  Installs Atlas, writes all config
+  # and workspace files into named volumes, then exits 0.
+  # Downstream services (atlas-agent, atlas-ui) use depends_on: service_healthy
+  # so they are blocked until the deployer finishes.
+  #
+  # Idempotent: if /atlas-home/.deploy-complete already exists the container
+  # exits 0 immediately (fast path — no reinstall on every restart).
+  #
+  # Force re-bootstrap:
+  #   docker compose rm -f deployer && docker volume rm medinovai-dev_atlas-config
+  #   docker compose up -d deployer
+  deployer:
+    build:
+      context: ../..
+      dockerfile: Dockerfile.deployer
+    image: medinovai-deployer:local
+    container_name: medinovai-deployer
+    restart: unless-stopped
+    volumes:
+      - atlas-config:/atlas-home
+      - atlas-workspaces:/atlas-workspaces
+      - atlas-ui-source:/atlas-ui-built
+    environment:
+      ATLAS_HOME: /atlas-home
+      ATLAS_WORKSPACES: /atlas-workspaces
+      ATLAS_UI_OUT: /atlas-ui-built
+      SLACK_APP_TOKEN: ${SLACK_APP_TOKEN:-}
+      SLACK_BOT_TOKEN: ${SLACK_BOT_TOKEN:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      HOOKS_TOKEN: ${HOOKS_TOKEN:-}
+      OLLAMA_DEFAULT_MODEL: ${OLLAMA_DEFAULT_MODEL:-qwen2.5:1.5b}
+      MEDINOVAIOS_URL: http://medinovaios:3030
+    healthcheck:
+      # Passes only after the sentinel file is written (bootstrap complete)
+      test: ["CMD", "test", "-f", "/atlas-home/.deploy-complete"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 120s
+    networks:
+      - medinovai-dev
+
   postgres:
     image: postgres:16-alpine
     container_name: medinovai-postgres
@@ -99,7 +144,8 @@ services:
       - medinovai-dev
 
   mailhog:
-    image: mailhog/mailhog:latest
+    image: axllent/mailpit:latest
+    platform: linux/arm64
     container_name: medinovai-mailhog
     restart: unless-stopped
     ports:
@@ -131,11 +177,11 @@ services:
     container_name: medinovai-ollama
     restart: unless-stopped
     ports:
-      - "11434:11434"
+      - "11435:11434"   # Host port 11435 — native Ollama holds 11434
     volumes:
       - ollama-data:/root/.ollama
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:11434/api/tags || exit 1"]
+      test: ["CMD-SHELL", "ollama list || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -148,7 +194,7 @@ services:
     container_name: medinovai-open-webui
     restart: unless-stopped
     ports:
-      - "8090:8080"
+      - "8091:8080"   # Host 8091 — Docker Desktop WebUI extension holds 8090
     environment:
       # Point at sibling Ollama container — no external API calls for inference
       OLLAMA_BASE_URL: http://ollama:11434
@@ -170,6 +216,76 @@ services:
     networks:
       - medinovai-dev
 
+  # ─── Atlas UI (containerized Next.js frontend) ────────────────────────────
+  # The deployer builds the UI into the atlas-ui-source named volume.
+  # This service reads the pre-built output from that volume — no host path
+  # dependency, no host Atlas installation required.
+  #
+  # Agent WebSocket: atlas-agent runs as a sibling container (port 18789).
+  # If you still want to connect to a host-side agent, override:
+  #   NEXT_PUBLIC_AGENT_URL=ws://host.docker.internal:8765
+  atlas-ui:
+    image: node:22-alpine
+    container_name: medinovai-atlas-ui
+    restart: unless-stopped
+    working_dir: /app
+    ports:
+      - "3737:3000"
+    volumes:
+      # Pre-built UI from the deployer — no host path mount needed
+      - atlas-ui-source:/app:ro
+      # node_modules installed fresh inside the container (excluded from ro mount)
+      - atlas-ui-modules:/app/node_modules
+    command: sh -c "npm install --silent && npm start"
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      # Atlas agent runs as a sibling container inside the compose stack
+      NEXT_PUBLIC_AGENT_URL: ${NEXT_PUBLIC_AGENT_URL:-ws://atlas-agent:18789}
+    depends_on:
+      deployer:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:3000 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    networks:
+      - medinovai-dev
+
+  # ─── medinovaiOS — Unified Portal ─────────────────────────────────────────────
+  # Single URL to access every product, service, and tool. Dark-theme React portal
+  # with live health status, SSO, embedded panels, and Atlas cross-link.
+  # Access at: http://localhost:3030
+  medinovaios:
+    build:
+      context: ../..
+      dockerfile: services/medinovaios/Dockerfile
+    image: medinovaios:local
+    container_name: medinovaios
+    restart: unless-stopped
+    ports:
+      - "3030:3030"
+    environment:
+      NODE_ENV: production
+      PORT: "3030"
+      AUTH_SERVICE_URL: ${AUTH_SERVICE_URL:-http://localhost:30081}
+      ATLAS_UI_URL: ${ATLAS_UI_URL:-http://localhost:3737}
+      LIS_INTERNAL_URL: http://medinovai-lis:3000
+      CORTEX_INTERNAL_URL: http://medinovai-cortex:3100
+    depends_on:
+      deployer:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:3030/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - medinovai-dev
+
 volumes:
   postgres-data:
   redis-data:
@@ -178,6 +294,11 @@ volumes:
   localstack-data:
   ollama-data:
   open-webui-data:
+  atlas-ui-modules:
+  # ─── Deployer volumes (populated by the deployer service on first boot) ──
+  atlas-config:        # Atlas config (atlas.json, .env, workspace templates)
+  atlas-workspaces:    # Agent workspace dirs (logs, outputs, state, audit)
+  atlas-ui-source:     # Built Next.js output served by atlas-ui
 
 networks:
   medinovai-dev:

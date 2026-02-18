@@ -161,7 +161,7 @@ log "Log: $LOG_FILE"
 echo ""
 
 if ! $DRY_RUN; then
-    echo "This will start the full Docker stack (postgres, redis, prometheus, grafana, mailhog, localstack)."
+    echo "This will start the full Docker stack (postgres, redis, prometheus, grafana, mailpit, localstack)."
     echo "Backups: $BACKUP_BASE"
     echo ""
     read -r -p "Proceed? [y/N] " confirm
@@ -191,7 +191,7 @@ echo "║  ✓ Docker instantiation complete!"
 echo "║"
 echo "║  Postgres:  localhost:5432   Redis:    localhost:6379"
 echo "║  Grafana:   http://localhost:3000"
-echo "║  Prometheus: http://localhost:9090   MailHog: http://localhost:8025"
+echo "║  Prometheus: http://localhost:9090   Mailpit: http://localhost:8025"
 echo "║"
 echo "║  Backup:    $BACKUP_BASE"
 echo "║  Log:       $LOG_FILE"

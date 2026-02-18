@@ -6,7 +6,7 @@
 # ║                                                                              ║
 # ║  What gets installed (all local, no cloud accounts):                         ║
 # ║    Layer 1 — Docker Compose infra                                            ║
-# ║      postgres · redis · prometheus · grafana · mailhog · localstack          ║
+# ║      postgres · redis · prometheus · grafana · mailpit · localstack          ║
 # ║    Layer 2 — Kubernetes app services (docker-desktop overlay)                ║
 # ║      api-gateway · auth-service · clinical-engine · data-pipeline            ║
 # ║      notification-service · ai-inference                                     ║
@@ -111,7 +111,7 @@ fi
 
 # ── Step 2: Docker Compose Infra (Layer 1) ────────────────────────────────────
 if ! $SKIP_INFRA; then
-  step "2 / 4  Docker Compose Infra  (postgres · redis · prometheus · grafana · mailhog · localstack)"
+  step "2 / 4  Docker Compose Infra  (postgres · redis · prometheus · grafana · mailpit · localstack)"
 
   # Copy .env if missing
   if [[ ! -f "$REPO_ROOT/infra/docker/.env" ]]; then
@@ -143,7 +143,7 @@ if ! $SKIP_INFRA; then
 
   ok "Grafana  → http://localhost:3000  (admin / admin)"
   ok "Prometheus → http://localhost:9090"
-  ok "MailHog  → http://localhost:8025"
+  ok "Mailpit  → http://localhost:8025"
   ok "LocalStack → http://localhost:4566"
 else
   log "Skipping Docker infra (--skip-infra)"
@@ -193,10 +193,36 @@ fi
 
 # ── Step 4: Cluster Addons (Layer 3) ──────────────────────────────────────────
 if ! $SKIP_ADDONS; then
-  step "4 / 4  Cluster Addons  (ingress · dashboard · kube-state-metrics · argocd)"
+  step "4 / 5  Cluster Addons  (ingress · dashboard · kube-state-metrics · argocd)"
   bash "$REPO_ROOT/scripts/bootstrap/install-addons.sh" 2>&1 | grep -E "✓|━|║|Step|Installing|Deployed|ERROR" || true
 else
   log "Skipping addons (--skip-addons)"
+fi
+
+# ── Step 5: medinovaiOS (Layer 4) ─────────────────────────────────────────────
+step "5 / 5  medinovaiOS  (unified portal — http://localhost:3030)"
+
+# Docker Compose: medinovaiOS is included in docker-compose.dev.yml and starts
+# automatically with `docker compose up`. Check if it's already running.
+if docker ps --format '{{.Names}}' 2>/dev/null | grep -q "medinovaios"; then
+  ok "medinovaiOS (Docker) already running at http://localhost:3030"
+else
+  log "Starting medinovaiOS via Docker Compose..."
+  if ! $SKIP_INFRA; then
+    docker compose -f "$COMPOSE_FILE" up -d medinovaios 2>&1 | grep -E "Starting|started|Built|error" || true
+    ok "medinovaiOS → http://localhost:3030"
+  fi
+fi
+
+# Kubernetes: deploy medinovaiOS manifest
+if ! $SKIP_K8S; then
+  log "Deploying medinovaiOS to Kubernetes..."
+  kubectl apply -k "$REPO_ROOT/infra/kubernetes/services/medinovaios" 2>&1 | \
+    grep -E "created|configured|unchanged" | head -10 || true
+  log "Waiting for medinovaiOS pods..."
+  kubectl rollout status deployment/medinovaios -n medinovai-os --timeout=120s 2>/dev/null && \
+    ok "medinovaiOS (K8s) → http://medinovaios.local  or  http://localhost:30030" || \
+    warn "medinovaiOS pods still starting — check: kubectl get pods -n medinovai-os"
 fi
 
 # ── Final Summary ─────────────────────────────────────────────────────────────
@@ -213,7 +239,7 @@ echo -e "${BOLD}${G}╠═══════════════════
 echo -e "${G}║  LAYER 1 — Docker Compose Infra                                      ║${NC}"
 echo -e "${G}║    Grafana      http://localhost:3000       admin / admin             ║${NC}"
 echo -e "${G}║    Prometheus   http://localhost:9090                                 ║${NC}"
-echo -e "${G}║    MailHog      http://localhost:8025                                 ║${NC}"
+echo -e "${G}║    Mailpit      http://localhost:8025                                 ║${NC}"
 echo -e "${G}║    Postgres     localhost:5432              medinovai / localdev      ║${NC}"
 echo -e "${G}║    Redis        localhost:6379              pw: localdev              ║${NC}"
 echo -e "${G}╠══════════════════════════════════════════════════════════════════════╣${NC}"
@@ -228,8 +254,15 @@ echo -e "${G}║    Dashboard    https://localhost:8443      (make dashboard-for
 echo -e "${G}║    ArgoCD       http://localhost:8080       (make argocd-forward)     ║${NC}"
 echo -e "${G}║    ArgoCD login: admin / ${ARGOCD_PW:0:16}...                         ║${NC}"
 echo -e "${G}╠══════════════════════════════════════════════════════════════════════╣${NC}"
+echo -e "${BOLD}${G}║  LAYER 4 — medinovaiOS Unified Portal                                ║${NC}"
+echo -e "${G}║    medinovaiOS  http://localhost:3030       (Docker Compose)         ║${NC}"
+echo -e "${G}║    medinovaiOS  http://localhost:30030      (K8s NodePort)           ║${NC}"
+echo -e "${G}║    medinovaiOS  http://medinovaios.local    (K8s Ingress)            ║${NC}"
+echo -e "${G}║    Every product, tool, and service in one place.                   ║${NC}"
+echo -e "${G}╠══════════════════════════════════════════════════════════════════════╣${NC}"
 echo -e "${G}║  QUICK COMMANDS                                                       ║${NC}"
 echo -e "${G}║    make cluster-status        # full health check                    ║${NC}"
+echo -e "${G}║    make medinovaios-forward   # port-forward medinovaiOS to :3030    ║${NC}"
 echo -e "${G}║    make dashboard-forward     # open K8s dashboard                   ║${NC}"
 echo -e "${G}║    make argocd-forward        # open ArgoCD                          ║${NC}"
 echo -e "${G}║    make docker-backup         # backup postgres + volumes            ║${NC}"

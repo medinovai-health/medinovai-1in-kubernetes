@@ -1,0 +1,36 @@
+# medinovaiOS — Unified portal for all MedinovAI products and infrastructure
+# Access: http://medinovaios.local  (ingress) or http://localhost:30030 (NodePort)
+# Cross-links bidirectionally with Atlas UI via shared JWT SSO.
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: medinovai-os
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: medinovai
+    medinovai/tier: portal
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: git@github.com:myonsite-healthcare/medinovai-Deploy.git
+    targetRevision: main
+    path: infra/kubernetes/services/medinovaios
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: medinovai-os
+  syncPolicy:
+    automated:
+      prune: false
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    retry:
+      limit: 3
+      backoff:
+        duration: 5s
+        maxDuration: 3m
+        factor: 2
