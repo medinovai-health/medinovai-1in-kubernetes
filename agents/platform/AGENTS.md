@@ -58,3 +58,74 @@ These actions ALWAYS require human approval:
 2. **Orient**: Classify as `transient` (cloud provider blip, DNS propagation), `structural` (misconfiguration, resource limits, permission denied), or `logic` (bad IaC, incorrect template, wrong parameter).
 3. **Decide**: Transient = wait and monitor. Structural = escalate with full context. Logic = fix the configuration, test in staging.
 4. **Act**: Execute. Always verify in staging/dev before production. Log everything.
+
+---
+
+## Learned Deployment Knowledge (Live Production — Feb 2026)
+
+This section records the concrete, validated deployment patterns discovered during live greenfield deployments on developer machines. Apply these before attempting any new installation.
+
+### The Two-Layer Local Stack
+
+All developer machines use a two-layer architecture:
+
+| Layer | Tool | Where |
+|-------|------|--------|
+| Infrastructure | Docker Compose (`infra/docker/docker-compose.dev.yml`) | postgres, redis, prometheus, grafana, mailhog, localstack |
+| Application services | Kubernetes on docker-desktop | api-gateway, auth-service, clinical-engine, data-pipeline, ai-inference, notification-service |
+
+**Critical**: Infra layer must be running before K8s pods — K8s pods connect to postgres/redis via `host.docker.internal`.
+
+### Multi-Machine Tailscale HA
+
+The platform supports N machines connected via Tailscale for HA across regions. One machine is "primary" (hosts the shared postgres + redis), all others are "secondary" and point at the primary's Tailscale IP.
+
+```bash
+# Machine 1 (primary)
+make docker-up && make k8s-install-primary
+
+# Machine N (secondary — on Tailscale)
+make docker-up && bash scripts/bootstrap/install-k8s.sh --db-host <primary-ts-ip>
+```
+
+This machine: `mayank-mbp25` · `100.79.214.33` · role: primary
+
+### Stub Images for Local K8s
+
+All 6 app services use `traefik/whoami:latest` in the `docker-desktop` overlay — a real HTTP server that responds to any path with pod metadata. Replace with real images via `images:` block in `kustomization.yaml` when app code is built.
+
+### Gitignored Machine-Specific Files
+
+These files are generated per machine by `tailscale-config.sh` and must never be committed:
+- `.env.tailscale`
+- `infra/kubernetes/overlays/docker-desktop/configmap-env-local.yaml`
+- `infra/kubernetes/overlays/docker-desktop/configmap-env-ai-local.yaml`
+
+### Known Kubernetes Manifest Pitfalls
+
+| Bug | Root Cause | Fix |
+|-----|-----------|-----|
+| `unknown field readOnlyRootFilesystem` at pod level | This is a container-level field, not pod-level | Move to `spec.template.spec.containers[].securityContext` |
+| GPU pod stuck Pending on non-GPU machine | Base `ai-inference` requests `nvidia.com/gpu` | Use JSON 6902 `op: remove` patch in docker-desktop overlay |
+| ResourceQuota conflict | Overlay was adding quota as `resource:` when base already has one | Use `patches:` to modify existing quota instead |
+| Strategic merge patch doesn't remove keys | Merge patch merges maps — won't delete keys from base | Use JSON 6902 `op: remove` for deletions |
+| `commonLabels` deprecated | Newer Kustomize versions reject it | Use `labels:` block with `includeSelectors: false` |
+
+### NodePort Exposure for Tailscale
+
+Services exposed via NodePort for cross-machine access on Tailscale:
+- `api-gateway`: port `30080`
+- `auth-service`: port `30081`
+
+Any machine on the Tailscale network can hit `http://<machine-ts-ip>:30080` directly.
+
+### Backup Before Every Infra Change
+
+```bash
+scripts/backup.sh   # Always run before any kubectl apply, compose change, or seed --reset
+```
+
+Backups: `~/medinovai-backups/medinovai-Deploy/{db,volumes,config}/`
+
+Full deployment reference: `docs/DEPLOYMENT_BRAIN.md`
+Cursor rule with all patterns: `.cursor/rules/local-docker-k8s-deployment.mdc`
