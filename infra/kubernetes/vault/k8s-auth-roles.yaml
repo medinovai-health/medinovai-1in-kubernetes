@@ -1,0 +1,63 @@
+# Vault Kubernetes auth method role bindings.
+# These are applied via vault CLI in init-vault.sh — this file is a reference manifest
+# documenting the intended role→policy→namespace mappings.
+#
+# vault write auth/kubernetes/role/<role-name> \
+#   bound_service_account_names=<sa> \
+#   bound_service_account_namespaces=<ns> \
+#   policies=<policy> \
+#   ttl=1h
+#
+# ─── Role Definitions ───────────────────────────────────────────────────────
+#
+# Role: atlasos
+#   SA: atlasos-sa           NS: atlasos         Policy: atlasos-read
+#   Purpose: AtlasOS gateway, event-bus, rollup-engine, audit-chain
+#
+# Role: atlasos-admin
+#   SA: atlasos-admin-sa     NS: atlasos         Policy: atlasos-admin
+#   Purpose: Credential migration, secret rotation
+#
+# Role: infra
+#   SA: default              NS: infra            Policy: infra-read
+#   Purpose: PostgreSQL, Redis, Kafka init containers
+#
+# Role: security
+#   SA: default              NS: security         Policy: security-read
+#   Purpose: Keycloak, secrets-manager-bridge, encryption-vault
+#
+# Role: platform
+#   SA: default              NS: platform         Policy: platform-read
+#   Purpose: API gateway, registry, data-services, notification-center
+#
+# Role: clinical
+#   SA: default              NS: clinical         Policy: clinical-read
+#   Purpose: CTMS, EDC, LIS, eConsent — PHI-adjacent
+#
+# Role: ai-ml
+#   SA: default              NS: ai-ml            Policy: ai-ml-read
+#   Purpose: AIFactory, Ollama, model-service-orchestrator
+#
+# Role: integrations
+#   SA: default              NS: integrations     Policy: integrations-read
+#   Purpose: GitHub webhooks, email, CRM connectors
+#
+# Role: external-secrets-operator
+#   SA: external-secrets     NS: external-secrets Policy: platform-admin
+#   Purpose: ESO reads all secrets to sync into K8s Secrets
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: atlasos-sa
+  namespace: atlasos
+  labels:
+    app.kubernetes.io/managed-by: medinovai-deploy
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: atlasos-admin-sa
+  namespace: atlasos
+  labels:
+    app.kubernetes.io/managed-by: medinovai-deploy

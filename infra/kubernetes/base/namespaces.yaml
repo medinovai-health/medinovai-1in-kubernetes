@@ -4,7 +4,6 @@ metadata:
   name: medinovai-system
   labels:
     app.kubernetes.io/managed-by: medinovai-deploy
-    environment: base
 ---
 apiVersion: v1
 kind: Namespace
@@ -12,7 +11,6 @@ metadata:
   name: medinovai-services
   labels:
     app.kubernetes.io/managed-by: medinovai-deploy
-    environment: base
 ---
 apiVersion: v1
 kind: Namespace
@@ -20,7 +18,7 @@ metadata:
   name: medinovai-data
   labels:
     app.kubernetes.io/managed-by: medinovai-deploy
-    environment: base
+    phi-zone: "true"
 ---
 apiVersion: v1
 kind: Namespace
@@ -28,7 +26,6 @@ metadata:
   name: medinovai-ai
   labels:
     app.kubernetes.io/managed-by: medinovai-deploy
-    environment: base
 ---
 apiVersion: v1
 kind: Namespace
@@ -36,4 +33,24 @@ metadata:
   name: medinovai-monitoring
   labels:
     app.kubernetes.io/managed-by: medinovai-deploy
-    environment: base
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: vault
+  labels:
+    app.kubernetes.io/managed-by: medinovai-deploy
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: external-secrets
+  labels:
+    app.kubernetes.io/managed-by: medinovai-deploy
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: longhorn-system
+  labels:
+    app.kubernetes.io/managed-by: medinovai-deploy

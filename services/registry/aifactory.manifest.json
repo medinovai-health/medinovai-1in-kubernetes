@@ -1,0 +1,40 @@
+{
+  "service": "aifactory",
+  "version": "0.1.0",
+  "repo": "myonsite-healthcare/medinovai-aifactory",
+  "type": "ml-service",
+  "tier": "high",
+  "description": "AI model factory and inference orchestration",
+  "dependencies": {
+    "services": ["security-service"],
+    "databases": ["postgres-primary", "redis-cache"],
+    "external": []
+  },
+  "health": {
+    "endpoint": "/health",
+    "readiness": "/ready",
+    "startup_timeout_seconds": 60
+  },
+  "deploy": {
+    "strategy": "canary",
+    "canary_percentage": 5,
+    "canary_duration_minutes": 15,
+    "rollback_on_error_rate": 0.005
+  },
+  "resources": {
+    "cpu": { "request": "500m", "limit": "2000m" },
+    "memory": { "request": "512Mi", "limit": "2Gi" },
+    "gpu": true
+  },
+  "scaling": {
+    "min_replicas": 1,
+    "max_replicas": 10,
+    "target_cpu_percent": 60
+  },
+  "governance": {
+    "risk_class": "high",
+    "requires_approval": true,
+    "pii_handling": true,
+    "audit_logging": true
+  }
+}

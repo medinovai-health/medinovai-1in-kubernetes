@@ -1,0 +1,36 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# On-prem dev: Mac Studio only, critical-path services
+# Deploys the minimum viable platform (12 core services + AtlasOS)
+
+resources:
+  - ../../base
+  - ../../vault
+  - ../../services/tier0/postgres-primary.yaml
+  - ../../services/tier0/redis.yaml
+  - ../../services/tier0/keycloak.yaml
+  - ../../services/atlasos
+  - ../../services/ai-inference/chromadb.yaml
+  - ../../services/atlasos-node-agent
+  - ../../services/atlasos-cluster-brain
+
+patches:
+  # Reduce replicas for dev
+  - target:
+      kind: Deployment
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 1
+  # Remove node selectors for single-node
+  - target:
+      kind: StatefulSet
+    patch: |-
+      - op: remove
+        path: /spec/template/spec/nodeSelector
+  - target:
+      kind: Deployment
+    patch: |-
+      - op: remove
+        path: /spec/template/spec/nodeSelector

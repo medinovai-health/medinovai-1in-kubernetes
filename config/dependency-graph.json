@@ -1,0 +1,1506 @@
+{
+  "$schema": "./schemas/dependency_graph.schema.json",
+  "version": "2.0.0",
+  "generated": "2026-02-17",
+  "description": "Complete MedinovAI platform dependency graph — defines deployment tiers, service ordering, and dependency edges for all 200+ services",
+  "copyright": "Copyright 2025-2026 MedinovAI. All Rights Reserved.",
+
+  "tiers": {
+    "tier0": {
+      "name": "Bare Infrastructure",
+      "description": "External/managed infrastructure services with zero MedinovAI dependencies. Must exist before anything else.",
+      "deploy_phase": 0,
+      "parallel": true,
+      "services": [
+        {
+          "id": "postgres-primary",
+          "type": "infrastructure",
+          "port": 5432,
+          "health": "pg_isready",
+          "depends_on": []
+        },
+        {
+          "id": "postgres-clinical",
+          "type": "infrastructure",
+          "port": 5433,
+          "health": "pg_isready",
+          "depends_on": []
+        },
+        {
+          "id": "redis-cache",
+          "type": "infrastructure",
+          "port": 6379,
+          "health": "redis-cli ping",
+          "depends_on": []
+        },
+        {
+          "id": "kafka",
+          "type": "infrastructure",
+          "port": 9092,
+          "health": "kafka-topics --bootstrap-server localhost:9092 --list",
+          "depends_on": ["zookeeper"]
+        },
+        {
+          "id": "zookeeper",
+          "type": "infrastructure",
+          "port": 2181,
+          "health": "echo ruok | nc localhost 2181",
+          "depends_on": []
+        },
+        {
+          "id": "mongodb",
+          "type": "infrastructure",
+          "port": 27017,
+          "health": "mongosh --eval db.adminCommand('ping')",
+          "depends_on": []
+        },
+        {
+          "id": "elasticsearch",
+          "type": "infrastructure",
+          "port": 9200,
+          "health": "GET /_cluster/health",
+          "depends_on": []
+        },
+        {
+          "id": "rabbitmq",
+          "type": "infrastructure",
+          "port": 5672,
+          "health": "rabbitmq-diagnostics ping",
+          "depends_on": []
+        },
+        {
+          "id": "vault",
+          "type": "infrastructure",
+          "port": 8200,
+          "health": "GET /v1/sys/health",
+          "depends_on": ["postgres-primary"]
+        },
+        {
+          "id": "s3-object-store",
+          "type": "infrastructure",
+          "port": null,
+          "health": "aws s3 ls",
+          "depends_on": []
+        },
+        {
+          "id": "keycloak",
+          "type": "infrastructure",
+          "port": 9080,
+          "health": "GET /health/ready",
+          "depends_on": ["postgres-primary"]
+        },
+        {
+          "id": "pgbouncer",
+          "type": "infrastructure",
+          "port": 6432,
+          "health": "psql -h localhost -p 6432 -c 'SELECT 1'",
+          "depends_on": ["postgres-primary"]
+        },
+        {
+          "id": "prometheus",
+          "type": "monitoring",
+          "port": 9090,
+          "health": "GET /-/healthy",
+          "depends_on": []
+        },
+        {
+          "id": "grafana",
+          "type": "monitoring",
+          "port": 3000,
+          "health": "GET /api/health",
+          "depends_on": ["prometheus"]
+        },
+        {
+          "id": "loki",
+          "type": "monitoring",
+          "port": 3100,
+          "health": "GET /ready",
+          "depends_on": []
+        },
+        {
+          "id": "alertmanager",
+          "type": "monitoring",
+          "port": 9093,
+          "health": "GET /-/healthy",
+          "depends_on": ["prometheus"]
+        },
+        {
+          "id": "jaeger",
+          "type": "monitoring",
+          "port": 16686,
+          "health": "GET /",
+          "depends_on": []
+        },
+        {
+          "id": "mailhog",
+          "type": "infrastructure",
+          "port": 8025,
+          "health": "GET /api/v2/messages",
+          "depends_on": [],
+          "environments": ["dev", "staging"]
+        },
+        {
+          "id": "localstack",
+          "type": "infrastructure",
+          "port": 4566,
+          "health": "GET /_localstack/health",
+          "depends_on": [],
+          "environments": ["dev"]
+        }
+      ]
+    },
+
+    "tier1": {
+      "name": "Security & Secrets Foundation",
+      "description": "Authentication, authorization, secrets, encryption. ALL other services depend on this tier.",
+      "deploy_phase": 1,
+      "parallel": false,
+      "deploy_order": [
+        "medinovai-secrets-manager-bridge",
+        "medinovai-security",
+        "medinovai-universal-sign-on",
+        "medinovai-role-based-permissions",
+        "medinovai-encryption-vault",
+        "medinovai-hipaa-gdpr-guard",
+        "medinovai-consent-preference-api",
+        "medinovai-audit-trail-explorer"
+      ],
+      "services": [
+        {
+          "id": "medinovai-secrets-manager-bridge",
+          "repo": "myonsite-healthcare/medinovai-secrets-manager-bridge",
+          "type": "python-service",
+          "port": 8000,
+          "health": "/health",
+          "tier": "critical",
+          "depends_on": {
+            "infrastructure": ["vault"],
+            "services": []
+          }
+        },
+        {
+          "id": "medinovai-security",
+          "repo": "myonsite-healthcare/MedinovAI-security",
+          "type": "node-service",
+          "port": 9000,
+          "health": "/health",
+          "tier": "critical",
+          "sub_services": [
+            {"id": "token-validator", "port": 9010, "health": "/health"},
+            {"id": "audit-service", "port": 9011, "health": "/health"},
+            {"id": "tenant-onboarding", "port": 9012, "health": "/health"},
+            {"id": "policy-engine", "port": 9013, "health": "/health"}
+          ],
+          "depends_on": {
+            "infrastructure": ["keycloak", "postgres-primary", "redis-cache", "pgbouncer"],
+            "services": ["medinovai-secrets-manager-bridge"]
+          }
+        },
+        {
+          "id": "medinovai-universal-sign-on",
+          "repo": "myonsite-healthcare/medinovai-universal-sign-on",
+          "type": "python-service",
+          "port": 8000,
+          "health": "/health",
+          "tier": "critical",
+          "depends_on": {
+            "infrastructure": ["postgres-primary", "redis-cache", "vault", "kafka"],
+            "services": ["medinovai-security"]
+          }
+        },
+        {
+          "id": "medinovai-role-based-permissions",
+          "repo": "myonsite-healthcare/medinovai-role-based-permissions",
+          "type": "python-service",
+          "port": 8000,
+          "health": "/healthz",
+          "tier": "critical",
+          "depends_on": {
+            "infrastructure": ["postgres-primary", "redis-cache"],
+            "services": ["medinovai-security"]
+          }
+        },
+        {
+          "id": "medinovai-encryption-vault",
+          "repo": "myonsite-healthcare/medinovai-encryption-vault",
+          "type": "python-service",
+          "port": 8000,
+          "health": "/health",
+          "tier": "critical",
+          "depends_on": {
+            "infrastructure": ["vault"],
+            "services": ["medinovai-secrets-manager-bridge"]
+          }
+        },
+        {
+          "id": "medinovai-hipaa-gdpr-guard",
+          "repo": "myonsite-healthcare/medinovai-hipaa-gdpr-guard",
+          "type": "python-service",
+          "port": 8000,
+          "health": "/health",
+          "tier": "critical",
+          "depends_on": {
+            "infrastructure": ["postgres-primary", "redis-cache"],
+            "services": ["medinovai-security", "medinovai-role-based-permissions"]
+          }
+        },
+        {
+          "id": "medinovai-consent-preference-api",
+          "repo": "myonsite-healthcare/medinovai-consent-preference-api",
+          "type": "python-service",
+          "port": 8000,
+          "health": "/health",
+          "tier": "high",
+          "depends_on": {
+            "infrastructure": ["postgres-primary", "redis-cache"],
+            "services": ["medinovai-security", "medinovai-hipaa-gdpr-guard"]
+          }
+        },
+        {
+          "id": "medinovai-audit-trail-explorer",
+          "repo": "myonsite-healthcare/medinovai-audit-trail-explorer",
+          "type": "python-service",
+          "port": 8000,
+          "health": "/health",
+          "tier": "high",
+          "depends_on": {
+            "infrastructure": ["postgres-primary", "redis-cache", "elasticsearch"],
+            "services": ["medinovai-security"]
+          }
+        }
+      ]
+    },
+
+    "tier2": {
+      "name": "Platform Core Services",
+      "description": "Service registry, data layer, messaging, API gateway, notifications — backbone for all domain services.",
+      "deploy_phase": 2,
+      "parallel": false,
+      "deploy_order": [
+        "medinovai-registry",
+        "medinovai-data-services",
+        "medinovai-real-time-stream-bus",
+        "medinovai-configuration-management",
+        "medinovai-notification-center",
+        "medinovai-aifactory",
+        "medinovai-api-gateway",
+        "medinovai-web-core",
+        "medinovai-atlas-engine"
+      ],
+      "services": [
+        {
+          "id": "medinovai-registry",
+          "repo": "myonsite-healthcare/medinovai-registry",
+          "type": "node-service",
+          "port": 8080,
+          "health": "/health",
+          "tier": "critical",
+          "depends_on": {
+            "infrastructure": ["postgres-primary", "redis-cache"],
+            "services": ["medinovai-security"]
+          }
+        },
+        {
+          "id": "medinovai-data-services",
+          "repo": "myonsite-healthcare/medinovai-data-services",
+          "type": "python-service",
+          "port": 8000,
+          "health": "/health",
+          "tier": "critical",
+          "depends_on": {
+            "infrastructure": ["postgres-primary", "postgres-clinical", "redis-cache"],
+            "services": ["medinovai-security"]
+          }
+        },
+        {
+          "id": "medinovai-real-time-stream-bus",
+          "repo": "myonsite-healthcare/medinovai-real-time-stream-bus",
+          "type": "node-service",
+          "port": 3000,
+          "health": "/health/ready",
+          "tier": "critical",
+          "depends_on": {
+            "infrastructure": ["kafka", "redis-cache"],
+            "services": ["medinovai-security"]
+          }
+        },
+        {
+          "id": "medinovai-configuration-management",
+          "repo": "myonsite-healthcare/medinovai-configuration-management",
+          "type": "python-service",
+          "port": 8000,
+          "health": "/health",
+          "tier": "high",
+          "depends_on": {
+            "infrastructure": ["postgres-primary", "redis-cache"],
+            "services": ["medinovai-security"]
+          }
+        },
+        {
+          "id": "medinovai-notification-center",
+          "repo": "myonsite-healthcare/medinovai-notification-center",
+          "type": "node-service",
+          "port": 8080,
+          "health": "/health",
+          "tier": "high",
+          "depends_on": {
+            "infrastructure": ["postgres-primary", "redis-cache", "rabbitmq"],
+            "services": ["medinovai-security"]
+          }
+        },
+        {
+          "id": "medinovai-aifactory",
+          "repo": "myonsite-healthcare/medinovai-aifactory",
+          "type": "python-service",
+          "port": 8000,
+          "health": "/health",
+          "tier": "high",
+          "depends_on": {
+            "infrastructure": ["postgres-primary", "redis-cache"],
+            "services": ["medinovai-security"]
+          }
+        },
+        {
+          "id": "medinovai-api-gateway",
+          "repo": "myonsite-healthcare/medinovai-api-gateway",
+          "type": "node-service",
+          "port": 8080,
+          "health": "/health",
+          "tier": "critical",
+          "depends_on": {
+            "infrastructure": [],
+            "services": ["medinovai-security", "medinovai-role-based-permissions", "medinovai-registry"]
+          }
+        },
+        {
+          "id": "medinovai-web-core",
+          "repo": "myonsite-healthcare/medinovai-web-core",
+          "type": "node-service",
+          "port": null,
+          "health": null,
+          "tier": "high",
+          "deploy_type": "npm-publish",
+          "depends_on": {
+            "infrastructure": [],
+            "services": ["medinovai-security", "medinovai-role-based-permissions"]
+          }
+        },
+        {
+          "id": "medinovai-atlas-engine",
+          "repo": "myonsite-healthcare/medinovai-atlas-engine",
+          "type": "python-service",
+          "port": 8000,
+          "health": "/health",
+          "tier": "high",
+          "depends_on": {
+            "infrastructure": ["postgres-primary", "redis-cache"],
+            "services": ["medinovai-security", "medinovai-registry"]
+          }
+        }
+      ]
+    },
+
+    "tier3": {
+      "name": "AI/ML & Clinical Foundation",
+      "description": "Core AI models, clinical decision support, patient services, knowledge graph — needed by Tier 4 domain services.",
+      "deploy_phase": 3,
+      "parallel": true,
+      "parallel_groups": [
+        ["medinovai-healthLLM", "medinovai-model-service-orchestrator", "medinovai-knowledge-graph"],
+        ["medinovai-clinical-decision-support", "medinovai-patient-services"],
+        ["medinovai-ai-standards"]
+      ],
+      "services": [
+        {
+          "id": "medinovai-healthLLM",
+          "repo": "myonsite-healthcare/medinovai-healthLLM",
+          "type": "ml-service",
+          "port": 8000,
+          "health": "/health",
+          "tier": "critical",
+          "depends_on": {
+            "infrastructure": ["postgres-primary", "redis-cache"],
+            "services": ["medinovai-security", "medinovai-aifactory"]
+          }
+        },
+        {
+          "id": "medinovai-model-service-orchestrator",
+          "repo": "myonsite-healthcare/MedinovAI-Model-Service-Orchestrator",
+          "type": "ml-service",
+          "port": 8000,
+          "health": "/health",
+          "tier": "high",
+          "depends_on": {
+            "infrastructure": ["postgres-primary", "redis-cache", "kafka", "s3-object-store"],
+            "services": ["medinovai-security", "medinovai-data-services"]
+          }
+        },
+        {
+          "id": "medinovai-knowledge-graph",
+          "repo": "myonsite-healthcare/medinovai-knowledge-graph",
+          "type": "python-service",
+          "port": 8000,
+          "health": "/health",
+          "tier": "high",
+          "depends_on": {
+            "infrastructure": ["postgres-primary", "elasticsearch"],
+            "services": ["medinovai-security", "medinovai-data-services"]
+          }
+        },
+        {
+          "id": "medinovai-clinical-decision-support",
+          "repo": "myonsite-healthcare/medinovai-clinical-decision-support",
+          "type": "ml-service",
+          "port": 8000,
+          "health": "/health",
+          "tier": "critical",
+          "depends_on": {
+            "infrastructure": ["postgres-primary", "redis-cache"],
+            "services": ["medinovai-healthLLM", "medinovai-model-service-orchestrator", "medinovai-data-services"]
+          }
+        },
+        {
+          "id": "medinovai-patient-services",
+          "repo": "myonsite-healthcare/medinovai-patient-onboarding",
+          "type": "python-service",
+          "port": 8000,
+          "health": "/health",
+          "tier": "critical",
+          "depends_on": {
+            "infrastructure": ["postgres-primary", "redis-cache"],
+            "services": ["medinovai-security", "medinovai-data-services", "medinovai-consent-preference-api"]
+          }
+        },
+        {
+          "id": "medinovai-ai-standards",
+          "repo": "myonsite-healthcare/MedinovAI-AI-Standards",
+          "type": "python-service",
+          "port": null,
+          "health": null,
+          "tier": "high",
+          "deploy_type": "config-only",
+          "depends_on": {
+            "infrastructure": [],
+            "services": []
+          }
+        }
+      ]
+    },
+
+    "tier4": {
+      "name": "Domain Services",
+      "description": "Clinical, diagnostic, AI, medication, research, and business domain services. Parallelizable across sub-groups.",
+      "deploy_phase": 4,
+      "parallel": true,
+      "sub_groups": {
+        "4A_clinical": {
+          "name": "Clinical Services",
+          "deploy_order": [
+            "medinovai-patient-onboarding",
+            "medinovai-patientmatching",
+            "medinovai-health-timeline",
+            "medinovai-care-team-chat",
+            "medinovai-smart-scheduler",
+            "medinovai-wait-list-balancer",
+            "medinovai-virtual-triage",
+            "medinovai-telehealth-hub",
+            "medinovai-remote-vitals-ingest"
+          ],
+          "services": [
+            {
+              "id": "medinovai-patient-onboarding",
+              "repo": "myonsite-healthcare/medinovai-patient-onboarding",
+              "type": "python-service",
+              "port": 8000,
+              "health": "/health",
+              "tier": "high",
+              "depends_on": {
+                "infrastructure": ["postgres-primary", "redis-cache"],
+                "services": ["medinovai-security", "medinovai-patient-services", "medinovai-consent-preference-api"]
+              }
+            },
+            {
+              "id": "medinovai-patientmatching",
+              "repo": "myonsite-healthcare/medinovai-patientmatching",
+              "type": "node-service",
+              "port": 8080,
+              "health": "/healthz",
+              "tier": "high",
+              "depends_on": {
+                "infrastructure": ["postgres-primary", "elasticsearch", "kafka"],
+                "services": ["medinovai-security", "medinovai-patient-services"]
+              }
+            },
+            {
+              "id": "medinovai-health-timeline",
+              "repo": "myonsite-healthcare/medinovai-health-timeline",
+              "type": "python-service",
+              "port": 8000,
+              "health": "/health",
+              "tier": "normal",
+              "depends_on": {
+                "infrastructure": ["postgres-primary", "redis-cache"],
+                "services": ["medinovai-security", "medinovai-data-services", "medinovai-patient-services"]
+              }
+            },
+            {
+              "id": "medinovai-care-team-chat",
+              "repo": "myonsite-healthcare/medinovai-care-team-chat",
+              "type": "node-service",
+              "port": 8000,
+              "health": "/health",
+              "tier": "normal",
+              "depends_on": {
+                "infrastructure": ["postgres-primary", "redis-cache"],
+                "services": ["medinovai-security", "medinovai-notification-center", "medinovai-real-time-stream-bus"]
+              }
+            },
+            {
+              "id": "medinovai-smart-scheduler",
+              "repo": "myonsite-healthcare/medinovai-smart-scheduler",
+              "type": "python-service",
+              "port": 8000,
+              "health": "/health",
+              "tier": "normal",
+              "depends_on": {
+                "infrastructure": ["postgres-primary", "redis-cache"],
+                "services": ["medinovai-security", "medinovai-patient-services"]
+              }
+            },
+            {
+              "id": "medinovai-wait-list-balancer",
+              "repo": "myonsite-healthcare/medinovai-wait-list-balancer",
+              "type": "python-service",
+              "port": 8080,
+              "health": "/healthz",
+              "tier": "normal",
+              "depends_on": {
+                "infrastructure": ["postgres-primary", "redis-cache", "kafka"],
+                "services": ["medinovai-security", "medinovai-smart-scheduler", "medinovai-patient-services"]
+              }
+            },
+            {
+              "id": "medinovai-virtual-triage",
+              "repo": "myonsite-healthcare/medinovai-virtual-triage",
+              "type": "python-service",
+              "port": 8000,
+              "health": "/health",
+              "tier": "high",
+              "depends_on": {
+                "infrastructure": ["postgres-primary", "redis-cache"],
+                "services": ["medinovai-security", "medinovai-healthLLM", "medinovai-patient-services"]
+              }
+            },
+            {
+              "id": "medinovai-telehealth-hub",
+              "repo": "myonsite-healthcare/medinovai-telehealth-hub",
+              "type": "node-service",
+              "port": 8080,
+              "health": "/healthz",
+              "tier": "high",
+              "depends_on": {
+                "infrastructure": ["postgres-primary", "redis-cache"],
+                "services": ["medinovai-security", "medinovai-smart-scheduler", "medinovai-notification-center"]
+              }
+            },
+            {
+              "id": "medinovai-remote-vitals-ingest",
+              "repo": "myonsite-healthcare/medinovai-remote-vitals-ingest",
+              "type": "python-service",
+              "port": 8000,
+              "health": "/health",
+              "tier": "high",
+              "depends_on": {
+                "infrastructure": ["postgres-primary", "kafka"],
+                "services": ["medinovai-security", "medinovai-real-time-stream-bus", "medinovai-data-services"]
+              }
+            }
+          ]
+        },
+
+        "4B_diagnostics": {
+          "name": "Diagnostic Services",
+          "deploy_order": [
+            "medinovai-lab-order-router",
+            "medinovai-pathology-ai",
+            "medinovai-imaging-viewer",
+            "medinovai-genomics-interpreter",
+            "medinovai-image-to-text-ocr"
+          ],
+          "services": [
+            {
+              "id": "medinovai-lab-order-router",
+              "repo": "myonsite-healthcare/medinovai-lab-order-router",
+              "type": "python-service",
+              "port": 8000,
+              "health": "/health",
+              "tier": "high",
+              "depends_on": {
+                "infrastructure": ["postgres-primary", "redis-cache"],
+                "services": ["medinovai-security", "medinovai-data-services"]
+              }
+            },
+            {
+              "id": "medinovai-pathology-ai",
+              "repo": "myonsite-healthcare/medinovai-pathology-ai",
+              "type": "ml-service",
+              "port": 8000,
+              "health": "/health",
+              "tier": "high",
+              "depends_on": {
+                "infrastructure": ["postgres-primary", "redis-cache", "s3-object-store"],
+                "services": ["medinovai-security", "medinovai-model-service-orchestrator"]
+              }
+            },
+            {
+              "id": "medinovai-imaging-viewer",
+              "repo": "myonsite-healthcare/medinovai-imaging-viewer",
+              "type": "python-service",
+              "port": 8000,
+              "health": "/health",
+              "tier": "normal",
+              "depends_on": {
+                "infrastructure": ["postgres-primary", "s3-object-store"],
+                "services": ["medinovai-security"]
+              }
+            },
+            {
+              "id": "medinovai-genomics-interpreter",
+              "repo": "myonsite-healthcare/medinovai-genomics-interpreter",
+              "type": "ml-service",
+              "port": 8000,
+              "health": "/health",
+              "tier": "normal",
+              "depends_on": {
+                "infrastructure": ["postgres-primary"],
+                "services": ["medinovai-security", "medinovai-model-service-orchestrator"]
+              }
+            },
+            {
+              "id": "medinovai-image-to-text-ocr",
+              "repo": "myonsite-healthcare/medinovai-image-to-text-ocr",
+              "type": "ml-service",
+              "port": 8000,
+              "health": "/health",
+              "tier": "normal",
+              "depends_on": {
+                "infrastructure": ["postgres-primary", "s3-object-store"],
+                "services": ["medinovai-security"]
+              }
+            }
+          ]
+        },
+
+        "4C_ai_services": {
+          "name": "AI Services",
+          "deploy_order": [
+            "medinovai-chatbot",
+            "medinovai-ai-scribe",
+            "medinovai-doc-summarizer",
+            "medinovai-natural-language-query",
+            "medinovai-anomaly-detector",
+            "medinovai-sentiment-monitor",
+            "medinovai-drug-interaction-checker",
+            "medinovai-medical-fax-processing",
+            "medinovai-content-translator",
+            "medinovai-text-to-speech-narrator",
+            "medinovai-voice-command-layer"
+          ],
+          "services": [
+            {
+              "id": "medinovai-chatbot",
+              "repo": "myonsite-healthcare/MedinovAI-Chatbot",
+              "type": "ml-service",
+              "port": 8000,
+              "health": "/api/health",
+              "tier": "high",
+              "depends_on": {
+                "infrastructure": ["postgres-primary", "redis-cache", "mongodb"],
+                "services": ["medinovai-security", "medinovai-healthLLM"]
+              }
+            },
+            {
+              "id": "medinovai-ai-scribe",
+              "repo": "myonsite-healthcare/medinovai-ai-scribe",
+              "type": "ml-service",
+              "port": 8000,
+              "health": "/health",
+              "tier": "high",
+              "depends_on": {
+                "infrastructure": ["postgres-primary", "redis-cache"],
+                "services": ["medinovai-security", "medinovai-healthLLM"]
+              }
+            },
+            {
+              "id": "medinovai-doc-summarizer",
+              "repo": "myonsite-healthcare/medinovai-doc-summarizer",
+              "type": "ml-service",
+              "port": 8000,
+              "health": "/health",
+              "tier": "normal",
+              "depends_on": {
+                "infrastructure": ["postgres-primary"],
+                "services": ["medinovai-security", "medinovai-healthLLM", "medinovai-knowledge-graph"]
+              }
+            },
+            {
+              "id": "medinovai-natural-language-query",
+              "repo": "myonsite-healthcare/medinovai-natural-language-query",
+              "type": "ml-service",
+              "port": 8000,
+              "health": "/health",
+              "tier": "normal",
+              "depends_on": {
+                "infrastructure": ["postgres-primary"],
+                "services": ["medinovai-security", "medinovai-healthLLM", "medinovai-data-services"]
+              }
+            },
+            {
+              "id": "medinovai-anomaly-detector",
+              "repo": "myonsite-healthcare/medinovai-anomaly-detector",
+              "type": "ml-service",
+              "port": 8000,
+              "health": "/health",
+              "tier": "normal",
+              "depends_on": {
+                "infrastructure": ["kafka"],
+                "services": ["medinovai-security", "medinovai-real-time-stream-bus", "medinovai-model-service-orchestrator"]
+              }
+            },
+            {
+              "id": "medinovai-sentiment-monitor",
+              "repo": "myonsite-healthcare/medinovai-sentiment-monitor",
+              "type": "ml-service",
+              "port": 8000,
+              "health": "/health",
+              "tier": "normal",
+              "depends_on": {
+                "infrastructure": ["postgres-primary", "redis-cache"],
+                "services": ["medinovai-security", "medinovai-data-services"]
+              }
+            },
+            {
+              "id": "medinovai-drug-interaction-checker",
+              "repo": "myonsite-healthcare/medinovai-drug-interaction-checker",
+              "type": "ml-service",
+              "port": 8000,
+              "health": "/health",
+              "tier": "high",
+              "depends_on": {
+                "infrastructure": ["postgres-primary"],
+                "services": ["medinovai-security", "medinovai-clinical-decision-support", "medinovai-knowledge-graph"]
+              }
+            },
+            {
+              "id": "medinovai-medical-fax-processing",
+              "repo": "myonsite-healthcare/MedinovAI---Medical-Fax-Processing",
+              "type": "ml-service",
+              "port": 8000,
+              "health": "/health",
+              "tier": "normal",
+              "depends_on": {
+                "infrastructure": ["postgres-primary", "mongodb", "redis-cache", "s3-object-store"],
+                "services": ["medinovai-security", "medinovai-image-to-text-ocr"]
+              }
+            },
+            {
+              "id": "medinovai-content-translator",
+              "repo": "myonsite-healthcare/medinovai-content-translator",
+              "type": "ml-service",
+              "port": 8000,
+              "health": "/health",
+              "tier": "normal",
+              "depends_on": {
+                "infrastructure": [],
+                "services": ["medinovai-security", "medinovai-healthLLM"]
+              }
+            },
+            {
+              "id": "medinovai-text-to-speech-narrator",
+              "repo": "myonsite-healthcare/medinovai-text-to-speech-narrator",
+              "type": "ml-service",
+              "port": 8000,
+              "health": "/health",
+              "tier": "normal",
+              "depends_on": {
+                "infrastructure": [],
+                "services": ["medinovai-security"]
+              }
+            },
+            {
+              "id": "medinovai-voice-command-layer",
+              "repo": "myonsite-healthcare/medinovai-voice-command-layer",
+              "type": "ml-service",
+              "port": 8000,
+              "health": "/health",
+              "tier": "normal",
+              "depends_on": {
+                "infrastructure": [],
+                "services": ["medinovai-security", "medinovai-healthLLM"]
+              }
+            }
+          ]
+        },
+
+        "4D_medication": {
+          "name": "Medication & Pharmacy",
+          "deploy_order": [
+            "medinovai-e-prescribe-gateway",
+            "medinovai-medication-tracker"
+          ],
+          "services": [
+            {
+              "id": "medinovai-e-prescribe-gateway",
+              "repo": "myonsite-healthcare/medinovai-e-prescribe-gateway",
+              "type": "python-service",
+              "port": 8000,
+              "health": "/health",
+              "tier": "high",
+              "depends_on": {
+                "infrastructure": ["postgres-primary"],
+                "services": ["medinovai-security", "medinovai-patient-services", "medinovai-drug-interaction-checker"]
+              }
+            },
+            {
+              "id": "medinovai-medication-tracker",
+              "repo": "myonsite-healthcare/medinovai-medication-tracker",
+              "type": "python-service",
+              "port": 8000,
+              "health": "/health",
+              "tier": "normal",
+              "depends_on": {
+                "infrastructure": ["postgres-primary", "redis-cache"],
+                "services": ["medinovai-security", "medinovai-patient-services", "medinovai-data-services"]
+              }
+            }
+          ]
+        },
+
+        "4E_research": {
+          "name": "Research & Clinical Trials",
+          "deploy_order": [
+            "medinovai-CTMS",
+            "medinovai-EDC",
+            "medinovai-etmf",
+            "medinovai-saes",
+            "medinovai-eConsent",
+            "medinovai-ePRO",
+            "medinovai-eSource",
+            "medinovai-eISF",
+            "medinovai-iwrs",
+            "medinovai-Pharmacovigilance",
+            "medinovai-ResearchSuite",
+            "medinovai-regulatory-submissions",
+            "medinovai-RBM",
+            "medinovai-reseach-fabric",
+            "medinovai-SiteFeasibility"
+          ],
+          "services": [
+            {
+              "id": "medinovai-CTMS",
+              "repo": "myonsite-healthcare/medinovai-CTMS",
+              "type": "python-service",
+              "port": 8000,
+              "health": "/health",
+              "tier": "high",
+              "depends_on": {
+                "infrastructure": ["postgres-primary", "redis-cache"],
+                "services": ["medinovai-security", "medinovai-data-services", "medinovai-patient-services"]
+              }
+            },
+            {
+              "id": "medinovai-EDC",
+              "repo": "myonsite-healthcare/medinovai-EDC",
+              "type": "python-service",
+              "port": 8000,
+              "health": "/health",
+              "tier": "high",
+              "depends_on": {
+                "infrastructure": ["postgres-primary", "redis-cache"],
+                "services": ["medinovai-security", "medinovai-data-services", "medinovai-CTMS"]
+              }
+            },
+            {
+              "id": "medinovai-etmf",
+              "repo": "myonsite-healthcare/medinovai-etmf",
+              "type": "python-service",
+              "port": 8000,
+              "health": "/health",
+              "tier": "normal",
+              "depends_on": {
+                "infrastructure": ["postgres-primary", "s3-object-store"],
+                "services": ["medinovai-security", "medinovai-data-services", "medinovai-CTMS"]
+              }
+            },
+            {
+              "id": "medinovai-saes",
+              "repo": "myonsite-healthcare/medinovai-saes",
+              "type": "node-service",
+              "port": 8080,
+              "health": "/api/health",
+              "tier": "high",
+              "depends_on": {
+                "infrastructure": ["postgres-primary", "s3-object-store", "kafka"],
+                "services": ["medinovai-security", "medinovai-patient-services", "medinovai-CTMS"]
+              }
+            },
+            {
+              "id": "medinovai-eConsent",
+              "repo": "myonsite-healthcare/medinovai-eConsent",
+              "type": "python-service",
+              "port": 8000,
+              "health": "/health",
+              "tier": "normal",
+              "depends_on": {
+                "infrastructure": ["postgres-primary"],
+                "services": ["medinovai-security", "medinovai-EDC", "medinovai-consent-preference-api"]
+              }
+            },
+            {
+              "id": "medinovai-ePRO",
+              "repo": "myonsite-healthcare/medinovai-ePRO",
+              "type": "python-service",
+              "port": 8000,
+              "health": "/health",
+              "tier": "normal",
+              "depends_on": {
+                "infrastructure": ["postgres-primary"],
+                "services": ["medinovai-security", "medinovai-EDC"]
+              }
+            },
+            {
+              "id": "medinovai-eSource",
+              "repo": "myonsite-healthcare/medinovai-eSource",
+              "type": "python-service",
+              "port": 8000,
+              "health": "/health",
+              "tier": "normal",
+              "depends_on": {
+                "infrastructure": ["postgres-primary"],
+                "services": ["medinovai-security", "medinovai-EDC"]
+              }
+            },
+            {
+              "id": "medinovai-eISF",
+              "repo": "myonsite-healthcare/medinovai-eISF",
+              "type": "python-service",
+              "port": 8000,
+              "health": "/health",
+              "tier": "normal",
+              "depends_on": {
+                "infrastructure": ["postgres-primary", "s3-object-store"],
+                "services": ["medinovai-security", "medinovai-EDC"]
+              }
+            },
+            {
+              "id": "medinovai-iwrs",
+              "repo": "myonsite-healthcare/medinovai-iwrs",
+              "type": "python-service",
+              "port": 8000,
+              "health": "/health",
+              "tier": "normal",
+              "depends_on": {
+                "infrastructure": ["postgres-primary"],
+                "services": ["medinovai-security", "medinovai-CTMS"]
+              }
+            },
+            {
+              "id": "medinovai-Pharmacovigilance",
+              "repo": "myonsite-healthcare/medinovai-Pharmacovigilance",
+              "type": "python-service",
+              "port": 8000,
+              "health": "/health",
+              "tier": "high",
+              "depends_on": {
+                "infrastructure": ["postgres-primary", "redis-cache"],
+                "services": ["medinovai-security", "medinovai-saes"]
+              }
+            },
+            {
+              "id": "medinovai-ResearchSuite",
+              "repo": "myonsite-healthcare/medinovai-ResearchSuite",
+              "type": "python-service",
+              "port": 8000,
+              "health": "/health",
+              "tier": "normal",
+              "depends_on": {
+                "infrastructure": ["postgres-primary"],
+                "services": ["medinovai-security", "medinovai-CTMS", "medinovai-EDC", "medinovai-etmf"]
+              }
+            },
+            {
+              "id": "medinovai-regulatory-submissions",
+              "repo": "myonsite-healthcare/medinovai-regulatory-submissions",
+              "type": "python-service",
+              "port": 8000,
+              "health": "/health",
+              "tier": "normal",
+              "depends_on": {
+                "infrastructure": ["postgres-primary", "s3-object-store"],
+                "services": ["medinovai-security", "medinovai-etmf", "medinovai-CTMS"]
+              }
+            },
+            {
+              "id": "medinovai-RBM",
+              "repo": "myonsite-healthcare/medinovai-RBM",
+              "type": "python-service",
+              "port": 8000,
+              "health": "/health",
+              "tier": "normal",
+              "depends_on": {
+                "infrastructure": ["postgres-primary"],
+                "services": ["medinovai-security", "medinovai-CTMS"]
+              }
+            },
+            {
+              "id": "medinovai-reseach-fabric",
+              "repo": "myonsite-healthcare/medinovai-reseach-fabric",
+              "type": "python-service",
+              "port": 8000,
+              "health": "/health",
+              "tier": "normal",
+              "depends_on": {
+                "infrastructure": ["postgres-primary"],
+                "services": ["medinovai-security", "medinovai-data-services"]
+              }
+            },
+            {
+              "id": "medinovai-SiteFeasibility",
+              "repo": "myonsite-healthcare/medinovAI-SiteFeasibility",
+              "type": "python-service",
+              "port": 8000,
+              "health": "/health",
+              "tier": "normal",
+              "depends_on": {
+                "infrastructure": ["postgres-primary"],
+                "services": ["medinovai-security", "medinovai-CTMS"]
+              }
+            }
+          ]
+        },
+
+        "4F_business": {
+          "name": "Business Services",
+          "deploy_order": [
+            "medinovai-billing",
+            "medinovai-provider-credentialing",
+            "medinovai-credentialing",
+            "medinovai-employee-portal",
+            "medinovai-subscription",
+            "medinovai-quality-certification",
+            "medinovai-inventorymanagement",
+            "medinovai-mail",
+            "medinovai-email-service"
+          ],
+          "services": [
+            {
+              "id": "medinovai-billing",
+              "repo": "myonsite-healthcare/medinovai-billing",
+              "type": "python-service",
+              "port": 8000,
+              "health": "/health",
+              "tier": "high",
+              "depends_on": {
+                "infrastructure": ["postgres-primary", "redis-cache"],
+                "services": ["medinovai-security", "medinovai-patient-services", "medinovai-data-services"]
+              }
+            },
+            {
+              "id": "medinovai-provider-credentialing",
+              "repo": "myonsite-healthcare/medinovai-provider-credentialing",
+              "type": "python-service",
+              "port": 8000,
+              "health": "/health",
+              "tier": "normal",
+              "depends_on": {
+                "infrastructure": ["postgres-primary", "redis-cache"],
+                "services": ["medinovai-security", "medinovai-data-services"]
+              }
+            },
+            {
+              "id": "medinovai-credentialing",
+              "repo": "myonsite-healthcare/Credentialing",
+              "type": "node-service",
+              "port": 3000,
+              "health": "/health",
+              "tier": "normal",
+              "depends_on": {
+                "infrastructure": ["postgres-primary", "redis-cache", "keycloak"],
+                "services": ["medinovai-security", "medinovai-data-services"]
+              }
+            },
+            {
+              "id": "medinovai-employee-portal",
+              "repo": "myonsite-healthcare/Employee-Portal",
+              "type": "node-service",
+              "port": 3000,
+              "health": "/health",
+              "tier": "normal",
+              "depends_on": {
+                "infrastructure": ["postgres-primary", "redis-cache"],
+                "services": ["medinovai-security", "medinovai-role-based-permissions"]
+              }
+            },
+            {
+              "id": "medinovai-subscription",
+              "repo": "myonsite-healthcare/subscription",
+              "type": "python-service",
+              "port": 8000,
+              "health": "/health/",
+              "tier": "normal",
+              "depends_on": {
+                "infrastructure": ["postgres-primary", "redis-cache"],
+                "services": ["medinovai-security"]
+              }
+            },
+            {
+              "id": "medinovai-quality-certification",
+              "repo": "myonsite-healthcare/medinovai-quality-certification",
+              "type": "python-service",
+              "port": 8000,
+              "health": "/health",
+              "tier": "normal",
+              "depends_on": {
+                "infrastructure": ["postgres-primary"],
+                "services": ["medinovai-security", "medinovai-data-services"]
+              }
+            },
+            {
+              "id": "medinovai-inventorymanagement",
+              "repo": "myonsite-healthcare/medinovai-inventorymanagement",
+              "type": "python-service",
+              "port": 8000,
+              "health": "/health",
+              "tier": "normal",
+              "depends_on": {
+                "infrastructure": ["postgres-primary"],
+                "services": ["medinovai-security", "medinovai-data-services"]
+              }
+            },
+            {
+              "id": "medinovai-mail",
+              "repo": "myonsite-healthcare/medinovai-mail",
+              "type": "python-service",
+              "port": 8000,
+              "health": "/health",
+              "tier": "normal",
+              "depends_on": {
+                "infrastructure": ["redis-cache"],
+                "services": ["medinovai-security"]
+              }
+            },
+            {
+              "id": "medinovai-email-service",
+              "repo": "myonsite-healthcare/MedinovAI-Email-Service",
+              "type": "python-service",
+              "port": 8000,
+              "health": "/health",
+              "tier": "normal",
+              "depends_on": {
+                "infrastructure": ["redis-cache"],
+                "services": ["medinovai-security"]
+              }
+            }
+          ]
+        },
+
+        "4G_lis_platform": {
+          "name": "Laboratory Information System",
+          "deploy_order": [
+            "medinovai-lis",
+            "medinovai-lis-platform",
+            "medinovai-lis-ui"
+          ],
+          "services": [
+            {
+              "id": "medinovai-lis",
+              "repo": "myonsite-healthcare/medinovai-lis",
+              "type": "python-service",
+              "port": 8000,
+              "health": "/health",
+              "tier": "high",
+              "depends_on": {
+                "infrastructure": ["postgres-primary", "redis-cache"],
+                "services": ["medinovai-security", "medinovai-data-services", "medinovai-lab-order-router"]
+              }
+            },
+            {
+              "id": "medinovai-lis-platform",
+              "repo": "myonsite-healthcare/medinovai-lis-platform",
+              "type": "python-service",
+              "port": 8000,
+              "health": "/health",
+              "tier": "normal",
+              "depends_on": {
+                "infrastructure": ["postgres-primary"],
+                "services": ["medinovai-lis"]
+              }
+            },
+            {
+              "id": "medinovai-lis-ui",
+              "repo": "myonsite-healthcare/medinovai-lis-ui",
+              "type": "node-service",
+              "port": 3000,
+              "health": "/health",
+              "tier": "normal",
+              "depends_on": {
+                "infrastructure": [],
+                "services": ["medinovai-lis-platform", "medinovai-web-core"]
+              }
+            }
+          ]
+        }
+      }
+    },
+
+    "tier5": {
+      "name": "Integration, DevOps & Specialized",
+      "description": "Integration connectors, DevOps tools, feature management, data pipelines — all parallelizable.",
+      "deploy_phase": 5,
+      "parallel": true,
+      "services": [
+        {
+          "id": "medinovai-edge-cache-cdn",
+          "repo": "myonsite-healthcare/medinovai-edge-cache-cdn",
+          "type": "node-service",
+          "port": 8000,
+          "health": "/health",
+          "tier": "normal",
+          "depends_on": { "infrastructure": [], "services": ["medinovai-api-gateway"] }
+        },
+        {
+          "id": "medinovai-data-lake-loader",
+          "repo": "myonsite-healthcare/medinovai-data-lake-loader",
+          "type": "python-service",
+          "port": 8000,
+          "health": "/health",
+          "tier": "normal",
+          "depends_on": { "infrastructure": ["kafka", "s3-object-store"], "services": ["medinovai-real-time-stream-bus", "medinovai-data-services"] }
+        },
+        {
+          "id": "medinovai-feature-flag-console",
+          "repo": "myonsite-healthcare/medinovai-feature-flag-console",
+          "type": "node-service",
+          "port": 8000,
+          "health": "/health",
+          "tier": "normal",
+          "depends_on": { "infrastructure": ["postgres-primary", "redis-cache"], "services": ["medinovai-security", "medinovai-configuration-management"] }
+        },
+        {
+          "id": "medinovai-canary-rollout-orchestrator",
+          "repo": "myonsite-healthcare/medinovai-canary-rollout-orchestrator",
+          "type": "python-service",
+          "port": 8000,
+          "health": "/health",
+          "tier": "normal",
+          "depends_on": { "infrastructure": [], "services": ["medinovai-registry"] }
+        },
+        {
+          "id": "medinovai-devops-telemetry",
+          "repo": "myonsite-healthcare/medinovai-devops-telemetry",
+          "type": "python-service",
+          "port": 8000,
+          "health": "/health",
+          "tier": "normal",
+          "depends_on": { "infrastructure": ["prometheus"], "services": ["medinovai-security"] }
+        },
+        {
+          "id": "medinovai-policy-diff-watcher",
+          "repo": "myonsite-healthcare/medinovai-policy-diff-watcher",
+          "type": "python-service",
+          "port": 8000,
+          "health": "/health",
+          "tier": "normal",
+          "depends_on": { "infrastructure": ["postgres-primary"], "services": ["medinovai-security"] }
+        },
+        {
+          "id": "medinovai-etl-designer",
+          "repo": "myonsite-healthcare/medinovai-etl-designer",
+          "type": "python-service",
+          "port": 8000,
+          "health": "/health",
+          "tier": "normal",
+          "depends_on": { "infrastructure": ["postgres-primary", "kafka"], "services": ["medinovai-security", "medinovai-data-services"] }
+        },
+        {
+          "id": "medinovai-prompt-vault",
+          "repo": "myonsite-healthcare/medinovai-prompt-vault",
+          "type": "python-service",
+          "port": 8000,
+          "health": "/healthz",
+          "tier": "normal",
+          "depends_on": { "infrastructure": ["postgres-primary", "redis-cache", "rabbitmq", "elasticsearch"], "services": ["medinovai-security"] }
+        },
+        {
+          "id": "medinovai-qa-agent-builder",
+          "repo": "myonsite-healthcare/medinovai-qa-agent-builder",
+          "type": "python-service",
+          "port": 8000,
+          "health": "/health",
+          "tier": "normal",
+          "depends_on": { "infrastructure": ["postgres-primary"], "services": ["medinovai-security", "medinovai-model-service-orchestrator"] }
+        },
+        {
+          "id": "medinovai-task-kanban",
+          "repo": "myonsite-healthcare/medinovai-task-kanban",
+          "type": "python-service",
+          "port": 8000,
+          "health": "/health",
+          "tier": "normal",
+          "depends_on": { "infrastructure": ["postgres-primary", "redis-cache", "kafka"], "services": ["medinovai-security", "medinovai-notification-center"] }
+        },
+        {
+          "id": "medinovai-guideline-updater",
+          "repo": "myonsite-healthcare/medinovai-guideline-updater",
+          "type": "python-service",
+          "port": 8000,
+          "health": "/health",
+          "tier": "normal",
+          "depends_on": { "infrastructure": ["postgres-primary", "rabbitmq"], "services": ["medinovai-security", "medinovai-knowledge-graph"] }
+        },
+        {
+          "id": "medinovai-white-label-skinner",
+          "repo": "myonsite-healthcare/medinovai-white-label-skinner",
+          "type": "node-service",
+          "port": 8000,
+          "health": "/health",
+          "tier": "normal",
+          "depends_on": { "infrastructure": [], "services": ["medinovai-web-core"] }
+        },
+        {
+          "id": "medinovai-accessibility-checker",
+          "repo": "myonsite-healthcare/medinovai-accessibility-checker",
+          "type": "node-service",
+          "port": 8000,
+          "health": "/health",
+          "tier": "batch",
+          "depends_on": { "infrastructure": [], "services": ["medinovai-security"] }
+        },
+        {
+          "id": "medinovai-governance-templates",
+          "repo": "myonsite-healthcare/medinovai-governance-templates",
+          "type": "python-service",
+          "port": 8000,
+          "health": "/health",
+          "tier": "normal",
+          "depends_on": { "infrastructure": ["postgres-primary"], "services": ["medinovai-security"] }
+        },
+        {
+          "id": "medinovai-risk-management",
+          "repo": "myonsite-healthcare/medinovai-risk-management",
+          "type": "python-service",
+          "port": 8000,
+          "health": "/health",
+          "tier": "normal",
+          "depends_on": { "infrastructure": ["postgres-primary"], "services": ["medinovai-security", "medinovai-data-services"] }
+        },
+        {
+          "id": "medinovai-cds",
+          "repo": "myonsite-healthcare/medinovai-cds",
+          "type": "python-service",
+          "port": 8000,
+          "health": "/health",
+          "tier": "normal",
+          "depends_on": { "infrastructure": ["postgres-primary"], "services": ["medinovai-security", "medinovai-clinical-decision-support"] }
+        },
+        {
+          "id": "medinovai-developer-portal",
+          "repo": "myonsite-healthcare/medinovai-developer-portal",
+          "type": "node-service",
+          "port": 3000,
+          "health": "/health",
+          "tier": "normal",
+          "depends_on": { "infrastructure": [], "services": ["medinovai-api-gateway", "medinovai-registry"] }
+        },
+        {
+          "id": "medinovai-Livekit",
+          "repo": "myonsite-healthcare/medinovai-Livekit",
+          "type": "node-service",
+          "port": 7880,
+          "health": "/health",
+          "tier": "normal",
+          "depends_on": { "infrastructure": ["redis-cache"], "services": ["medinovai-security"] }
+        }
+      ]
+    },
+
+    "tier6": {
+      "name": "UI Shell & Master Menu",
+      "description": "Deploy LAST — the unified entry point that needs all other services registered and running.",
+      "deploy_phase": 6,
+      "parallel": false,
+      "deploy_order": [
+        "medinovai-ui-components",
+        "medinovai-multimodal-ui-shell",
+        "medinovaios"
+      ],
+      "services": [
+        {
+          "id": "medinovai-ui-components",
+          "repo": "myonsite-healthcare/medinovai-ui-components",
+          "type": "node-service",
+          "port": null,
+          "health": null,
+          "tier": "high",
+          "deploy_type": "npm-publish",
+          "depends_on": {
+            "infrastructure": [],
+            "services": ["medinovai-web-core"]
+          }
+        },
+        {
+          "id": "medinovai-multimodal-ui-shell",
+          "repo": "myonsite-healthcare/medinovai-multimodal-ui-shell",
+          "type": "node-service",
+          "port": 3000,
+          "health": "/health",
+          "tier": "high",
+          "depends_on": {
+            "infrastructure": [],
+            "services": ["medinovai-web-core", "medinovai-ui-components"]
+          }
+        },
+        {
+          "id": "medinovaios",
+          "repo": "myonsite-healthcare/medinovaios",
+          "type": "node-service",
+          "port": 5173,
+          "health": "/",
+          "tier": "critical",
+          "description": "Master Menu System — unified SSO entry and access control portal for all MedinovAI services",
+          "depends_on": {
+            "infrastructure": ["redis-cache"],
+            "services": [
+              "medinovai-security",
+              "medinovai-universal-sign-on",
+              "medinovai-role-based-permissions",
+              "medinovai-api-gateway",
+              "medinovai-registry"
+            ]
+          }
+        }
+      ]
+    }
+  },
+
+  "summary": {
+    "total_tiers": 7,
+    "total_services": 109,
+    "total_infrastructure": 19,
+    "critical_path": [
+      "postgres-primary",
+      "redis-cache",
+      "keycloak",
+      "vault",
+      "medinovai-secrets-manager-bridge",
+      "medinovai-security",
+      "medinovai-universal-sign-on",
+      "medinovai-role-based-permissions",
+      "medinovai-registry",
+      "medinovai-data-services",
+      "medinovai-api-gateway",
+      "medinovaios"
+    ],
+    "critical_path_description": "The minimum viable deployment path — these 12 services must be deployed in exact order for the platform to function"
+  }
+}

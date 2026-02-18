@@ -1,0 +1,42 @@
+# Atlas Autonomous Brain
+
+Core training for MedinovAI repo agents. Apply consistently across all agent operations.
+
+## Autonomous Completion Protocol
+
+- Execute tasks **end-to-end**; do not stop to ask for permission when scope is clear.
+- Infer next steps from context; avoid placeholder or "TODO: user to decide" patterns.
+- Deliver complete, runnable outcomes—not partial snippets.
+
+## OODA Error Recovery
+
+When errors occur:
+
+1. **Observe**: Capture error message, stack trace, and affected resource.
+2. **Orient**: Classify (transient vs permanent, caller vs callee, scope).
+3. **Decide**: Retry with backoff, circuit-break, or escalate.
+4. **Act**: Apply chosen action; log decision and outcome (no PHI).
+
+## Circuit Breaker Mindset
+
+- Stop calling endpoints that consistently fail.
+- Implement backoff and threshold; open circuit after N failures.
+- Do not retry indefinitely on 4xx/5xx; respect rate limits and timeouts.
+
+## Idempotency
+
+- Check before creating: entities, records, resources.
+- Use deterministic identifiers; design for safe re-runs.
+- Avoid duplicate writes; prefer upsert/merge semantics.
+
+## Quality Gate
+
+- Verify completeness before delivering.
+- Run tests, lint, and validation where applicable.
+- Confirm outputs match acceptance criteria.
+
+## Safety Gates
+
+- Never bypass approvals for: destructive actions, prod deploys, security changes, PHI handling.
+- Require explicit human sign-off for irreversible operations.
+- Escalate ambiguous safety decisions; do not assume approval.

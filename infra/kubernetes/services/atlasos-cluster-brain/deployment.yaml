@@ -1,0 +1,153 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlasos-cluster-brain
+  namespace: medinovai-system
+  labels:
+    app: atlasos-cluster-brain
+    component: atlasos-infra
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: atlasos-cluster-brain
+  template:
+    metadata:
+      labels:
+        app: atlasos-cluster-brain
+        component: atlasos-infra
+    spec:
+      serviceAccountName: atlasos-cluster-brain
+      nodeSelector:
+        role: control-plane
+      containers:
+        - name: cluster-brain
+          image: python:3.12-slim
+          command:
+            - python3
+            - -c
+            - |
+              import os, time, json, datetime
+              from kubernetes import client, config, watch
+
+              config.load_incluster_config()
+              v1 = client.CoreV1Api()
+              apps_v1 = client.AppsV1Api()
+
+              HEARTBEAT = int(os.environ.get('HEARTBEAT_INTERVAL', '300'))
+              SLACK_WEBHOOK = os.environ.get('SLACK_WEBHOOK_URL', '')
+
+              def send_approval_request(action, details):
+                  """Post to Slack for human approval before destructive actions."""
+                  if not SLACK_WEBHOOK:
+                      print(json.dumps({'level': 'warn', 'msg': 'No Slack webhook configured for approvals'}))
+                      return
+                  import urllib.request
+                  payload = json.dumps({
+                      'text': f':warning: *AtlasOS Cluster Brain — Approval Required*\n'
+                              f'*Action:* {action}\n'
+                              f'*Details:* {details}\n'
+                              f'*Time:* {datetime.datetime.utcnow().isoformat()}Z\n'
+                              f'Reply with `/approve {action}` or `/deny {action}`'
+                  }).encode()
+                  req = urllib.request.Request(SLACK_WEBHOOK, data=payload,
+                                               headers={'Content-Type': 'application/json'})
+                  try:
+                      urllib.request.urlopen(req, timeout=10)
+                  except Exception as e:
+                      print(json.dumps({'level': 'error', 'msg': f'Slack notification failed: {e}'}))
+
+              def check_cluster_health():
+                  nodes = v1.list_node()
+                  unhealthy = []
+                  for node in nodes.items:
+                      for condition in node.status.conditions:
+                          if condition.type == 'Ready' and condition.status != 'True':
+                              unhealthy.append(node.metadata.name)
+                  return {
+                      'total_nodes': len(nodes.items),
+                      'unhealthy_nodes': unhealthy,
+                      'timestamp': datetime.datetime.utcnow().isoformat() + 'Z',
+                  }
+
+              def check_pod_health():
+                  pods = v1.list_pod_for_all_namespaces(
+                      field_selector='status.phase!=Running,status.phase!=Succeeded'
+                  )
+                  failing = []
+                  for pod in pods.items:
+                      if pod.status.phase in ('Failed', 'Unknown', 'Pending'):
+                          failing.append({
+                              'name': pod.metadata.name,
+                              'namespace': pod.metadata.namespace,
+                              'phase': pod.status.phase,
+                          })
+                  return failing
+
+              def auto_remediate(failing_pods):
+                  """Restart pods that have been failing for >10 minutes."""
+                  for pod in failing_pods:
+                      ns = pod['namespace']
+                      name = pod['name']
+                      try:
+                          pod_obj = v1.read_namespaced_pod(name, ns)
+                          if pod_obj.status.start_time:
+                              age = (datetime.datetime.now(datetime.timezone.utc) -
+                                     pod_obj.status.start_time).total_seconds()
+                              if age > 600:  # >10 min in failed state
+                                  print(json.dumps({
+                                      'action': 'auto_restart',
+                                      'pod': name,
+                                      'namespace': ns,
+                                      'reason': f'Failed for {int(age)}s'
+                                  }))
+                                  v1.delete_namespaced_pod(name, ns)
+                      except Exception as e:
+                          print(json.dumps({'error': str(e), 'pod': name}))
+
+              print('[AtlasOS Cluster Brain] Starting — CEO + Supervisor + Guardian')
+              print('[AtlasOS Cluster Brain] Watching cluster events...')
+
+              while True:
+                  try:
+                      health = check_cluster_health()
+                      failing = check_pod_health()
+                      status = {
+                          'type': 'cluster_brain.heartbeat',
+                          'cluster': health,
+                          'failing_pods': len(failing),
+                          'timestamp': health['timestamp'],
+                      }
+                      print(json.dumps(status))
+
+                      if health['unhealthy_nodes']:
+                          send_approval_request(
+                              'node_investigation',
+                              f"Unhealthy nodes: {', '.join(health['unhealthy_nodes'])}"
+                          )
+
+                      if failing:
+                          auto_remediate(failing)
+
+                  except Exception as e:
+                      print(json.dumps({'level': 'error', 'msg': str(e)}))
+
+                  time.sleep(HEARTBEAT)
+          env:
+            - name: HEARTBEAT_INTERVAL
+              value: "300"
+            - name: SLACK_WEBHOOK_URL
+              valueFrom:
+                secretKeyRef:
+                  name: atlasos-channel-secrets
+                  key: SLACK_APP_TOKEN
+                  optional: true
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi

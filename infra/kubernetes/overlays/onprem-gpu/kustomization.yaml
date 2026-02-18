@@ -1,0 +1,23 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# GPU-specific overlay for DGX nodes
+
+resources:
+  - ../../services/ai-inference
+
+patches:
+  # Increase GPU resources for production inference
+  - target:
+      kind: DaemonSet
+      name: ollama
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/nvidia.com~1gpu
+        value: "2"
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/nvidia.com~1gpu
+        value: "2"
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/memory
+        value: "64Gi"

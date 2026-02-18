@@ -1,0 +1,102 @@
+// MedinovAI Fleet Configuration — On-Prem K3s Cluster
+// Defines all physical nodes in the deployment fleet.
+{
+  cluster_name: "medinovai-onprem",
+  k3s_version: "v1.30",
+
+  // K3s networking
+  pod_cidr: "10.42.0.0/16",
+  service_cidr: "10.43.0.0/16",
+
+  nodes: [
+    {
+      hostname: "mac-studio",
+      role: "server",
+      lan_ip: "192.168.0.100",          // Update with actual LAN IP
+      tailscale_ip: "100.x.x.x",        // Populated after Tailscale setup
+      os: "darwin",
+      arch: "arm64",
+      gpu: false,
+      vm_runtime: "orbstack",
+      vm_name: "k3s-medinovai",
+      labels: {
+        "role": "control-plane",
+        "gpu": "false",
+        "medinovai.com/tier": "infra",
+      },
+      services: [
+        "postgres-primary", "postgres-clinical", "redis-cache",
+        "kafka", "mongodb", "elasticsearch", "keycloak", "vault",
+        "atlas-gateway", "atlas-ui", "atlas-orchestrator",
+        "event-bus", "rollup-engine", "audit-chain",
+        "prometheus", "grafana", "loki", "alertmanager",
+      ],
+    },
+    {
+      hostname: "macbook-pro",
+      role: "agent",
+      lan_ip: "dynamic",
+      tailscale_ip: "100.x.x.x",
+      os: "darwin",
+      arch: "arm64",
+      gpu: false,
+      vm_runtime: "orbstack",
+      vm_name: "k3s-medinovai-worker",
+      labels: {
+        "role": "worker",
+        "gpu": "false",
+        "medinovai.com/tier": "compute",
+      },
+      services: [
+        "medinovaios", "medinovai-api-gateway",
+        // Overflow: domain services, integration services
+      ],
+    },
+    {
+      hostname: "dgx-1",
+      role: "agent",
+      lan_ip: "192.168.68.78",
+      tailscale_ip: "100.x.x.x",
+      os: "linux",
+      arch: "amd64",
+      gpu: true,
+      gpu_model: "NVIDIA-A100",         // Update with actual model
+      gpu_count: 8,                      // Update with actual count
+      gpu_memory_mib: 81920,
+      ssh_user: "root",
+      labels: {
+        "role": "gpu-worker",
+        "gpu": "true",
+        "medinovai.com/tier": "gpu",
+        "medinovai.com/dgx-node": "1",
+      },
+      services: [
+        "ollama", "aifactory-node-1",
+        "medinovai-ai-scribe", "medinovai-cds",
+      ],
+    },
+    {
+      hostname: "dgx-2",
+      role: "agent",
+      lan_ip: "192.168.68.85",
+      tailscale_ip: "100.x.x.x",
+      os: "linux",
+      arch: "amd64",
+      gpu: true,
+      gpu_model: "NVIDIA-A100",
+      gpu_count: 8,
+      gpu_memory_mib: 81920,
+      ssh_user: "root",
+      labels: {
+        "role": "gpu-worker",
+        "gpu": "true",
+        "medinovai.com/tier": "gpu",
+        "medinovai.com/dgx-node": "2",
+      },
+      services: [
+        "ollama", "aifactory-node-2",
+        "medinovai-pathology-ai", "medinovai-genomics-interpreter",
+      ],
+    },
+  ],
+}

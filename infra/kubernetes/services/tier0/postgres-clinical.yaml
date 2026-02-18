@@ -1,0 +1,78 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-clinical
+  namespace: infra
+  labels:
+    app: postgres-clinical
+spec:
+  ports:
+    - port: 5433
+      targetPort: 5432
+  selector:
+    app: postgres-clinical
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres-clinical
+  namespace: infra
+  labels:
+    app: postgres-clinical
+    medinovai.com/tier: "0"
+    medinovai.com/phi: "true"
+spec:
+  serviceName: postgres-clinical
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres-clinical
+  template:
+    metadata:
+      labels:
+        app: postgres-clinical
+        medinovai.com/phi: "true"
+    spec:
+      nodeSelector:
+        role: control-plane
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              value: medinovai_clinical
+            - name: POSTGRES_USER
+              value: medinovai_clinical
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: infra-secrets
+                  key: POSTGRES_CLINICAL_PASSWORD
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+          resources:
+            requests:
+              memory: 512Mi
+              cpu: 250m
+            limits:
+              memory: 2Gi
+              cpu: "1"
+          livenessProbe:
+            exec:
+              command: ["pg_isready", "-U", "medinovai_clinical"]
+            initialDelaySeconds: 30
+            periodSeconds: 10
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: longhorn
+        resources:
+          requests:
+            storage: 50Gi

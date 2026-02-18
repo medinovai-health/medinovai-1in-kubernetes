@@ -1,58 +1,6 @@
 # MedinovAI Deploy
 
-Autonomous deployment, instantiation, CI/CD, and monitoring system for the entire MedinovAI platform.
-
-## One-Command Install
-
-Clone this repo on any machine and run one command. Everything installs itself.
-
-```bash
-git clone git@github.com:myonsite-healthcare/medinovai-Deploy.git
-cd medinovai-Deploy
-make up
-```
-
-**That's it.** No wizard. No back-and-forth. Go get a coffee.
-
-What `make up` installs (all local, no cloud accounts needed):
-
-| Layer | Components |
-|-------|-----------|
-| Docker Compose (infra) | postgres · redis · prometheus · grafana · mailhog · localstack |
-| Kubernetes (apps) | api-gateway · auth-service · clinical-engine · data-pipeline · notification-service · ai-inference |
-| Cluster addons | NGINX Ingress · Kubernetes Dashboard · kube-state-metrics · ArgoCD |
-
-### Multi-machine / Tailscale HA
-
-```bash
-# Machine 1 (primary — hosts the shared database)
-make up PRIMARY=true
-
-# Every other machine (points at primary's Tailscale IP)
-make up DB_HOST=100.79.214.33
-```
-
-### After install — what you get
-
-| Service | URL | Credentials |
-|---------|-----|-------------|
-| Grafana | http://localhost:3000 | admin / admin |
-| Prometheus | http://localhost:9090 | — |
-| MailHog | http://localhost:8025 | — |
-| api-gateway | http://localhost:30080 | — |
-| NGINX Ingress | http://localhost:30800 | Host: medinovai.local |
-| K8s Dashboard | https://localhost:8443 | `make dashboard-forward` |
-| ArgoCD | http://localhost:8080 | `make argocd-forward` |
-
-```bash
-make cluster-status     # full health check
-make down               # stop everything (data preserved)
-make nuke               # wipe and rebuild from scratch
-```
-
----
-
-**medinovai-Deploy** can take a brand-new bare cloud account and stand up a fully operational MedinovAI environment end-to-end -- every service, every database, every secret, every monitoring hook, every governance control -- with zero manual steps. It then owns the ongoing lifecycle: continuous deployment, health monitoring, drift detection, auto-remediation, scaling, cost optimization, compliance enforcement, and disaster recovery.
+Autonomous on-prem deployment system for the entire MedinovAI platform. Takes blank physical servers and stands up 109 services across 7 tiers — databases, security, AI inference, clinical applications, and the AtlasOS AI brain — in a single command.
 
 ## Architecture
 
@@ -61,250 +9,145 @@ make nuke               # wipe and rebuild from scratch
 │                        MedinovAI Deploy System                                │
 │                                                                               │
 │  ┌─────────────────────────────────────────────────────────────────────────┐  │
-│  │                      Orchestration Layer                                │  │
-│  │  ┌──────────┐  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐   │  │
-│  │  │ GitHub   │  │ Atlas        │  │ Approval     │  │ Cron         │   │  │
-│  │  │ Actions  │  │ Gateway      │  │ Pipelines    │  │ Scheduler    │   │  │
-│  │  │ (CI/CD)  │  │ (Agents)     │  │ (Lobster)    │  │              │   │  │
-│  │  └────┬─────┘  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘   │  │
-│  └───────┼────────────────┼─────────────────┼─────────────────┼───────────┘  │
-│          │                │                 │                 │               │
-│  ┌───────┼────────────────┼─────────────────┼─────────────────┼───────────┐  │
-│  │       ▼           Agent Layer            ▼                 ▼           │  │
-│  │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐              │  │
-│  │  │ Platform │  │ Eng/CICD │  │ Security │  │  AI/ML   │              │  │
-│  │  │ Agent    │  │ Agent    │  │ Agent    │  │  Agent   │              │  │
-│  │  │          │  │          │  │          │  │          │              │  │
-│  │  │ IaC      │  │ Pipeline │  │ Secrets  │  │ Model    │              │  │
-│  │  │ Deploy   │  │ PR/CI    │  │ Vuln     │  │ Deploy   │              │  │
-│  │  │ Monitor  │  │ Release  │  │ Comply   │  │ Registry │              │  │
-│  │  └────┬─────┘  └────┬─────┘  └────┬─────┘  └────┬─────┘              │  │
-│  │       │              │             │             │                     │  │
-│  │  ┌──────────┐  ┌──────────┐                                           │  │
-│  │  │   Data   │  │Supervisor│  ← monitors all agents                   │  │
-│  │  │  Agent   │  │ Guardian │  ← validates all actions                  │  │
-│  │  └──────────┘  └──────────┘                                           │  │
-│  └───────────────────────────────────────────────────────────────────────┘  │
-│                                                                               │
-│  ┌─────────────────────────────────────────────────────────────────────────┐  │
-│  │                    Infrastructure Layer                                  │  │
-│  │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌─────────┐ │  │
-│  │  │Terraform │  │Kubernetes│  │  Docker   │  │Monitoring│  │ Secrets │ │  │
-│  │  │ Modules  │  │Manifests │  │  Images   │  │  Stack   │  │ Mgmt    │ │  │
-│  │  │          │  │          │  │          │  │          │  │         │ │  │
-│  │  │ network  │  │ base     │  │ python   │  │ prom     │  │ KMS     │ │  │
-│  │  │ compute  │  │ services │  │ node     │  │ grafana  │  │ vault   │ │  │
-│  │  │ database │  │ overlays │  │ ml       │  │ alert    │  │ rotate  │ │  │
-│  │  │ storage  │  │ monitor  │  │          │  │ loki     │  │         │ │  │
-│  │  │ dns/iam  │  │ ingress  │  │          │  │ jaeger   │  │         │ │  │
-│  │  └──────────┘  └──────────┘  └──────────┘  └──────────┘  └─────────┘ │  │
+│  │                     On-Prem K3s Cluster (4 nodes)                       │  │
+│  │                                                                         │  │
+│  │  Mac Studio (control plane)     MacBook Pro (worker)                   │  │
+│  │  ├── Tier 0: PostgreSQL, Redis  ├── Tier 4: Domain service overflow    │  │
+│  │  ├── Tier 0: Kafka, MongoDB     └── Tier 6: medinovaios UI shell      │  │
+│  │  ├── Tier 0: Vault, Keycloak                                          │  │
+│  │  ├── Tier 1-2: Security, Platform   DGX Server 1 (GPU worker)         │  │
+│  │  ├── AtlasOS: Gateway, Orchestrator ├── Ollama (11434)                │  │
+│  │  ├── Monitoring: Prometheus, Grafana├── AIFactory (5000)              │  │
+│  │  └── Cluster Brain (CEO/Supervisor) └── GPU Operator                  │  │
+│  │                                                                         │  │
+│  │                                     DGX Server 2 (GPU worker)          │  │
+│  │    Tailscale Mesh Network           ├── Ollama (11434)                │  │
+│  │    LAN: 192.168.x.x                ├── AIFactory (5000)              │  │
+│  │    Tailscale: 100.x.x.x            └── GPU Operator                  │  │
 │  └─────────────────────────────────────────────────────────────────────────┘  │
 │                                                                               │
 │  ┌─────────────────────────────────────────────────────────────────────────┐  │
-│  │                      Cloud Resources                                    │  │
-│  │  VPC  │  EKS/GKE  │  RDS/CloudSQL  │  Redis  │  S3/GCS  │  CDN/LB   │  │
+│  │               AtlasOS Embedded in ~162 Repos                            │  │
+│  │  Every repo gets: AGENTS.md, HEARTBEAT.md, SOUL.md, .cursor/rules/     │  │
+│  │  AI agents autonomously develop, review, deploy, and maintain code      │  │
+│  │  Humans approve: deploys, external comms, financial tx, safety actions  │  │
 │  └─────────────────────────────────────────────────────────────────────────┘  │
 └───────────────────────────────────────────────────────────────────────────────┘
 ```
 
-## What's in This Repo
-
-```
-medinovai-deploy/
-├── config/                     # Deployment configuration
-│   ├── deploy.json5            # Master deploy config (gateway, agents, health, circuit breakers)
-│   ├── environments/           # Per-environment overrides (dev, staging, production)
-│   ├── schemas/                # JSON schemas (service manifests, data lineage, model risk)
-│   └── .env.example            # Secrets template
-│
-├── infra/                      # Infrastructure as Code
-│   ├── terraform/              # Cloud resource provisioning (9 modules)
-│   │   ├── modules/            # networking, compute, database, storage, secrets, monitoring, dns, iam, ai-infra
-│   │   ├── environments/       # dev, staging, production compositions
-│   │   └── global/             # Shared resources (DNS zones, IAM)
-│   ├── kubernetes/             # K8s manifests (Kustomize-based)
-│   │   ├── base/               # Namespaces, RBAC, network policies, resource quotas
-│   │   ├── services/           # Per-service deployments, HPAs, PDBs
-│   │   ├── overlays/           # Environment-specific overlays
-│   │   ├── monitoring/         # Prometheus, Grafana, Alertmanager, Loki
-│   │   └── ingress/            # Nginx ingress, cert-manager, TLS
-│   └── docker/                 # Base images (python-service, node-service, ml-service)
-│
-├── agents/                     # Autonomous deploy agent workspaces
-│   ├── platform/               # Platform Ops — IaC, deploy, monitoring, cost
-│   ├── eng/                    # Engineering — CI/CD, PRs, releases, dependencies
-│   ├── security/               # Security — secrets, vulns, compliance, incidents
-│   ├── data/                   # Data — migrations, backups, lineage
-│   ├── ai-ml/                  # AI/ML — model deploy, registry, bias, drift
-│   ├── supervisor/             # Meta-agent — monitors all deploy agents
-│   └── guardian/               # Meta-agent — validates all deploy actions
-│
-├── scripts/                    # Executable scripts
-│   ├── bootstrap/              # Greenfield instantiation (prerequisites, init-cloud, instantiate)
-│   ├── deploy/                 # Service deployment (deploy_service, rollback, promote_canary)
-│   ├── agents/                 # Agent registration and cron setup
-│   ├── maintenance/            # Ongoing ops (secret rotation, cert renewal, backup, drift check)
-│   ├── monitoring/             # Monitoring setup and health audits
-│   └── validation/             # Config, infra, manifest, compliance validation
-│
-├── workflows/                  # Approval-gated pipelines (Lobster format)
-│   ├── deploy.lobster.md       # Build → stage → approve → deploy → health check
-│   ├── infra-change.lobster.md # Plan → review → approve → apply → verify
-│   └── ...                     # AI validation, access provisioning, DR, secret rotation
-│
-├── services/registry/          # Service deployment manifests (one per MedinovAI service)
-│
-├── .github/workflows/          # GitHub Actions CI/CD pipelines
-│
-├── docs/                       # Architecture, runbooks, guides
-│
-└── tests/                      # Unit, integration, and E2E tests
-```
-
-## Greenfield Instantiation
-
-Stand up a complete MedinovAI environment from scratch:
+## Quick Start
 
 ```bash
 # 1. Check prerequisites
-bash scripts/bootstrap/prerequisites.sh
+make prerequisites
 
-# 2. Initialize cloud account (state bucket, IAM bootstrap)
-bash scripts/bootstrap/init-cloud-account.sh --cloud aws --region us-east-1
+# 2. Full instantiation (blank to running, ~70 min)
+make instantiate
 
-# 3. Full instantiation (30-45 minutes)
-bash scripts/bootstrap/instantiate.sh \
-  --cloud aws \
-  --region us-east-1 \
-  --environment production \
-  --domain medinovai.example.com \
-  --org-name "Example Health System"
+# 3. Or critical-path only (~25 min, 12 core services + AtlasOS)
+make instantiate-critical
+
+# 4. Embed AtlasOS agents in all repos
+make embed-atlasos
 ```
 
-The instantiation script executes 15 checkpointed steps:
+## What Gets Deployed
 
-| Step | Action | Duration |
-|------|--------|----------|
-| 1 | Prerequisites check | 10s |
-| 2 | Cloud account bootstrap (state bucket, lock table, IAM) | 1m |
-| 3 | Networking (VPC, subnets, NAT, security groups) | 3m |
-| 4 | DNS & certificates (hosted zone, ACM/Let's Encrypt) | 2m |
-| 5 | Secrets infrastructure (KMS, Secrets Manager) | 1m |
-| 6 | Seed initial secrets (DB passwords, API keys, JWT) | 30s |
-| 7 | Databases (RDS PostgreSQL, ElastiCache Redis) | 10m |
-| 8 | Database migrations (schema, seed data) | 2m |
-| 9 | Compute cluster (EKS/GKE + node groups) | 12m |
-| 10 | Base K8s resources (namespaces, RBAC, network policies) | 1m |
-| 11 | Monitoring stack (Prometheus, Grafana, Alertmanager, Loki) | 3m |
-| 12 | MedinovAI services (in dependency order) | 5m |
-| 13 | Ingress & TLS termination | 2m |
-| 14 | Smoke tests (health, auth, APIs, AI inference) | 2m |
-| 15 | Atlas gateway + agent registration + crons | 1m |
+| Tier | Services | Deploy Time |
+|------|----------|-------------|
+| **0** | PostgreSQL (x2), Redis, Kafka, MongoDB, Elasticsearch, Keycloak, MinIO, Vault | 5 min |
+| **1** | Secrets bridge, Security, SSO, RBAC, Encryption, HIPAA guard, Consent API | 5 min |
+| **2** | Registry, Data services, Stream bus, Notification, AIFactory, API gateway | 5 min |
+| **AtlasOS** | Gateway, UI, Orchestrator, AI orchestrator, MCP, Event bus, Audit chain, Voice bridge | 3 min |
+| **GPU** | Ollama (DaemonSet on DGX), AIFactory, ChromaDB, NVIDIA GPU Operator | 5 min |
+| **3** | CDS, AI Scribe, HealthLLM, Knowledge Graph, Prompt Vault, Model Orchestrator | 5 min |
+| **4** | 60+ domain services: CTMS, EDC, LIS, Sales, Telehealth, etc. | 8 min |
+| **5-6** | Integration, DevOps, UI shell (medinovaios) | 5 min |
+| **AtlasOS Infra** | Node agents (DaemonSet), Cluster brain (CEO+Supervisor+Guardian) | 2 min |
 
-Every step is idempotent. If interrupted, re-running resumes from the last checkpoint.
+## Fleet
 
-## Ongoing CI/CD
+| Node | Role | Hardware | Services |
+|------|------|----------|----------|
+| Mac Studio | Control plane + worker | M2 Ultra, 192GB, 2TB | Databases, Vault, AtlasOS, Monitoring |
+| MacBook Pro | Worker | M3 Pro, 36GB, 500GB | Domain service overflow, UI shell |
+| DGX Server 1 | GPU worker | 64 cores, 512GB, 4x A100 | Ollama, AIFactory |
+| DGX Server 2 | GPU worker | 64 cores, 512GB, 4x A100 | Ollama, AIFactory |
 
-| Trigger | Pipeline | What Happens |
-|---------|----------|-------------|
-| Push/PR | `ci.yml` | Lint, validate configs, Terraform validate, K8s validate, unit tests, secret scan |
-| Merge to `develop` | `deploy-staging.yml` | Build images, push to registry, deploy to staging, smoke test |
-| Release tag `v*` | `deploy-production.yml` | Approval gate, canary deploy (5%), monitor 10min, promote or rollback |
-| PR touches `infra/` | `infra-plan.yml` | `terraform plan`, post diff as PR comment |
-| Merge `infra/` to `main` | `infra-apply.yml` | `terraform apply` with approval gate per environment |
-| Daily 03:00 UTC | `drift-detection.yml` | Detect IaC drift, alert on discrepancies |
-| Daily 04:00 UTC | `nightly-health.yml` | Full-stack health audit, cert expiry, backup verification |
-| Daily + PR | `security-scan.yml` | Container vuln scan, dependency audit, secret scan |
+Networking: Tailscale mesh (100.x.x.x) + LAN (192.168.x.x)
 
-## Monitoring & Observability
+## Secrets Management
 
-Four-layer monitoring with graduated alerting:
+All secrets stored in HashiCorp Vault, synced to K8s via External Secrets Operator:
 
-| Layer | What | Tools |
-|-------|------|-------|
-| Infrastructure | CPU, memory, disk, network, IaC drift, cost | CloudWatch, Terraform |
-| Platform | Cluster health, node pressure, pod restarts, HPA | Prometheus, Grafana |
-| Application | Request latency, error rates, traces, logs | OpenTelemetry, Jaeger, Loki |
-| AI/ML | Inference latency, prediction drift, bias, token cost | Custom metrics, model registry |
-
-## Agents
-
-| Agent | Responsibility | Key Skills |
-|-------|---------------|------------|
-| **Platform** | IaC, deployments, monitoring, cost, certs | infra-provision, service-deploy, health-audit, cost-optimize, drift-remediate |
-| **Eng/CICD** | Pipelines, PRs, releases, dependencies | ci-monitor, pr-review, dependency-planner, pipeline-doctor, release-manager |
-| **Security** | Secrets, vulnerabilities, compliance, incidents | secret-scan, vuln-scan, compliance-audit, incident-response |
-| **Data** | Migrations, backups, lineage | migration-runner, backup-verify, lineage-track |
-| **AI/ML** | Model deployment, registry, bias, drift | model-deploy, model-registry, bias-testing, drift-detection |
-| **Supervisor** | Monitors all deploy agents | Intervention logging, health verification |
-| **Guardian** | Validates all deploy actions | Policy enforcement, approval gating |
-
-## Docker Local Deployment
-
-For full greenfield deployment on a single machine (survives restarts/crashes):
-
-```bash
-make docker-instantiate           # Full stack (postgres, redis, prometheus, grafana, etc.)
-make docker-backup                # Backup to ~/medinovai-backups/medinovai-Deploy/
-make docker-restore               # Restore from latest backup
-make docker-seed                  # Fresh environment from zero
+```
+medinovai-secrets/
+├── infra/          PostgreSQL, Redis, Kafka passwords
+├── security/       Keycloak admin, JWT signing keys
+├── platform/       Registry, API gateway keys
+├── atlasos/        Anthropic, OpenAI, Slack, 3CX, CRM, voice
+├── ai-ml/          Model API keys, AIFactory config
+├── clinical/       FHIR server creds, clinical DB
+└── tenant/{id}/    Per-tenant secrets (SAES compliance)
 ```
 
-See **[docs/DOCKER_GREENFIELD_DEPLOYMENT.md](docs/DOCKER_GREENFIELD_DEPLOYMENT.md)** for the full plan and maintenance guide.
+## AtlasOS Everywhere
 
-## Quick Reference
+AtlasOS agents are embedded in every MedinovAI repo (~162 repos):
 
 ```bash
-# Setup
-make prerequisites                # Check required tools
-make setup                        # Full setup: install + deploy + validate
+make embed-atlasos                              # All repos
+make embed-atlasos-repo REPO=medinovai-CTMS     # Single repo
+make embed-atlasos-category CATEGORY=clinical   # All clinical repos
+```
 
-# Infrastructure
-make plan ENV=staging             # Terraform plan
-make apply ENV=staging            # Terraform apply (requires approval)
-make drift-check                  # Check for IaC drift
+Each repo receives a category-specific agent kit (clinical, platform, ai-ml, etc.) with AGENTS.md, HEARTBEAT.md, SOUL.md, TOOLS.md, and Cursor rules for autonomous AI operation.
 
-# Deployments
-make deploy-service SVC=api-gateway ENV=staging    # Deploy single service
-make deploy-all ENV=staging                         # Deploy all services
-make rollback SVC=api-gateway ENV=staging           # Rollback service
-make promote-canary SVC=api-gateway ENV=production  # Promote canary to full
+**AI runs everything. Humans approve:**
+- Production deployments (canary promotion)
+- Node drain/removal, cluster upgrades
+- External communications, financial transactions
+- Clinical safety actions, regulatory submissions
 
-# Monitoring
-make health                       # Full-stack health check
-make status                       # Atlas gateway status
-make logs                         # Follow deploy logs
-make dashboards                   # Open Grafana dashboards
+## Command Reference
+
+```bash
+# Bootstrap
+make setup                    # Full: prerequisites + instantiate
+make init-network             # Tailscale mesh
+make init-k3s-server          # K3s on Mac Studio
+make init-k3s-worker          # K3s on MacBook Pro
+make init-dgx                 # DGX GPU nodes
+make init-vault               # HashiCorp Vault
+make add-node TYPE=dgx IP=x   # Add new node
+
+# Deploy
+make deploy-all               # All 109 services
+make deploy-tier TIER=0       # Specific tier
+make deploy-atlasos           # AtlasOS services
+make deploy-gpu               # GPU workloads
+make deploy-node-agents       # Node agent DaemonSet
+make deploy-cluster-brain     # Cluster brain
+
+# Health
+make health                   # Full-stack health
+make status                   # Quick cluster status
+make agent-status             # AtlasOS agent status
+make gpu-status               # GPU node status
+
+# Secrets
+make seed-secrets             # Seed Vault interactively
+make rotate-secrets           # Rotate expiring secrets
 
 # Maintenance
-make rotate-secrets               # Rotate expiring secrets
-make cert-check                   # Check certificate expiry
-make backup-verify                # Verify backup integrity
-make cost-report                  # Generate cost report
-
-# Validation
-make validate                     # Full validation suite
-make validate-infra               # Terraform validate
-make validate-k8s                 # K8s manifest validation
-make validate-compliance          # GOV-01 through GOV-10 check
+make drift-check              # K3s vs Git manifest diff
+make backup                   # Longhorn + Vault snapshots
+make validate                 # Full validation suite
 ```
 
 ## Governance Controls
 
-All 10 AI governance controls (GOV-01 through GOV-10) are enforced at deploy time:
-
-| Control | Enforcement Point |
-|---------|-------------------|
-| GOV-01: Model Risk Register | Pre-deploy validation requires registry entry |
-| GOV-02: Pre-Deployment Validation | AI model validation pipeline (benchmark, bias, shadow) |
-| GOV-03: Bias Testing | Automated bias audit in validation pipeline |
-| GOV-04: Human Override | Override mechanisms verified in smoke tests |
-| GOV-05: Explainability | Schema validation ensures required fields |
-| GOV-06: Performance Monitoring | Monitoring stack auto-configured per model risk class |
-| GOV-07: Data Lineage | Lineage records verified before pipeline deploy |
-| GOV-08: Vendor Accountability | Vendor contract ref required in manifest |
-| GOV-09: Incident Response | Quarantine mechanism tested in staging |
-| GOV-10: Cross-Functional Oversight | Approval gates enforce board sign-off |
+All 10 AI governance controls (GOV-01 through GOV-10) enforced at deploy time. See `scripts/validation/validate_compliance.sh`.
 
 ## License
 

@@ -1,0 +1,183 @@
+# MedinovAI Deploy — Tier 1: Security & Secrets Foundation
+# ALL other services depend on this tier.
+# Requires: Tier 0 infrastructure running.
+#
+# Usage:
+#   docker compose -f infra/docker/docker-compose.tier1-security.yml up -d
+
+services:
+  medinovai-secrets-manager-bridge:
+    image: ${REGISTRY:-ghcr.io/myonsite-healthcare}/medinovai-secrets-manager-bridge:${TAG:-latest}
+    container_name: medinovai-secrets-manager-bridge
+    environment:
+      VAULT_ADDR: http://medinovai-vault:8200
+      VAULT_TOKEN: ${VAULT_TOKEN:-medinovai-dev-token}
+      PORT: 8000
+    ports:
+      - "10001:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - medinovai-network
+
+  medinovai-security:
+    image: ${REGISTRY:-ghcr.io/myonsite-healthcare}/medinovai-security:${TAG:-latest}
+    container_name: medinovai-security
+    depends_on:
+      medinovai-secrets-manager-bridge:
+        condition: service_healthy
+    environment:
+      KEYCLOAK_URL: http://medinovai-keycloak:8080
+      DATABASE_URL: postgresql://medinovai:${POSTGRES_PASSWORD:-medinovai_dev}@medinovai-postgres-primary:5432/medinovai_main
+      REDIS_URL: redis://:${REDIS_PASSWORD:-medinovai_dev}@medinovai-redis:6379
+      PORT: 9000
+    ports:
+      - "9000:9000"
+      - "9010:9010"
+      - "9011:9011"
+      - "9012:9012"
+      - "9013:9013"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - medinovai-network
+
+  medinovai-universal-sign-on:
+    image: ${REGISTRY:-ghcr.io/myonsite-healthcare}/medinovai-universal-sign-on:${TAG:-latest}
+    container_name: medinovai-universal-sign-on
+    depends_on:
+      medinovai-security:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://medinovai:${POSTGRES_PASSWORD:-medinovai_dev}@medinovai-postgres-primary:5432/medinovai_main
+      REDIS_URL: redis://:${REDIS_PASSWORD:-medinovai_dev}@medinovai-redis:6379
+      SECURITY_SERVICE_URL: http://medinovai-security:9000
+      KAFKA_BROKERS: medinovai-kafka:29092
+      PORT: 8000
+    ports:
+      - "10003:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - medinovai-network
+
+  medinovai-role-based-permissions:
+    image: ${REGISTRY:-ghcr.io/myonsite-healthcare}/medinovai-role-based-permissions:${TAG:-latest}
+    container_name: medinovai-role-based-permissions
+    depends_on:
+      medinovai-security:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://medinovai:${POSTGRES_PASSWORD:-medinovai_dev}@medinovai-postgres-primary:5432/medinovai_main
+      REDIS_URL: redis://:${REDIS_PASSWORD:-medinovai_dev}@medinovai-redis:6379
+      SECURITY_SERVICE_URL: http://medinovai-security:9000
+      PORT: 8000
+    ports:
+      - "10004:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8000/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - medinovai-network
+
+  medinovai-encryption-vault:
+    image: ${REGISTRY:-ghcr.io/myonsite-healthcare}/medinovai-encryption-vault:${TAG:-latest}
+    container_name: medinovai-encryption-vault
+    depends_on:
+      medinovai-secrets-manager-bridge:
+        condition: service_healthy
+    environment:
+      VAULT_ADDR: http://medinovai-vault:8200
+      VAULT_TOKEN: ${VAULT_TOKEN:-medinovai-dev-token}
+      PORT: 8000
+    ports:
+      - "10005:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - medinovai-network
+
+  medinovai-hipaa-gdpr-guard:
+    image: ${REGISTRY:-ghcr.io/myonsite-healthcare}/medinovai-hipaa-gdpr-guard:${TAG:-latest}
+    container_name: medinovai-hipaa-gdpr-guard
+    depends_on:
+      medinovai-security:
+        condition: service_healthy
+      medinovai-role-based-permissions:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://medinovai:${POSTGRES_PASSWORD:-medinovai_dev}@medinovai-postgres-primary:5432/medinovai_main
+      REDIS_URL: redis://:${REDIS_PASSWORD:-medinovai_dev}@medinovai-redis:6379
+      SECURITY_SERVICE_URL: http://medinovai-security:9000
+      PORT: 8000
+    ports:
+      - "10006:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - medinovai-network
+
+  medinovai-consent-preference-api:
+    image: ${REGISTRY:-ghcr.io/myonsite-healthcare}/medinovai-consent-preference-api:${TAG:-latest}
+    container_name: medinovai-consent-preference-api
+    depends_on:
+      medinovai-hipaa-gdpr-guard:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://medinovai:${POSTGRES_PASSWORD:-medinovai_dev}@medinovai-postgres-primary:5432/medinovai_main
+      REDIS_URL: redis://:${REDIS_PASSWORD:-medinovai_dev}@medinovai-redis:6379
+      SECURITY_SERVICE_URL: http://medinovai-security:9000
+      PORT: 8000
+    ports:
+      - "10007:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - medinovai-network
+
+  medinovai-audit-trail-explorer:
+    image: ${REGISTRY:-ghcr.io/myonsite-healthcare}/medinovai-audit-trail-explorer:${TAG:-latest}
+    container_name: medinovai-audit-trail-explorer
+    depends_on:
+      medinovai-security:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://medinovai:${POSTGRES_PASSWORD:-medinovai_dev}@medinovai-postgres-primary:5432/medinovai_main
+      REDIS_URL: redis://:${REDIS_PASSWORD:-medinovai_dev}@medinovai-redis:6379
+      ELASTICSEARCH_URL: http://medinovai-elasticsearch:9200
+      SECURITY_SERVICE_URL: http://medinovai-security:9000
+      PORT: 8000
+    ports:
+      - "10008:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - medinovai-network
+
+networks:
+  medinovai-network:
+    external: true

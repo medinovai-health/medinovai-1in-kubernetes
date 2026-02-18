@@ -1,0 +1,42 @@
+# HashiCorp Vault Helm values for MedinovAI on-prem K3s cluster
+server:
+  standalone:
+    enabled: true
+
+  dataStorage:
+    enabled: true
+    size: 10Gi
+    storageClass: longhorn
+
+  auditStorage:
+    enabled: true
+    size: 5Gi
+    storageClass: longhorn
+
+  resources:
+    requests:
+      memory: 256Mi
+      cpu: 250m
+    limits:
+      memory: 512Mi
+      cpu: 500m
+
+  nodeSelector:
+    role: control-plane
+
+  extraEnvironmentVars:
+    VAULT_LOG_LEVEL: info
+
+injector:
+  enabled: true
+  resources:
+    requests:
+      memory: 64Mi
+      cpu: 50m
+    limits:
+      memory: 128Mi
+      cpu: 250m
+
+ui:
+  enabled: true
+  serviceType: ClusterIP

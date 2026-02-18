@@ -1,0 +1,43 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: voice-bridge
+  namespace: atlasos
+spec:
+  ports:
+    - port: 7100
+      targetPort: 7100
+  selector:
+    app: voice-bridge
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: voice-bridge
+  namespace: atlasos
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: voice-bridge
+  template:
+    metadata:
+      labels:
+        app: voice-bridge
+    spec:
+      containers:
+        - name: voice-bridge
+          image: medinovai-atlas-voice-bridge:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 7100
+          envFrom:
+            - secretRef:
+                name: atlasos-secrets
+          resources:
+            requests:
+              memory: 128Mi
+              cpu: 100m
+            limits:
+              memory: 512Mi
+              cpu: 500m

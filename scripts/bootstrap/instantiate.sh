@@ -1,64 +1,54 @@
 #!/usr/bin/env bash
 # ─── instantiate.sh ───────────────────────────────────────────────────────────
-# Full greenfield instantiation of the MedinovAI platform.
-# Takes a bare cloud account and stands up a complete environment.
+# Full greenfield instantiation of the MedinovAI platform — on-prem K3s.
+# Takes blank physical servers and stands up a complete environment.
 #
 # Usage:
-#   bash scripts/bootstrap/instantiate.sh \
-#     --cloud aws \
-#     --region us-east-1 \
-#     --environment production \
-#     --domain medinovai.example.com \
-#     --org-name "Example Health System"
+#   bash scripts/bootstrap/instantiate.sh
+#   bash scripts/bootstrap/instantiate.sh --critical-path-only
+#   bash scripts/bootstrap/instantiate.sh --dry-run
+#   bash scripts/bootstrap/instantiate.sh --resume
+#   bash scripts/bootstrap/instantiate.sh --step 8
 #
 # Options:
-#   --cloud         Cloud provider (aws|gcp|azure)
-#   --region        Cloud region
-#   --environment   Target environment (dev|staging|production)
-#   --domain        Primary domain for the platform
-#   --org-name      Organization name
-#   --dry-run       Show what would be done without executing
-#   --resume        Resume from last checkpoint
-#   --step          Start from a specific step number (1-15)
+#   --critical-path-only  Deploy minimum viable platform (~25 min)
+#   --dry-run             Show what would be done without executing
+#   --resume              Resume from last checkpoint
+#   --step N              Start from a specific step number
+#   --skip-gpu            Skip DGX/GPU node setup
+#   --skip-embed          Skip AtlasOS embedding in repos
 # ─────────────────────────────────────────────────────────────────────────────
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(dirname "$(dirname "$SCRIPT_DIR")")"
-DEPLOY_HOME="$HOME/.medinovai-deploy"
+DEPLOY_HOME="${DEPLOY_HOME:-$HOME/.medinovai-deploy}"
 CHECKPOINT_DIR="$DEPLOY_HOME/checkpoints"
 LOG_DIR="$DEPLOY_HOME/logs"
 TIMESTAMP=$(date -u +%Y%m%dT%H%M%SZ)
 LOG_FILE="$LOG_DIR/instantiate-$TIMESTAMP.log"
 
-# ─── Defaults ─────────────────────────────────────────────────────────────────
-CLOUD="aws"
-REGION="us-east-1"
-ENVIRONMENT="staging"
-DOMAIN=""
-ORG_NAME="MedinovAI"
+CRITICAL_PATH_ONLY=false
 DRY_RUN=false
 RESUME=false
 START_STEP=1
-TOTAL_STEPS=15
+SKIP_GPU=false
+SKIP_EMBED=false
+TOTAL_STEPS=25
 
-# ─── Parse Arguments ─────────────────────────────────────────────────────────
 while [[ $# -gt 0 ]]; do
     case $1 in
-        --cloud)        CLOUD="$2"; shift 2 ;;
-        --region)       REGION="$2"; shift 2 ;;
-        --environment)  ENVIRONMENT="$2"; shift 2 ;;
-        --domain)       DOMAIN="$2"; shift 2 ;;
-        --org-name)     ORG_NAME="$2"; shift 2 ;;
-        --dry-run)      DRY_RUN=true; shift ;;
-        --resume)       RESUME=true; shift ;;
-        --step)         START_STEP="$2"; shift 2 ;;
-        *)              echo "Unknown option: $1"; exit 1 ;;
+        --critical-path-only) CRITICAL_PATH_ONLY=true; TOTAL_STEPS=15; shift ;;
+        --dry-run)            DRY_RUN=true; shift ;;
+        --resume)             RESUME=true; shift ;;
+        --step)               START_STEP="$2"; shift 2 ;;
+        --skip-gpu)           SKIP_GPU=true; shift ;;
+        --skip-embed)         SKIP_EMBED=true; shift ;;
+        *)                    echo "Unknown option: $1"; exit 1 ;;
     esac
 done
 
-# ─── Setup ────────────────────────────────────────────────────────────────────
 mkdir -p "$CHECKPOINT_DIR" "$LOG_DIR"
 
 log() {
@@ -66,279 +56,227 @@ log() {
     echo "$msg" | tee -a "$LOG_FILE"
 }
 
-checkpoint_exists() {
-    [ -f "$CHECKPOINT_DIR/step_$1.done" ]
-}
+checkpoint_exists() { [ -f "$CHECKPOINT_DIR/step_$1.done" ]; }
 
 mark_checkpoint() {
-    local step="$1"
-    local description="$2"
-    echo "{\"step\": $step, \"description\": \"$description\", \"completed_at\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\", \"environment\": \"$ENVIRONMENT\", \"cloud\": \"$CLOUD\", \"region\": \"$REGION\"}" > "$CHECKPOINT_DIR/step_$step.done"
+    local step="$1" description="$2"
+    echo "{\"step\": $step, \"description\": \"$description\", \"completed_at\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}" > "$CHECKPOINT_DIR/step_$step.done"
     log "  ✓ Checkpoint saved: step $step — $description"
 }
 
 run_step() {
-    local step_num="$1"
-    local description="$2"
-    local func="$3"
-
-    if [ "$step_num" -lt "$START_STEP" ]; then
-        return 0
-    fi
-
-    if $RESUME && checkpoint_exists "$step_num"; then
-        log "  ⏭ Step $step_num/$TOTAL_STEPS: $description — SKIPPED (checkpoint exists)"
-        return 0
-    fi
-
-    log ""
-    log "━━━ Step $step_num/$TOTAL_STEPS: $description ━━━"
-
-    if $DRY_RUN; then
-        log "  [DRY RUN] Would execute: $description"
-        return 0
-    fi
-
-    if $func; then
-        mark_checkpoint "$step_num" "$description"
-    else
-        log "  ✗ Step $step_num FAILED: $description"
-        log "  Re-run with --resume to retry from this step."
-        exit 1
-    fi
+    local step_num="$1" description="$2" func="$3"
+    [ "$step_num" -lt "$START_STEP" ] && return 0
+    $RESUME && checkpoint_exists "$step_num" && { log "  ⏭ Step $step_num: $description — SKIPPED (checkpoint)"; return 0; }
+    log ""; log "━━━ Step $step_num/$TOTAL_STEPS: $description ━━━"
+    $DRY_RUN && { log "  [DRY RUN] Would execute: $description"; return 0; }
+    if $func; then mark_checkpoint "$step_num" "$description"; else log "  ✗ Step $step_num FAILED. Re-run with --resume."; exit 1; fi
 }
 
-# ─── Step Functions ───────────────────────────────────────────────────────────
+# ─── Step Functions ──────────────────────────────────────────────────────────
 
 step_01_prerequisites() {
-    log "  Checking prerequisites..."
     bash "$SCRIPT_DIR/prerequisites.sh"
 }
 
-step_02_init_cloud() {
-    log "  Initializing $CLOUD account in $REGION..."
-    if [ -f "$SCRIPT_DIR/init-cloud-account.sh" ]; then
-        bash "$SCRIPT_DIR/init-cloud-account.sh" --cloud "$CLOUD" --region "$REGION"
-    else
-        log "  Creating Terraform state infrastructure..."
-        case "$CLOUD" in
-            aws)
-                log "  TODO: Create S3 state bucket + DynamoDB lock table"
-                log "  TODO: Create bootstrap IAM roles"
-                ;;
-            gcp)
-                log "  TODO: Create GCS state bucket"
-                log "  TODO: Create service accounts"
-                ;;
-            azure)
-                log "  TODO: Create Azure Storage state container"
-                log "  TODO: Create service principals"
-                ;;
-        esac
-    fi
-    return 0
+step_02_network() {
+    bash "$SCRIPT_DIR/init-network.sh"
 }
 
-step_03_networking() {
-    log "  Provisioning networking ($CLOUD / $REGION)..."
-    local tf_dir="$REPO_ROOT/infra/terraform/environments/$ENVIRONMENT"
-    if [ -f "$tf_dir/main.tf" ]; then
-        cd "$tf_dir"
-        terraform init -upgrade
-        terraform apply -target=module.networking -auto-approve
-        cd "$REPO_ROOT"
-    else
-        log "  TODO: Terraform networking module not yet configured for $ENVIRONMENT"
-        log "  Will provision: VPC, subnets (public/private/data), NAT gateways, security groups"
-    fi
-    return 0
+step_03_k3s_server() {
+    bash "$SCRIPT_DIR/init-orbstack.sh" --role server
 }
 
-step_04_dns_certs() {
-    log "  Provisioning DNS & certificates..."
-    if [ -n "$DOMAIN" ]; then
-        log "  Domain: $DOMAIN"
-        log "  TODO: Create hosted zone, request ACM/Let's Encrypt certificates"
-    else
-        log "  No domain specified — skipping DNS setup"
-    fi
-    return 0
+step_04_k3s_worker() {
+    bash "$SCRIPT_DIR/init-orbstack.sh" --role agent
 }
 
-step_05_secrets_infra() {
-    log "  Provisioning secrets infrastructure..."
-    log "  TODO: Create KMS keys, initialize Secrets Manager / Vault"
-    return 0
+step_05_dgx() {
+    if $SKIP_GPU; then log "  Skipping GPU setup (--skip-gpu)"; return 0; fi
+    bash "$SCRIPT_DIR/init-dgx.sh" --from-fleet
 }
 
-step_06_seed_secrets() {
-    log "  Seeding initial secrets..."
-    log "  TODO: Generate and store DB passwords, API keys, JWT signing keys"
-    log "  WARNING: Secrets generated here should be rotated after initial setup"
-    return 0
+step_06_storage() {
+    bash "$SCRIPT_DIR/init-storage.sh"
 }
 
-step_07_databases() {
-    log "  Provisioning databases..."
-    log "  TODO: Create RDS PostgreSQL (primary + read replica for production)"
-    log "  TODO: Create ElastiCache Redis cluster"
-    log "  Estimated time: ~10 minutes"
-    return 0
+step_07_namespaces() {
+    log "  Deploying namespaces, RBAC, network policies..."
+    kubectl apply -k "$REPO_ROOT/infra/kubernetes/base"
 }
 
-step_08_migrations() {
-    log "  Running database migrations..."
-    log "  TODO: Run schema creation scripts"
-    log "  TODO: Seed reference data"
-    return 0
+step_08_vault() {
+    bash "$SCRIPT_DIR/init-vault.sh"
 }
 
-step_09_compute() {
-    log "  Provisioning compute cluster..."
-    log "  TODO: Create EKS/GKE cluster"
-    log "  TODO: Create managed node groups (general + GPU)"
-    log "  TODO: Install cluster autoscaler, EBS CSI driver"
-    log "  Estimated time: ~12 minutes"
-    return 0
+step_09_seed_secrets() {
+    bash "$SCRIPT_DIR/init-vault.sh" --seed-from-env
 }
 
-step_10_k8s_base() {
-    log "  Deploying base Kubernetes resources..."
-    local k8s_dir="$REPO_ROOT/infra/kubernetes"
-    if [ -d "$k8s_dir/base" ]; then
-        log "  TODO: Apply namespaces, RBAC, network policies, resource quotas, priority classes"
-    fi
-    return 0
+step_10_eso() {
+    log "  Installing External Secrets Operator..."
+    helm repo add external-secrets https://charts.external-secrets.io 2>/dev/null || true
+    helm repo update
+    helm upgrade --install external-secrets external-secrets/external-secrets \
+        -n external-secrets --create-namespace --wait --timeout 3m
+    log "  Deploying SecretStores and ExternalSecrets..."
+    kubectl apply -k "$REPO_ROOT/infra/kubernetes/external-secrets"
 }
 
 step_11_monitoring() {
     log "  Deploying monitoring stack..."
-    log "  TODO: Deploy Prometheus (metrics)"
-    log "  TODO: Deploy Grafana (dashboards)"
-    log "  TODO: Deploy Alertmanager (alert routing)"
-    log "  TODO: Deploy Loki (log aggregation)"
-    log "  TODO: Configure alert rules and notification channels"
-    return 0
+    if [ -d "$REPO_ROOT/infra/kubernetes/monitoring" ]; then
+        kubectl apply -k "$REPO_ROOT/infra/kubernetes/monitoring" 2>/dev/null || log "  WARN: monitoring apply had issues"
+    fi
 }
 
-step_12_services() {
-    log "  Deploying MedinovAI services (dependency order)..."
-    log "  Deployment order:"
-    log "    1. auth-service (no service deps)"
-    log "    2. notification-service (no service deps)"
-    log "    3. data-pipeline (depends: auth-service)"
-    log "    4. clinical-engine (depends: auth-service, data-pipeline)"
-    log "    5. ai-inference (depends: auth-service, data-pipeline)"
-    log "    6. api-gateway (depends: all backend services)"
-    log ""
-    log "  TODO: For each service:"
-    log "    - Pull image from registry"
-    log "    - Apply K8s manifests (deployment, service, HPA, PDB)"
-    log "    - Wait for rollout completion"
-    log "    - Verify health endpoint responds"
-    return 0
+step_12_tier0() {
+    bash "$REPO_ROOT/scripts/deploy/deploy_tier.sh" 0
 }
 
-step_13_ingress() {
-    log "  Configuring ingress & TLS termination..."
-    log "  TODO: Deploy nginx-ingress controller"
-    log "  TODO: Configure cert-manager for auto TLS"
-    log "  TODO: Create ingress rules for all services"
-    return 0
+step_13_tier1() {
+    bash "$REPO_ROOT/scripts/deploy/deploy_tier.sh" 1
 }
 
-step_14_smoke_tests() {
+step_14_tier2() {
+    bash "$REPO_ROOT/scripts/deploy/deploy_tier.sh" 2
+}
+
+step_15_atlasos() {
+    bash "$REPO_ROOT/scripts/deploy/deploy_tier.sh" atlasos
+}
+
+step_16_gpu_inference() {
+    if $SKIP_GPU; then log "  Skipping GPU inference (--skip-gpu)"; return 0; fi
+    bash "$REPO_ROOT/scripts/deploy/deploy_tier.sh" gpu
+}
+
+step_17_tier3() {
+    bash "$REPO_ROOT/scripts/deploy/deploy_tier.sh" 3
+}
+
+step_18_tier4() {
+    bash "$REPO_ROOT/scripts/deploy/deploy_tier.sh" 4
+}
+
+step_19_tier5() {
+    bash "$REPO_ROOT/scripts/deploy/deploy_tier.sh" 5
+}
+
+step_20_tier6() {
+    bash "$REPO_ROOT/scripts/deploy/deploy_tier.sh" 6
+}
+
+step_21_ingress() {
+    log "  Deploying Traefik ingress..."
+    if [ -d "$REPO_ROOT/infra/kubernetes/ingress" ]; then
+        kubectl apply -k "$REPO_ROOT/infra/kubernetes/ingress" 2>/dev/null || true
+    fi
+}
+
+step_22_node_agents() {
+    bash "$REPO_ROOT/scripts/deploy/deploy_tier.sh" node-agents
+}
+
+step_23_cluster_brain() {
+    bash "$REPO_ROOT/scripts/deploy/deploy_tier.sh" cluster-brain
+}
+
+step_24_agents() {
+    log "  Registering Atlas agents and crons..."
+    [ -f "$REPO_ROOT/scripts/agents/create_agents.sh" ] && bash "$REPO_ROOT/scripts/agents/create_agents.sh" 2>&1 | tee -a "$LOG_FILE" || true
+    [ -f "$REPO_ROOT/scripts/agents/register_crons.sh" ] && bash "$REPO_ROOT/scripts/agents/register_crons.sh" 2>&1 | tee -a "$LOG_FILE" || true
+}
+
+step_25_smoke() {
     log "  Running smoke tests..."
-    log "  TODO: Verify health endpoints for all services"
-    log "  TODO: Test authentication flow"
-    log "  TODO: Test key API endpoints"
-    log "  TODO: Test AI inference endpoint"
-    log "  TODO: Verify monitoring is receiving metrics"
-    return 0
-}
-
-step_15_atlas() {
-    log "  Deploying Atlas gateway & registering agents..."
-    if [ -f "$SCRIPT_DIR/install_atlas.sh" ]; then
-        log "  Installing Atlas..."
-        bash "$SCRIPT_DIR/install_atlas.sh" 2>&1 | tee -a "$LOG_FILE" || true
-    fi
-    if [ -f "$REPO_ROOT/scripts/deploy/deploy_config.sh" ]; then
-        log "  Deploying config..."
-        bash "$REPO_ROOT/scripts/deploy/deploy_config.sh" 2>&1 | tee -a "$LOG_FILE" || true
-    fi
-    if [ -f "$REPO_ROOT/scripts/agents/create_agents.sh" ]; then
-        log "  Registering agents..."
-        bash "$REPO_ROOT/scripts/agents/create_agents.sh" 2>&1 | tee -a "$LOG_FILE" || true
-    fi
-    if [ -f "$REPO_ROOT/scripts/agents/register_crons.sh" ]; then
-        log "  Registering cron jobs..."
-        bash "$REPO_ROOT/scripts/agents/register_crons.sh" 2>&1 | tee -a "$LOG_FILE" || true
-    fi
-    return 0
+    log "  Checking nodes..."
+    kubectl get nodes 2>/dev/null || true
+    log "  Checking pods..."
+    kubectl get pods -A --field-selector=status.phase!=Running,status.phase!=Succeeded 2>/dev/null | head -20 || true
+    log "  Checking Vault..."
+    kubectl exec -n vault vault-0 -- vault status 2>/dev/null || log "  WARN: Vault not reachable"
+    log "  Checking AtlasOS..."
+    kubectl get pods -n medinovai-services -l component=atlasos 2>/dev/null || true
+    log "  Checking GPU nodes..."
+    kubectl get nodes -l gpu=true 2>/dev/null || log "  (no GPU nodes)"
 }
 
 # ─── Main ─────────────────────────────────────────────────────────────────────
 echo "╔══════════════════════════════════════════════════════════════╗"
-echo "║       MedinovAI Platform — Greenfield Instantiation         ║"
+echo "║    MedinovAI Platform — On-Prem Greenfield Instantiation    ║"
 echo "╚══════════════════════════════════════════════════════════════╝"
 echo ""
 log "Configuration:"
-log "  Cloud:       $CLOUD"
-log "  Region:      $REGION"
-log "  Environment: $ENVIRONMENT"
-log "  Domain:      ${DOMAIN:-<not set>}"
-log "  Org:         $ORG_NAME"
-log "  Dry Run:     $DRY_RUN"
-log "  Resume:      $RESUME"
-log "  Start Step:  $START_STEP"
-log "  Log File:    $LOG_FILE"
+log "  Mode:         $([ "$CRITICAL_PATH_ONLY" = true ] && echo 'Critical Path Only' || echo 'Full Platform')"
+log "  Dry Run:      $DRY_RUN"
+log "  Resume:       $RESUME"
+log "  Start Step:   $START_STEP"
+log "  Skip GPU:     $SKIP_GPU"
+log "  Log File:     $LOG_FILE"
 echo ""
 
 if ! $DRY_RUN; then
-    echo "This will provision cloud infrastructure and deploy services."
-    echo "Estimated time: 30-45 minutes for a full instantiation."
+    echo "This will provision K3s cluster and deploy the full MedinovAI platform."
+    echo "Estimated time: $([ "$CRITICAL_PATH_ONLY" = true ] && echo '~25 minutes' || echo '~70 minutes')"
     echo ""
     read -r -p "Proceed? [y/N] " confirm
-    case "$confirm" in
-        [yY][eE][sS]|[yY]) ;;
-        *) echo "Aborted."; exit 0 ;;
-    esac
+    case "$confirm" in [yY][eE][sS]|[yY]) ;; *) echo "Aborted."; exit 0 ;; esac
 fi
 
 START_TIME=$(date +%s)
 
+# Phase 1: Infrastructure
 run_step 1  "Prerequisites check"                   step_01_prerequisites
-run_step 2  "Cloud account bootstrap"               step_02_init_cloud
-run_step 3  "Networking (VPC, subnets, NAT, SGs)"   step_03_networking
-run_step 4  "DNS & certificates"                    step_04_dns_certs
-run_step 5  "Secrets infrastructure (KMS, SM)"       step_05_secrets_infra
-run_step 6  "Seed initial secrets"                   step_06_seed_secrets
-run_step 7  "Databases (RDS, Redis)"                 step_07_databases
-run_step 8  "Database migrations"                    step_08_migrations
-run_step 9  "Compute cluster (EKS/GKE)"             step_09_compute
-run_step 10 "Base K8s resources"                     step_10_k8s_base
+run_step 2  "Tailscale mesh networking"              step_02_network
+run_step 3  "K3s server (Mac Studio via OrbStack)"   step_03_k3s_server
+run_step 4  "K3s worker (MacBook Pro via OrbStack)"  step_04_k3s_worker
+run_step 5  "DGX GPU nodes + NVIDIA toolkit"         step_05_dgx
+run_step 6  "Longhorn distributed storage"           step_06_storage
+
+# Phase 2: Security + Secrets
+run_step 7  "Base K8s resources (namespaces, RBAC)"  step_07_namespaces
+run_step 8  "HashiCorp Vault deployment"             step_08_vault
+run_step 9  "Seed secrets into Vault"                step_09_seed_secrets
+run_step 10 "External Secrets Operator"              step_10_eso
+
+# Phase 3: Platform Services (tiered)
 run_step 11 "Monitoring stack"                       step_11_monitoring
-run_step 12 "MedinovAI services"                     step_12_services
-run_step 13 "Ingress & TLS"                          step_13_ingress
-run_step 14 "Smoke tests"                            step_14_smoke_tests
-run_step 15 "Atlas gateway & agents"                 step_15_atlas
+run_step 12 "Tier 0: Databases + infrastructure"     step_12_tier0
+run_step 13 "Tier 1: Security services"              step_13_tier1
+run_step 14 "Tier 2: Platform core"                  step_14_tier2
+run_step 15 "AtlasOS services"                       step_15_atlasos
+
+if ! $CRITICAL_PATH_ONLY; then
+    run_step 16 "AI inference (GPU: Ollama, AIFactory)" step_16_gpu_inference
+    run_step 17 "Tier 3: AI/ML + Clinical foundation"   step_17_tier3
+    run_step 18 "Tier 4: Domain services"               step_18_tier4
+    run_step 19 "Tier 5: Integration services"          step_19_tier5
+    run_step 20 "Tier 6: UI shell"                      step_20_tier6
+    run_step 21 "Ingress (Traefik + TLS)"               step_21_ingress
+fi
+
+# Phase 4: AtlasOS Everywhere
+run_step 22 "AtlasOS node agents (DaemonSet)"        step_22_node_agents
+run_step 23 "AtlasOS cluster brain"                   step_23_cluster_brain
+run_step 24 "Atlas agent registration + crons"        step_24_agents
+run_step 25 "Smoke tests + health verification"       step_25_smoke
 
 END_TIME=$(date +%s)
 ELAPSED=$((END_TIME - START_TIME))
 MINUTES=$((ELAPSED / 60))
-SECONDS=$((ELAPSED % 60))
+SECS=$((ELAPSED % 60))
 
 echo ""
 echo "╔══════════════════════════════════════════════════════════════╗"
 echo "║  ✓ Instantiation complete!                                  ║"
 echo "║                                                             ║"
-echo "║  Environment: $ENVIRONMENT"
-echo "║  Duration:    ${MINUTES}m ${SECONDS}s"
-echo "║  Log:         $LOG_FILE"
+echo "║  Mode:     $(printf '%-46s' "$([ "$CRITICAL_PATH_ONLY" = true ] && echo 'Critical Path' || echo 'Full Platform')")║"
+echo "║  Duration: $(printf '%-46s' "${MINUTES}m ${SECS}s")║"
+echo "║  Log:      $(printf '%-46s' "$LOG_FILE")║"
 echo "║                                                             ║"
 echo "║  Next steps:                                                ║"
-echo "║  1. Verify health: make health ENV=$ENVIRONMENT             ║"
-echo "║  2. Check monitoring: make dashboards                       ║"
-echo "║  3. Start Atlas: make start                                 ║"
+echo "║  1. make health                                             ║"
+echo "║  2. make agent-status                                       ║"
+echo "║  3. make embed-atlasos (embed agents in all repos)          ║"
 echo "╚══════════════════════════════════════════════════════════════╝"
