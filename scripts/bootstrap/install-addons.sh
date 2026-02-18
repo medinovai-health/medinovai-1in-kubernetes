@@ -5,15 +5,19 @@
 # Addons (all fully local, no cloud accounts required):
 #   1. NGINX Ingress Controller  → localhost:30800 (HTTP) / :30843 (HTTPS)
 #   2. Kubernetes Dashboard      → localhost:8443 via port-forward
-#   3. kube-state-metrics        → K8s object metrics for local Prometheus
+#   3. Monitoring stack          → kube-state-metrics + Prometheus + Loki + Grafana
 #   4. ArgoCD                    → localhost:8080 via port-forward (GitOps)
+#   5. Ollama + Open WebUI       → localhost:31434 / :30090
+#   6. Atlas Agent Gateway       → localhost:31789
 #
 # Usage:
 #   bash scripts/bootstrap/install-addons.sh              # install all
 #   bash scripts/bootstrap/install-addons.sh --ingress    # ingress only
 #   bash scripts/bootstrap/install-addons.sh --dashboard  # dashboard only
-#   bash scripts/bootstrap/install-addons.sh --monitoring # kube-state-metrics only
+#   bash scripts/bootstrap/install-addons.sh --monitoring # full monitoring stack
 #   bash scripts/bootstrap/install-addons.sh --argocd     # argocd only
+#   bash scripts/bootstrap/install-addons.sh --ollama     # ollama + webui
+#   bash scripts/bootstrap/install-addons.sh --atlas      # atlas gateway
 #   bash scripts/bootstrap/install-addons.sh --uninstall  # remove all addons
 # ============================================================
 set -euo pipefail
@@ -31,6 +35,8 @@ INSTALL_INGRESS=false
 INSTALL_DASHBOARD=false
 INSTALL_MONITORING=false
 INSTALL_ARGOCD=false
+INSTALL_OLLAMA=false
+INSTALL_ATLAS=false
 UNINSTALL=false
 ALL=true
 
@@ -40,6 +46,8 @@ for arg in "$@"; do
     --dashboard)  INSTALL_DASHBOARD=true;  ALL=false ;;
     --monitoring) INSTALL_MONITORING=true; ALL=false ;;
     --argocd)     INSTALL_ARGOCD=true;     ALL=false ;;
+    --ollama)     INSTALL_OLLAMA=true;     ALL=false ;;
+    --atlas)      INSTALL_ATLAS=true;      ALL=false ;;
     --uninstall)  UNINSTALL=true;          ALL=false ;;
     *) err "Unknown flag: $arg"; exit 1 ;;
   esac
@@ -50,6 +58,8 @@ if $ALL; then
   INSTALL_DASHBOARD=true
   INSTALL_MONITORING=true
   INSTALL_ARGOCD=true
+  INSTALL_OLLAMA=true
+  INSTALL_ATLAS=true
 fi
 
 # ── Prerequisites ─────────────────────────────────────────────────────────────
@@ -83,16 +93,44 @@ setup_helm_repos() {
 
 # ── Uninstall all ─────────────────────────────────────────────────────────────
 uninstall_all() {
+  local MONITORING_DIR="$REPO_ROOT/infra/kubernetes/monitoring"
   warn "Removing all cluster addons..."
+
+  # ArgoCD + applications
   helm uninstall argocd -n argocd 2>/dev/null || true
+
+  # Monitoring stack (full)
   helm uninstall kube-state-metrics -n medinovai-monitoring 2>/dev/null || true
+  kubectl delete -f "$MONITORING_DIR/grafana/grafana.yaml" 2>/dev/null || true
+  kubectl delete -f "$MONITORING_DIR/prometheus/prometheus.yaml" 2>/dev/null || true
+  kubectl delete -f "$MONITORING_DIR/loki/loki.yaml" 2>/dev/null || true
+
+  # Dashboard
   kubectl delete -f "$ADDON_DIR/dashboard/dashboard-admin.yaml" 2>/dev/null || true
   kubectl delete -f "$ADDON_DIR/dashboard/install.yaml" 2>/dev/null || true
+
+  # Ingress
   kubectl delete -f "$ADDON_DIR/ingress-nginx/ingress-medinovai.yaml" 2>/dev/null || true
   helm uninstall ingress-nginx -n ingress-nginx 2>/dev/null || true
-  kubectl delete namespace argocd ingress-nginx kubernetes-dashboard 2>/dev/null || true
+
+  # Atlas
+  kubectl delete deployment atlas -n medinovai-system 2>/dev/null || true
+  kubectl delete service atlas -n medinovai-system 2>/dev/null || true
+  kubectl delete configmap atlas-config -n medinovai-system 2>/dev/null || true
+  kubectl delete pvc atlas-state atlas-workspaces -n medinovai-system 2>/dev/null || true
+
+  # Namespaces
+  kubectl delete namespace argocd ingress-nginx kubernetes-dashboard \
+    medinovai-ai-local medinovai-monitoring medinovai-system 2>/dev/null || true
+
   rm -f "$REPO_ROOT/.dashboard-token"
   log "All addons removed."
+  warn "NOTE: Ollama model data (PVC) is preserved. Delete manually if desired:"
+  warn "  kubectl delete pvc ollama-data open-webui-data -n medinovai-ai-local"
+  warn "NOTE: Grafana dashboard data (PVC) is preserved. Delete manually if desired:"
+  warn "  kubectl delete pvc grafana-data -n medinovai-monitoring"
+  warn "Atlas workspaces preserved. Delete manually if desired:"
+  warn "  kubectl delete pvc atlas-state atlas-workspaces -n medinovai-system"
 }
 
 # ── 1. NGINX Ingress ──────────────────────────────────────────────────────────
@@ -126,19 +164,48 @@ install_dashboard() {
   log "            → https://localhost:8443"
 }
 
-# ── 3. kube-state-metrics ─────────────────────────────────────────────────────
+# ── 3. Full monitoring stack (kube-state-metrics + Prometheus + Loki + Grafana) ──
 install_monitoring() {
-  step "3/4 kube-state-metrics..."
+  local MONITORING_DIR="$REPO_ROOT/infra/kubernetes/monitoring"
+  step "3/6 Monitoring stack (kube-state-metrics · Prometheus · Loki · Promtail · Grafana)..."
+  kubectl create namespace medinovai-monitoring 2>/dev/null || true
+
+  # kube-state-metrics (Helm)
+  log "  Installing kube-state-metrics..."
   helm upgrade --install kube-state-metrics prometheus-community/kube-state-metrics \
     --namespace medinovai-monitoring \
     --values "$ADDON_DIR/kube-state-metrics/values.yaml" \
     --wait --timeout 2m
-  log "✓ kube-state-metrics → medinovai-monitoring:8080/metrics (local Prometheus can scrape)"
+  log "  ✓ kube-state-metrics"
+
+  # Prometheus
+  log "  Deploying Prometheus..."
+  kubectl apply -f "$MONITORING_DIR/prometheus/prometheus.yaml"
+  kubectl rollout status deployment/prometheus -n medinovai-monitoring --timeout=2m
+  log "  ✓ Prometheus → http://localhost:9090 (via port-forward)"
+
+  # Loki + Promtail (log aggregation)
+  log "  Deploying Loki + Promtail..."
+  kubectl apply -f "$MONITORING_DIR/loki/loki.yaml"
+  kubectl rollout status deployment/loki -n medinovai-monitoring --timeout=2m
+  log "  ✓ Loki (log aggregation) → medinovai-monitoring:3100"
+  log "  ✓ Promtail (DaemonSet) collecting logs from all pods"
+
+  # Grafana (with Prometheus + Loki datasources)
+  log "  Deploying Grafana..."
+  kubectl apply -f "$MONITORING_DIR/grafana/grafana.yaml"
+  kubectl rollout status deployment/grafana -n medinovai-monitoring --timeout=3m
+  log "  ✓ Grafana → kubectl port-forward svc/grafana -n medinovai-monitoring 3000:3000"
+  log "            → http://localhost:3000  (admin / admin — change on first login)"
+
+  log "✓ Full monitoring stack deployed"
+  log "  Prometheus: kubectl port-forward svc/prometheus -n medinovai-monitoring 9090:9090"
+  log "  Grafana:    make monitoring-forward"
 }
 
 # ── 4. ArgoCD ────────────────────────────────────────────────────────────────
 install_argocd() {
-  step "4/4 ArgoCD..."
+  step "4/5 ArgoCD..."
   kubectl create namespace argocd 2>/dev/null || true
   helm upgrade --install argocd argo/argo-cd \
     --namespace argocd \
@@ -146,6 +213,10 @@ install_argocd() {
     --wait --timeout 5m
 
   kubectl wait --for=condition=established crd/applications.argoproj.io --timeout=60s 2>/dev/null || true
+
+  # Apply App-of-Apps (root application that manages all other repo Applications)
+  kubectl apply -f "$ADDON_DIR/argocd/app-of-apps.yaml"
+  # Apply the core platform app directly (it's the deploy repo itself)
   kubectl apply -f "$ADDON_DIR/argocd/medinovai-app.yaml"
 
   local pw
@@ -157,6 +228,87 @@ install_argocd() {
   log "  medinovai-platform app syncing from: main branch"
 }
 
+# ── 5. Ollama + Open WebUI ────────────────────────────────────────────────────
+install_ollama() {
+  step "5/5 Ollama + Open WebUI (local LLM inference)..."
+  local OLLAMA_DIR="$ADDON_DIR/ollama"
+
+  kubectl apply -f "$OLLAMA_DIR/namespace.yaml"
+  kubectl apply -f "$OLLAMA_DIR/ollama-deployment.yaml"
+  kubectl apply -f "$OLLAMA_DIR/ollama-service.yaml"
+
+  log "  Waiting for Ollama to be ready..."
+  kubectl rollout status deployment/ollama -n medinovai-ai-local --timeout=3m
+
+  kubectl apply -f "$OLLAMA_DIR/open-webui-deployment.yaml"
+  kubectl apply -f "$OLLAMA_DIR/open-webui-service.yaml"
+
+  log "  Waiting for Open WebUI to be ready..."
+  kubectl rollout status deployment/open-webui -n medinovai-ai-local --timeout=3m
+
+  # Pull default model (non-blocking — runs as background job)
+  log "  Pulling default model (qwen2.5:1.5b) in background..."
+  # Delete old job if present so we can re-apply idempotently
+  kubectl delete job ollama-pull-default -n medinovai-ai-local 2>/dev/null || true
+  kubectl apply -f "$OLLAMA_DIR/model-pull-job.yaml"
+
+  log "✓ Ollama     → http://localhost:31434  (NodePort)"
+  log "✓ Open WebUI → http://localhost:30090  (NodePort)"
+  log "  Watch model pull: kubectl logs -n medinovai-ai-local -l job-name=ollama-pull-default -f"
+  log "  Shortcut:         make webui-forward  → http://localhost:8090"
+}
+
+# ── 6. Atlas Agent Gateway ────────────────────────────────────────────────────
+install_atlas() {
+  step "6/6 Atlas Agent Gateway..."
+  local ATLAS_DIR="$ADDON_DIR/atlas"
+
+  # Build the Atlas UI image locally (docker-desktop uses local images directly)
+  # Image name must match atlas-deployment.yaml: medinovai-atlas-ui:local
+  if docker image inspect medinovai-atlas-ui:local &>/dev/null; then
+    log "  ✓ medinovai-atlas-ui:local image already built"
+  else
+    log "  Building medinovai-atlas-ui:local image..."
+    docker build -f "$REPO_ROOT/Dockerfile.atlas" \
+      -t medinovai-atlas-ui:local \
+      --build-arg ATLAS_UI_SRC="${HOME}/.medinovai/atlas/ui" \
+      "$REPO_ROOT" 2>&1 | tail -5
+    log "  ✓ Image built"
+  fi
+
+  # Sync Atlas config into the ConfigMap (uses deploy.json5 as source of truth)
+  log "  Syncing Atlas config to ConfigMap..."
+  kubectl create configmap atlas-config \
+    -n medinovai-system \
+    --from-file=atlas.json="$REPO_ROOT/config/deploy.json5" \
+    --dry-run=client -o yaml | kubectl apply -f -
+
+  # Apply deployment and service
+  kubectl apply -f "$ATLAS_DIR/atlas-deployment.yaml"
+  kubectl apply -f "$ATLAS_DIR/atlas-service.yaml"
+
+  # Check if secrets exist; warn if not
+  if ! kubectl get secret atlas-secrets -n medinovai-system &>/dev/null; then
+    warn ""
+    warn "  ⚠  Atlas secrets not configured. Atlas will start but Slack/APIs won't work."
+    warn "  To configure secrets, run:"
+    warn "    kubectl create secret generic atlas-secrets -n medinovai-system \\"
+    warn "      --from-literal=ANTHROPIC_API_KEY=sk-ant-... \\"
+    warn "      --from-literal=SLACK_APP_TOKEN=xapp-... \\"
+    warn "      --from-literal=SLACK_BOT_TOKEN=xoxb-... \\"
+    warn "      --from-literal=HOOKS_TOKEN=\$(openssl rand -hex 32)"
+    warn "  Or: kubectl create secret generic atlas-secrets -n medinovai-system \\"
+    warn "      --from-env-file=infra/docker/.env"
+    warn ""
+  fi
+
+  kubectl rollout status deployment/atlas -n medinovai-system --timeout=3m || true
+
+  log "✓ Atlas gateway → http://localhost:31789  (NodePort)"
+  log "  Check status:   kubectl logs -n medinovai-system -l app=atlas -f"
+  log "  Shortcut:       make atlas-forward  → http://localhost:18789"
+}
+
 # ── Summary ───────────────────────────────────────────────────────────────────
 print_summary() {
   echo ""
@@ -165,12 +317,24 @@ print_summary() {
   echo -e "${G}╠══════════════════════════════════════════════════════════════╣${NC}"
   echo -e "${G}║  NGINX Ingress    http://localhost:30800                     ║${NC}"
   echo -e "${G}║  Dashboard        https://localhost:8443 (port-forward)      ║${NC}"
-  echo -e "${G}║  kube-state-metrics  medinovai-monitoring:8080/metrics       ║${NC}"
+  echo -e "${G}║  Prometheus       http://localhost:9090  (port-forward)      ║${NC}"
+  echo -e "${G}║  Grafana          http://localhost:3000  (port-forward)      ║${NC}"
+  echo -e "${G}║  Loki             medinovai-monitoring:3100 (cluster-only)   ║${NC}"
   echo -e "${G}║  ArgoCD           http://localhost:8080 (port-forward)       ║${NC}"
+  echo -e "${G}║  Ollama           http://localhost:31434  (NodePort)         ║${NC}"
+  echo -e "${G}║  Open WebUI       http://localhost:30090  (NodePort)         ║${NC}"
+  echo -e "${G}║  Atlas Gateway    http://localhost:31789  (NodePort)         ║${NC}"
   echo -e "${G}╠══════════════════════════════════════════════════════════════╣${NC}"
   echo -e "${G}║  Port-forward shortcuts:                                     ║${NC}"
-  echo -e "${G}║  make dashboard-forward   # open dashboard in bg             ║${NC}"
-  echo -e "${G}║  make argocd-forward      # open argocd in bg               ║${NC}"
+  echo -e "${G}║  make dashboard-forward    # open dashboard in bg            ║${NC}"
+  echo -e "${G}║  make argocd-forward       # open argocd in bg              ║${NC}"
+  echo -e "${G}║  make monitoring-forward   # open grafana + prometheus       ║${NC}"
+  echo -e "${G}║  make webui-forward        # open webui in bg               ║${NC}"
+  echo -e "${G}║  make atlas-forward        # open atlas gateway in bg       ║${NC}"
+  echo -e "${G}╠══════════════════════════════════════════════════════════════╣${NC}"
+  echo -e "${G}║  Default models: qwen2.5:1.5b · nomic-embed-text · gemma3   ║${NC}"
+  echo -e "${G}║  Watch: kubectl logs -n medinovai-ai-local                   ║${NC}"
+  echo -e "${G}║         -l job-name=ollama-pull-default -f                  ║${NC}"
   echo -e "${G}╚══════════════════════════════════════════════════════════════╝${NC}"
 }
 
@@ -186,6 +350,8 @@ main() {
   $INSTALL_DASHBOARD  && install_dashboard
   $INSTALL_MONITORING && install_monitoring
   $INSTALL_ARGOCD     && install_argocd
+  $INSTALL_OLLAMA     && install_ollama
+  $INSTALL_ATLAS      && install_atlas
 
   print_summary
 }

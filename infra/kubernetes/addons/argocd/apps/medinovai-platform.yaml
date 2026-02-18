@@ -1,0 +1,33 @@
+# medinovai-Deploy — Core K8s platform services
+# Source: this repo (infra/kubernetes/overlays/docker-desktop)
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: medinovai-platform
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: medinovai
+    medinovai/tier: platform
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/myonsite-healthcare/medinovai-Deploy.git
+    targetRevision: main
+    path: infra/kubernetes/overlays/docker-desktop
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: medinovai-services
+  syncPolicy:
+    automated:
+      prune: false
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    retry:
+      limit: 3
+      backoff:
+        duration: 5s
+        maxDuration: 3m
+        factor: 2

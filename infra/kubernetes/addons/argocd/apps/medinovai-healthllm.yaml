@@ -1,0 +1,28 @@
+# medinovai-healthLLM — 6 AI expert agents + Digital Twins (MCP :8000)
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: medinovai-healthllm
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: medinovai
+    medinovai/tier: ai-infrastructure
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/myonsite-healthcare/medinovai-healthLLM.git
+    targetRevision: main
+    path: k8s
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: medinovai-ai
+  syncPolicy:
+    automated:
+      prune: false
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 3
+      backoff: {duration: 5s, maxDuration: 3m, factor: 2}

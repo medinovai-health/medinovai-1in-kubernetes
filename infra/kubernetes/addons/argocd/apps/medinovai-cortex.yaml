@@ -1,0 +1,33 @@
+# medinovai-Cortex — Healthcare logistics hub (API :3050, Admin UI :3100)
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: medinovai-cortex
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: medinovai
+    medinovai/tier: product
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/myonsite-healthcare/medinovai-Cortex.git
+    targetRevision: main
+    path: infra/kubernetes
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: medinovai-cortex
+  syncPolicy:
+    automated:
+      prune: false
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 3
+      backoff: {duration: 5s, maxDuration: 3m, factor: 2}
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas

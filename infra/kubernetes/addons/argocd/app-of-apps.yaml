@@ -1,0 +1,43 @@
+# ArgoCD App-of-Apps — MedinovAI Platform
+#
+# This root Application tells ArgoCD to watch the apps/ directory.
+# Each file in apps/ is itself an ArgoCD Application pointing at a specific repo.
+# When you push any change to any MedinovAI repo, ArgoCD auto-deploys it.
+#
+# Deploy:  kubectl apply -f infra/kubernetes/addons/argocd/app-of-apps.yaml
+# Status:  kubectl get applications -n argocd
+# UI:      make argocd-forward → http://localhost:8080
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: medinovai-app-of-apps
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/myonsite-healthcare/medinovai-Deploy.git
+    targetRevision: main
+    path: infra/kubernetes/addons/argocd/apps
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+
+  syncPolicy:
+    automated:
+      prune: false
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 3
+      backoff:
+        duration: 5s
+        maxDuration: 3m
+        factor: 2

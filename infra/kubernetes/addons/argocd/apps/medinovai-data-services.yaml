@@ -1,0 +1,28 @@
+# medinovai-data-services — FHIR R5 platform, patient mgmt (port 5000)
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: medinovai-data-services
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: medinovai
+    medinovai/tier: platform
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/myonsite-healthcare/medinovai-data-services.git
+    targetRevision: main
+    path: infra/kubernetes
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: medinovai-data
+  syncPolicy:
+    automated:
+      prune: false
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 3
+      backoff: {duration: 5s, maxDuration: 3m, factor: 2}

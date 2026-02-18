@@ -17,8 +17,10 @@
 .PHONY: docker-instantiate docker-backup docker-restore docker-seed docker-up docker-down
 .PHONY: rotate-secrets cert-check backup-verify cost-report validate-infra validate-k8s validate-compliance
 .PHONY: test-unit test-integration test-e2e lint-json lint-yaml
-.PHONY: addons-install addons-uninstall addons-ingress addons-dashboard addons-monitoring addons-argocd
-.PHONY: dashboard-forward argocd-forward cluster-status k8s-status-full
+.PHONY: addons-install addons-uninstall addons-ingress addons-dashboard addons-monitoring addons-argocd addons-ollama addons-atlas
+.PHONY: dashboard-forward argocd-forward webui-forward atlas-forward monitoring-forward cluster-status clone-repos list-repos
+.PHONY: ollama-pull-default ollama-pull-default-k8s ollama-list ollama-status
+.PHONY: atlas-build atlas-logs atlas-start atlas-stop atlas-status atlas-ui-up k8s-status-full
 
 ENV ?= staging
 SVC ?=
@@ -166,8 +168,65 @@ addons-monitoring: ## Install kube-state-metrics only
 addons-argocd: ## Install ArgoCD only
 	bash scripts/bootstrap/install-addons.sh --argocd
 
+addons-ollama: ## Install Ollama + Open WebUI only
+	bash scripts/bootstrap/install-addons.sh --ollama
+
+addons-atlas: ## Build Atlas image and deploy to K8s
+	bash scripts/bootstrap/install-addons.sh --atlas
+
 addons-uninstall: ## Remove all cluster addons
 	bash scripts/bootstrap/install-addons.sh --uninstall
+
+# ─── AI / Ollama ──────────────────────────────────────────────────────────────
+
+ollama-pull-default: ## Pull default model into Docker Compose Ollama (qwen2.5:1.5b)
+	bash scripts/bootstrap/pull-default-model.sh
+
+ollama-pull-default-k8s: ## Pull default model into K8s Ollama via Job
+	kubectl delete job ollama-pull-default -n medinovai-ai-local 2>/dev/null || true
+	kubectl apply -f infra/kubernetes/addons/ollama/model-pull-job.yaml
+	@echo "Watching pull job..."
+	kubectl logs -n medinovai-ai-local -l job-name=ollama-pull-default -f 2>/dev/null || true
+
+ollama-list: ## List models available in Docker Compose Ollama (:11435) or native Ollama (:11434)
+	@PORT=$$(curl -sf http://localhost:11435/api/tags >/dev/null 2>&1 && echo 11435 || echo 11434); \
+	 curl -s http://localhost:$$PORT/api/tags | python3 -c "import json,sys; [print(' •', m['name']) for m in json.load(sys.stdin).get('models',[])]" 2>/dev/null || echo "(Ollama not running — start with: make docker-up)"
+
+ollama-status: ## Check Ollama health (Docker Compose :11435, K8s NodePort :31434, native :11434)
+	@curl -sf http://localhost:11435/api/tags >/dev/null && echo "✓ Ollama (Docker) http://localhost:11435" || echo "✗ Ollama (Docker) not running"
+	@curl -sf http://localhost:31434/api/tags >/dev/null && echo "✓ Ollama (K8s)    http://localhost:31434" || echo "✗ Ollama (K8s) not running"
+	@curl -sf http://localhost:11434/api/tags >/dev/null && echo "✓ Ollama (native) http://localhost:11434" || echo "  - Ollama (native) not running"
+	@curl -sf http://localhost:8091/health >/dev/null && echo "✓ Open WebUI (Docker) http://localhost:8091" || echo "✗ Open WebUI (Docker) not running"
+	@curl -sf http://localhost:8090/health >/dev/null && echo "✓ Open WebUI (Docker Desktop ext) http://localhost:8090" || echo "  - Open WebUI (ext) not running"
+
+webui-forward: ## Port-forward Open WebUI (K8s) to localhost:8090 (background)
+	@echo "Opening Open WebUI at http://localhost:8090"
+	kubectl port-forward -n medinovai-ai-local svc/open-webui 8090:8080 &
+
+atlas-forward: ## Port-forward Atlas UI (K8s) to localhost:3737 (background)
+	@echo "Opening Atlas UI at http://localhost:3737"
+	kubectl port-forward -n medinovai-system svc/atlas 3737:3000 &
+
+atlas-start: ## Start Atlas UI + Local Agent natively (agent needs host access)
+	atlas start
+
+atlas-stop: ## Stop Atlas UI + Local Agent
+	atlas stop
+
+atlas-status: ## Show Atlas status (UI, agent, model, federated network)
+	atlas status
+
+atlas-ui-up: ## Start Atlas UI in Docker Compose (agent still runs natively)
+	docker compose -f $(COMPOSE_FILE) up -d atlas-ui
+
+atlas-build: ## Build Atlas UI Docker image (requires ~/.medinovai/atlas/ui to exist)
+	docker build -f Dockerfile.atlas \
+	  --build-arg ATLAS_UI_SRC=$(HOME)/.medinovai/atlas/ui \
+	  -t medinovai-atlas-ui:local .
+	@echo "✓ medinovai-atlas-ui:local built"
+
+atlas-logs: ## Tail Atlas logs (native agent + UI)
+	atlas logs
 
 dashboard-forward: ## Port-forward Kubernetes Dashboard to localhost:8443 (background)
 	@echo "Opening Kubernetes Dashboard at https://localhost:8443"
@@ -178,6 +237,27 @@ argocd-forward: ## Port-forward ArgoCD to localhost:8080 (background)
 	@echo "Opening ArgoCD at http://localhost:8080"
 	@echo "Password: $$(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 --decode)"
 	kubectl port-forward svc/argocd-server -n argocd 8080:80 &
+
+monitoring-forward: ## Port-forward Grafana (:3000) + Prometheus (:9090) to localhost (background)
+	@echo "Opening Grafana at http://localhost:3000 (admin / admin)"
+	kubectl port-forward svc/grafana -n medinovai-monitoring 3000:3000 &
+	@echo "Opening Prometheus at http://localhost:9090"
+	kubectl port-forward svc/prometheus -n medinovai-monitoring 9090:9090 &
+
+clone-repos: ## Clone all MedinovAI repos into ~/Documents/GitHub/ (skips already cloned)
+	bash scripts/clone-repos.sh
+
+clone-repos-pull: ## Pull latest on all already-cloned MedinovAI repos
+	bash scripts/clone-repos.sh --pull
+
+clone-repos-missing: ## Show which MedinovAI repos are not yet cloned
+	bash scripts/clone-repos.sh --missing
+
+list-repos: ## Show status of all MedinovAI repos (cloned/missing/dirty/behind)
+	bash scripts/list-repos.sh
+
+list-repos-dirty: ## Show only repos with uncommitted changes or behind origin
+	bash scripts/list-repos.sh --dirty
 
 cluster-status: ## Full cluster health check — all namespaces, addons, ingresses
 	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -195,6 +275,11 @@ cluster-status: ## Full cluster health check — all namespaces, addons, ingress
 	@kubectl get pods -n kubernetes-dashboard 2>/dev/null | tail -n +1 || echo "(kubernetes-dashboard: not installed)"
 	@kubectl get pods -n medinovai-monitoring 2>/dev/null | tail -n +1 || echo "(monitoring: not installed)"
 	@kubectl get pods -n argocd 2>/dev/null | tail -n +1 || echo "(argocd: not installed)"
+	@kubectl get pods -n medinovai-ai-local 2>/dev/null | tail -n +1 || echo "(ollama/open-webui: not installed)"
+	@echo ""
+	@echo "[ AI Services (Docker) ]"
+	@curl -sf http://localhost:11434/api/tags >/dev/null && echo "  ✓ Ollama http://localhost:11434" || echo "  ✗ Ollama not running"
+	@curl -sf http://localhost:8090/health >/dev/null && echo "  ✓ Open WebUI http://localhost:8090" || echo "  ✗ Open WebUI not running"
 	@echo ""
 	@echo "[ Ingresses ]"
 	@kubectl get ingress -A 2>/dev/null || echo "(none)"

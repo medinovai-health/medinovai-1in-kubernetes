@@ -1,0 +1,28 @@
+# medinovai-aifactory — MCP Gateway + AI inference cluster (port 8080)
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: medinovai-aifactory
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: medinovai
+    medinovai/tier: ai-infrastructure
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/myonsite-healthcare/medinovai-aifactory.git
+    targetRevision: main
+    path: infra/kubernetes
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: medinovai-ai
+  syncPolicy:
+    automated:
+      prune: false
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 3
+      backoff: {duration: 5s, maxDuration: 3m, factor: 2}
