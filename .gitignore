@@ -75,5 +75,6 @@ agents/*/logs/
 # ─── Build artifacts ─────────────────────────────────────────────────────────
 outputs/
 logs/
+!logs/.gitkeep
 tmp/
 *.log

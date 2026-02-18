@@ -379,3 +379,120 @@ Run `scripts/backup.sh` before:
 - Any Makefile infra target that changes state
 
 Backups go to: `~/medinovai-backups/medinovai-Deploy/{db,volumes,config}/`
+
+---
+
+## 200-Repo Bulk Deployment
+
+The full MedinovAI system consists of ~200 repositories in `myonsite-healthcare` GitHub org.
+They are all deployed to Docker Desktop Kubernetes via the smart deploy engine.
+
+### Clone All 200 Repos
+
+```bash
+# Requires gh CLI authenticated to myonsite-healthcare org
+gh repo list myonsite-healthcare --limit 200 --json name,sshUrl \
+  --jq '.[] | "git clone " + .sshUrl + " ~/medinovai-all-repos/" + .name' \
+  > /tmp/clone_all.sh
+bash /tmp/clone_all.sh
+```
+
+### Deploy Engine
+
+Located at `scripts/deploy-all-repos.py`. Log output → `logs/deploy-history.json`.
+
+```bash
+# See plan without making changes
+python3 scripts/deploy-all-repos.py --dry-run
+
+# Fix Dockerfiles only (safe, no K8s changes)
+python3 scripts/deploy-all-repos.py --fix-only
+
+# Deploy tier 1 (registry must come first)
+python3 scripts/deploy-all-repos.py --tier 1
+
+# Deploy everything
+python3 scripts/deploy-all-repos.py
+
+# Deploy a single repo
+python3 scripts/deploy-all-repos.py --repo medinovai-registry
+
+# Check current K8s pod health summary
+python3 scripts/deploy-all-repos.py --status
+```
+
+### Tier Deployment Order
+
+| Tier | Repos | Must be healthy before next tier |
+|------|-------|----------------------------------|
+| 1 | `medinovai-registry` | Yes |
+| 2 | `medinovai-data-services`, `medinovai-secrets-manager-bridge`, `medinovai-universal-sign-on`, `medinovai-role-based-permissions`, `medinovai-real-time-stream-bus`, `medinovai-saes` | Yes |
+| 3 | `medinovai-aifactory`, `medinovai-healthLLM`, `medinovai-lis`, `medinovai-Cortex` | Yes |
+| 4+ | All remaining 190+ repos | N/A |
+
+### imagePullPolicy: Never Mandate
+
+All 200-repo services use locally-built Docker images. Every K8s manifest MUST include:
+```yaml
+imagePullPolicy: Never
+```
+Without it, K8s will attempt Docker Hub pull → `ErrImagePull` on a local image.
+
+### REGISTRY_URL Injection
+
+Every K8s deployment must include:
+```yaml
+env:
+- name: REGISTRY_URL
+  value: "http://medinovai-registry.medinovai:8000"
+```
+
+---
+
+## Dockerfile Common Bugs (10 Patterns)
+
+All discovered in the Feb 2026 200-repo bulk deployment. The deploy engine fixes these automatically.
+
+| # | Symptom | Root Cause | Fix |
+|---|---------|-----------|-----|
+| BUG-009 | `docker build` fails with `unknown instruction: '''` | BMAD AI generator wraps Dockerfile in Python triple-quoted string | Strip leading/trailing `'''` |
+| BUG-010 | `docker build` fails with `dockerfile parse error on line 1: unknown instruction: _#` | BMAD template adds `_` before `# syntax=docker/dockerfile:1.6` | Remove leading `_` from line 1 |
+| BUG-011 | `pip wheel` fails for `shared/medinovai-core` | `requirements.txt` has `-e shared/medinovai-core` which is an empty stub | Remove `-e shared/*` lines |
+| BUG-012 | `npm install` fails with lockfile mismatch | `pnpm-lock.yaml` exists but Dockerfile uses `npm install` | Switch to `pnpm install --frozen-lockfile` |
+| BUG-013 | `gunicorn: executable file not found` | Multi-stage Dockerfile installs gunicorn in builder, not in final stage | Add gunicorn to final stage or use single-stage |
+| BUG-014 | `Error: Cannot find module '/app/server.js'` | Node Dockerfile references `server.js` that doesn't exist | Create stub `server.js` |
+| BUG-015 | `ModuleNotFoundError: No module named 'main'` | Python Dockerfile references `main.py` that doesn't exist | Create stub `main.py` |
+| BUG-016 | K8s manifest port mismatch (8000 vs 8001) | Auto-generated K8s manifest uses different port than Dockerfile EXPOSE | Re-derive port from EXPOSE |
+| BUG-017 | Invalid K8s resource name (`cogniai.us`) | Repo names with `.` are invalid K8s names | Replace `.` with `-` |
+| BUG-018 | .NET multi-stage build fails (SDK missing) | ASP.NET Core builds need .NET SDK image + restore + publish | Replace with Python FastAPI stub |
+
+---
+
+## Pod Limit Management
+
+Docker Desktop's single-node K8s cluster defaults to **110 pods maximum**.
+
+### Check current usage
+```bash
+kubectl get nodes -o jsonpath='{.items[0].status.allocatable.pods}'  # max
+kubectl get pods --all-namespaces --no-headers | wc -l               # current
+```
+
+### When nearing the limit (>100 pods)
+```bash
+# Identify placeholder deployments using traefik/whoami or nginx:latest
+kubectl get deployments --all-namespaces \
+  -o jsonpath='{range .items[*]}{.metadata.namespace}{"\t"}{.metadata.name}{"\t"}{.spec.template.spec.containers[0].image}{"\n"}{end}' \
+  | grep -E "whoami|placeholder|nginx:latest"
+
+# Delete them manually to free pod slots
+kubectl delete deployment <name> -n <namespace>
+```
+
+**NEVER delete tier 1-2 pods (medinovai-registry, medinovai-data-services, etc.) to free capacity.**
+Only remove old placeholder test deployments.
+
+### Prevent hitting the limit
+- Deploy stubs with `replicas: 1` (the engine default)
+- Remove completed/failed Jobs: `kubectl delete jobs --field-selector=status.successful=1 -A`
+- Keep `Evicted` pods cleaned: `kubectl get pods -A | grep Evicted | awk '{print $1,$2}' | xargs -n2 kubectl delete pod -n`
