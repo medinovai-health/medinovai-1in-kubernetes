@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: medinovai-epro
+  namespace: clinical
+  labels:
+    app: medinovai-epro
+    atlasos.io/managed: "true"
+spec:
+  selector:
+    app: medinovai-epro
+  ports:
+  - port: 3000
+    targetPort: 3000
+    protocol: TCP
+    name: http
+  type: ClusterIP

@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: medinovai-audit-trail-explorer
+  namespace: frontend
+  labels:
+    app: medinovai-audit-trail-explorer
+    atlasos.io/managed: "true"
+spec:
+  selector:
+    app: medinovai-audit-trail-explorer
+  ports:
+  - port: 3000
+    targetPort: 3000
+    protocol: TCP
+    name: http
+  type: ClusterIP

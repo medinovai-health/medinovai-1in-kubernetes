@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: medinovai-feature-flag-console
+  namespace: frontend
+  labels:
+    app: medinovai-feature-flag-console
+    atlasos.io/managed: "true"
+spec:
+  selector:
+    app: medinovai-feature-flag-console
+  ports:
+  - port: 3000
+    targetPort: 3000
+    protocol: TCP
+    name: http
+  type: ClusterIP

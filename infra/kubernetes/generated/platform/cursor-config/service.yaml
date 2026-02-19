@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: cursor-config
+  namespace: platform
+  labels:
+    app: cursor-config
+    atlasos.io/managed: "true"
+spec:
+  selector:
+    app: cursor-config
+  ports:
+  - port: 3000
+    targetPort: 3000
+    protocol: TCP
+    name: http
+  type: ClusterIP

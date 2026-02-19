@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: agentic-framework
+  namespace: platform
+  labels:
+    app: agentic-framework
+    atlasos.io/managed: "true"
+spec:
+  selector:
+    app: agentic-framework
+  ports:
+  - port: 3000
+    targetPort: 3000
+    protocol: TCP
+    name: http
+  type: ClusterIP

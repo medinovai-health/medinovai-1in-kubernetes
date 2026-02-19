@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: medinovai-atlas-engine
+  namespace: platform
+  labels:
+    app: medinovai-atlas-engine
+    atlasos.io/managed: "true"
+spec:
+  selector:
+    app: medinovai-atlas-engine
+  ports:
+  - port: 3000
+    targetPort: 3000
+    protocol: TCP
+    name: http
+  type: ClusterIP

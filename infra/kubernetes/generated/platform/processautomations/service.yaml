@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: processautomations
+  namespace: platform
+  labels:
+    app: processautomations
+    atlasos.io/managed: "true"
+spec:
+  selector:
+    app: processautomations
+  ports:
+  - port: 3000
+    targetPort: 3000
+    protocol: TCP
+    name: http
+  type: ClusterIP

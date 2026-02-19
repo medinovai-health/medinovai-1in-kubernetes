@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: medinovai-data-services-1
+  namespace: data
+  labels:
+    app: medinovai-data-services-1
+    atlasos.io/managed: "true"
+spec:
+  selector:
+    app: medinovai-data-services-1
+  ports:
+  - port: 3000
+    targetPort: 3000
+    protocol: TCP
+    name: http
+  type: ClusterIP

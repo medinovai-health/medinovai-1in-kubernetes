@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: medinovai-healthllm
+  namespace: intelligence
+  labels:
+    app: medinovai-healthllm
+    atlasos.io/managed: "true"
+spec:
+  selector:
+    app: medinovai-healthllm
+  ports:
+  - port: 8000
+    targetPort: 8000
+    protocol: TCP
+    name: http
+  type: ClusterIP

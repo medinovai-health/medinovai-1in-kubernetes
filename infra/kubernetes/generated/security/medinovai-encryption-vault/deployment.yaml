@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: medinovai-encryption-vault
+  namespace: security
+  labels:
+    app: medinovai-encryption-vault
+    atlasos.io/managed: "true"
+  annotations:
+    atlasos.io/sidecar-enabled: "true"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: medinovai-encryption-vault
+  template:
+    metadata:
+      labels:
+        app: medinovai-encryption-vault
+        atlasos.io/managed: "true"
+    spec:
+      containers:
+      - name: medinovai-encryption-vault
+        image: medinovai-encryption-vault:latest
+        ports:
+        - containerPort: 5000
+          name: http
+        resources:
+          requests:
+            cpu: 200m
+            memory: 512Mi
+          limits:
+            cpu: 400m
+            memory: 1024Mi
+
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 5000
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 5000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+
+        volumeMounts:
+        - name: secrets
+          mountPath: /run/secrets/atlasos
+          readOnly: true
+      volumes:
+      - name: secrets
+        secret:
+          secretName: atlasos-infra-secrets
+

@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: medinovai-atlasos
+  namespace: platform
+  labels:
+    app: medinovai-atlasos
+    atlasos.io/managed: "true"
+  annotations:
+    {}
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: medinovai-atlasos
+  template:
+    metadata:
+      labels:
+        app: medinovai-atlasos
+        atlasos.io/managed: "true"
+    spec:
+      containers:
+      - name: medinovai-atlasos
+        image: medinovai-atlasos:latest
+        ports:
+        - containerPort: 3000
+          name: http
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 200m
+            memory: 512Mi
+
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: 3000
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        readinessProbe:
+          httpGet:
+            path: /api/ready
+            port: 3000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+

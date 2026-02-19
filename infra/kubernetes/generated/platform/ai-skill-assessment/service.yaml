@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: ai-skill-assessment
+  namespace: platform
+  labels:
+    app: ai-skill-assessment
+    atlasos.io/managed: "true"
+spec:
+  selector:
+    app: ai-skill-assessment
+  ports:
+  - port: 3000
+    targetPort: 3000
+    protocol: TCP
+    name: http
+  type: ClusterIP

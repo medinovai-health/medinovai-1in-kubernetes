@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: open-swe
+  namespace: platform
+  labels:
+    app: open-swe
+    atlasos.io/managed: "true"
+spec:
+  selector:
+    app: open-swe
+  ports:
+  - port: 3000
+    targetPort: 3000
+    protocol: TCP
+    name: http
+  type: ClusterIP

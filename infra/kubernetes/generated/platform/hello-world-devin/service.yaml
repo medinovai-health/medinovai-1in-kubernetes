@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: hello-world-devin
+  namespace: platform
+  labels:
+    app: hello-world-devin
+    atlasos.io/managed: "true"
+spec:
+  selector:
+    app: hello-world-devin
+  ports:
+  - port: 3000
+    targetPort: 3000
+    protocol: TCP
+    name: http
+  type: ClusterIP

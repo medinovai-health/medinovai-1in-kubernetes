@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: medinovai-content-translator
+  namespace: intelligence
+  labels:
+    app: medinovai-content-translator
+    atlasos.io/managed: "true"
+spec:
+  selector:
+    app: medinovai-content-translator
+  ports:
+  - port: 8000
+    targetPort: 8000
+    protocol: TCP
+    name: http
+  type: ClusterIP

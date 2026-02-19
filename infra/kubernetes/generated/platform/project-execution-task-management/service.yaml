@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: project-execution-task-management
+  namespace: platform
+  labels:
+    app: project-execution-task-management
+    atlasos.io/managed: "true"
+spec:
+  selector:
+    app: project-execution-task-management
+  ports:
+  - port: 3000
+    targetPort: 3000
+    protocol: TCP
+    name: http
+  type: ClusterIP
