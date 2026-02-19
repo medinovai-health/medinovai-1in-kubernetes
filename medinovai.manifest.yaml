@@ -1,0 +1,29 @@
+module:
+  name: "medinovai-canary-rollout-orchestrator"
+  version: "0.0.0"
+  domain: platform
+  profile: platform
+  tier: 0
+  status: active
+  description: "medinovai-canary-rollout-orchestrator platform service"
+  owner: "@myonsite-healthcare"
+
+deployment:
+  runtime: node
+  containerized: true
+  dockerfile: "./Dockerfile"
+  k8s_namespace: platform
+  health_endpoint: /health
+  ready_endpoint: /ready
+  port: 3000
+  min_replicas: 1
+  canary_enabled: false
+  gpu_required: false
+  sidecar_enabled: true
+  secrets_required:
+    - atlasos-infra-secrets
+
+governance:
+  compliance: [HIPAA]
+  phi_handling: false
+  audit_required: true
