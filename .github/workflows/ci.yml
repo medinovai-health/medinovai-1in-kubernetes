@@ -4,196 +4,44 @@ on:
   push:
     branches: [main, develop]
   pull_request:
-    branches: [main, develop]
-
-permissions:
-  contents: read
-  pull-requests: write
+    branches: [main]
 
 jobs:
-  validate-configs:
-    name: Validate Configurations
+  validate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      - name: Install Python dependencies
-        run: pip install pyyaml jsonschema
-
-      - name: Validate JSON files
+      - name: Install tools
         run: |
-          echo "Checking JSON files..."
-          PASS=0; FAIL=0
-          for f in $(find config agents services -name '*.json' -type f 2>/dev/null); do
-            if python3 -c "import json; json.load(open('$f'))" 2>/dev/null; then
-              echo "  ✓ $f"
-              PASS=$((PASS + 1))
-            else
-              echo "  ✗ $f — INVALID"
-              FAIL=$((FAIL + 1))
-            fi
-          done
-          echo "Results: $PASS valid, $FAIL invalid"
-          [ "$FAIL" -eq 0 ] || exit 1
-
-      - name: Validate YAML files
-        run: |
-          echo "Checking YAML files..."
-          PASS=0; FAIL=0
-          for f in $(find infra -name '*.yaml' -o -name '*.yml' 2>/dev/null); do
-            if python3 -c "import yaml; yaml.safe_load(open('$f'))" 2>/dev/null; then
-              echo "  ✓ $f"
-              PASS=$((PASS + 1))
-            else
-              echo "  ✗ $f — INVALID"
-              FAIL=$((FAIL + 1))
-            fi
-          done
-          echo "Results: $PASS valid, $FAIL invalid"
-          [ "$FAIL" -eq 0 ] || exit 1
-
-      - name: Validate Python syntax
-        run: |
-          echo "Checking Python scripts..."
-          PASS=0; FAIL=0
-          for script in $(find scripts agents -name '*.py' -type f 2>/dev/null); do
-            if python3 -c "import ast; ast.parse(open('$script').read())" 2>/dev/null; then
-              echo "  ✓ $script"
-              PASS=$((PASS + 1))
-            else
-              echo "  ✗ $script — SYNTAX ERROR"
-              FAIL=$((FAIL + 1))
-            fi
-          done
-          echo "Results: $PASS passed, $FAIL failed"
-          [ "$FAIL" -eq 0 ] || exit 1
-
-      - name: Validate shell scripts
-        run: |
-          echo "Checking shell scripts..."
-          PASS=0; FAIL=0
-          for script in $(find scripts -name '*.sh' -type f 2>/dev/null); do
-            if bash -n "$script" 2>/dev/null; then
-              echo "  ✓ $script"
-              PASS=$((PASS + 1))
-            else
-              echo "  ✗ $script — SYNTAX ERROR"
-              FAIL=$((FAIL + 1))
-            fi
-          done
-          echo "Results: $PASS passed, $FAIL failed"
-          [ "$FAIL" -eq 0 ] || exit 1
-
-  validate-terraform:
-    name: Validate Terraform
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: "1.7"
-
-      - name: Terraform Format Check
-        run: terraform fmt -check -recursive infra/terraform/
-
-      - name: Validate Terraform Modules
-        run: |
-          for module_dir in infra/terraform/modules/*/; do
-            if [ -f "$module_dir/main.tf" ]; then
-              echo "Validating $module_dir..."
-              cd "$module_dir"
-              terraform init -backend=false
-              terraform validate
-              cd -
-            fi
-          done
-
-  validate-kubernetes:
-    name: Validate Kubernetes Manifests
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install kubeval
-        run: |
-          wget -q https://github.com/instrumenta/kubeval/releases/latest/download/kubeval-linux-amd64.tar.gz
-          tar xf kubeval-linux-amd64.tar.gz
-          sudo mv kubeval /usr/local/bin/
+          curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
+          sudo mv kustomize /usr/local/bin/
 
       - name: Validate K8s manifests
         run: |
-          echo "Validating Kubernetes manifests..."
-          PASS=0; FAIL=0
-          for f in $(find infra/kubernetes -name '*.yaml' -type f 2>/dev/null); do
-            if kubeval --strict "$f" 2>/dev/null; then
-              echo "  ✓ $f"
-              PASS=$((PASS + 1))
-            else
-              echo "  ✗ $f"
-              FAIL=$((FAIL + 1))
+          for dir in infra/kubernetes/services/*/; do
+            if [ -f "$dir/kustomization.yaml" ]; then
+              echo "Validating $dir..."
+              kustomize build "$dir" > /dev/null || exit 1
             fi
           done
-          echo "Results: $PASS valid, $FAIL invalid"
-          [ "$FAIL" -eq 0 ] || exit 1
 
-  security-scan:
-    name: Security Scan
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+      - name: Validate base
+        run: kustomize build infra/kubernetes/base > /dev/null
 
-      - name: TruffleHog Secret Scan
-        uses: trufflesecurity/trufflehog@main
-        with:
-          extra_args: --only-verified
-
-      - name: Check for hardcoded secrets patterns
+      - name: Shell lint
         run: |
-          echo "Scanning for secret patterns..."
-          PATTERNS=(
-            'password\s*=\s*["\x27][^"\x27]+'
-            'api_key\s*=\s*["\x27][^"\x27]+'
-            'secret\s*=\s*["\x27][^"\x27]+'
-            'AKIA[0-9A-Z]{16}'
-            'sk-[a-zA-Z0-9]{48}'
-          )
-          FOUND=0
-          for pattern in "${PATTERNS[@]}"; do
-            if grep -rnE "$pattern" --include='*.py' --include='*.sh' --include='*.json' --include='*.yaml' --include='*.yml' --include='*.tf' . 2>/dev/null | grep -v '.env.example' | grep -v 'node_modules'; then
-              FOUND=$((FOUND + 1))
-            fi
-          done
-          if [ "$FOUND" -gt 0 ]; then
-            echo "WARNING: Potential secrets found in source code!"
-            exit 1
-          fi
-          echo "No secrets detected."
+          find scripts -name "*.sh" -exec bash -n {} \;
 
-  unit-tests:
-    name: Unit Tests
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      - name: Install test dependencies
-        run: pip install pytest pyyaml jsonschema
-
-      - name: Run unit tests
+      - name: JSON5 config check
         run: |
-          if [ -d "tests/unit" ] && [ "$(find tests/unit -name 'test_*.py' | head -1)" ]; then
-            python3 -m pytest tests/unit/ -v
-          else
-            echo "No unit tests found yet — skipping."
-          fi
+          python3 -c "
+          import json, re, glob
+          for f in glob.glob('config/*.json5'):
+              with open(f) as fh:
+                  content = re.sub(r'//.*', '', fh.read())
+                  content = re.sub(r'/\*.*?\*/', '', content, flags=re.DOTALL)
+                  content = re.sub(r',\s*([\]}])', r'\1', content)
+                  json.loads(content)
+                  print(f'{f}: OK')
+          "

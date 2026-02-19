@@ -1,0 +1,7 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: medinovai-clinical
+# Domain services are deployed as their container images become available.
+# Each service follows the same pattern: Deployment + Service + optional Ingress.
+# See tier0/ and atlasos/ for examples.
+resources: []

@@ -2,13 +2,11 @@ apiVersion: v1
 kind: Service
 metadata:
   name: mcp-gateway
-  namespace: medinovai-services
+  namespace: atlasos
   labels:
     app.kubernetes.io/name: mcp-gateway
     app.kubernetes.io/part-of: atlasos
-    medinovai.com/tier: intelligence
 spec:
-  type: ClusterIP
   ports:
     - name: http
       port: 8082
@@ -17,99 +15,59 @@ spec:
       port: 9090
       targetPort: 9090
   selector:
-    app.kubernetes.io/name: mcp-gateway
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: mcp-sessions
-  namespace: medinovai-services
-  labels:
-    app.kubernetes.io/name: mcp-gateway
-    app.kubernetes.io/part-of: atlasos
-spec:
-  accessModes: ["ReadWriteOnce"]
-  storageClassName: longhorn
-  resources:
-    requests:
-      storage: 5Gi
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: mcp-logs
-  namespace: medinovai-services
-  labels:
-    app.kubernetes.io/name: mcp-gateway
-    app.kubernetes.io/part-of: atlasos
-spec:
-  accessModes: ["ReadWriteOnce"]
-  storageClassName: longhorn
-  resources:
-    requests:
-      storage: 5Gi
+    app: mcp-gateway
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: mcp-gateway
-  namespace: medinovai-services
+  namespace: atlasos
   labels:
+    app: mcp-gateway
     app.kubernetes.io/name: mcp-gateway
     app.kubernetes.io/part-of: atlasos
-    medinovai.com/tier: intelligence
+    app.kubernetes.io/version: "1.2.0"
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app.kubernetes.io/name: mcp-gateway
+      app: mcp-gateway
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: mcp-gateway
-        app.kubernetes.io/part-of: atlasos
-        medinovai.com/tier: intelligence
-      annotations:
+        app: mcp-gateway
         atlasos.medinovai.com/sidecar: "enabled"
     spec:
+      serviceAccountName: atlasos-sa
       containers:
         - name: mcp-gateway
-          image: medinovai-mcp-gateway:latest
+          image: medinovai-atlas-1-mcp-gateway:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
             - containerPort: 9090
           envFrom:
             - secretRef:
-                name: atlasos-api-keys
-          volumeMounts:
-            - name: mcp-sessions
-              mountPath: /app/sessions
-            - name: mcp-logs
-              mountPath: /app/logs
+                name: atlasos-infra-secrets
+          env:
+            - name: OLLAMA_HOST
+              value: "http://ollama.ai-ml.svc.cluster.local:11434"
           resources:
             requests:
-              memory: 256Mi
+              memory: 128Mi
               cpu: 100m
             limits:
               memory: 512Mi
               cpu: 500m
-          livenessProbe:
-            httpGet:
-              path: /health
-              port: 8080
-            initialDelaySeconds: 15
-            periodSeconds: 30
           readinessProbe:
             httpGet:
               path: /health
               port: 8080
             initialDelaySeconds: 10
             periodSeconds: 10
-      volumes:
-        - name: mcp-sessions
-          persistentVolumeClaim:
-            claimName: mcp-sessions
-        - name: mcp-logs
-          persistentVolumeClaim:
-            claimName: mcp-logs
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 30

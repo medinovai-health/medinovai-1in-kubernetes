@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlasos-sidecar-webhook
+  namespace: atlasos
+  labels:
+    app: atlasos-sidecar-webhook
+    app.kubernetes.io/name: atlasos-sidecar-webhook
+    app.kubernetes.io/part-of: atlasos
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: atlasos-sidecar-webhook
+  template:
+    metadata:
+      labels:
+        app: atlasos-sidecar-webhook
+    spec:
+      containers:
+        - name: webhook
+          image: atlasos/sidecar-webhook:1.2.0
+          ports:
+            - containerPort: 8443
+          env:
+            - name: TLS_CERT_PATH
+              value: /certs/tls.crt
+            - name: TLS_KEY_PATH
+              value: /certs/tls.key
+            - name: SIDECAR_IMAGE
+              value: atlasos/service-sidecar:1.2.0
+            - name: SIDECAR_CPU_REQUEST
+              value: "25m"
+            - name: SIDECAR_MEMORY_REQUEST
+              value: "64Mi"
+            - name: SIDECAR_CPU_LIMIT
+              value: "100m"
+            - name: SIDECAR_MEMORY_LIMIT
+              value: "128Mi"
+          volumeMounts:
+            - name: certs
+              mountPath: /certs
+              readOnly: true
+          resources:
+            requests:
+              memory: 128Mi
+              cpu: 50m
+            limits:
+              memory: 256Mi
+              cpu: 200m
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8443
+              scheme: HTTPS
+            initialDelaySeconds: 15
+            periodSeconds: 30
+      volumes:
+        - name: certs
+          secret:
+            secretName: atlasos-sidecar-tls

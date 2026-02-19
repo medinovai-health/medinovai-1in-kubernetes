@@ -1,0 +1,5 @@
+# Library/SDK Conventions
+- Semver: major.minor.patch; changelog for every release
+- API compatibility; deprecation with notice
+- Test coverage above threshold; compatibility tests for public API
+- License and dependency review for new deps

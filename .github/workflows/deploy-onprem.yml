@@ -1,0 +1,35 @@
+name: Deploy On-Prem
+
+on:
+  workflow_dispatch:
+    inputs:
+      tier:
+        description: 'Tier to deploy (0-6, atlasos, gpu, agents, all)'
+        required: true
+        default: 'all'
+      dry_run:
+        description: 'Dry run'
+        required: false
+        default: 'false'
+        type: boolean
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    environment: onprem
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy tier
+        run: |
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            bash scripts/deploy/deploy_tier.sh ${{ inputs.tier }} --dry-run
+          else
+            bash scripts/deploy/deploy_tier.sh ${{ inputs.tier }}
+          fi
+
+      - name: Health check
+        if: inputs.dry_run == 'false'
+        run: |
+          kubectl get nodes
+          kubectl get pods --all-namespaces --field-selector=status.phase!=Running | head -20

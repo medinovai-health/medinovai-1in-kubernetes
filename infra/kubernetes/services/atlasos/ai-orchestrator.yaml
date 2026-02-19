@@ -2,47 +2,43 @@ apiVersion: v1
 kind: Service
 metadata:
   name: ai-orchestrator
-  namespace: medinovai-services
+  namespace: atlasos
   labels:
     app.kubernetes.io/name: ai-orchestrator
     app.kubernetes.io/part-of: atlasos
-    medinovai.com/tier: intelligence
 spec:
-  type: ClusterIP
   ports:
     - port: 3003
       targetPort: 3000
-      name: http
   selector:
-    app.kubernetes.io/name: ai-orchestrator
+    app: ai-orchestrator
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: ai-orchestrator
-  namespace: medinovai-services
+  namespace: atlasos
   labels:
+    app: ai-orchestrator
     app.kubernetes.io/name: ai-orchestrator
     app.kubernetes.io/part-of: atlasos
-    medinovai.com/tier: intelligence
+    app.kubernetes.io/version: "1.2.0"
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app.kubernetes.io/name: ai-orchestrator
+      app: ai-orchestrator
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: ai-orchestrator
-        app.kubernetes.io/part-of: atlasos
-        medinovai.com/tier: intelligence
-      annotations:
+        app: ai-orchestrator
         atlasos.medinovai.com/sidecar: "enabled"
     spec:
+      serviceAccountName: atlasos-sa
       affinity:
         nodeAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
-            - weight: 100
+            - weight: 80
               preference:
                 matchExpressions:
                   - key: gpu
@@ -50,33 +46,40 @@ spec:
                     values: ["true"]
       containers:
         - name: ai-orchestrator
-          image: medinovai-ai-orchestrator:latest
+          image: medinovai-atlas-1-ai-orchestrator:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3000
           envFrom:
             - secretRef:
-                name: atlasos-api-keys
+                name: atlasos-secrets
             - secretRef:
-                name: aifactory-credentials
-            - secretRef:
-                name: ollama-config
+                name: atlasos-infra-secrets
+          env:
+            - name: AIFACTORY_MOE_URL
+              value: "http://aifactory.ai-ml.svc.cluster.local:5000"
+            - name: OLLAMA_HOST
+              value: "http://ollama.ai-ml.svc.cluster.local:11434"
+            - name: USE_DISTRIBUTED_COMPUTE
+              value: "true"
+            - name: MOE_NODE1_ENDPOINT
+              value: "http://ollama.ai-ml.svc.cluster.local:11434"
           resources:
             requests:
-              memory: 512Mi
-              cpu: 250m
+              memory: 256Mi
+              cpu: 100m
             limits:
               memory: 1Gi
-              cpu: 500m
-          livenessProbe:
-            httpGet:
-              path: /health
-              port: 3000
-            initialDelaySeconds: 15
-            periodSeconds: 30
+              cpu: "1"
           readinessProbe:
             httpGet:
               path: /health
               port: 3000
             initialDelaySeconds: 10
             periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 30
+            periodSeconds: 30

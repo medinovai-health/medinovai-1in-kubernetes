@@ -1,212 +1,160 @@
 #!/usr/bin/env bash
-# ─── embed_atlasos.sh ────────────────────────────────────────────────────────
-# Embed AtlasOS agent workspaces, Cursor rules, and autonomous brain
-# into every MedinovAI repo. Single source of truth for agent distribution.
-#
-# Replaces AtlasOS's deploy_brain.sh + deploy_agents.sh.
+# ─── embed_atlasos.sh ─────────────────────────────────────────────────────────
+# Embed AtlasOS agent capabilities into all MedinovAI repositories.
+# Deploys domain-specific agent kits, Cursor rules, and autonomous brain
+# training to every repo in the platform.
 #
 # Usage:
 #   bash scripts/agents/embed_atlasos.sh --all                    # All repos
 #   bash scripts/agents/embed_atlasos.sh --repo medinovai-CTMS    # Single repo
-#   bash scripts/agents/embed_atlasos.sh --category clinical      # By category
-#   bash scripts/agents/embed_atlasos.sh --all --dry-run          # Preview
-#   bash scripts/agents/embed_atlasos.sh --all --commit           # Commit changes
+#   bash scripts/agents/embed_atlasos.sh --category clinical      # All clinical repos
+#   bash scripts/agents/embed_atlasos.sh --all --dry-run           # Preview changes
 # ─────────────────────────────────────────────────────────────────────────────
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(dirname "$(dirname "$SCRIPT_DIR")")"
-GITHUB_DIR="${GITHUB_DIR:-$HOME/Github}"
+REGISTRY="$REPO_ROOT/config/repo_registry.json5"
 TEMPLATES_DIR="$REPO_ROOT/templates/repo-agents"
+GITHUB_DIR="${GITHUB_DIR:-$HOME/Github}"
 
-TARGET_ALL=false
 TARGET_REPO=""
 TARGET_CATEGORY=""
+ALL_REPOS=false
 DRY_RUN=false
-COMMIT=false
-STATS_DEPLOYED=0
-STATS_SKIPPED=0
-STATS_ERRORS=0
+AUTO_COMMIT=false
 
 while [[ $# -gt 0 ]]; do
     case $1 in
-        --all)       TARGET_ALL=true; shift ;;
+        --all)       ALL_REPOS=true; shift ;;
         --repo)      TARGET_REPO="$2"; shift 2 ;;
         --category)  TARGET_CATEGORY="$2"; shift 2 ;;
         --dry-run)   DRY_RUN=true; shift ;;
-        --commit)    COMMIT=true; shift ;;
+        --commit)    AUTO_COMMIT=true; shift ;;
         *)           echo "Unknown option: $1"; exit 1 ;;
     esac
 done
 
-if ! $TARGET_ALL && [ -z "$TARGET_REPO" ] && [ -z "$TARGET_CATEGORY" ]; then
-    echo "Usage: embed_atlasos.sh --all | --repo <name> | --category <cat>"
-    echo ""
-    echo "Categories: clinical, backend-service, frontend-app, platform,"
-    echo "            ai-ml, data, security, sales-crm, docs-standards, library"
+if ! $ALL_REPOS && [ -z "$TARGET_REPO" ] && [ -z "$TARGET_CATEGORY" ]; then
+    echo "Usage: $0 --all | --repo <name> | --category <cat> [--dry-run] [--commit]"
     exit 1
 fi
 
 log() { echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] $1"; }
 
-# ─── Repo → Category mapping ───────────────────────────────────────────────
-get_category() {
-    local repo="$1"
-    case "$repo" in
-        medinovai-CTMS|medinovai-EDC|medinovai-eConsent|medinovai-eISF|medinovai-ePRO|\
-        medinovai-eSource|medinovai-etmf|medinovai-iwrs|medinovai-RBM|medinovai-Pharmacovigilance|\
-        medinovai-regulatory-submissions|medinovai-lis|medinovai-lis-platform|\
-        medinovai-consent-preference-api|medinovai-care-team-chat|medinovai-telehealth-hub|\
-        medinovai-patient-onboarding|medinovai-patientmatching|medinovai-drug-interaction-checker|\
-        medinovai-guideline-updater|medinovai-cds|medinovai-inventorymanagement|\
-        medinovai-ResearchSuite|medinovAIUSB|medinovai-visit-schedule-tracker|\
-        medinovai-projects)
-            echo "clinical" ;;
-
-        medinovai-aifactory|medinovai-healthLLM|medinovai-ai-scribe|medinovai-anomaly-detector|\
-        MedinovAI-Chatbot|medinovAIgent|medinovai-pathology-ai|medinovai-genomics-interpreter|\
-        MedinovAI-Model-Service-Orchestrator|medinovai-natural-language-query|\
-        medinovai-prompt-vault|medinovai-accessibility-checker|medinovai-SME|\
-        PersonalAssistant|CEOassistant|PhotoAI)
-            echo "ai-ml" ;;
-
-        medinovai-api|medinovai-core|medinovai-notification-center|medinovai-real-time-stream-bus|\
-        medinovai-registry|medinovai-validation|medinovai-api-gateway|medinovai-medical-fax-processing|\
-        subscription|MedinovAI-Email-Service)
-            echo "backend-service" ;;
-
-        medinovai-lis-ui|medinovaios|medinovai-multimodal-ui-shell|Uiux|\
-        medinovai-audit-trail-explorer|Employee-Portal|medinovai-developer-portal|\
-        medinovai-feature-flag-console)
-            echo "frontend-app" ;;
-
-        ++Docker-Maintenance|medinovai-Deploy|medinovai-infrastructure|medinovai-devops-telemetry|\
-        medinovai-test-infrastructure|medinovai-canary-rollout-orchestrator|\
-        myOnsiteOperationsMonitoringV1|vercel-clone|ProcessAutomations|architecture-catalog|\
-        AtlasOS|medinovai-Atlas|medinovai-atlas-engine)
-            echo "platform" ;;
-
-        MedinovAI-security|MedinovAI-security-service|medinovai-universal-sign-on|\
-        medinovai-role-based-permissions|medinovai-secrets-manager-bridge|\
-        medinovai-encryption-vault|medinovai-hipaa-gdpr-guard)
-            echo "security" ;;
-
-        database|medinovai-data-services|medinovai-data-lake-loader|medinovai-knowledge-graph|\
-        medinovai-DataOfficer)
-            echo "data" ;;
-
-        medinovai-sales|AutoSalesPro|AutoBidPro|Credentialing|ATS|DocuGenie|\
-        medinovai-saes)
-            echo "sales-crm" ;;
-
-        medinovai-constitution|MedinovAI-AI-Standards|medinovai-dev-standards|\
-        medinovai-standards|medinovai-governance-templates|medinovai-quality-certification|\
-        medinovai-Developer)
-            echo "docs-standards" ;;
-
-        medinovai-web-core|medinovai-ui-components|medinovai-agent-sdk)
-            echo "library" ;;
-
-        *)
-            echo "backend-service" ;;
-    esac
+# Parse JSON5 registry (strip comments, trailing commas)
+parse_registry() {
+    python3 -c "
+import json, re, sys
+with open('$REGISTRY') as f:
+    content = re.sub(r'//.*', '', f.read())
+    content = re.sub(r'/\*.*?\*/', '', content, flags=re.DOTALL)
+    content = re.sub(r',\s*([\]}])', r'\1', content)
+    data = json.loads(content)
+    print(json.dumps(data.get('repos', [])))
+"
 }
 
-# ─── Deploy agent kit to a single repo ──────────────────────────────────────
-deploy_to_repo() {
+# Deploy agent kit to a single repo
+embed_repo() {
     local repo_name="$1"
+    local category="$2"
     local repo_path="$GITHUB_DIR/$repo_name"
 
-    if [ ! -d "$repo_path/.git" ]; then
-        log "  SKIP: $repo_name (not a git repo at $repo_path)"
-        STATS_SKIPPED=$((STATS_SKIPPED + 1))
+    if [ ! -d "$repo_path" ]; then
+        log "  SKIP: $repo_name — directory not found at $repo_path"
         return 0
     fi
 
-    local category
-    category=$(get_category "$repo_name")
+    if [ ! -d "$repo_path/.git" ] && [ ! -f "$repo_path/.git" ]; then
+        log "  SKIP: $repo_name — not a git repository"
+        return 0
+    fi
 
     local template_dir="$TEMPLATES_DIR/$category"
     if [ ! -d "$template_dir" ]; then
-        log "  SKIP: No template for category '$category' at $template_dir"
-        STATS_SKIPPED=$((STATS_SKIPPED + 1))
-        return 0
+        template_dir="$TEMPLATES_DIR/backend-service"
+        log "  WARN: No template for category '$category', using backend-service"
     fi
+
+    log "  Embedding AtlasOS into $repo_name (category: $category)"
 
     if $DRY_RUN; then
-        log "  [DRY RUN] $repo_name → category: $category"
-        STATS_DEPLOYED=$((STATS_DEPLOYED + 1))
+        log "    [DRY RUN] Would copy $template_dir/* → $repo_path/"
         return 0
     fi
-
-    log "  Deploying to $repo_name (category: $category)..."
 
     # Deploy Cursor rules
     mkdir -p "$repo_path/.cursor/rules"
-    if ls "$template_dir/.cursor/rules/"*.mdc &>/dev/null; then
-        for rule_file in "$template_dir/.cursor/rules/"*.mdc; do
-            [ -f "$rule_file" ] && cp "$rule_file" "$repo_path/.cursor/rules/"
-        done
-    fi
+    cp -f "$template_dir/.cursor/rules/"*.mdc "$repo_path/.cursor/rules/" 2>/dev/null || true
 
-    # Deploy autonomous brain (shared across all categories)
-    local brain_rule="$REPO_ROOT/agents/platform/AGENTS.md"
-    [ -f "$REPO_ROOT/.cursor/rules/atlas-autonomous-brain.mdc" ] && \
-        cp "$REPO_ROOT/.cursor/rules/atlas-autonomous-brain.mdc" "$repo_path/.cursor/rules/" 2>/dev/null || true
+    # Deploy shared autonomous brain rules if they exist
+    local brain_rule="$REPO_ROOT/templates/shared/atlas-autonomous-brain.mdc"
+    if [ -f "$brain_rule" ]; then
+        cp -f "$brain_rule" "$repo_path/.cursor/rules/"
+    fi
+    local gov_rule="$REPO_ROOT/templates/shared/ai-governance-controls.mdc"
+    if [ -f "$gov_rule" ]; then
+        cp -f "$gov_rule" "$repo_path/.cursor/rules/"
+    fi
 
     # Deploy agent workspace files
-    for agent_file in AGENTS.md HEARTBEAT.md SOUL.md TOOLS.md MISTAKES.md; do
-        [ -f "$template_dir/$agent_file" ] && cp "$template_dir/$agent_file" "$repo_path/"
+    for f in AGENTS.md HEARTBEAT.md SOUL.md TOOLS.md MISTAKES.md; do
+        if [ -f "$template_dir/$f" ]; then
+            cp -f "$template_dir/$f" "$repo_path/$f"
+        fi
     done
 
-    # Deploy governance files (category-specific)
-    if [ -d "$template_dir/governance" ]; then
-        mkdir -p "$repo_path/governance"
-        cp -r "$template_dir/governance/"* "$repo_path/governance/" 2>/dev/null || true
-    fi
-
-    # Commit if requested
-    if $COMMIT; then
+    # Auto-commit if requested
+    if $AUTO_COMMIT; then
         cd "$repo_path"
-        git add -A .cursor/ AGENTS.md HEARTBEAT.md SOUL.md TOOLS.md MISTAKES.md governance/ 2>/dev/null || true
-        if git diff --cached --quiet; then
+        if git diff --quiet && git diff --cached --quiet; then
             log "    No changes to commit"
         else
+            git add -A .cursor/rules/ AGENTS.md HEARTBEAT.md SOUL.md TOOLS.md MISTAKES.md 2>/dev/null || true
             git commit -m "Embed AtlasOS agent kit (category: $category)" --no-verify 2>/dev/null || true
-            log "    ✓ Committed"
+            log "    Committed changes"
         fi
         cd "$REPO_ROOT"
     fi
-
-    STATS_DEPLOYED=$((STATS_DEPLOYED + 1))
 }
 
-# ─── Main ────────────────────────────────────────────────────────────────────
-log "MedinovAI Deploy — Embed AtlasOS in Repos"
-echo ""
+# ─── Main ─────────────────────────────────────────────────────────────────────
+log "╔══════════════════════════════════════════════════════════════╗"
+log "║     MedinovAI Deploy — Embed AtlasOS in All Repos            ║"
+log "╚══════════════════════════════════════════════════════════════╝"
 
-if [ -n "$TARGET_REPO" ]; then
-    deploy_to_repo "$TARGET_REPO"
-elif $TARGET_ALL || [ -n "$TARGET_CATEGORY" ]; then
-    for repo_dir in "$GITHUB_DIR"/*/; do
-        [ ! -d "$repo_dir" ] && continue
-        repo_name=$(basename "$repo_dir")
-
-        # Skip non-MedinovAI and special dirs
-        [[ "$repo_name" == "." || "$repo_name" == ".." ]] && continue
-
-        if [ -n "$TARGET_CATEGORY" ]; then
-            local_cat=$(get_category "$repo_name")
-            [ "$local_cat" != "$TARGET_CATEGORY" ] && continue
-        fi
-
-        deploy_to_repo "$repo_name"
-    done
+if [ ! -f "$REGISTRY" ]; then
+    log "ERROR: Repo registry not found at $REGISTRY"
+    exit 1
 fi
 
-echo ""
-log "Embedding complete."
-log "  Deployed: $STATS_DEPLOYED"
-log "  Skipped:  $STATS_SKIPPED"
-log "  Errors:   $STATS_ERRORS"
+REPOS_JSON=$(parse_registry)
+TOTAL=$(echo "$REPOS_JSON" | jq 'length')
+EMBEDDED=0
+SKIPPED=0
+
+log "Registry: $TOTAL repos"
+log ""
+
+echo "$REPOS_JSON" | jq -c '.[]' | while IFS= read -r repo; do
+    name=$(echo "$repo" | jq -r '.name')
+    category=$(echo "$repo" | jq -r '.category // "backend-service"')
+
+    if [ -n "$TARGET_REPO" ] && [ "$name" != "$TARGET_REPO" ]; then
+        continue
+    fi
+
+    if [ -n "$TARGET_CATEGORY" ] && [ "$category" != "$TARGET_CATEGORY" ]; then
+        continue
+    fi
+
+    embed_repo "$name" "$category"
+done
+
+log ""
+log "AtlasOS embedding complete."
+if $DRY_RUN; then
+    log "  (Dry run — no changes made)"
+fi

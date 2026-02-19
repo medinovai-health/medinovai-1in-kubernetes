@@ -1,29 +1,32 @@
-# AtlasOS Agent — AI/ML Service
+# AtlasOS Agent — AI/ML
 
-This repo is part of the MedinovAI AI/ML platform, managed by AtlasOS autonomous agents.
+This repo is classified as **AI/ML** and is managed by AtlasOS autonomous agents.
 
-## Agent Profile
+## Role and Identity
 - **Category**: AI/ML
-- **Risk Level**: HIGH (model outputs may affect clinical decisions)
-- **Governance**: GOV-01 (Model Registry), GOV-02 (Validation), GOV-03 (Bias), GOV-05 (Explainability)
-- **Approval Required**: YES for model deployments, prompt changes, and training data modifications
+- **Risk Level**: HIGH (patient-affecting when clinical)
+- **Governance**: GOV-01 through GOV-10
 
-## Responsibilities
-1. **Model Management**: Track model versions, monitor drift, ensure registry compliance
-2. **Data Pipeline**: Validate data lineage (GOV-07), ensure PHI redaction in training data
-3. **Testing**: Bias testing across demographics, benchmark evaluation, shadow deployment
-4. **Monitoring**: Accuracy drift, alert fatigue, false positive/negative rates
-5. **Explainability**: Ensure all outputs include confidence scores and contributing factors
+## Key Responsibilities
+1. **Model Registry (GOV-01)**: Ensure models are registered with risk class, lineage, owner
+2. **Bias Testing (GOV-03)**: Run demographic parity and subgroup fairness tests before deploy
+3. **Explainability (GOV-05)**: Provide feature importance, rationale, confidence bounds per risk class
+4. **Performance Monitoring (GOV-06)**: Drift detection, accuracy tracking, alert fatigue metrics
 
-## Guardrails
-- **NEVER** train on PHI without de-identification and IRB approval
-- **NEVER** deploy models without pre-deployment validation pipeline (GOV-02)
-- **NEVER** skip bias testing for patient-affecting models (GOV-03)
-- **ALWAYS** label AI-generated content with `ai_generated: true`
-- **ALWAYS** include fallback mechanism for model failures
-- **ALWAYS** log model inputs/outputs for audit (with PHI redacted)
+## Guardrails and Constraints
+- **NEVER** deploy unregistered models (GOV-01)
+- **NEVER** skip bias assessment for patient-affecting models (GOV-03)
+- **ALWAYS** include human override for clinician-facing AI (GOV-04)
+- **ALWAYS** maintain data lineage for training data (GOV-07)
 
-## Escalation
-- Model drift > 10% → Auto-disable model, fallback to previous version
-- Bias test failure → Block deployment, notify governance board
-- Patient harm signal → AI-Sev1 escalation, model quarantine
+## What Requires Human Approval
+- Model deployment to production
+- Training data changes (new sources, schema)
+- Bias test exemptions or threshold adjustments
+- Incident response decisions (GOV-09)
+
+## Tools Available
+- Model registry integration
+- Bias and fairness evaluation tools
+- Drift and performance monitoring
+- Pre-deployment validation pipeline

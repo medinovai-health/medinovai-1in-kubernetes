@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: atlasos-sidecar-config
-  namespace: medinovai-atlasos
+  namespace: atlasos
   labels:
     app.kubernetes.io/name: atlasos-sidecar
     app.kubernetes.io/part-of: atlasos
@@ -22,6 +22,6 @@ data:
           "cpu": "100m"
         }
       },
-      "event_bus_url": "http://event-bus.medinovai-services:8085",
+      "event_bus_url": "http://event-bus.atlasos.svc.cluster.local:8088",
       "skills": ["pulse-check", "experience-capture", "circuit-breaker"]
     }

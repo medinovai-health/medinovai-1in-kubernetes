@@ -1,87 +1,54 @@
 # MedinovAI Deploy
 
-**The single repo for deploying the entire MedinovAI platform from blank.**
+**Autonomous deployment for the entire MedinovAI platform — on-prem first.**
 
-On-prem K3s cluster spanning Mac Studio, MacBook Pro, and DGX GPU servers. HashiCorp Vault for secrets. AtlasOS agents embedded in every repo for fully autonomous AI-run operations with humans only for final approvals.
+Single repo to deploy 109 services across a K3s cluster spanning Mac Studio, MacBook Pro, and DGX GPU servers. HashiCorp Vault for secrets. AtlasOS agents embedded in every repo for fully autonomous AI operations with humans only for final approvals.
 
 ## Architecture
 
 ```
-┌──────────────────────────────────────────────────────────────────────┐
-│                    Tailscale Mesh (100.x.x.x)                       │
-│                                                                      │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐│
-│  │ Mac Studio  │  │ MacBook Pro │  │   DGX-1     │  │   DGX-2     ││
-│  │ K3s Server  │  │ K3s Agent   │  │ K3s Agent   │  │ K3s Agent   ││
-│  │ OrbStack    │  │ OrbStack    │  │ Bare Metal  │  │ Bare Metal  ││
-│  │             │  │             │  │ 4x A100 GPU │  │ 4x A100 GPU ││
-│  └─────┬───────┘  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘│
-│        │                 │                 │                │       │
-│  ┌─────┴─────────────────┴─────────────────┴────────────────┴─────┐ │
-│  │                    K3s Cluster                                  │ │
-│  │  Longhorn Storage │ Vault Secrets │ ESO │ Prometheus+Grafana   │ │
-│  │  109 Services across 7 Tiers │ AtlasOS Cluster Brain          │ │
-│  └────────────────────────────────────────────────────────────────┘ │
-└──────────────────────────────────────────────────────────────────────┘
+                    medinovai-Deploy
+                           │
+                           ▼
+┌──────────────────────────────────────────────────────────────────────────┐
+│                    Tailscale Mesh (100.x.x.x)                             │
+│                                                                            │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐      │
+│  │ Mac Studio  │  │ MacBook Pro │  │   DGX-1     │  │   DGX-2     │      │
+│  │ K3s Server  │  │ K3s Agent   │  │ K3s Agent   │  │ K3s Agent   │      │
+│  │ OrbStack    │  │ OrbStack    │  │ Bare Metal  │  │ Bare Metal  │      │
+│  │             │  │             │  │ 4x A100 GPU │  │ 4x A100 GPU │      │
+│  └─────┬───────┘  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘      │
+│        │                 │                 │                │             │
+│  ┌─────┴─────────────────┴─────────────────┴────────────────┴─────┐      │
+│  │                    K3s Cluster (4 nodes)                        │      │
+│  │  Longhorn │ Vault │ ESO │ Prometheus+Grafana │ 109 Services    │      │
+│  │  AtlasOS Cluster Brain │ Node Agents (DaemonSet)                │      │
+│  └────────────────────────────────────────────────────────────────┘      │
+│                                    │                                       │
+│                                    ▼                                       │
+│                    AtlasOS embedded in all ~162 repos                      │
+└──────────────────────────────────────────────────────────────────────────┘
 ```
 
-## Quick Start
-
-```bash
-# 1. Check prerequisites
-make prerequisites
-
-# 2. Full platform instantiation (~70 min for all 109 services)
-make instantiate
-
-# 3. Critical path only (~25 min for 12 essential services)
-make instantiate-critical
-
-# 4. Health check
-make health
-
-# 5. Embed AtlasOS in all repos
-make embed-atlasos
-```
-
-## Fleet
-
-| Node | Role | Hardware | K3s Role |
-|------|------|----------|----------|
-| Mac Studio | Control plane | M2 Ultra, 192GB RAM, 2TB | Server |
-| MacBook Pro | Overflow worker | M3 Pro, 36GB RAM | Agent |
-| DGX-1 | GPU inference | AMD EPYC, 512GB, 4x A100 80GB | Agent |
-| DGX-2 | GPU inference | AMD EPYC, 512GB, 4x A100 80GB | Agent |
-
-## Service Tiers (109 services)
-
-| Tier | Name | Services | K8s Namespace |
-|------|------|----------|---------------|
-| 0 | Infrastructure | PostgreSQL, Redis, Kafka, MongoDB, ES, Vault, Keycloak | `infra` |
-| 1 | Security | SSO, RBAC, encryption, HIPAA/GDPR guard | `security` |
-| 2 | Platform Core | Registry, API gateway, notifications, AtlasOS | `platform`, `atlasos` |
-| 3 | AI/ML | AIFactory, Ollama, model orchestrator, scribe | `ai-ml` |
-| 4 | Domain | CTMS, EDC, LIS, eConsent, CRM, sales tools | `clinical`, `business` |
-| 5 | Integrations | Email, fax, CRM connectors, webhooks | `integrations` |
-| 6 | UI | MedinovAI OS shell, dashboards | `ui` |
-
-## Repo Structure
+## What'''s in This Repo
 
 ```
 medinovai-Deploy/
 ├── config/
 │   ├── fleet.json5              # Physical node inventory
 │   ├── dependency-graph.json    # 109-service deployment order
-│   └── repo_registry.json5     # ~162 repos with categories
+│   └── repo_registry.json5      # ~162 repos with categories
 ├── infra/kubernetes/
+│   ├── base/                    # Namespaces, RBAC
 │   ├── services/
-│   │   ├── tier0/               # PostgreSQL, Redis, Kafka, etc.
-│   │   ├── tier1/               # Security services
+│   │   ├── tier0/               # PostgreSQL, Redis, Kafka, MongoDB, ES, etc.
+│   │   ├── tier1/               # Security (Keycloak, SSO, RBAC)
 │   │   ├── tier2/               # Platform core
-│   │   ├── atlasos/             # AtlasOS (gateway, UI, orchestrator, etc.)
+│   │   ├── atlasos/             # AtlasOS gateway, UI, orchestrator, event-bus
 │   │   ├── atlasos-node-agent/  # DaemonSet on every node
-│   │   ├── atlasos-cluster-brain/ # CEO+Supervisor+Guardian
-│   │   └── tier3-6/             # Domain, integration, UI services
+│   │   ├── atlasos-cluster-brain/
+│   │   └── tier3-6/             # AI/ML, domain, integration, UI
 │   ├── vault/                   # Vault Helm values + policies
 │   ├── external-secrets/        # ESO + ExternalSecret per namespace
 │   ├── monitoring/              # Prometheus, Grafana, Loki, DCGM
@@ -90,7 +57,7 @@ medinovai-Deploy/
 │       └── onprem-prod/         # Full 4-node fleet, all tiers
 ├── scripts/
 │   ├── bootstrap/
-│   │   ├── prerequisites.sh     # Tool checks (kubectl, helm, tailscale, vault, orb)
+│   │   ├── prerequisites.sh     # Tool checks (kubectl, helm, tailscale, orb)
 │   │   ├── init-network.sh      # Tailscale mesh setup
 │   │   ├── init-orbstack.sh     # OrbStack VM + K3s (server or agent)
 │   │   ├── init-dgx.sh          # DGX bare metal K3s + NVIDIA toolkit
@@ -98,22 +65,125 @@ medinovai-Deploy/
 │   │   ├── init-vault.sh        # Vault deploy + init + seed secrets
 │   │   └── instantiate.sh       # 25-step full platform from blank
 │   ├── deploy/
-│   │   └── deploy_tier.sh       # Deploy specific tier or all
-│   └── agents/
-│       └── embed_atlasos.sh     # Distribute agent kits to all ~162 repos
-├── templates/
-│   └── repo-agents/             # Agent kits per category
-│       ├── clinical/            # AGENTS.md, HEARTBEAT.md, .cursor/rules/
-│       ├── backend-service/
-│       ├── frontend-app/
-│       ├── ai-ml/
-│       ├── platform/
-│       ├── security/
-│       ├── data/
-│       ├── sales-crm/
-│       ├── docs-standards/
-│       └── library/
-└── Makefile                     # All operations: make help
+│   │   ├── deploy_tier.sh       # Deploy specific tier or all
+│   │   └── deploy_service.sh   # Deploy single service
+│   ├── agents/
+│   │   ├── embed_atlasos.sh     # Distribute agent kits to all ~162 repos
+│   │   ├── create_agents.sh     # Register Atlas agents
+│   │   └── register_crons.sh   # Agent cron jobs
+│   ├── maintenance/             # drift_check, db_backup, rotate_secrets
+│   ├── validation/              # validate_setup, smoke_test
+│   └── monitoring/              # Health checks
+├── templates/repo-agents/       # Agent kits per category (clinical, ai-ml, etc.)
+└── Makefile                    # All operations: make help
+```
+
+## Greenfield Instantiation
+
+Full setup from blank to running platform in 25 steps (~70 min). Critical path only: 15 steps (~25 min).
+
+| Step | Description | Est. Time |
+|------|-------------|-----------|
+| 1 | Prerequisites check | 1 min |
+| 2 | Tailscale mesh network | 2 min |
+| 3 | K3s server (Mac Studio via OrbStack) | 5 min |
+| 4 | K3s agent (MacBook Pro via OrbStack) | 3 min |
+| 5 | DGX GPU nodes | 10 min |
+| 6 | Longhorn distributed storage | 5 min |
+| 7 | Kubernetes namespaces and RBAC | 1 min |
+| 8 | HashiCorp Vault | 5 min |
+| 9 | Seed secrets into Vault | 2 min |
+| 10 | External Secrets Operator | 3 min |
+| 11 | Monitoring stack | 3 min |
+| 12 | Tier 0: Databases + infrastructure | 5 min |
+| 13 | Tier 1: Security services | 2 min |
+| 14 | Tier 2: Platform core | 3 min |
+| 15 | AtlasOS services | 3 min |
+| 16 | Tier 3: AI/ML + clinical foundation | 5 min |
+| 17 | GPU inference (Ollama, AIFactory) | 3 min |
+| 18 | Tier 4: Domain services | 4 min |
+| 19 | Tier 5: Integration services | 2 min |
+| 20 | Tier 6: UI shell | 2 min |
+| 21 | Ingress | 1 min |
+| 22 | AtlasOS node agents (DaemonSet) | 2 min |
+| 23 | AtlasOS cluster brain | 2 min |
+| 24 | Atlas agent registration + crons | 2 min |
+| 25 | Smoke tests | 2 min |
+
+```bash
+# Full instantiation
+make instantiate
+
+# Critical path only (~25 min)
+make instantiate-critical
+
+# Manual step-by-step
+make prerequisites
+make init-network
+make init-k3s
+make init-k3s-agent    # optional
+make init-dgx          # optional, for GPU
+make init-storage
+make init-vault
+make instantiate       # or resume from checkpoint
+```
+
+## Quick Reference
+
+| Command | Description |
+|---------|-------------|
+| `make help` | Show all targets |
+| `make setup` | Full setup from blank |
+| `make prerequisites` | Check required tools |
+| `make init-network` | Tailscale mesh |
+| `make init-k3s` | K3s server (Mac Studio) |
+| `make init-k3s-agent` | K3s worker (MacBook Pro) |
+| `make init-dgx` | DGX GPU nodes |
+| `make init-storage` | Longhorn storage |
+| `make init-vault` | Vault deploy + init |
+| `make instantiate` | Full platform (25 steps, ~70 min) |
+| `make instantiate-critical` | Critical path only (~25 min) |
+| `make deploy-all` | Deploy all services |
+| `make deploy-tier TIER=0` | Deploy specific tier |
+| `make deploy-service SVC=name` | Deploy single service |
+| `make deploy-atlasos` | AtlasOS services |
+| `make deploy-gpu` | GPU inference services |
+| `make embed-atlasos` | Embed in all ~162 repos |
+| `make health` | Full-stack health check |
+| `make gpu-status` | DGX GPU status |
+| `make seed-secrets` | Seed Vault |
+| `make vault-status` | Vault status |
+| `make validate-k8s` | Validate K8s manifests |
+
+## Fleet Configuration
+
+| Node | Role | Hardware | K3s Role |
+|------|------|----------|----------|
+| Mac Studio | Control plane | M2 Ultra, 192GB RAM, 2TB | Server |
+| MacBook Pro | Overflow worker | M3 Pro, 36GB RAM | Agent |
+| DGX-1 | GPU inference | AMD EPYC, 512GB, 4x A100 80GB | Agent |
+| DGX-2 | GPU inference | AMD EPYC, 512GB, 4x A100 80GB | Agent |
+
+Fleet config: `config/fleet.json5`
+
+## AtlasOS Embedding
+
+AtlasOS is embedded at every level:
+
+1. **Node-level**: DaemonSet on every K3s node — monitors CPU, memory, disk, GPU health
+2. **Service-level**: Sidecar agents for platform services — health, latency, circuit breaking
+3. **Cluster-level**: Cluster brain (CEO + Supervisor + Guardian) with K8s API access — scaling, remediation, governance
+4. **Repo-level**: Agent kits in all ~162 repos — code quality, CI/CD, dependency management, autonomous PRs
+
+```bash
+# Embed in all repos
+make embed-atlasos
+
+# Embed in a single repo
+make embed-atlasos-repo REPO=medinovai-CTMS
+
+# Embed by category
+make embed-atlasos-category CAT=clinical
 ```
 
 ## Secrets Management
@@ -130,72 +200,31 @@ All secrets are stored in **HashiCorp Vault** (deployed in the K3s cluster) and 
 | `medinovai-secrets/ai-ml/*` | ai-ml | AIFactory, model API keys |
 
 ```bash
-# Seed from existing .env file
-make seed-secrets
-
-# Interactive seeding
-make seed-secrets-interactive
+make seed-secrets           # Seed from ~/.atlas/.env or interactively
+make vault-status          # Check Vault status
+make rotate-secrets        # Rotate expiring secrets
 
 # Vault UI
 kubectl port-forward -n vault svc/vault-ui 8200:8200
 ```
 
-## AtlasOS Everywhere
+## Governance Controls
 
-AtlasOS is embedded at every level:
+The platform enforces 10 mandatory AI governance controls (GOV-01 through GOV-10):
 
-1. **Node-level**: DaemonSet on every K3s node — monitors CPU, memory, disk, GPU health
-2. **Service-level**: Sidecar agents for all platform services — health, latency, circuit breaking
-3. **Cluster-level**: Cluster brain (CEO + Supervisor + Guardian) with K8s API access — scaling, remediation, governance
-4. **Repo-level**: Agent kits in all ~162 repos — code quality, CI/CD, dependency management, autonomous PRs
+| ID | Control | Description |
+|----|---------|-------------|
+| GOV-01 | Model Risk Register | Every AI model registered with risk class, impact, mitigation plan |
+| GOV-02 | Pre-Deployment Validation | Full validation pipeline before production |
+| GOV-03 | Bias Testing | Demographic fairness audits for patient-affecting models |
+| GOV-04 | Human Override Pathways | Clinician override with audit logging, no punitive metrics |
+| GOV-05 | Explainability Standards | AI outputs labeled with confidence, factors, reasoning |
+| GOV-06 | Performance Monitoring | Accuracy drift, alert fatigue, clinical outcome tracking |
+| GOV-07 | Data Lineage Tracking | Source-to-model lineage, PHI handling documented |
+| GOV-08 | Vendor Accountability | Vendor AI contracts with accountability terms |
+| GOV-09 | Incident Response | Model quarantine, escalation, root cause analysis |
+| GOV-10 | Cross-Functional Oversight | Governance board approval for clinical AI deployments |
 
-```bash
-# Embed in all repos
-make embed-atlasos
+## License
 
-# Embed in a single repo
-make embed-atlasos-repo REPO=medinovai-CTMS
-
-# Embed by category
-make embed-atlasos-category CATEGORY=clinical
-
-# Preview (dry run)
-make embed-atlasos-dry-run
-```
-
-## Monitoring
-
-| Tool | Port | Purpose |
-|------|------|---------|
-| Prometheus | 9090 | Metrics collection |
-| Grafana | 3000 | Dashboards |
-| Loki | 3100 | Log aggregation |
-| DCGM Exporter | 9400 | NVIDIA GPU metrics |
-| AtlasOS Brain | 8100 | Cluster health + agent status |
-| Vault | 8200 | Secret management UI |
-
-```bash
-make dashboards  # Shows port-forward commands
-make health      # Full stack health check
-make gpu-status  # DGX GPU status
-make agent-status # AtlasOS agent heartbeats
-```
-
-## Commands Reference
-
-Run `make help` for the full list. Key commands:
-
-| Command | Description |
-|---------|-------------|
-| `make setup` | Full setup from blank to running |
-| `make instantiate` | 25-step greenfield deployment (~70 min) |
-| `make instantiate-critical` | Critical path only (~25 min) |
-| `make deploy-all` | Deploy all services in tier order |
-| `make deploy-tier TIER=0` | Deploy specific tier |
-| `make deploy-atlasos` | Deploy AtlasOS services |
-| `make deploy-agents` | Deploy node agents + cluster brain |
-| `make embed-atlasos` | Embed agents in all ~162 repos |
-| `make health` | Full-stack health audit |
-| `make gpu-status` | DGX GPU health |
-| `make seed-secrets` | Seed Vault from .env |
-| `make validate-k8s` | Dry-run validate all manifests |
+Proprietary — MedinovAI.

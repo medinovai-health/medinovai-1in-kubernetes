@@ -1,60 +1,30 @@
-name: IaC Drift Detection
+name: Drift Detection
 
 on:
   schedule:
-    - cron: "0 3 * * *"
+    - cron: '0 3 * * *'
   workflow_dispatch:
 
-permissions:
-  contents: read
-
 jobs:
-  detect-drift:
-    name: Detect Drift (${{ matrix.environment }})
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        environment: [dev, staging, production]
+  detect:
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: "1.7"
-
-      - name: Configure cloud credentials
-        run: echo "TODO: Configure credentials from GitHub secrets"
-
-      - name: Terraform Init
-        working-directory: infra/terraform/environments/${{ matrix.environment }}
+      - name: Check K3s drift
         run: |
-          if [ -f "main.tf" ]; then
-            terraform init
-          else
-            echo "No Terraform config for ${{ matrix.environment }} yet — skipping."
-          fi
-
-      - name: Detect Drift
-        working-directory: infra/terraform/environments/${{ matrix.environment }}
-        run: |
-          if [ -f "main.tf" ]; then
-            PLAN_OUTPUT=$(terraform plan -detailed-exitcode -no-color 2>&1) || EXIT_CODE=$?
-            if [ "${EXIT_CODE:-0}" -eq 2 ]; then
-              echo "DRIFT DETECTED in ${{ matrix.environment }}!"
-              echo "$PLAN_OUTPUT"
-              echo "drift_detected=true" >> $GITHUB_ENV
-            else
-              echo "No drift in ${{ matrix.environment }}."
-              echo "drift_detected=false" >> $GITHUB_ENV
+          echo "Checking K8s state vs Git manifests..."
+          for dir in infra/kubernetes/services/*/; do
+            if [ -f "$dir/kustomization.yaml" ]; then
+              ns=$(grep 'namespace:' "$dir/kustomization.yaml" | awk '{print $2}' | head -1)
+              if [ -n "$ns" ]; then
+                echo "--- $dir (namespace: $ns) ---"
+                kustomize build "$dir" | kubectl diff -f - 2>/dev/null || echo "DRIFT DETECTED in $dir"
+              fi
             fi
-          else
-            echo "No Terraform config — skipping."
-            echo "drift_detected=false" >> $GITHUB_ENV
-          fi
+          done
 
-      - name: Alert on drift
-        if: env.drift_detected == 'true'
+      - name: Check node health
         run: |
-          echo "ALERT: Infrastructure drift detected in ${{ matrix.environment }}"
-          echo "TODO: Send alert to Slack #eng and PagerDuty (P3)"
+          kubectl get nodes -o wide
+          kubectl top nodes 2>/dev/null || true

@@ -1,15 +1,21 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-# Dev overlay: Mac Studio only, critical-path services (~12 services)
-# For fast iteration during development. Single-node cluster.
+# Dev overlay: single Mac Studio node, no GPU services, relaxed limits
 
 resources:
-  - ../../services/tier0
-  - ../../services/atlasos
-  - ../../services/atlasos-cluster-brain
+  - ../../base
   - ../../vault
   - ../../external-secrets
+  - ../../services/tier0
+  - ../../services/tier1
+  - ../../services/tier2
+  - ../../services/atlasos
+  - ../../services/atlasos-node-agent
+  - ../../services/atlasos-cluster-brain
+  - ../../services/atlasos-sidecar
+
+patchesStrategicMerge: []
 
 patches:
   # Reduce replicas to 1 for dev

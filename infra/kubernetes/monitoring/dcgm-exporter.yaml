@@ -2,17 +2,18 @@ apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: dcgm-exporter
-  namespace: monitoring
+  namespace: medinovai-monitoring
   labels:
-    app: dcgm-exporter
+    app.kubernetes.io/name: dcgm-exporter
+    medinovai.com/tier: monitoring
 spec:
   selector:
     matchLabels:
-      app: dcgm-exporter
+      app.kubernetes.io/name: dcgm-exporter
   template:
     metadata:
       labels:
-        app: dcgm-exporter
+        app.kubernetes.io/name: dcgm-exporter
       annotations:
         prometheus.io/scrape: "true"
         prometheus.io/port: "9400"
@@ -29,9 +30,6 @@ spec:
           ports:
             - containerPort: 9400
               name: metrics
-          env:
-            - name: DCGM_EXPORTER_KUBERNETES
-              value: "true"
           resources:
             requests:
               memory: 64Mi
@@ -39,19 +37,21 @@ spec:
             limits:
               memory: 256Mi
               cpu: 200m
+          securityContext:
+            privileged: true
+          env:
+            - name: DCGM_EXPORTER_LISTEN
+              value: ":9400"
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: dcgm-exporter
-  namespace: monitoring
-  labels:
-    app: dcgm-exporter
+  namespace: medinovai-monitoring
 spec:
-  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: dcgm-exporter
   ports:
     - port: 9400
       targetPort: 9400
       name: metrics
-  selector:
-    app: dcgm-exporter

@@ -1,27 +1,8 @@
-# AI/ML Repo Heartbeat
+# Heartbeat — AI/ML
 
-**Cadence**: Every 1 hour
+## Check Frequency: Every 30 minutes
 
-## Checks
-
-| Check | Action on Failure |
-|-------|-------------------|
-| Model registry | Alert if unregistered or stale |
-| Inference latency | Alert if P99 > SLA |
-| Prediction drift | Alert; trigger review |
-| Bias metrics | Alert if outside bounds |
-| Token cost | Alert on anomaly |
-
-## Scope
-
-- Verify all production models in registry with current metadata.
-- Monitor inference latency (P50, P95, P99).
-- Run drift detection (data, predictions).
-- Compute and compare bias metrics vs baseline.
-- Track token/API cost; flag anomalies.
-
-## Outputs
-
-- Status: pass / fail / degraded
-- Timestamp and run ID
-- Links to registry, dashboards, cost reports
+### Verification Checks
+1. **Model Health**: Serving models responsive; no degradation alerts
+2. **Drift Thresholds**: Accuracy and feature drift within configured bounds
+3. **Bias Scores**: Fairness metrics within tolerance; no unexplained disparities

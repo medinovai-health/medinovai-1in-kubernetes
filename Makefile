@@ -1,248 +1,158 @@
+.DEFAULT_GOAL := help
+
 # ─── MedinovAI Deploy — On-Prem K3s Makefile ─────────────────────────────────
 # Single repo for deploying the ENTIRE MedinovAI platform on-prem.
 # K3s via OrbStack (macOS) + bare metal (DGX). Vault for secrets.
 # AtlasOS embedded in every repo for fully autonomous AI operations.
-#
-# Usage:
-#   make help                Show all available commands
-#   make setup               Full setup from blank to running platform
-#   make deploy-all          Deploy all 109 services
-#   make health              Full-stack health audit
 # ─────────────────────────────────────────────────────────────────────────────
 
-.PHONY: help setup prerequisites
-.PHONY: init-network init-k3s-server init-k3s-agent init-dgx init-storage init-vault
-.PHONY: instantiate deploy-all deploy-tier deploy-service deploy-critical
-.PHONY: embed-atlasos embed-atlasos-repo
-.PHONY: health gpu-status agent-status vault-status
-.PHONY: seed-secrets rotate-secrets
-.PHONY: drift-check backup dashboards logs
-.PHONY: add-node remove-node
-.PHONY: ceo-stack ceo-stack-down ceo-health ceo-audit-verify ceo-logs
-
+# ─── Variables ────────────────────────────────────────────────────────────────
+SHELL := /bin/bash
+SCRIPTS := scripts
+BOOTSTRAP := $(SCRIPTS)/bootstrap
+DEPLOY := $(SCRIPTS)/deploy
+AGENTS := $(SCRIPTS)/agents
+MAINTENANCE := $(SCRIPTS)/maintenance
+VALIDATION := $(SCRIPTS)/validation
+K8S := infra/kubernetes
 ENV ?= onprem-prod
-DGX_IPS ?= 192.168.68.78,192.168.68.85
-TIER ?=
-SVC ?=
-REPO ?=
-CATEGORY ?=
-DEPLOY_HOME ?= $(HOME)/.medinovai-deploy
-KUBECONFIG ?= $(DEPLOY_HOME)/kubeconfig.yaml
 
-export KUBECONFIG
-export DEPLOY_HOME
+.PHONY: help setup prerequisites init-network init-k3s init-k3s-agent init-dgx init-storage init-vault
+.PHONY: seed-secrets instantiate instantiate-critical
+.PHONY: deploy-all deploy-critical deploy-tier deploy-service deploy-atlasos deploy-gpu deploy-agents
+.PHONY: embed-atlasos embed-atlasos-repo embed-atlasos-category register-agents register-crons
+.PHONY: health gpu-status agent-status status vault-status
+.PHONY: rotate-secrets drift-check backup cert-check
+.PHONY: validate validate-k8s smoke-test dashboards logs
 
-# ─── Help ────────────────────────────────────────────────────────────────────
+# ─── Help ───────────────────────────────────────────────────────────────────
+help: ## Show this help
+	@grep -E '^[-a-zA-Z0-9_]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-24s\033[0m %s\n", $$1, $$2}'
 
-help: ## Show this help message
-	@echo ""
-	@echo "MedinovAI Deploy — On-Prem K3s Platform Deployment"
-	@echo "======================================================"
-	@echo ""
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | \
-		awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-24s\033[0m %s\n", $$1, $$2}'
-	@echo ""
+# ─── Bootstrap ────────────────────────────────────────────────────────────────
+setup: prerequisites init-network init-k3s init-storage init-vault instantiate ## Full setup from blank
 
-# ─── Full Setup (Blank → Running) ───────────────────────────────────────────
+prerequisites: ## Check required tools
+	@bash $(BOOTSTRAP)/prerequisites.sh
 
-setup: prerequisites instantiate embed-atlasos ## Full setup: prerequisites + instantiate + embed AtlasOS
-	@echo ""
-	@echo "Setup complete! Full MedinovAI platform is running."
-	@echo "  Run: make health"
+init-network: ## Set up Tailscale mesh
+	@bash $(BOOTSTRAP)/init-network.sh
 
-prerequisites: ## Check all required tools
-	bash scripts/bootstrap/prerequisites.sh
+init-k3s: ## Set up K3s via OrbStack (Mac Studio server)
+	@bash $(BOOTSTRAP)/init-orbstack.sh --role server
 
-instantiate: ## Full greenfield instantiation (blank → running platform, ~70 min)
-	bash scripts/bootstrap/instantiate.sh
+init-k3s-agent: ## Add K3s worker (MacBook Pro)
+	@bash $(BOOTSTRAP)/init-orbstack.sh --role agent
 
-instantiate-critical: ## Critical-path instantiation (12 services, ~25 min)
-	bash scripts/bootstrap/instantiate.sh --critical-path-only
+init-dgx: ## Set up DGX GPU nodes
+	@bash $(BOOTSTRAP)/init-dgx.sh
 
-instantiate-resume: ## Resume interrupted instantiation from last checkpoint
-	bash scripts/bootstrap/instantiate.sh --resume
+init-storage: ## Install Longhorn storage
+	@bash $(BOOTSTRAP)/init-storage.sh
 
-instantiate-dry-run: ## Show what instantiation would do
-	bash scripts/bootstrap/instantiate.sh --dry-run
+init-vault: ## Deploy and initialize Vault
+	@bash $(BOOTSTRAP)/init-vault.sh
 
-# ─── Infrastructure Bootstrap ───────────────────────────────────────────────
+seed-secrets: ## Seed secrets into Vault
+	@bash $(BOOTSTRAP)/init-vault.sh --seed
 
-init-network: ## Set up Tailscale mesh network
-	bash scripts/bootstrap/init-network.sh --advertise-routes
+instantiate: ## Full platform instantiation (25 steps, ~70min)
+	@bash $(BOOTSTRAP)/instantiate.sh
 
-init-k3s-server: ## Set up K3s server on Mac Studio via OrbStack
-	bash scripts/bootstrap/init-orbstack.sh --role server
+instantiate-critical: ## Critical path only (15 steps, ~25min)
+	@bash $(BOOTSTRAP)/instantiate.sh --critical-path-only
 
-init-k3s-agent: ## Set up K3s agent on MacBook Pro via OrbStack
-	bash scripts/bootstrap/init-orbstack.sh --role agent
+# ─── Deploy ───────────────────────────────────────────────────────────────────
+deploy-all: ## Deploy all services (tier 0-6)
+	@bash $(DEPLOY)/deploy_tier.sh all
 
-init-dgx: ## Set up DGX GPU nodes as K3s workers
-	bash scripts/bootstrap/init-dgx.sh --server-ip $$(tailscale ip -4) --dgx-ips $(DGX_IPS)
+deploy-critical: ## Deploy critical path only
+	@bash $(DEPLOY)/deploy_tier.sh all --critical-path-only
 
-init-storage: ## Install Longhorn distributed storage
-	bash scripts/bootstrap/init-storage.sh
+deploy-tier: ## Deploy specific tier (TIER=0-6)
+	@bash $(DEPLOY)/deploy_tier.sh $(TIER)
 
-init-vault: ## Deploy and initialize HashiCorp Vault
-	bash scripts/bootstrap/init-vault.sh
+deploy-service: ## Deploy single service (SVC=name)
+	@bash $(DEPLOY)/deploy_service.sh --service $(SVC) --environment $(ENV)
 
-# ─── Deployment ──────────────────────────────────────────────────────────────
+deploy-atlasos: ## Deploy AtlasOS services
+	@bash $(DEPLOY)/deploy_tier.sh atlasos
 
-deploy-all: ## Deploy all 109 services in tier order
-	bash scripts/deploy/deploy_tier.sh all
+deploy-gpu: ## Deploy GPU/AI inference services
+	@bash $(DEPLOY)/deploy_tier.sh gpu
 
-deploy-tier: ## Deploy specific tier (TIER=0|1|2|3|4|5|6|atlasos|gpu|agents)
-	bash scripts/deploy/deploy_tier.sh $(TIER)
+deploy-agents: ## Deploy AtlasOS infrastructure agents
+	@bash $(DEPLOY)/deploy_tier.sh agents
 
-deploy-critical: ## Deploy critical-path only (12 essential services)
-	@for t in 0 1 2 atlasos; do bash scripts/deploy/deploy_tier.sh $$t; done
+# ─── AtlasOS Embedding ───────────────────────────────────────────────────────
+embed-atlasos: ## Embed AtlasOS in all ~162 repos
+	@bash $(AGENTS)/embed_atlasos.sh --all
 
-deploy-atlasos: ## Deploy AtlasOS services only
-	bash scripts/deploy/deploy_tier.sh atlasos
+embed-atlasos-repo: ## Embed AtlasOS in single repo (REPO=name)
+	@bash $(AGENTS)/embed_atlasos.sh --repo $(REPO)
 
-deploy-agents: ## Deploy AtlasOS node agents + cluster brain
-	bash scripts/deploy/deploy_tier.sh agents
+embed-atlasos-category: ## Embed AtlasOS in category (CAT=clinical)
+	@bash $(AGENTS)/embed_atlasos.sh --category $(CAT)
 
-# ─── AtlasOS Embedding ──────────────────────────────────────────────────────
+register-agents: ## Register Atlas agents
+	@bash $(AGENTS)/create_agents.sh
 
-embed-atlasos: ## Embed AtlasOS agent kits in ALL ~162 repos
-	bash scripts/agents/embed_atlasos.sh --all
+register-crons: ## Register agent cron jobs
+	@bash $(AGENTS)/register_crons.sh
 
-embed-atlasos-repo: ## Embed AtlasOS in single repo (REPO=medinovai-CTMS)
-	bash scripts/agents/embed_atlasos.sh --repo $(REPO)
+# ─── Health & Status ──────────────────────────────────────────────────────────
+health: ## Full-stack health check
+	@echo "─── Cluster ───" && kubectl get nodes
+	@echo "─── Vault ───" && kubectl exec vault-0 -n vault -- vault status 2>/dev/null || echo "Vault unreachable"
+	@echo "─── Pods ───" && kubectl get pods --all-namespaces --field-selector=status.phase!=Running 2>/dev/null | head -20
+	@echo "─── AtlasOS ───" && kubectl get pods -n medinovai-services -l app.kubernetes.io/part-of=atlasos 2>/dev/null
 
-embed-atlasos-category: ## Embed AtlasOS in repos by category (CATEGORY=clinical)
-	bash scripts/agents/embed_atlasos.sh --category $(CATEGORY)
+gpu-status: ## Show GPU status across DGX nodes
+	@kubectl get nodes -l gpu=true -o wide
+	@echo "─── GPU Resources ───"
+	@kubectl describe nodes -l gpu=true | grep -A5 "Allocated resources" || true
 
-embed-atlasos-dry-run: ## Preview what embed would do
-	bash scripts/agents/embed_atlasos.sh --all --dry-run
+agent-status: ## Show AtlasOS agent status
+	@kubectl get pods -n medinovai-atlasos 2>/dev/null
+	@kubectl get pods -n medinovai-services -l app.kubernetes.io/part-of=atlasos 2>/dev/null
 
-embed-atlasos-commit: ## Embed and commit changes to all repos
-	bash scripts/agents/embed_atlasos.sh --all --commit
+status: ## Quick cluster status
+	@kubectl get nodes && echo "" && kubectl get pods --all-namespaces | grep -v Running | grep -v Completed | head -20
 
-# ─── Health & Status ─────────────────────────────────────────────────────────
+# ─── Secrets ──────────────────────────────────────────────────────────────────
+rotate-secrets: ## Rotate secrets via Vault
+	@bash $(MAINTENANCE)/rotate_secrets.sh
 
-health: ## Full-stack health audit
-	@echo "=== Nodes ==="
-	@kubectl get nodes -o wide 2>/dev/null || echo "Cannot connect to cluster"
-	@echo ""
-	@echo "=== Pods by Namespace ==="
-	@for ns in infra security platform atlasos ai-ml clinical business integrations ui vault monitoring; do \
-		ready=$$(kubectl get pods -n $$ns --no-headers 2>/dev/null | grep -c Running || echo 0); \
-		total=$$(kubectl get pods -n $$ns --no-headers 2>/dev/null | wc -l | xargs || echo 0); \
-		printf "  %-20s %s/%s running\n" "$$ns" "$$ready" "$$total"; \
-	done
-	@echo ""
-	@echo "=== Vault ==="
-	@kubectl exec -n vault vault-0 -- vault status 2>/dev/null | head -5 || echo "  Vault not reachable"
-	@echo ""
-	@echo "=== Cluster Brain ==="
-	@kubectl exec -n atlasos deploy/atlasos-cluster-brain -- curl -s http://localhost:8100/health 2>/dev/null || echo "  Cluster brain not running"
+vault-status: ## Check Vault status
+	@bash $(BOOTSTRAP)/init-vault.sh --status
 
-gpu-status: ## NVIDIA GPU status across DGX nodes
-	@kubectl get nodes -l gpu=true -o wide 2>/dev/null || echo "No GPU nodes"
-	@echo ""
-	@for node in $$(kubectl get nodes -l gpu=true --no-headers -o custom-columns=':metadata.name' 2>/dev/null); do \
-		echo "=== $$node ==="; \
-		kubectl debug node/$$node --image=nvidia/cuda:12.0-base -- nvidia-smi 2>/dev/null || echo "  Cannot reach $$node"; \
-	done
+# ─── Maintenance ──────────────────────────────────────────────────────────────
+drift-check: ## Check for K8s drift vs Git manifests
+	@bash $(MAINTENANCE)/drift_check.sh
 
-agent-status: ## AtlasOS agent heartbeat status
-	@echo "=== Node Agents (DaemonSet) ==="
-	@kubectl get pods -n atlasos -l app=atlasos-node-agent -o wide 2>/dev/null || echo "  No node agents"
-	@echo ""
-	@echo "=== Cluster Brain ==="
-	@kubectl get pods -n atlasos -l app=atlasos-cluster-brain 2>/dev/null || echo "  No cluster brain"
+backup: ## Run backups (Longhorn snapshots + Vault)
+	@bash $(MAINTENANCE)/db_backup.sh
 
-vault-status: ## Vault status and secret count
-	@kubectl exec -n vault vault-0 -- vault status 2>/dev/null || echo "Vault not reachable"
+cert-check: ## Check certificate expiry
+	@bash $(MAINTENANCE)/cert_renewal.sh --check-only
 
-# ─── Secrets ─────────────────────────────────────────────────────────────────
-
-seed-secrets: ## Seed secrets into Vault from ~/.atlas/.env
-	bash scripts/bootstrap/init-vault.sh --seed-from-env $(HOME)/.atlas/.env
-
-seed-secrets-interactive: ## Seed secrets interactively
-	bash scripts/bootstrap/init-vault.sh --seed
-
-rotate-secrets: ## Rotate expiring secrets via Vault
-	bash scripts/maintenance/rotate_secrets.sh
-
-# ─── Maintenance ─────────────────────────────────────────────────────────────
-
-drift-check: ## Check for drift between Git manifests and cluster state
-	bash scripts/maintenance/drift_check.sh
-
-backup: ## Trigger Longhorn snapshots + Vault backup
-	@echo "Creating Longhorn snapshots..."
-	@kubectl get pvc --all-namespaces --no-headers 2>/dev/null | wc -l | xargs
-	@echo "Vault backup..."
-	@kubectl exec -n vault vault-0 -- vault operator raft snapshot save /vault/data/backup.snap 2>/dev/null || echo "  Vault backup requires raft storage"
-
-dashboards: ## Open Grafana dashboards
-	@echo "Grafana: kubectl port-forward -n monitoring svc/grafana 3000:3000"
-	@echo "Vault UI: kubectl port-forward -n vault svc/vault-ui 8200:8200"
-	@echo "Longhorn: kubectl port-forward -n longhorn-system svc/longhorn-frontend 8080:80"
-
-logs: ## Follow deploy logs
-	@tail -f $(DEPLOY_HOME)/logs/instantiate-*.log 2>/dev/null || echo "No logs found"
-
-# ─── Node Management ────────────────────────────────────────────────────────
-
-add-node: ## Add a new node (prompts for type: orbstack or dgx)
-	@echo "Node types: orbstack (macOS), dgx (GPU bare metal)"
-	@read -p "Type: " node_type; \
-	if [ "$$node_type" = "orbstack" ]; then \
-		bash scripts/bootstrap/init-orbstack.sh --role agent; \
-	elif [ "$$node_type" = "dgx" ]; then \
-		read -p "DGX IP: " dgx_ip; \
-		bash scripts/bootstrap/init-dgx.sh --server-ip $$(tailscale ip -4) --dgx-ips "$$dgx_ip"; \
-	fi
-
-# ─── Validation ──────────────────────────────────────────────────────────────
-
+# ─── Validation ───────────────────────────────────────────────────────────────
 validate: ## Full validation suite
-	@bash scripts/validation/validate_setup.sh 2>/dev/null || echo "Validation script not found"
+	@bash $(VALIDATION)/validate_setup.sh
 
 validate-k8s: ## Validate K8s manifests
-	@for dir in infra/kubernetes/services/*/; do \
-		echo "Validating $$dir..."; \
-		kubectl apply -k "$$dir" --dry-run=client 2>/dev/null && echo "  ✓" || echo "  ✗"; \
-	done
+	@kubectl kustomize $(K8S)/base > /dev/null && echo "Base: OK"
+	@kubectl kustomize $(K8S)/services/tier0 > /dev/null && echo "Tier 0: OK"
+	@kubectl kustomize $(K8S)/services/atlasos > /dev/null && echo "AtlasOS: OK"
 
-# ─── CI/CD ───────────────────────────────────────────────────────────────────
+smoke-test: ## Run smoke tests
+	@bash $(VALIDATION)/smoke_test.sh
 
-atlas-agents: ## Register all Atlas agents
-	bash scripts/agents/create_agents.sh
+# ─── Monitoring ───────────────────────────────────────────────────────────────
+dashboards: ## Open Grafana dashboards
+	@echo "Port-forwarding Grafana..."
+	@kubectl port-forward svc/grafana -n medinovai-monitoring 3000:3000 &
+	@echo "Grafana: http://localhost:3000"
 
-atlas-crons: ## Register all monitoring cron jobs
-	bash scripts/agents/register_crons.sh
-
-# ─── AtlasOS CO-CEO Stack ─────────────────────────────────────────────────
-
-ATLASOS_PATH ?= ../AtlasOS
-CEO_COMPOSE := infra/docker/docker-compose.ceo.yml
-
-ceo-stack: ## Deploy the full AtlasOS CO-CEO stack
-	@echo "🚀 Deploying AtlasOS CO-CEO Stack..."
-	ATLASOS_PATH=$(ATLASOS_PATH) docker compose -f $(CEO_COMPOSE) up -d --build
-	@echo "Waiting for services to initialize..."
-	@sleep 10
-	@$(MAKE) ceo-health
-
-ceo-stack-down: ## Tear down the CO-CEO stack
-	docker compose -f $(CEO_COMPOSE) down
-
-ceo-health: ## Health check all CO-CEO services (ports 41xxx)
-	@echo "── CO-CEO Service Health (41xxx range) ──"
-	@curl -sf http://localhost:41100/v1/sys/health | python3 -c "import sys,json; d=json.load(sys.stdin); print('  Vault (41100):            ✓ init=%s sealed=%s' % (d.get('initialized'),d.get('sealed')))" 2>/dev/null || echo "  Vault (41100):            ✗"
-	@curl -sf http://localhost:41500/health | python3 -c "import sys,json; print('  Audit Chain (41500):      ✓ %s' % json.load(sys.stdin).get('status','?'))" 2>/dev/null || echo "  Audit Chain (41500):      ✗"
-	@curl -sf http://localhost:41510/health | python3 -c "import sys,json; print('  Correlation (41510):      ✓ %s' % json.load(sys.stdin).get('status','?'))" 2>/dev/null || echo "  Correlation (41510):      ✗"
-	@curl -sf http://localhost:41520/health | python3 -c "import sys,json; print('  Briefing (41520):         ✓ %s' % json.load(sys.stdin).get('status','?'))" 2>/dev/null || echo "  Briefing (41520):         ✗"
-	@curl -sf http://localhost:41530/health | python3 -c "import sys,json; print('  Decision Tracker (41530): ✓ %s' % json.load(sys.stdin).get('status','?'))" 2>/dev/null || echo "  Decision Tracker (41530): ✗"
-	@curl -sf -o /dev/null http://localhost:41000 && echo "  Atlas Command (41000):    ✓ http://localhost:41000" || echo "  Atlas Command (41000):    ✗"
-
-ceo-audit-verify: ## Verify the audit chain integrity
-	@curl -sf http://localhost:41500/audit/verify | python3 -m json.tool 2>/dev/null || echo "Audit chain unreachable"
-
-ceo-logs: ## Tail logs from all CO-CEO services
-	docker compose -f $(CEO_COMPOSE) logs -f --tail=50
+logs: ## Follow deploy logs
+	@kubectl logs -f -n medinovai-services -l app.kubernetes.io/part-of=atlasos --tail=50

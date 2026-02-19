@@ -2,64 +2,159 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: atlasos-cluster-brain
-  namespace: medinovai-atlasos
+  namespace: atlasos
   labels:
+    app: atlasos-cluster-brain
     app.kubernetes.io/name: atlasos-cluster-brain
     app.kubernetes.io/part-of: atlasos
+    app.kubernetes.io/version: "1.2.0"
     medinovai.com/component: cluster-brain
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app.kubernetes.io/name: atlasos-cluster-brain
+      app: atlasos-cluster-brain
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: atlasos-cluster-brain
-        app.kubernetes.io/part-of: atlasos
-        medinovai.com/component: cluster-brain
+        app: atlasos-cluster-brain
     spec:
-      serviceAccountName: atlasos-cluster-brain
-      affinity:
-        nodeAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-            - weight: 100
-              preference:
-                matchExpressions:
-                  - key: role
-                    operator: In
-                    values:
-                      - control-plane
+      serviceAccountName: atlasos-cluster-brain-sa
+      nodeSelector:
+        node-role.kubernetes.io/control-plane: ""
+      tolerations:
+        - key: "node-role.kubernetes.io/control-plane"
+          operator: "Exists"
+          effect: "NoSchedule"
       containers:
         - name: cluster-brain
-          image: medinovai-atlasos-cluster-brain:latest
+          image: python:3.12-slim
+          command:
+            - python3
+            - -c
+            - |
+              import json, os, time, datetime
+              from http.server import HTTPServer, BaseHTTPRequestHandler
+              import urllib.request
+
+              APPROVAL_REQUIRED_ACTIONS = [
+                  "node_drain", "deployment_delete", "scale_to_zero",
+                  "cluster_upgrade", "network_policy_change", "node_add"
+              ]
+              HEARTBEAT_INTERVAL = 300
+              SLACK_WEBHOOK = os.environ.get("SLACK_WEBHOOK_URL", "")
+
+              class BrainHandler(BaseHTTPRequestHandler):
+                  def do_GET(self):
+                      if self.path == "/health":
+                          self.send_response(200)
+                          self.send_header("Content-Type", "application/json")
+                          self.end_headers()
+                          self.wfile.write(json.dumps({
+                              "status": "ok",
+                              "component": "atlasos-cluster-brain",
+                              "agents": ["ceo", "supervisor", "guardian"],
+                              "timestamp": datetime.datetime.utcnow().isoformat() + "Z"
+                          }).encode())
+                      elif self.path == "/status":
+                          self.send_response(200)
+                          self.send_header("Content-Type", "application/json")
+                          self.end_headers()
+                          status = get_cluster_status()
+                          self.wfile.write(json.dumps(status).encode())
+                      else:
+                          self.send_response(404)
+                          self.end_headers()
+
+                  def do_POST(self):
+                      if self.path == "/action":
+                          content_length = int(self.headers.get("Content-Length", 0))
+                          body = json.loads(self.rfile.read(content_length))
+                          result = evaluate_action(body)
+                          self.send_response(200)
+                          self.send_header("Content-Type", "application/json")
+                          self.end_headers()
+                          self.wfile.write(json.dumps(result).encode())
+                      else:
+                          self.send_response(404)
+                          self.end_headers()
+
+                  def log_message(self, format, *args):
+                      pass
+
+              def get_cluster_status():
+                  return {
+                      "timestamp": datetime.datetime.utcnow().isoformat() + "Z",
+                      "brain": "active",
+                      "approval_queue": [],
+                  }
+
+              def evaluate_action(action):
+                  action_type = action.get("type", "")
+                  if action_type in APPROVAL_REQUIRED_ACTIONS:
+                      notify_approval_needed(action)
+                      return {
+                          "status": "needs_human",
+                          "action": action_type,
+                          "message": f"Action '{action_type}' requires human approval",
+                          "approval_channel": "slack"
+                      }
+                  return {"status": "allowed", "action": action_type}
+
+              def notify_approval_needed(action):
+                  if not SLACK_WEBHOOK:
+                      print(json.dumps({"event": "approval_needed_no_webhook", "action": action}))
+                      return
+                  try:
+                      payload = json.dumps({
+                          "text": f"🔐 *AtlasOS Cluster Brain — Approval Required*\n"
+                                  f"Action: `{action.get('type')}`\n"
+                                  f"Target: `{action.get('target', 'unknown')}`\n"
+                                  f"Reason: {action.get('reason', 'No reason provided')}\n"
+                                  f"Approve or deny in the AtlasOS dashboard."
+                      }).encode()
+                      req = urllib.request.Request(SLACK_WEBHOOK, data=payload,
+                                                    headers={"Content-Type": "application/json"})
+                      urllib.request.urlopen(req, timeout=5)
+                  except Exception as e:
+                      print(json.dumps({"error": f"Slack notification failed: {e}"}))
+
+              print("AtlasOS Cluster Brain starting...")
+              print(f"  Agents: CEO, Supervisor, Guardian")
+              print(f"  Approval-required actions: {APPROVAL_REQUIRED_ACTIONS}")
+
+              server = HTTPServer(("0.0.0.0", 8100), BrainHandler)
+              print(f"  Listening on :8100")
+              server.serve_forever()
           ports:
-            - containerPort: 8090
-          env:
-            - name: CLUSTER_NAME
-              value: medinovai-onprem
-            - name: EVENT_BUS_URL
-              value: "http://event-bus.medinovai-services:8085"
-            - name: SLACK_APPROVAL_CHANNEL
-              valueFrom:
-                secretKeyRef:
-                  name: atlasos-channel-secrets
-                  key: SLACK_APPROVAL_CHANNEL
-            - name: APPROVAL_MODE
-              value: slack
+            - containerPort: 8100
           envFrom:
             - secretRef:
-                name: atlasos-api-keys
+                name: atlasos-secrets
+                optional: true
+          env:
+            - name: SLACK_WEBHOOK_URL
+              valueFrom:
+                secretKeyRef:
+                  name: atlasos-secrets
+                  key: SLACK_WEBHOOK_URL
+                  optional: true
           resources:
             requests:
-              memory: "512Mi"
-              cpu: "250m"
+              memory: 256Mi
+              cpu: 100m
             limits:
-              memory: "1Gi"
-              cpu: "500m"
+              memory: 1Gi
+              cpu: "1"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8100
+            initialDelaySeconds: 10
+            periodSeconds: 10
           livenessProbe:
             httpGet:
               path: /health
-              port: 8090
-            initialDelaySeconds: 10
-            periodSeconds: 10
+              port: 8100
+            initialDelaySeconds: 15
+            periodSeconds: 30

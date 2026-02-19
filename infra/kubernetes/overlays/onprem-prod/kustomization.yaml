@@ -9,8 +9,10 @@ resources:
   - ../../services/atlasos
   - ../../services/atlasos-node-agent
   - ../../services/atlasos-cluster-brain
+  - ../../services/atlasos-sidecar
   - ../../vault
   - ../../external-secrets
+  - pdb.yaml
 
 # Production-specific patches
 patches:
@@ -25,6 +27,27 @@ patches:
   - target:
       kind: Deployment
       name: atlas-gateway
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 2
+  - target:
+      kind: Deployment
+      name: atlas-orchestrator
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 2
+  - target:
+      kind: Deployment
+      name: mcp-gateway
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 2
+  - target:
+      kind: Deployment
+      name: ai-orchestrator
     patch: |-
       - op: replace
         path: /spec/replicas

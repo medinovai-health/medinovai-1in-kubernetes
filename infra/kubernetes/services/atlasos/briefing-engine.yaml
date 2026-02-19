@@ -1,0 +1,65 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: briefing-engine
+  namespace: atlasos
+  labels:
+    app.kubernetes.io/name: briefing-engine
+    app.kubernetes.io/part-of: atlasos
+spec:
+  ports:
+    - port: 8086
+      targetPort: 8086
+  selector:
+    app: briefing-engine
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: briefing-engine
+  namespace: atlasos
+  labels:
+    app: briefing-engine
+    app.kubernetes.io/name: briefing-engine
+    app.kubernetes.io/part-of: atlasos
+    app.kubernetes.io/version: "1.2.0"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: briefing-engine
+  template:
+    metadata:
+      labels:
+        app: briefing-engine
+        atlasos.medinovai.com/sidecar: "enabled"
+    spec:
+      serviceAccountName: atlasos-sa
+      containers:
+        - name: briefing-engine
+          image: atlasos/briefing-engine:1.2.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8086
+          envFrom:
+            - secretRef:
+                name: atlasos-infra-secrets
+          resources:
+            requests:
+              memory: 128Mi
+              cpu: 50m
+            limits:
+              memory: 256Mi
+              cpu: 250m
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8086
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8086
+            initialDelaySeconds: 30
+            periodSeconds: 30

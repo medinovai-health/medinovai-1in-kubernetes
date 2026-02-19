@@ -1,0 +1,29 @@
+name: Embed AtlasOS
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'templates/repo-agents/**'
+      - 'templates/shared/**'
+      - 'config/repo_registry.json5'
+
+  workflow_dispatch:
+    inputs:
+      category:
+        description: 'Category to embed (leave empty for all)'
+        required: false
+
+jobs:
+  embed:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Embed AtlasOS
+        run: |
+          if [ -n "${{ inputs.category }}" ]; then
+            bash scripts/agents/embed_atlasos.sh --category "${{ inputs.category }}" --commit
+          else
+            bash scripts/agents/embed_atlasos.sh --all --commit
+          fi

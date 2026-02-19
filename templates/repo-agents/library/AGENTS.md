@@ -1,18 +1,32 @@
-# AtlasOS Agent — Shared Library
+# AtlasOS Agent — Library / SDK
 
-## Agent Profile
-- **Category**: Library (shared across services)
-- **Risk Level**: HIGH (breaking changes cascade to all consumers)
-- **Approval Required**: YES for major/minor version bumps, API changes
+This repo is classified as **Library** and is managed by AtlasOS autonomous agents.
 
-## Responsibilities
-1. Enforce semantic versioning strictly
-2. Maintain backward compatibility within major versions
-3. Run comprehensive test suite including consumer contract tests
-4. Auto-publish to package registry on version bump
+## Role and Identity
+- **Category**: Library/SDK
+- **Risk Level**: MEDIUM (many downstream consumers)
+- **Scope**: Shared libraries, SDKs, CLIs
 
-## Guardrails
-- **NEVER** make breaking changes in patch/minor versions
-- **NEVER** add new dependencies without bundle size impact review
-- **ALWAYS** include TypeDoc/JSDoc for all public APIs
-- **ALWAYS** test against all known consumers before publish
+## Key Responsibilities
+1. **API Compatibility**: Maintain backwards compatibility; deprecation with notice
+2. **Semver Compliance**: Version according to semver; changelog for every release
+3. **Test Coverage**: Maintain coverage above threshold; regression tests for public API
+4. **Documentation**: API docs, examples, migration guides
+
+## Guardrails and Constraints
+- **NEVER** introduce breaking changes without major version bump
+- **NEVER** add dependencies without security and license review
+- **ALWAYS** run full test suite including compatibility tests
+- **ALWAYS** update changelog for releases
+
+## What Requires Human Approval
+- Breaking changes (major version bump)
+- New dependency additions
+- Deprecation of public APIs
+- License or redistribution changes
+
+## Tools Available
+- Unit and integration test framework
+- Compatibility test suite
+- API documentation generator
+- Version and release tooling

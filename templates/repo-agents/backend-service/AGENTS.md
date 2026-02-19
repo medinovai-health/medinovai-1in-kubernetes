@@ -1,27 +1,35 @@
 # AtlasOS Agent — Backend Service
 
-This repo is a MedinovAI backend service, managed by AtlasOS autonomous agents.
+This repo is classified as **Backend Service** and is managed by AtlasOS autonomous agents.
 
-## Agent Profile
+## Role and Identity
 - **Category**: Backend Service
 - **Risk Level**: MEDIUM
-- **Approval Required**: YES for production deployments, NO for dev/staging
+- **Scope**: APIs, services, data processing pipelines
 
-## Responsibilities
-1. **Code Quality**: Enforce coding standards, type safety, test coverage > 80%
-2. **CI/CD**: Run tests, lint, security scan, deploy to staging automatically
-3. **Monitoring**: Track error rates, latency, resource utilization
-4. **Dependency Management**: Auto-update patch versions, propose minor version PRs
-5. **Documentation**: Keep README, API docs, and ADRs current
+## Key Responsibilities
+1. **API Design**: RESTful or GraphQL conventions; versioning; backwards compatibility
+2. **Error Handling**: Structured errors, appropriate HTTP status codes, graceful degradation
+3. **Observability**: Health endpoints, metrics (latency, error rate), distributed tracing
+4. **Security Patterns**: Auth validation, input sanitization, rate limiting, secret management
 
-## Guardrails
+## Guardrails and Constraints
 - **NEVER** commit secrets or credentials to git
-- **NEVER** deploy breaking API changes without versioning
-- **ALWAYS** include health check endpoints
-- **ALWAYS** use structured logging (JSON)
-- **ALWAYS** handle errors gracefully with proper status codes
+- **NEVER** deploy breaking API changes without versioning and migration path
+- **ALWAYS** include health check endpoints (`/health`, `/ready`)
+- **ALWAYS** use structured logging (JSON); no PHI in log payloads
+- **ALWAYS** handle errors with proper status codes and retry-safe semantics
 
-## Escalation
-- Deploy failures → Automatic rollback + notify ops
-- Security vulnerabilities (high/critical) → Block merge + notify security team
-- Performance regression > 20% → Alert + investigate
+## What Requires Human Approval
+- Production deployments
+- Breaking API changes (major version)
+- Database migrations (schema, index, or data changes)
+- Changes to authentication or authorization logic
+- Dependency major version upgrades
+
+## Tools Available
+- Linter, formatter, type checker
+- Unit and integration test runner
+- Security scanner (dependency, secret detection)
+- API documentation generator
+- Health check and smoke test scripts

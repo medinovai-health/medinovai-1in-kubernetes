@@ -2,94 +2,90 @@ apiVersion: v1
 kind: Service
 metadata:
   name: atlas-gateway
-  namespace: medinovai-services
+  namespace: atlasos
   labels:
     app.kubernetes.io/name: atlas-gateway
     app.kubernetes.io/part-of: atlasos
-    medinovai.com/tier: intelligence
 spec:
-  type: ClusterIP
   ports:
     - port: 18789
       targetPort: 18789
-      name: http
   selector:
-    app.kubernetes.io/name: atlas-gateway
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: atlas-workspaces
-  namespace: medinovai-services
-  labels:
-    app.kubernetes.io/name: atlas-gateway
-    app.kubernetes.io/part-of: atlasos
-spec:
-  accessModes: ["ReadWriteOnce"]
-  storageClassName: longhorn
-  resources:
-    requests:
-      storage: 20Gi
+    app: atlas-gateway
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: atlas-gateway
-  namespace: medinovai-services
+  namespace: atlasos
   labels:
+    app: atlas-gateway
     app.kubernetes.io/name: atlas-gateway
     app.kubernetes.io/part-of: atlasos
-    medinovai.com/tier: intelligence
+    app.kubernetes.io/version: "1.2.0"
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app.kubernetes.io/name: atlas-gateway
+      app: atlas-gateway
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: atlas-gateway
-        app.kubernetes.io/part-of: atlasos
-        medinovai.com/tier: intelligence
-      annotations:
+        app: atlas-gateway
         atlasos.medinovai.com/sidecar: "enabled"
     spec:
+      serviceAccountName: atlasos-sa
       containers:
-        - name: atlas-gateway
-          image: medinovai-atlas-gateway:latest
-          imagePullPolicy: IfNotPresent
+        - name: gateway
+          image: node:22-alpine
+          command: ["atlas", "gateway", "--port", "18789"]
           ports:
             - containerPort: 18789
           envFrom:
             - secretRef:
-                name: atlasos-api-keys
+                name: atlasos-secrets
             - secretRef:
-                name: atlasos-channel-secrets
-            - secretRef:
-                name: atlasos-integration-secrets
+                name: atlasos-infra-secrets
           volumeMounts:
-            - name: atlas-workspaces
-              mountPath: /data/workspaces
+            - name: atlas-config
+              mountPath: /root/.atlas
+            - name: atlas-state
+              mountPath: /data/atlas
           resources:
             requests:
-              memory: 256Mi
-              cpu: 100m
-            limits:
               memory: 512Mi
-              cpu: 500m
-          livenessProbe:
-            httpGet:
-              path: /health
-              port: 18789
-            initialDelaySeconds: 15
-            periodSeconds: 30
+              cpu: 250m
+            limits:
+              memory: 2Gi
+              cpu: "2"
           readinessProbe:
             httpGet:
               path: /health
               port: 18789
-            initialDelaySeconds: 10
+            initialDelaySeconds: 15
             periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 18789
+            initialDelaySeconds: 30
+            periodSeconds: 30
       volumes:
-        - name: atlas-workspaces
+        - name: atlas-config
           persistentVolumeClaim:
-            claimName: atlas-workspaces
+            claimName: atlas-config-pvc
+        - name: atlas-state
+          persistentVolumeClaim:
+            claimName: atlas-state-pvc
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: atlas-config-pvc
+  namespace: atlasos
+spec:
+  accessModes: ["ReadWriteOnce"]
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 5Gi

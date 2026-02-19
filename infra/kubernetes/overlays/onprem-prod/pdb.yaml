@@ -1,0 +1,54 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: atlas-orchestrator-pdb
+  namespace: atlasos
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: atlas-orchestrator
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: mcp-gateway-pdb
+  namespace: atlasos
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: mcp-gateway
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: event-bus-pdb
+  namespace: atlasos
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: event-bus
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: audit-chain-pdb
+  namespace: atlasos
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: audit-chain
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: cluster-brain-pdb
+  namespace: atlasos
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: atlasos-cluster-brain

@@ -1,44 +1,29 @@
-apiVersion: v1
-kind: Service
-metadata:
-  name: loki
-  namespace: monitoring
-spec:
-  ports:
-    - port: 3100
-      targetPort: 3100
-  selector:
-    app: loki
----
 apiVersion: apps/v1
-kind: StatefulSet
+kind: Deployment
 metadata:
   name: loki
-  namespace: monitoring
+  namespace: medinovai-monitoring
+  labels:
+    app.kubernetes.io/name: loki
+    medinovai.com/tier: monitoring
 spec:
-  serviceName: loki
   replicas: 1
   selector:
     matchLabels:
-      app: loki
+      app.kubernetes.io/name: loki
   template:
     metadata:
       labels:
-        app: loki
+        app.kubernetes.io/name: loki
     spec:
       nodeSelector:
         role: control-plane
       containers:
         - name: loki
-          image: grafana/loki:3.0.0
+          image: grafana/loki:2.9.0
+          args: ["-config.file=/etc/loki/loki.yaml"]
           ports:
             - containerPort: 3100
-          args: ["-config.file=/etc/loki/loki.yaml"]
-          volumeMounts:
-            - name: config
-              mountPath: /etc/loki
-            - name: data
-              mountPath: /loki
           resources:
             requests:
               memory: 256Mi
@@ -46,48 +31,39 @@ spec:
             limits:
               memory: 1Gi
               cpu: 500m
+          volumeMounts:
+            - name: data
+              mountPath: /loki
+          livenessProbe:
+            httpGet:
+              path: /ready
+              port: 3100
+            initialDelaySeconds: 30
       volumes:
-        - name: config
-          configMap:
-            name: loki-config
-  volumeClaimTemplates:
-    - metadata:
-        name: data
-      spec:
-        accessModes: ["ReadWriteOnce"]
-        storageClassName: longhorn
-        resources:
-          requests:
-            storage: 20Gi
+        - name: data
+          persistentVolumeClaim:
+            claimName: loki-data
 ---
 apiVersion: v1
-kind: ConfigMap
+kind: Service
 metadata:
-  name: loki-config
-  namespace: monitoring
-data:
-  loki.yaml: |
-    auth_enabled: false
-    server:
-      http_listen_port: 3100
-    common:
-      path_prefix: /loki
-      storage:
-        filesystem:
-          chunks_directory: /loki/chunks
-          rules_directory: /loki/rules
-      replication_factor: 1
-      ring:
-        kvstore:
-          store: inmemory
-    schema_config:
-      configs:
-        - from: 2024-01-01
-          store: tsdb
-          object_store: filesystem
-          schema: v13
-          index:
-            prefix: index_
-            period: 24h
-    limits_config:
-      retention_period: 30d
+  name: loki
+  namespace: medinovai-monitoring
+spec:
+  selector:
+    app.kubernetes.io/name: loki
+  ports:
+    - port: 3100
+      targetPort: 3100
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: loki-data
+  namespace: medinovai-monitoring
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 20Gi

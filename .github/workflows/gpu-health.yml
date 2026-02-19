@@ -1,0 +1,26 @@
+name: GPU Health Check
+
+on:
+  schedule:
+    - cron: '0 4 * * *'
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check GPU nodes
+        run: |
+          echo "=== GPU Nodes ==="
+          kubectl get nodes -l gpu=true -o wide
+
+          echo "=== GPU Resources ==="
+          kubectl describe nodes -l gpu=true | grep -A5 "Allocated resources" || true
+
+          echo "=== Ollama Pods ==="
+          kubectl get pods -n medinovai-ai -l app.kubernetes.io/name=ollama
+
+          echo "=== AIFactory Pods ==="
+          kubectl get pods -n medinovai-ai -l app.kubernetes.io/name=aifactory

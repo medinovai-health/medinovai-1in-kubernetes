@@ -15,7 +15,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(dirname "$(dirname "$SCRIPT_DIR")")"
 DEPLOY_HOME="$HOME/.medinovai-deploy"
-FLEET_CONFIG="$REPO_ROOT/config/fleet.json5"
+FLEET_CONFIG="${FLEET_CONFIG:-$REPO_ROOT/config/fleet.json5}"
 NETWORK_STATE="$DEPLOY_HOME/network.json"
 
 DRY_RUN=false
@@ -25,11 +25,12 @@ MANUAL_USER="medinovai"
 
 while [[ $# -gt 0 ]]; do
     case $1 in
-        --dry-run)  DRY_RUN=true; shift ;;
-        --node)     SINGLE_NODE="$2"; shift 2 ;;
-        --ip)       MANUAL_IP="$2"; shift 2 ;;
-        --user)     MANUAL_USER="$2"; shift 2 ;;
-        *)          echo "Unknown option: $1"; exit 1 ;;
+        --dry-run)     DRY_RUN=true; shift ;;
+        --from-fleet)  shift ;;  # Use fleet.json5 (default)
+        --node)        SINGLE_NODE="$2"; shift 2 ;;
+        --ip)          MANUAL_IP="$2"; shift 2 ;;
+        --user)        MANUAL_USER="$2"; shift 2 ;;
+        *)             echo "Unknown option: $1"; exit 1 ;;
     esac
 done
 

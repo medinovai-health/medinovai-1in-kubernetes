@@ -1,0 +1,5 @@
+# Platform Conventions
+- IaC for all infrastructure; no manual drift
+- Immutable infrastructure; prefer replace over in-place update
+- Canary or blue-green deploys; documented rollback steps
+- Observability: metrics, logs, traces; SLO-aligned alerting
