@@ -25,7 +25,7 @@ metadata:
     medinovai.com/tier: security
 spec:
   accessModes: ["ReadWriteOnce"]
-  storageClassName: longhorn
+  storageClassName: hostpath
   resources:
     requests:
       storage: 5Gi

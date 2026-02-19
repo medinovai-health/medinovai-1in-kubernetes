@@ -72,7 +72,7 @@ metadata:
   namespace: medinovai-monitoring
 spec:
   accessModes: [ReadWriteOnce]
-  storageClassName: longhorn
+  storageClassName: hostpath
   resources:
     requests:
       storage: 5Gi

@@ -19,6 +19,16 @@ spec:
       targetPort: 8002
   selector:
     app: atlas-orchestrator
+  namespace: medinovai-services
+  labels:
+    app.kubernetes.io/name: atlas-orchestrator
+    app.kubernetes.io/part-of: atlasos
+spec:
+  accessModes: ["ReadWriteOnce"]
+  storageClassName: hostpath
+  resources:
+    requests:
+      storage: 10Gi
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -96,7 +106,7 @@ metadata:
   namespace: atlasos
 spec:
   accessModes: ["ReadWriteOnce"]
-  storageClassName: longhorn
+  storageClassName: hostpath
   resources:
     requests:
       storage: 20Gi

@@ -372,8 +372,10 @@ services:
   # ─── MCP Connectors ───────────────────────────────────────────────────
   mcp-vtiger:
     build:
-      context: ${ATLASOS_PATH:-../../repos/AtlasOS}/services/mcp-connectors/vtiger
-      dockerfile: ../Dockerfile
+      context: ${ATLASOS_PATH:-../../repos/AtlasOS}/services/mcp-connectors
+      dockerfile: Dockerfile
+      args:
+        CONNECTOR_NAME: vtiger
     container_name: ceo-mcp-vtiger
     ports:
       - "41601:8080"
@@ -399,8 +401,10 @@ services:
 
   mcp-quickbooks:
     build:
-      context: ${ATLASOS_PATH:-../../repos/AtlasOS}/services/mcp-connectors/quickbooks
-      dockerfile: ../Dockerfile
+      context: ${ATLASOS_PATH:-../../repos/AtlasOS}/services/mcp-connectors
+      dockerfile: Dockerfile
+      args:
+        CONNECTOR_NAME: quickbooks
     container_name: ceo-mcp-quickbooks
     ports:
       - "41602:8080"
@@ -428,6 +432,8 @@ services:
     build:
       context: ${ATLASOS_PATH:-../../repos/AtlasOS}/services/mcp-connectors
       dockerfile: Dockerfile
+      args:
+        CONNECTOR_NAME: google_workspace
     container_name: ceo-mcp-google
     ports:
       - "41603:8080"
@@ -450,6 +456,8 @@ services:
     build:
       context: ${ATLASOS_PATH:-../../repos/AtlasOS}/services/mcp-connectors
       dockerfile: Dockerfile
+      args:
+        CONNECTOR_NAME: lis
     container_name: ceo-mcp-lis
     ports:
       - "41604:8080"
@@ -472,6 +480,8 @@ services:
     build:
       context: ${ATLASOS_PATH:-../../repos/AtlasOS}/services/mcp-connectors
       dockerfile: Dockerfile
+      args:
+        CONNECTOR_NAME: mattermost
     container_name: ceo-mcp-mattermost
     ports:
       - "41605:8080"

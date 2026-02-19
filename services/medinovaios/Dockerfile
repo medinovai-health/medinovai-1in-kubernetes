@@ -26,14 +26,12 @@ RUN npm ci --silent
 COPY server/ ./server/
 COPY tsconfig.json ./
 
-# Bundle server into a single JS file (all deps except express inlined)
 RUN npx esbuild server/index.ts \
     --bundle \
     --platform=node \
     --target=node22 \
     --format=esm \
-    --external:express \
-    --external:node-fetch \
+    --packages=external \
     --outfile=dist-server/server.js
 
 # ── Stage 3: Production runtime ───────────────────────────────────────────────

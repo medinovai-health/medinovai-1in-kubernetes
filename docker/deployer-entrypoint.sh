@@ -77,12 +77,12 @@ if command -v atlas &>/dev/null; then
     ok "Atlas already installed: $(atlas --version 2>/dev/null || echo 'unknown version')"
 else
     log "Installing atlas@latest via npm..."
-    npm install -g atlas@latest --silent
+    npm install -g atlas@latest --silent 2>/dev/null || true
     if ! command -v atlas &>/dev/null; then
-        err "atlas command not found after install — check npm global bin path"
-        exit 1
+        warn "atlas CLI not available — skipping (deploy continues without it)"
+    else
+        ok "Atlas installed: $(atlas --version 2>/dev/null || echo 'ok')"
     fi
-    ok "Atlas installed: $(atlas --version 2>/dev/null || echo 'ok')"
 fi
 
 # ── Step 3: Deploy config + workspaces into volume ───────────────────────────
