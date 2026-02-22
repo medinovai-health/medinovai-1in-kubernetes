@@ -110,6 +110,19 @@ curl http://localhost:8084/audit/export > audit_export.jsonl
 | Repo | Purpose |
 |------|---------|
 | `medinovai-Deploy` | This repo - deployment orchestration |
-| `AtlasOS` | Agent runtime, audit chain, MCP connectors |
+| `AtlasOS` (`medinovai-atlas-os`) | Agent runtime, audit chain, MCP connectors, healthcare connectors, compliance services |
 | `atlas-command` | CO-CEO Command Center UI |
 | `medinovai-security-service` | Vault and Keycloak (production) |
+
+## AtlasOS Full Stack Documentation
+
+The AtlasOS full-stack deployment (42 containers, single compose) is documented in:
+
+| Document | Contents |
+|----------|----------|
+| [ATLASOS_DEPLOYMENT_GUIDE](atlasos/ATLASOS_DEPLOYMENT_GUIDE.md) | Quick start, profiles, ports, multi-tenant, troubleshooting |
+| [ATLASOS_SERVICE_CATALOG](atlasos/ATLASOS_SERVICE_CATALOG.md) | All 42 services, health endpoints, dependency graph |
+| [VAULT_SECRETS_ARCHITECTURE](atlasos/VAULT_SECRETS_ARCHITECTURE.md) | Vault setup, per-user secrets, tenant isolation, rotation |
+| [DOCKER_COMPOSE_REFERENCE](atlasos/DOCKER_COMPOSE_REFERENCE.md) | Profiles, volumes, common operations |
+| [CONNECTOR_DEPLOYMENT_MATRIX](atlasos/CONNECTOR_DEPLOYMENT_MATRIX.md) | 13 healthcare connectors, tools, credentials |
+| [DEPLOYMENT_FINDINGS](atlasos/DEPLOYMENT_FINDINGS.md) | Issues encountered, resolutions, production checklist |
