@@ -1,0 +1,1550 @@
+# TEST2 — Full Greenfield Stack (Tiers 0–6)
+# Port range: 16610-16999 ONLY. No other host ports used.
+# Requires TEST2-brain to be running first (creates TEST2-network).
+# Ollama: host machine at host.docker.internal:11434 (no new install)
+# S3: real AWS bucket agentos-mjt (us-west-1) — no LocalStack
+#
+# Deploy (from repo root):
+#   docker compose -p TEST2 --env-file infra/docker/test2.env \
+#     -f infra/docker/docker-compose.TEST2-full.yml up -d
+#
+# Or let the orchestrator brain do it:
+#   docker exec -it TEST2-orchestrator python3 /app/ai-deployment-agent/autonomous_orchestrator.py
+#
+# Tier boot order (enforced via depends_on + condition: service_healthy):
+#   Tier 0 Infra → Tier 0 Monitoring → Tier 1 Security →
+#   Tier 2 Platform → Tier 3 AI/ML → Tier 5 Apps → Tier 6 UI
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # TIER 0 — INFRASTRUCTURE (16610-16623)
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  postgres-primary:
+    image: postgres:16-alpine
+    container_name: TEST2-postgres-primary
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: medinovai_main
+      POSTGRES_USER: medinovai
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-TEST2_pg_pw_2026}
+    ports:
+      - "16610:5432"
+    volumes:
+      - test2-postgres-primary-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U medinovai -d medinovai_main"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - TEST2-network
+    labels:
+      com.medinovai.project: TEST2
+      com.medinovai.tier: "0"
+
+  postgres-clinical:
+    image: postgres:16-alpine
+    container_name: TEST2-postgres-clinical
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: medinovai_clinical
+      POSTGRES_USER: medinovai
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-TEST2_pg_pw_2026}
+    ports:
+      - "16611:5432"
+    volumes:
+      - test2-postgres-clinical-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U medinovai -d medinovai_clinical"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - TEST2-network
+    labels:
+      com.medinovai.project: TEST2
+      com.medinovai.tier: "0"
+
+  redis-cache:
+    image: redis:7-alpine
+    container_name: TEST2-redis
+    restart: unless-stopped
+    command: >
+      redis-server
+      --maxmemory 512mb
+      --maxmemory-policy allkeys-lru
+      --requirepass ${REDIS_PASSWORD:-TEST2_redis_pw_2026}
+      --appendonly yes
+    ports:
+      - "16612:6379"
+    volumes:
+      - test2-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-TEST2_redis_pw_2026}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - TEST2-network
+    labels:
+      com.medinovai.project: TEST2
+      com.medinovai.tier: "0"
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: TEST2-zookeeper
+    restart: unless-stopped
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "16613:2181"
+    volumes:
+      - test2-zookeeper-data:/var/lib/zookeeper/data
+    healthcheck:
+      test: ["CMD-SHELL", "nc -zw1 localhost 2181 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    networks:
+      - TEST2-network
+    labels:
+      com.medinovai.project: TEST2
+      com.medinovai.tier: "0"
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: TEST2-kafka
+    restart: unless-stopped
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      # Internal: kafka:29092 | External host: localhost:16614
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:16614
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    ports:
+      - "16614:9092"
+    volumes:
+      - test2-kafka-data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-topics --bootstrap-server localhost:29092 --list"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+    networks:
+      - TEST2-network
+    labels:
+      com.medinovai.project: TEST2
+      com.medinovai.tier: "0"
+
+  mongodb:
+    image: mongo:7.0
+    container_name: TEST2-mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: medinovai
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-TEST2_mongo_pw_2026}
+    ports:
+      - "16615:27017"
+    volumes:
+      - test2-mongodb-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    networks:
+      - TEST2-network
+    labels:
+      com.medinovai.project: TEST2
+      com.medinovai.tier: "0"
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    container_name: TEST2-elasticsearch
+    restart: unless-stopped
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+    ports:
+      - "16616:9200"
+    volumes:
+      - test2-elasticsearch-data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9200/_cluster/health || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+    networks:
+      - TEST2-network
+    labels:
+      com.medinovai.project: TEST2
+      com.medinovai.tier: "0"
+
+  rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    container_name: TEST2-rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: medinovai
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-TEST2_rmq_pw_2026}
+    ports:
+      - "16617:5672"     # AMQP
+      - "16618:15672"    # Management UI  →  http://localhost:16618
+    volumes:
+      - test2-rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    networks:
+      - TEST2-network
+    labels:
+      com.medinovai.project: TEST2
+      com.medinovai.tier: "0"
+
+  vault:
+    image: hashicorp/vault:1.15
+    container_name: TEST2-vault
+    restart: unless-stopped
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: ${VAULT_TOKEN:-TEST2-vault-dev-token-2026}
+      VAULT_DEV_LISTEN_ADDRESS: "0.0.0.0:8200"
+    ports:
+      - "16619:8200"    # Vault UI/API  →  http://localhost:16619
+    cap_add:
+      - IPC_LOCK
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8200/v1/sys/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - TEST2-network
+    labels:
+      com.medinovai.project: TEST2
+      com.medinovai.tier: "0"
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:23.0
+    container_name: TEST2-keycloak
+    restart: unless-stopped
+    depends_on:
+      postgres-primary:
+        condition: service_healthy
+    environment:
+      KC_DB: postgres
+      KC_DB_URL_HOST: postgres-primary
+      KC_DB_URL_DATABASE: medinovai_main
+      KC_DB_USERNAME: medinovai
+      KC_DB_PASSWORD: ${POSTGRES_PASSWORD:-TEST2_pg_pw_2026}
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-TEST2_kc_admin_2026}
+    command: start-dev
+    ports:
+      - "16620:8080"    # Keycloak admin  →  http://localhost:16620/admin
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/localhost/8080' 2>/dev/null && exit 0 || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+    networks:
+      - TEST2-network
+    labels:
+      com.medinovai.project: TEST2
+      com.medinovai.tier: "0"
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: TEST2-mailhog
+    restart: unless-stopped
+    ports:
+      - "16622:1025"    # SMTP
+      - "16623:8025"    # Web UI  →  http://localhost:16623
+    networks:
+      - TEST2-network
+    labels:
+      com.medinovai.project: TEST2
+      com.medinovai.tier: "0"
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # TIER 0 — MONITORING (16630-16635)
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  prometheus:
+    image: prom/prometheus:v2.48.0
+    container_name: TEST2-prometheus
+    restart: unless-stopped
+    ports:
+      - "16630:9090"    # Prometheus  →  http://localhost:16630
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - test2-prometheus-data:/prometheus
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:9090/-/healthy"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    networks:
+      - TEST2-network
+    labels:
+      com.medinovai.project: TEST2
+      com.medinovai.tier: "0-monitoring"
+
+  grafana:
+    image: grafana/grafana:10.2.2
+    container_name: TEST2-grafana
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+    ports:
+      - "16631:3000"    # Grafana  →  http://localhost:16631
+    volumes:
+      - test2-grafana-data:/var/lib/grafana
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:3000/api/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    networks:
+      - TEST2-network
+    labels:
+      com.medinovai.project: TEST2
+      com.medinovai.tier: "0-monitoring"
+
+  loki:
+    image: grafana/loki:2.9.2
+    container_name: TEST2-loki
+    restart: unless-stopped
+    ports:
+      - "16632:3100"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3100/ready || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+    networks:
+      - TEST2-network
+    labels:
+      com.medinovai.project: TEST2
+      com.medinovai.tier: "0-monitoring"
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.51
+    container_name: TEST2-jaeger
+    restart: unless-stopped
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    ports:
+      - "16634:16686"    # Jaeger UI  →  http://localhost:16634
+      - "16635:14268"    # Collector
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:16686/ > /dev/null 2>&1 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    networks:
+      - TEST2-network
+    labels:
+      com.medinovai.project: TEST2
+      com.medinovai.tier: "0-monitoring"
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # TIER 1 — SECURITY & SECRETS (16650-16661)
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  medinovai-secrets-manager-bridge:
+    image: ${REGISTRY:-ghcr.io/myonsite-healthcare}/medinovai-secrets-manager-bridge:${TAG:-latest}
+    pull_policy: never
+    container_name: TEST2-secrets-manager-bridge
+    restart: unless-stopped
+    depends_on:
+      vault:
+        condition: service_healthy
+    environment:
+      VAULT_ADDR: http://vault:8200
+      VAULT_TOKEN: ${VAULT_TOKEN:-TEST2-vault-dev-token-2026}
+      PORT: 8000
+    ports:
+      - "16650:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - TEST2-network
+    labels:
+      com.medinovai.project: TEST2
+      com.medinovai.tier: "1"
+
+  medinovai-security:
+    image: ${REGISTRY:-ghcr.io/myonsite-healthcare}/medinovai-security:${TAG:-latest}
+    pull_policy: never
+    container_name: TEST2-security
+    restart: unless-stopped
+    depends_on:
+      medinovai-secrets-manager-bridge:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+    environment:
+      KEYCLOAK_URL: http://keycloak:8080
+      DATABASE_URL: postgresql://medinovai:${POSTGRES_PASSWORD:-TEST2_pg_pw_2026}@postgres-primary:5432/medinovai_main
+      REDIS_URL: redis://:${REDIS_PASSWORD:-TEST2_redis_pw_2026}@redis-cache:6379
+      PORT: 9000
+    ports:
+      - "16651:9000"    # Main security service
+      - "16652:9010"    # Token validator
+      - "16653:9011"    # Audit service
+      - "16654:9012"    # Tenant onboarding
+      - "16655:9013"    # Policy engine
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - TEST2-network
+    labels:
+      com.medinovai.project: TEST2
+      com.medinovai.tier: "1"
+
+  medinovai-universal-sign-on:
+    image: ${REGISTRY:-ghcr.io/myonsite-healthcare}/medinovai-universal-sign-on:${TAG:-latest}
+    pull_policy: never
+    container_name: TEST2-universal-sign-on
+    restart: unless-stopped
+    depends_on:
+      medinovai-security:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://medinovai:${POSTGRES_PASSWORD:-TEST2_pg_pw_2026}@postgres-primary:5432/medinovai_main
+      REDIS_URL: redis://:${REDIS_PASSWORD:-TEST2_redis_pw_2026}@redis-cache:6379
+      SECURITY_SERVICE_URL: http://medinovai-security:9000
+      KAFKA_BROKERS: kafka:29092
+      PORT: 8000
+    ports:
+      - "16656:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - TEST2-network
+    labels:
+      com.medinovai.project: TEST2
+      com.medinovai.tier: "1"
+
+  medinovai-role-based-permissions:
+    image: ${REGISTRY:-ghcr.io/myonsite-healthcare}/medinovai-role-based-permissions:${TAG:-latest}
+    pull_policy: never
+    container_name: TEST2-rbac
+    restart: unless-stopped
+    depends_on:
+      medinovai-security:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://medinovai:${POSTGRES_PASSWORD:-TEST2_pg_pw_2026}@postgres-primary:5432/medinovai_main
+      REDIS_URL: redis://:${REDIS_PASSWORD:-TEST2_redis_pw_2026}@redis-cache:6379
+      SECURITY_SERVICE_URL: http://medinovai-security:9000
+      PORT: 8000
+    ports:
+      - "16657:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - TEST2-network
+    labels:
+      com.medinovai.project: TEST2
+      com.medinovai.tier: "1"
+
+  medinovai-encryption-vault:
+    image: ${REGISTRY:-ghcr.io/myonsite-healthcare}/medinovai-encryption-vault:${TAG:-latest}
+    pull_policy: never
+    container_name: TEST2-encryption-vault
+    restart: unless-stopped
+    depends_on:
+      medinovai-secrets-manager-bridge:
+        condition: service_healthy
+    environment:
+      VAULT_ADDR: http://vault:8200
+      VAULT_TOKEN: ${VAULT_TOKEN:-TEST2-vault-dev-token-2026}
+      PORT: 8000
+    ports:
+      - "16658:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - TEST2-network
+    labels:
+      com.medinovai.project: TEST2
+      com.medinovai.tier: "1"
+
+  medinovai-hipaa-gdpr-guard:
+    image: ${REGISTRY:-ghcr.io/myonsite-healthcare}/medinovai-hipaa-gdpr-guard:${TAG:-latest}
+    pull_policy: never
+    container_name: TEST2-hipaa-gdpr-guard
+    restart: unless-stopped
+    depends_on:
+      medinovai-security:
+        condition: service_healthy
+      medinovai-role-based-permissions:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://medinovai:${POSTGRES_PASSWORD:-TEST2_pg_pw_2026}@postgres-primary:5432/medinovai_main
+      REDIS_URL: redis://:${REDIS_PASSWORD:-TEST2_redis_pw_2026}@redis-cache:6379
+      SECURITY_SERVICE_URL: http://medinovai-security:9000
+      PORT: 8000
+    ports:
+      - "16659:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - TEST2-network
+    labels:
+      com.medinovai.project: TEST2
+      com.medinovai.tier: "1"
+
+  medinovai-consent-preference-api:
+    image: ${REGISTRY:-ghcr.io/myonsite-healthcare}/medinovai-consent-preference-api:${TAG:-latest}
+    pull_policy: never
+    container_name: TEST2-consent-preference-api
+    restart: unless-stopped
+    depends_on:
+      medinovai-hipaa-gdpr-guard:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://medinovai:${POSTGRES_PASSWORD:-TEST2_pg_pw_2026}@postgres-primary:5432/medinovai_main
+      REDIS_URL: redis://:${REDIS_PASSWORD:-TEST2_redis_pw_2026}@redis-cache:6379
+      SECURITY_SERVICE_URL: http://medinovai-security:9000
+      PORT: 8000
+    ports:
+      - "16660:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - TEST2-network
+    labels:
+      com.medinovai.project: TEST2
+      com.medinovai.tier: "1"
+
+  medinovai-audit-trail-explorer:
+    image: ${REGISTRY:-ghcr.io/myonsite-healthcare}/medinovai-audit-trail-explorer:${TAG:-latest}
+    pull_policy: never
+    container_name: TEST2-audit-trail-explorer
+    restart: unless-stopped
+    depends_on:
+      medinovai-security:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://medinovai:${POSTGRES_PASSWORD:-TEST2_pg_pw_2026}@postgres-primary:5432/medinovai_main
+      REDIS_URL: redis://:${REDIS_PASSWORD:-TEST2_redis_pw_2026}@redis-cache:6379
+      ELASTICSEARCH_URL: http://elasticsearch:9200
+      SECURITY_SERVICE_URL: http://medinovai-security:9000
+      PORT: 8000
+    ports:
+      - "16661:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - TEST2-network
+    labels:
+      com.medinovai.project: TEST2
+      com.medinovai.tier: "1"
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # TIER 2 — PLATFORM CORE (16670-16677)
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  medinovai-registry:
+    image: ${REGISTRY:-ghcr.io/myonsite-healthcare}/medinovai-registry:${TAG:-latest}
+    pull_policy: never
+    container_name: TEST2-registry
+    restart: unless-stopped
+    depends_on:
+      medinovai-security:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://medinovai:${POSTGRES_PASSWORD:-TEST2_pg_pw_2026}@postgres-primary:5432/medinovai_main
+      REDIS_URL: redis://:${REDIS_PASSWORD:-TEST2_redis_pw_2026}@redis-cache:6379
+      SECURITY_SERVICE_URL: http://medinovai-security:9000
+      PORT: 8080
+    ports:
+      - "16670:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - TEST2-network
+    labels:
+      com.medinovai.project: TEST2
+      com.medinovai.tier: "2"
+
+  medinovai-data-services:
+    image: ${REGISTRY:-ghcr.io/myonsite-healthcare}/medinovai-data-services:${TAG:-latest}
+    pull_policy: never
+    container_name: TEST2-data-services
+    restart: unless-stopped
+    depends_on:
+      medinovai-security:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://medinovai:${POSTGRES_PASSWORD:-TEST2_pg_pw_2026}@postgres-primary:5432/medinovai_main
+      CLINICAL_DATABASE_URL: postgresql://medinovai:${POSTGRES_PASSWORD:-TEST2_pg_pw_2026}@postgres-clinical:5432/medinovai_clinical
+      REDIS_URL: redis://:${REDIS_PASSWORD:-TEST2_redis_pw_2026}@redis-cache:6379
+      SECURITY_SERVICE_URL: http://medinovai-security:9000
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_REGION: ${AWS_REGION:-us-west-1}
+      S3_BUCKET_NAME: ${S3_BUCKET_NAME:-agentos-mjt}
+      PORT: 8000
+    ports:
+      - "16671:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8300/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - TEST2-network
+    labels:
+      com.medinovai.project: TEST2
+      com.medinovai.tier: "2"
+
+  medinovai-real-time-stream-bus:
+    image: ${REGISTRY:-ghcr.io/myonsite-healthcare}/medinovai-real-time-stream-bus:${TAG:-latest}
+    pull_policy: never
+    container_name: TEST2-stream-bus
+    restart: unless-stopped
+    depends_on:
+      medinovai-security:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    environment:
+      KAFKA_BROKERS: kafka:29092
+      REDIS_URL: redis://:${REDIS_PASSWORD:-TEST2_redis_pw_2026}@redis-cache:6379
+      SECURITY_SERVICE_URL: http://medinovai-security:9000
+      PORT: 3000
+    ports:
+      - "16672:3000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:3000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - TEST2-network
+    labels:
+      com.medinovai.project: TEST2
+      com.medinovai.tier: "2"
+
+  medinovai-configuration-management:
+    image: ${REGISTRY:-ghcr.io/myonsite-healthcare}/medinovai-configuration-management:${TAG:-latest}
+    pull_policy: never
+    container_name: TEST2-configuration-management
+    restart: unless-stopped
+    depends_on:
+      medinovai-security:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://medinovai:${POSTGRES_PASSWORD:-TEST2_pg_pw_2026}@postgres-primary:5432/medinovai_main
+      REDIS_URL: redis://:${REDIS_PASSWORD:-TEST2_redis_pw_2026}@redis-cache:6379
+      SECURITY_SERVICE_URL: http://medinovai-security:9000
+      PORT: 8000
+    ports:
+      - "16673:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - TEST2-network
+    labels:
+      com.medinovai.project: TEST2
+      com.medinovai.tier: "2"
+
+  medinovai-notification-center:
+    image: ${REGISTRY:-ghcr.io/myonsite-healthcare}/medinovai-notification-center:${TAG:-latest}
+    pull_policy: never
+    container_name: TEST2-notification-center
+    restart: unless-stopped
+    depends_on:
+      medinovai-security:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://medinovai:${POSTGRES_PASSWORD:-TEST2_pg_pw_2026}@postgres-primary:5432/medinovai_main
+      REDIS_URL: redis://:${REDIS_PASSWORD:-TEST2_redis_pw_2026}@redis-cache:6379
+      RABBITMQ_URL: amqp://medinovai:${RABBITMQ_PASSWORD:-TEST2_rmq_pw_2026}@rabbitmq:5672
+      SECURITY_SERVICE_URL: http://medinovai-security:9000
+      SMTP_HOST: mailhog
+      SMTP_PORT: 1025
+      PORT: 8080
+    ports:
+      - "16674:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - TEST2-network
+    labels:
+      com.medinovai.project: TEST2
+      com.medinovai.tier: "2"
+
+  medinovai-aifactory:
+    image: ${REGISTRY:-ghcr.io/myonsite-healthcare}/medinovai-aifactory:${TAG:-latest}
+    pull_policy: never
+    container_name: TEST2-aifactory
+    restart: unless-stopped
+    depends_on:
+      medinovai-security:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://medinovai:${POSTGRES_PASSWORD:-TEST2_pg_pw_2026}@postgres-primary:5432/medinovai_main
+      REDIS_URL: redis://:${REDIS_PASSWORD:-TEST2_redis_pw_2026}@redis-cache:6379
+      SECURITY_SERVICE_URL: http://medinovai-security:9000
+      OLLAMA_HOST: http://host.docker.internal:11434
+      AI_MODEL_PRIMARY: ${AI_MODEL_PRIMARY:-deepseek-r1:70b}
+      AI_MODEL_FAST: ${AI_MODEL_FAST:-qwen3:8b}
+      PORT: 8000
+    ports:
+      - "16675:8000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - TEST2-network
+    labels:
+      com.medinovai.project: TEST2
+      com.medinovai.tier: "2"
+
+  medinovai-api-gateway:
+    image: ${REGISTRY:-ghcr.io/myonsite-healthcare}/medinovai-api-gateway:${TAG:-latest}
+    pull_policy: never
+    container_name: TEST2-api-gateway
+    restart: unless-stopped
+    depends_on:
+      medinovai-security:
+        condition: service_healthy
+      medinovai-role-based-permissions:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    environment:
+      SECURITY_SERVICE_URL: http://medinovai-security:9000
+      RBAC_SERVICE_URL: http://medinovai-role-based-permissions:8000
+      REGISTRY_URL: http://medinovai-registry:8080
+      PORT: 8080
+    ports:
+      - "16676:8080"    # API Gateway  →  http://localhost:16676
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - TEST2-network
+    labels:
+      com.medinovai.project: TEST2
+      com.medinovai.tier: "2"
+
+  medinovai-atlas-engine:
+    image: ${REGISTRY:-ghcr.io/myonsite-healthcare}/medinovai-atlas-engine:${TAG:-latest}
+    pull_policy: never
+    container_name: TEST2-atlas-engine
+    restart: unless-stopped
+    depends_on:
+      medinovai-security:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://medinovai:${POSTGRES_PASSWORD:-TEST2_pg_pw_2026}@postgres-primary:5432/medinovai_main
+      REDIS_URL: redis://:${REDIS_PASSWORD:-TEST2_redis_pw_2026}@redis-cache:6379
+      SECURITY_SERVICE_URL: http://medinovai-security:9000
+      REGISTRY_URL: http://medinovai-registry:8080
+      OLLAMA_HOST: http://host.docker.internal:11434
+      AI_MODEL_PRIMARY: ${AI_MODEL_PRIMARY:-deepseek-r1:70b}
+      PORT: 8000
+    ports:
+      - "16677:8000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - TEST2-network
+    labels:
+      com.medinovai.project: TEST2
+      com.medinovai.tier: "2"
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # TIER 3 — AI / ML SERVICES (16690-16694)
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  medinovai-healthllm:
+    image: ${REGISTRY:-ghcr.io/myonsite-healthcare}/medinovai-healthllm:${TAG:-latest}
+    pull_policy: never
+    container_name: TEST2-healthllm
+    restart: unless-stopped
+    depends_on:
+      medinovai-security:
+        condition: service_healthy
+      medinovai-aifactory:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://medinovai:${POSTGRES_PASSWORD:-TEST2_pg_pw_2026}@postgres-primary:5432/medinovai_main
+      REDIS_URL: redis://:${REDIS_PASSWORD:-TEST2_redis_pw_2026}@redis-cache:6379
+      SECURITY_SERVICE_URL: http://medinovai-security:9000
+      AIFACTORY_URL: http://medinovai-aifactory:8000
+      OLLAMA_HOST: http://host.docker.internal:11434
+      AI_MODEL_PRIMARY: ${AI_MODEL_PRIMARY:-deepseek-r1:70b}
+      PORT: 8000
+    ports:
+      - "16690:8000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:12304/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - TEST2-network
+    labels:
+      com.medinovai.project: TEST2
+      com.medinovai.tier: "3"
+
+  medinovai-model-service-orchestrator:
+    image: ${REGISTRY:-ghcr.io/myonsite-healthcare}/medinovai-model-service-orchestrator:${TAG:-latest}
+    pull_policy: never
+    container_name: TEST2-model-service-orchestrator
+    restart: unless-stopped
+    depends_on:
+      medinovai-security:
+        condition: service_healthy
+      medinovai-data-services:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://medinovai:${POSTGRES_PASSWORD:-TEST2_pg_pw_2026}@postgres-primary:5432/medinovai_main
+      REDIS_URL: redis://:${REDIS_PASSWORD:-TEST2_redis_pw_2026}@redis-cache:6379
+      KAFKA_BROKERS: kafka:29092
+      SECURITY_SERVICE_URL: http://medinovai-security:9000
+      DATA_SERVICES_URL: http://medinovai-data-services:8000
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_REGION: ${AWS_REGION:-us-west-1}
+      S3_BUCKET_NAME: ${S3_BUCKET_NAME:-agentos-mjt}
+      OLLAMA_HOST: http://host.docker.internal:11434
+      PORT: 8000
+    ports:
+      - "16691:8000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - TEST2-network
+    labels:
+      com.medinovai.project: TEST2
+      com.medinovai.tier: "3"
+
+  medinovai-knowledge-graph:
+    image: ${REGISTRY:-ghcr.io/myonsite-healthcare}/medinovai-knowledge-graph:${TAG:-latest}
+    pull_policy: never
+    container_name: TEST2-knowledge-graph
+    restart: unless-stopped
+    depends_on:
+      medinovai-security:
+        condition: service_healthy
+      medinovai-data-services:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://medinovai:${POSTGRES_PASSWORD:-TEST2_pg_pw_2026}@postgres-primary:5432/medinovai_main
+      ELASTICSEARCH_URL: http://elasticsearch:9200
+      SECURITY_SERVICE_URL: http://medinovai-security:9000
+      DATA_SERVICES_URL: http://medinovai-data-services:8000
+      PORT: 8000
+    ports:
+      - "16692:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - TEST2-network
+    labels:
+      com.medinovai.project: TEST2
+      com.medinovai.tier: "3"
+
+  medinovai-clinical-decision-support:
+    image: ${REGISTRY:-ghcr.io/myonsite-healthcare}/medinovai-clinical-decision-support:${TAG:-latest}
+    pull_policy: never
+    container_name: TEST2-clinical-decision-support
+    restart: unless-stopped
+    depends_on:
+      medinovai-healthllm:
+        condition: service_healthy
+      medinovai-model-service-orchestrator:
+        condition: service_healthy
+      medinovai-data-services:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://medinovai:${POSTGRES_PASSWORD:-TEST2_pg_pw_2026}@postgres-primary:5432/medinovai_main
+      REDIS_URL: redis://:${REDIS_PASSWORD:-TEST2_redis_pw_2026}@redis-cache:6379
+      HEALTHLLM_URL: http://medinovai-healthllm:8000
+      MODEL_ORCHESTRATOR_URL: http://medinovai-model-service-orchestrator:8000
+      DATA_SERVICES_URL: http://medinovai-data-services:8000
+      SECURITY_SERVICE_URL: http://medinovai-security:9000
+      PORT: 8000
+    ports:
+      - "16693:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - TEST2-network
+    labels:
+      com.medinovai.project: TEST2
+      com.medinovai.tier: "3"
+
+  medinovai-patient-services:
+    image: ${REGISTRY:-ghcr.io/myonsite-healthcare}/medinovai-patient-onboarding:${TAG:-latest}
+    pull_policy: never
+    container_name: TEST2-patient-services
+    restart: unless-stopped
+    depends_on:
+      medinovai-security:
+        condition: service_healthy
+      medinovai-data-services:
+        condition: service_healthy
+      medinovai-consent-preference-api:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://medinovai:${POSTGRES_PASSWORD:-TEST2_pg_pw_2026}@postgres-primary:5432/medinovai_main
+      REDIS_URL: redis://:${REDIS_PASSWORD:-TEST2_redis_pw_2026}@redis-cache:6379
+      SECURITY_SERVICE_URL: http://medinovai-security:9000
+      DATA_SERVICES_URL: http://medinovai-data-services:8000
+      CONSENT_API_URL: http://medinovai-consent-preference-api:8000
+      PORT: 8000
+    ports:
+      - "16694:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - TEST2-network
+    labels:
+      com.medinovai.project: TEST2
+      com.medinovai.tier: "3"
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # TIER 5 — APPLICATION SERVICES (16700-16716)
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  medinovai-edge-cache-cdn:
+    image: ${REGISTRY:-ghcr.io/myonsite-healthcare}/medinovai-edge-cache-cdn:${TAG:-latest}
+    pull_policy: never
+    container_name: TEST2-edge-cache-cdn
+    restart: unless-stopped
+    depends_on:
+      medinovai-api-gateway:
+        condition: service_healthy
+    environment:
+      API_GATEWAY_URL: http://medinovai-api-gateway:8080
+      PORT: 8000
+    ports:
+      - "16700:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - TEST2-network
+    labels:
+      com.medinovai.project: TEST2
+      com.medinovai.tier: "5"
+
+  medinovai-data-lake-loader:
+    image: ${REGISTRY:-ghcr.io/myonsite-healthcare}/medinovai-data-lake-loader:${TAG:-latest}
+    pull_policy: never
+    container_name: TEST2-data-lake-loader
+    restart: unless-stopped
+    depends_on:
+      medinovai-real-time-stream-bus:
+        condition: service_healthy
+      medinovai-data-services:
+        condition: service_healthy
+    environment:
+      KAFKA_BROKERS: kafka:29092
+      DATA_SERVICES_URL: http://medinovai-data-services:8000
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_REGION: ${AWS_REGION:-us-west-1}
+      S3_BUCKET_NAME: ${S3_BUCKET_NAME:-agentos-mjt}
+      PORT: 8000
+    ports:
+      - "16701:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - TEST2-network
+    labels:
+      com.medinovai.project: TEST2
+      com.medinovai.tier: "5"
+
+  medinovai-feature-flag-console:
+    image: ${REGISTRY:-ghcr.io/myonsite-healthcare}/medinovai-feature-flag-console:${TAG:-latest}
+    pull_policy: never
+    container_name: TEST2-feature-flag-console
+    restart: unless-stopped
+    depends_on:
+      medinovai-security:
+        condition: service_healthy
+      medinovai-configuration-management:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://medinovai:${POSTGRES_PASSWORD:-TEST2_pg_pw_2026}@postgres-primary:5432/medinovai_main
+      REDIS_URL: redis://:${REDIS_PASSWORD:-TEST2_redis_pw_2026}@redis-cache:6379
+      SECURITY_SERVICE_URL: http://medinovai-security:9000
+      CONFIG_MGMT_URL: http://medinovai-configuration-management:8000
+      PORT: 8000
+    ports:
+      - "16702:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - TEST2-network
+    labels:
+      com.medinovai.project: TEST2
+      com.medinovai.tier: "5"
+
+  medinovai-canary-rollout-orchestrator:
+    image: ${REGISTRY:-ghcr.io/myonsite-healthcare}/medinovai-canary-rollout-orchestrator:${TAG:-latest}
+    pull_policy: never
+    container_name: TEST2-canary-rollout
+    restart: unless-stopped
+    depends_on:
+      medinovai-registry:
+        condition: service_healthy
+    environment:
+      REGISTRY_URL: http://medinovai-registry:8080
+      PORT: 8000
+    ports:
+      - "16703:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - TEST2-network
+    labels:
+      com.medinovai.project: TEST2
+      com.medinovai.tier: "5"
+
+  medinovai-devops-telemetry:
+    image: ${REGISTRY:-ghcr.io/myonsite-healthcare}/medinovai-devops-telemetry:${TAG:-latest}
+    pull_policy: never
+    container_name: TEST2-devops-telemetry
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+      - medinovai-security
+    environment:
+      PROMETHEUS_URL: http://prometheus:9090
+      SECURITY_SERVICE_URL: http://medinovai-security:9000
+      PORT: 8000
+    ports:
+      - "16704:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - TEST2-network
+    labels:
+      com.medinovai.project: TEST2
+      com.medinovai.tier: "5"
+
+  medinovai-policy-diff-watcher:
+    image: ${REGISTRY:-ghcr.io/myonsite-healthcare}/medinovai-policy-diff-watcher:${TAG:-latest}
+    pull_policy: never
+    container_name: TEST2-policy-diff-watcher
+    restart: unless-stopped
+    depends_on:
+      medinovai-security:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://medinovai:${POSTGRES_PASSWORD:-TEST2_pg_pw_2026}@postgres-primary:5432/medinovai_main
+      SECURITY_SERVICE_URL: http://medinovai-security:9000
+      PORT: 8000
+    ports:
+      - "16705:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - TEST2-network
+    labels:
+      com.medinovai.project: TEST2
+      com.medinovai.tier: "5"
+
+  medinovai-etl-designer:
+    image: ${REGISTRY:-ghcr.io/myonsite-healthcare}/medinovai-etl-designer:${TAG:-latest}
+    pull_policy: never
+    container_name: TEST2-etl-designer
+    restart: unless-stopped
+    depends_on:
+      medinovai-security:
+        condition: service_healthy
+      medinovai-data-services:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://medinovai:${POSTGRES_PASSWORD:-TEST2_pg_pw_2026}@postgres-primary:5432/medinovai_main
+      KAFKA_BROKERS: kafka:29092
+      DATA_SERVICES_URL: http://medinovai-data-services:8000
+      SECURITY_SERVICE_URL: http://medinovai-security:9000
+      PORT: 8000
+    ports:
+      - "16706:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - TEST2-network
+    labels:
+      com.medinovai.project: TEST2
+      com.medinovai.tier: "5"
+
+  medinovai-prompt-vault:
+    image: ${REGISTRY:-ghcr.io/myonsite-healthcare}/medinovai-prompt-vault:${TAG:-latest}
+    pull_policy: never
+    container_name: TEST2-prompt-vault
+    restart: unless-stopped
+    depends_on:
+      medinovai-security:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://medinovai:${POSTGRES_PASSWORD:-TEST2_pg_pw_2026}@postgres-primary:5432/medinovai_main
+      REDIS_URL: redis://:${REDIS_PASSWORD:-TEST2_redis_pw_2026}@redis-cache:6379
+      RABBITMQ_URL: amqp://medinovai:${RABBITMQ_PASSWORD:-TEST2_rmq_pw_2026}@rabbitmq:5672
+      ELASTICSEARCH_URL: http://elasticsearch:9200
+      SECURITY_SERVICE_URL: http://medinovai-security:9000
+      PORT: 8000
+    ports:
+      - "16707:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - TEST2-network
+    labels:
+      com.medinovai.project: TEST2
+      com.medinovai.tier: "5"
+
+  medinovai-qa-agent-builder:
+    image: ${REGISTRY:-ghcr.io/myonsite-healthcare}/medinovai-qa-agent-builder:${TAG:-latest}
+    pull_policy: never
+    container_name: TEST2-qa-agent-builder
+    restart: unless-stopped
+    depends_on:
+      medinovai-security:
+        condition: service_healthy
+      medinovai-model-service-orchestrator:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://medinovai:${POSTGRES_PASSWORD:-TEST2_pg_pw_2026}@postgres-primary:5432/medinovai_main
+      SECURITY_SERVICE_URL: http://medinovai-security:9000
+      MODEL_ORCHESTRATOR_URL: http://medinovai-model-service-orchestrator:8000
+      OLLAMA_HOST: http://host.docker.internal:11434
+      PORT: 8000
+    ports:
+      - "16708:8000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - TEST2-network
+    labels:
+      com.medinovai.project: TEST2
+      com.medinovai.tier: "5"
+
+  medinovai-task-kanban:
+    image: ${REGISTRY:-ghcr.io/myonsite-healthcare}/medinovai-task-kanban:${TAG:-latest}
+    pull_policy: never
+    container_name: TEST2-task-kanban
+    restart: unless-stopped
+    depends_on:
+      medinovai-security:
+        condition: service_healthy
+      medinovai-notification-center:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://medinovai:${POSTGRES_PASSWORD:-TEST2_pg_pw_2026}@postgres-primary:5432/medinovai_main
+      REDIS_URL: redis://:${REDIS_PASSWORD:-TEST2_redis_pw_2026}@redis-cache:6379
+      KAFKA_BROKERS: kafka:29092
+      SECURITY_SERVICE_URL: http://medinovai-security:9000
+      NOTIFICATION_CENTER_URL: http://medinovai-notification-center:8080
+      PORT: 8000
+    ports:
+      - "16709:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - TEST2-network
+    labels:
+      com.medinovai.project: TEST2
+      com.medinovai.tier: "5"
+
+  medinovai-guideline-updater:
+    image: ${REGISTRY:-ghcr.io/myonsite-healthcare}/medinovai-guideline-updater:${TAG:-latest}
+    pull_policy: never
+    container_name: TEST2-guideline-updater
+    restart: unless-stopped
+    depends_on:
+      medinovai-security:
+        condition: service_healthy
+      medinovai-knowledge-graph:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://medinovai:${POSTGRES_PASSWORD:-TEST2_pg_pw_2026}@postgres-primary:5432/medinovai_main
+      RABBITMQ_URL: amqp://medinovai:${RABBITMQ_PASSWORD:-TEST2_rmq_pw_2026}@rabbitmq:5672
+      KNOWLEDGE_GRAPH_URL: http://medinovai-knowledge-graph:8000
+      SECURITY_SERVICE_URL: http://medinovai-security:9000
+      PORT: 8000
+    ports:
+      - "16710:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - TEST2-network
+    labels:
+      com.medinovai.project: TEST2
+      com.medinovai.tier: "5"
+
+  medinovai-governance-templates:
+    image: ${REGISTRY:-ghcr.io/myonsite-healthcare}/medinovai-governance-templates:${TAG:-latest}
+    pull_policy: never
+    container_name: TEST2-governance-templates
+    restart: unless-stopped
+    depends_on:
+      medinovai-security:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://medinovai:${POSTGRES_PASSWORD:-TEST2_pg_pw_2026}@postgres-primary:5432/medinovai_main
+      SECURITY_SERVICE_URL: http://medinovai-security:9000
+      PORT: 8000
+    ports:
+      - "16713:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - TEST2-network
+    labels:
+      com.medinovai.project: TEST2
+      com.medinovai.tier: "5"
+
+  medinovai-risk-management:
+    image: ${REGISTRY:-ghcr.io/myonsite-healthcare}/medinovai-risk-management:${TAG:-latest}
+    pull_policy: never
+    container_name: TEST2-risk-management
+    restart: unless-stopped
+    depends_on:
+      medinovai-security:
+        condition: service_healthy
+      medinovai-data-services:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://medinovai:${POSTGRES_PASSWORD:-TEST2_pg_pw_2026}@postgres-primary:5432/medinovai_main
+      SECURITY_SERVICE_URL: http://medinovai-security:9000
+      DATA_SERVICES_URL: http://medinovai-data-services:8000
+      PORT: 8000
+    ports:
+      - "16714:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - TEST2-network
+    labels:
+      com.medinovai.project: TEST2
+      com.medinovai.tier: "5"
+
+  medinovai-cds:
+    image: ${REGISTRY:-ghcr.io/myonsite-healthcare}/medinovai-cds:${TAG:-latest}
+    pull_policy: never
+    container_name: TEST2-cds
+    restart: unless-stopped
+    depends_on:
+      medinovai-clinical-decision-support:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://medinovai:${POSTGRES_PASSWORD:-TEST2_pg_pw_2026}@postgres-primary:5432/medinovai_main
+      SECURITY_SERVICE_URL: http://medinovai-security:9000
+      CDS_ENGINE_URL: http://medinovai-clinical-decision-support:8000
+      PORT: 8000
+    ports:
+      - "16715:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - TEST2-network
+    labels:
+      com.medinovai.project: TEST2
+      com.medinovai.tier: "5"
+
+  medinovai-developer-portal:
+    image: ${REGISTRY:-ghcr.io/myonsite-healthcare}/medinovai-developer-portal:${TAG:-latest}
+    pull_policy: never
+    container_name: TEST2-developer-portal
+    restart: unless-stopped
+    depends_on:
+      medinovai-api-gateway:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    environment:
+      API_GATEWAY_URL: http://medinovai-api-gateway:8080
+      REGISTRY_URL: http://medinovai-registry:8080
+      PORT: 3000
+    ports:
+      - "16716:3000"    # Dev portal  →  http://localhost:16716
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - TEST2-network
+    labels:
+      com.medinovai.project: TEST2
+      com.medinovai.tier: "5"
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # TIER 6 — UI SHELL (16730-16731)
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  medinovai-multimodal-ui-shell:
+    image: ${REGISTRY:-ghcr.io/myonsite-healthcare}/medinovai-multimodal-ui-shell:${TAG:-latest}
+    pull_policy: never
+    container_name: TEST2-multimodal-ui-shell
+    restart: unless-stopped
+    depends_on:
+      medinovai-api-gateway:
+        condition: service_healthy
+    environment:
+      API_GATEWAY_URL: http://medinovai-api-gateway:8080
+      PORT: 3000
+    ports:
+      - "16730:3000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - TEST2-network
+    labels:
+      com.medinovai.project: TEST2
+      com.medinovai.tier: "6"
+
+  medinovaios:
+    image: ${REGISTRY:-ghcr.io/myonsite-healthcare}/medinovaios:${TAG:-latest}
+    pull_policy: never
+    container_name: TEST2-medinovaios
+    restart: unless-stopped
+    depends_on:
+      medinovai-api-gateway:
+        condition: service_healthy
+      medinovai-universal-sign-on:
+        condition: service_healthy
+      medinovai-role-based-permissions:
+        condition: service_healthy
+    environment:
+      API_GATEWAY_URL: http://medinovai-api-gateway:8080
+      USO_URL: http://medinovai-universal-sign-on:8000
+      RBAC_URL: http://medinovai-role-based-permissions:8000
+      REGISTRY_URL: http://medinovai-registry:8080
+      REDIS_URL: redis://:${REDIS_PASSWORD:-TEST2_redis_pw_2026}@redis-cache:6379
+      KEYCLOAK_URL: http://keycloak:8080
+      SUPERADMIN_EMAIL: ${SUPERADMIN_EMAIL:-superadmin@medinov.ai}
+      SUPERADMIN_PASSWORD: ${SUPERADMIN_PASSWORD:-TEST2_superadmin_2026}
+      PORT: 5173
+    ports:
+      - "16731:5173"    # Master Portal  →  http://localhost:16731
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    networks:
+      - TEST2-network
+    labels:
+      com.medinovai.project: TEST2
+      com.medinovai.tier: "6"
+      com.medinovai.role: master-portal
+
+# ─────────────────────────────────────────────────────────────────────────────
+# NETWORK (shared with brain — external)
+# ─────────────────────────────────────────────────────────────────────────────
+networks:
+  TEST2-network:
+    external: true    # Created by docker-compose.TEST2-brain.yml
+
+# ─────────────────────────────────────────────────────────────────────────────
+# VOLUMES (all TEST2-prefixed — zero collision with existing stacks)
+# ─────────────────────────────────────────────────────────────────────────────
+volumes:
+  test2-postgres-primary-data:
+    name: test2-postgres-primary-data
+  test2-postgres-clinical-data:
+    name: test2-postgres-clinical-data
+  test2-redis-data:
+    name: test2-redis-data
+  test2-zookeeper-data:
+    name: test2-zookeeper-data
+  test2-kafka-data:
+    name: test2-kafka-data
+  test2-mongodb-data:
+    name: test2-mongodb-data
+  test2-elasticsearch-data:
+    name: test2-elasticsearch-data
+  test2-rabbitmq-data:
+    name: test2-rabbitmq-data
+  test2-prometheus-data:
+    name: test2-prometheus-data
+  test2-grafana-data:
+    name: test2-grafana-data

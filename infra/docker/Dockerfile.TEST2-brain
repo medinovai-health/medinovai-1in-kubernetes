@@ -1,0 +1,46 @@
+# TEST2 Brain — Orchestrator Image
+# Extends medinovai-Atlas base with Python, docker-cli, and AI deployment agent deps.
+# Build context: medinovai-Atlas repo root
+# Used by: docker-compose.TEST2-brain.yml
+#
+# Adds over the base Atlas Dockerfile:
+#   - Python 3 + pip  (for ai-deployment-agent/)
+#   - docker CLI      (to exec docker compose commands against host socket)
+#   - git             (for repo operations)
+#   - requests, pyyaml (Python agent deps)
+
+FROM node:20-alpine
+
+RUN apk add --no-cache \
+    curl \
+    python3 \
+    py3-pip \
+    docker-cli \
+    docker-cli-compose \
+    git \
+    bash \
+    netcat-openbsd
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN if [ -f package-lock.json ]; then npm ci --omit=dev; else npm install --omit=dev; fi
+
+# Python dependencies for ai-deployment-agent
+RUN pip3 install --no-cache-dir --break-system-packages \
+    requests \
+    pyyaml \
+    2>/dev/null || pip3 install --no-cache-dir requests pyyaml
+
+COPY . .
+
+ENV NODE_ENV=production
+ENV PORT=8080
+ENV PYTHONUNBUFFERED=1
+
+EXPOSE 8080
+
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
+    CMD curl -f http://localhost:${PORT}/health || exit 1
+
+CMD ["node", "index.js"]
