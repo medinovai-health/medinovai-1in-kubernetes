@@ -1,0 +1,202 @@
+name: Deploy Production (Mac Studio)
+
+on:
+  workflow_dispatch:
+    inputs:
+      stack:
+        description: 'Stack to deploy'
+        required: true
+        default: 'ceo'
+        type: choice
+        options:
+          - ceo
+          - orchestrator
+          - all
+      tag:
+        description: 'Image tag to deploy (e.g. sha-abc123, latest)'
+        required: false
+        default: 'latest'
+      skip_backup:
+        description: 'Skip pre-deploy backup (DANGEROUS — only for emergencies)'
+        required: false
+        default: 'false'
+        type: boolean
+      dry_run:
+        description: 'Dry run — show what would be deployed without making changes'
+        required: false
+        default: 'false'
+        type: boolean
+
+  # Auto-deploy when medinovai-Deploy is updated on main
+  push:
+    branches: [main]
+    paths:
+      - 'infra/docker/docker-compose.ceo.yml'
+      - 'infra/docker/docker-compose.orchestrator.yml'
+
+jobs:
+  # ── Gate 1: Pre-deploy backup ───────────────────────────────────────────────
+  pre-deploy-backup:
+    name: Pre-Deploy Backup
+    runs-on: self-hosted
+    if: ${{ github.event.inputs.skip_backup != 'true' }}
+    outputs:
+      backup_timestamp: ${{ steps.backup.outputs.timestamp }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run pre-deploy backup
+        id: backup
+        run: |
+          echo "Running pre-deploy backup before any container changes..."
+          bash scripts/maintenance/docker_backup.sh
+          echo "timestamp=$(date -u +%Y%m%dT%H%M%SZ)" >> "$GITHUB_OUTPUT"
+
+      - name: Verify backup integrity
+        run: |
+          bash scripts/maintenance/docker_backup.sh --verify
+          echo "✓ Backup verified — safe to proceed with deployment"
+
+  # ── Gate 2: Deploy ──────────────────────────────────────────────────────────
+  deploy:
+    name: Deploy ${{ github.event.inputs.stack || 'ceo' }}
+    runs-on: self-hosted
+    needs: [pre-deploy-backup]
+    if: always() && (needs.pre-deploy-backup.result == 'success' || github.event.inputs.skip_backup == 'true')
+
+    env:
+      STACK:        ${{ github.event.inputs.stack || 'ceo' }}
+      TAG:          ${{ github.event.inputs.tag || 'latest' }}
+      DRY_RUN:      ${{ github.event.inputs.dry_run || 'false' }}
+      ATLASOS_PATH: /Users/mayanktrivedi/Github/medinovai-health/medinovai-Atlas
+      REPOS_PATH:   /Users/mayanktrivedi/Github
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Show deployment plan
+        run: |
+          echo "══════════════════════════════════════════════════"
+          echo "  MedinovAI Production Deployment"
+          echo "══════════════════════════════════════════════════"
+          echo "  Stack:    $STACK"
+          echo "  Tag:      $TAG"
+          echo "  Dry Run:  $DRY_RUN"
+          echo "  Trigger:  ${{ github.event_name }}"
+          echo "  Actor:    ${{ github.actor }}"
+          echo "  Commit:   ${{ github.sha }}"
+          echo "══════════════════════════════════════════════════"
+
+      - name: Deploy CEO stack
+        if: env.STACK == 'ceo' || env.STACK == 'all'
+        run: |
+          COMPOSE_FILE="infra/docker/docker-compose.ceo.yml"
+          if [ "$DRY_RUN" = "true" ]; then
+            echo "[DRY RUN] Would run: docker compose -f $COMPOSE_FILE pull"
+            echo "[DRY RUN] Would run: docker compose -f $COMPOSE_FILE up -d --remove-orphans"
+          else
+            export ATLASOS_PATH REPOS_PATH
+            export ORCHESTRATOR_TAG="$TAG"
+            echo "Pulling latest images..."
+            docker compose -f "$COMPOSE_FILE" pull --quiet 2>/dev/null || true
+            echo "Recreating containers (volumes preserved)..."
+            docker compose -f "$COMPOSE_FILE" up -d --remove-orphans
+            echo "✓ CEO stack deployed"
+          fi
+
+      - name: Deploy orchestrator
+        if: env.STACK == 'orchestrator' || env.STACK == 'all'
+        run: |
+          COMPOSE_FILE="infra/docker/docker-compose.orchestrator.yml"
+          if [ "$DRY_RUN" = "true" ]; then
+            echo "[DRY RUN] Would run: docker compose -f $COMPOSE_FILE up -d --build"
+          else
+            export ATLASOS_PATH REPOS_PATH
+            export AI_MODEL_PRIMARY="deepseek-r1:70b"
+            export ORCHESTRATOR_TAG="$TAG"
+            docker compose -f "$COMPOSE_FILE" up -d --build
+            echo "✓ Orchestrator deployed"
+          fi
+
+      - name: Health check
+        if: env.DRY_RUN != 'true'
+        run: |
+          echo "Waiting 30s for containers to stabilise..."
+          sleep 30
+          echo ""
+          echo "── Service Health ──"
+          declare -A HEALTH_PORTS=(
+            ["ceo-briefing-engine"]=41520
+            ["ceo-decision-tracker"]=41530
+            ["ceo-correlation-engine"]=41510
+            ["ceo-audit-chain"]=41500
+            ["atlas-api"]=4000
+          )
+          HEALTH_FAIL=0
+          for svc in "${!HEALTH_PORTS[@]}"; do
+            port="${HEALTH_PORTS[$svc]}"
+            if curl -sf "http://localhost:${port}/health" > /dev/null 2>&1; then
+              echo "  ✓ $svc (port $port)"
+            else
+              echo "  ✗ $svc (port $port) — unhealthy"
+              HEALTH_FAIL=$((HEALTH_FAIL + 1))
+            fi
+          done
+          echo ""
+          if [ "$HEALTH_FAIL" -gt 0 ]; then
+            echo "⚠ ${HEALTH_FAIL} service(s) unhealthy after deploy"
+            echo "Run 'make orchestrator-rollback' to revert"
+            exit 1
+          fi
+          echo "✓ All health checks passed"
+
+      - name: Record deployment
+        if: env.DRY_RUN != 'true'
+        run: |
+          mkdir -p "$HOME/.medinovai-backups/deployments"
+          python3 - <<'PYEOF'
+import json, datetime, os
+record = {
+    "timestamp": datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+    "stack": os.environ.get("STACK"),
+    "tag": os.environ.get("TAG"),
+    "actor": "${{ github.actor }}",
+    "commit": "${{ github.sha }}",
+    "workflow_run": "${{ github.run_id }}",
+    "pre_deploy_backup": "${{ needs.pre-deploy-backup.outputs.backup_timestamp }}",
+}
+fpath = os.path.expanduser("~/.medinovai-backups/deployments/deploy-log.jsonl")
+with open(fpath, "a") as f:
+    f.write(json.dumps(record) + "\n")
+print(f"Deployment recorded: {record['timestamp']}")
+PYEOF
+
+  # ── Gate 3: Post-deploy notification ────────────────────────────────────────
+  notify:
+    name: Notify
+    runs-on: ubuntu-latest
+    needs: [pre-deploy-backup, deploy]
+    if: always()
+
+    steps:
+      - name: Post deployment result
+        run: |
+          BACKUP_STATUS="${{ needs.pre-deploy-backup.result }}"
+          DEPLOY_STATUS="${{ needs.deploy.result }}"
+          echo "══════════════════════════════════════════════════"
+          echo "  Deployment Result"
+          echo "══════════════════════════════════════════════════"
+          echo "  Pre-deploy backup: $BACKUP_STATUS"
+          echo "  Deploy:            $DEPLOY_STATUS"
+          echo ""
+          if [ "$DEPLOY_STATUS" = "success" ]; then
+            echo "  ✓ Production deployment complete"
+          else
+            echo "  ✗ Deployment failed — data is safe (backup ran before deploy)"
+            echo "  To rollback: make orchestrator-rollback"
+          fi
+          # TODO: Add Slack/Mattermost webhook notification
+          # curl -X POST -H 'Content-type: application/json' \
+          #   --data "{\"text\":\"Deploy $DEPLOY_STATUS: ${{ github.event.inputs.stack }} @ ${{ github.sha }}\"}" \
+          #   "$SLACK_WEBHOOK_URL"

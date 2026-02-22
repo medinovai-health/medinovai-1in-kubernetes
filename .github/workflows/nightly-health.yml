@@ -26,14 +26,27 @@ jobs:
       - name: Run certificate renewal check
         run: scripts/maintenance/cert_renewal.sh --check-only
 
-  backup-verify:
-    name: Backup Verification
-    runs-on: ubuntu-latest
+  docker-backup:
+    name: Docker Stack Backup
+    runs-on: self-hosted
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Verify database backup
+      - name: Run Docker volume + database backup
+        run: bash scripts/maintenance/docker_backup.sh
+
+      - name: Verify backup integrity
+        run: bash scripts/maintenance/docker_backup.sh --verify
+
+  backup-verify:
+    name: K8s Backup Verification
+    runs-on: self-hosted
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Verify K8s database backup
         run: scripts/maintenance/db_backup.sh --verify --backend onprem
 
   compliance-check:
@@ -49,7 +62,7 @@ jobs:
   notify:
     name: Notify
     runs-on: ubuntu-latest
-    needs: [health-audit, cert-check, backup-verify, compliance-check]
+    needs: [health-audit, cert-check, docker-backup, backup-verify, compliance-check]
     if: always()
     steps:
       - name: Post results to Slack (placeholder)
@@ -58,6 +71,7 @@ jobs:
           echo "===================================="
           echo "health-audit: ${{ needs.health-audit.result }}"
           echo "cert-check: ${{ needs.cert-check.result }}"
+          echo "docker-backup: ${{ needs.docker-backup.result }}"
           echo "backup-verify: ${{ needs.backup-verify.result }}"
           echo "compliance-check: ${{ needs.compliance-check.result }}"
           echo ""

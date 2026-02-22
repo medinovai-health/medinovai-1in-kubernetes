@@ -22,7 +22,9 @@ ENV ?= onprem-prod
 .PHONY: deploy-all deploy-critical deploy-tier deploy-service deploy-atlasos deploy-gpu deploy-agents
 .PHONY: embed-atlasos embed-atlasos-repo embed-atlasos-category register-agents register-crons
 .PHONY: health gpu-status agent-status status vault-status
-.PHONY: rotate-secrets drift-check backup cert-check
+.PHONY: rotate-secrets drift-check backup cert-check docker-backup docker-backup-verify docker-restore
+.PHONY: orchestrator-start orchestrator-stop orchestrator-update orchestrator-rollback orchestrator-logs orchestrator-status
+.PHONY: ceo-stack ceo-stack-stop ceo-stack-update production-deploy
 .PHONY: validate validate-k8s smoke-test dashboards logs
 
 # ─── Help ───────────────────────────────────────────────────────────────────
@@ -130,11 +132,93 @@ vault-status: ## Check Vault status
 drift-check: ## Check for K8s drift vs Git manifests
 	@bash $(MAINTENANCE)/drift_check.sh
 
-backup: ## Run backups (Longhorn snapshots + Vault)
+backup: ## Run K8s/Longhorn backups
 	@bash $(MAINTENANCE)/db_backup.sh
+
+docker-backup: ## Backup Docker Compose production stack (all volumes + DBs)
+	@bash $(MAINTENANCE)/docker_backup.sh
+
+docker-backup-verify: ## Verify latest Docker backup integrity
+	@bash $(MAINTENANCE)/docker_backup.sh --verify
+
+docker-restore: ## Interactive restore from a Docker backup snapshot
+	@bash $(MAINTENANCE)/docker_backup.sh --restore
 
 cert-check: ## Check certificate expiry
 	@bash $(MAINTENANCE)/cert_renewal.sh --check-only
+
+# ─── Orchestrator (medinovai-orchestrator) ────────────────────────────────────
+ORCHESTRATOR_COMPOSE := infra/docker/docker-compose.orchestrator.yml
+ATLASOS_PATH ?= /Users/mayanktrivedi/Github/medinovai-health/medinovai-Atlas
+
+orchestrator-start: ## Start medinovai-orchestrator from canonical compose
+	@ATLASOS_PATH=$(ATLASOS_PATH) docker compose -f $(ORCHESTRATOR_COMPOSE) up -d
+	@echo "Orchestrator started. Logs: make orchestrator-logs"
+
+orchestrator-stop: ## Stop medinovai-orchestrator
+	@docker compose -f $(ORCHESTRATOR_COMPOSE) stop medinovai-orchestrator
+	@echo "Orchestrator stopped. Data volumes preserved."
+
+orchestrator-update: ## Safe update: backup → pull → rebuild → restart
+	@echo "Step 1/3: Pre-update backup..."
+	@bash $(MAINTENANCE)/docker_backup.sh || (echo "✗ Backup failed — aborting update for safety" && exit 1)
+	@echo "Step 2/3: Verifying backup..."
+	@bash $(MAINTENANCE)/docker_backup.sh --verify || (echo "✗ Backup verification failed — aborting" && exit 1)
+	@echo "Step 3/3: Rebuilding and restarting orchestrator..."
+	@cd $(ATLASOS_PATH) && git pull --ff-only origin main 2>/dev/null || true
+	@ATLASOS_PATH=$(ATLASOS_PATH) docker compose -f $(ORCHESTRATOR_COMPOSE) up -d --build medinovai-orchestrator
+	@echo "✓ Orchestrator updated. Previous data preserved."
+
+orchestrator-rollback: ## Rollback orchestrator to a previous image tag (TAG=sha-abc123)
+	@[ -n "$(TAG)" ] || (echo "Usage: make orchestrator-rollback TAG=sha-abc123" && exit 1)
+	@echo "Rolling back orchestrator to tag: $(TAG)"
+	@ATLASOS_PATH=$(ATLASOS_PATH) ORCHESTRATOR_TAG=$(TAG) \
+		docker compose -f $(ORCHESTRATOR_COMPOSE) up -d medinovai-orchestrator
+	@echo "✓ Orchestrator rolled back to $(TAG)"
+
+orchestrator-logs: ## Follow orchestrator logs
+	@docker logs -f medinovai-orchestrator
+
+orchestrator-status: ## Show orchestrator health and restart count
+	@docker inspect medinovai-orchestrator \
+		--format 'Status={{.State.Status}} Restarts={{.RestartCount}} Health={{.State.Health.Status}}' \
+		2>/dev/null || echo "Orchestrator not running"
+
+# ─── CEO Stack (Co-CEO Command Center) ───────────────────────────────────────
+CEO_COMPOSE := infra/docker/docker-compose.ceo.yml
+
+ceo-stack: ## Start the full CEO intelligence stack
+	@ATLASOS_PATH=$(ATLASOS_PATH) docker compose -f $(CEO_COMPOSE) up -d
+	@echo "CEO stack started on ports 41000-41999"
+
+ceo-stack-stop: ## Stop CEO stack (preserves all volumes/data)
+	@docker compose -f $(CEO_COMPOSE) stop
+	@echo "CEO stack stopped. All data preserved."
+
+ceo-stack-update: ## Safe update CEO stack: backup → pull → restart
+	@echo "Step 1/2: Pre-update backup..."
+	@bash $(MAINTENANCE)/docker_backup.sh || (echo "✗ Backup failed — aborting" && exit 1)
+	@echo "Step 2/2: Updating CEO stack..."
+	@ATLASOS_PATH=$(ATLASOS_PATH) docker compose -f $(CEO_COMPOSE) pull --quiet 2>/dev/null || true
+	@ATLASOS_PATH=$(ATLASOS_PATH) docker compose -f $(CEO_COMPOSE) up -d --remove-orphans
+	@echo "✓ CEO stack updated"
+
+# ─── Full Production Deploy ───────────────────────────────────────────────────
+production-deploy: docker-backup docker-backup-verify ceo-stack-update orchestrator-update ## Full safe production deploy (backup → update all)
+	@echo ""
+	@echo "✓ Full production deployment complete"
+	@echo "  Run 'make docker-status' to verify all services"
+
+docker-status: ## Show status of all Docker Compose production services
+	@echo "=== CEO Stack ==="
+	@docker compose -f $(CEO_COMPOSE) ps 2>/dev/null || echo "  Not running"
+	@echo ""
+	@echo "=== Orchestrator ==="
+	@docker compose -f $(ORCHESTRATOR_COMPOSE) ps 2>/dev/null || echo "  Not running"
+	@echo ""
+	@echo "=== Resource Usage ==="
+	@docker stats --no-stream --format "table {{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}" 2>/dev/null | \
+		grep -E "(ceo-|atlas-|medinovai-)" | head -20
 
 # ─── Validation ───────────────────────────────────────────────────────────────
 validate: ## Full validation suite
