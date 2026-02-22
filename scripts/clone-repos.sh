@@ -18,8 +18,8 @@
 # ============================================================
 set -euo pipefail
 
-TARGET_DIR="${HOME}/Documents/GitHub"
-ORG="myonsite-healthcare"
+TARGET_DIR="${CLONE_TARGET_DIR:-${HOME}/Github}"
+ORG="${CLONE_ORG:-medinovai-health}"
 PULL_MODE=false
 LIST_ONLY=false
 MISSING_ONLY=false
@@ -133,9 +133,8 @@ fi
 # ── Prerequisites ─────────────────────────────────────────────────────────────
 mkdir -p "$TARGET_DIR"
 
-if ! ssh -T git@github.com 2>&1 | grep -q "successfully authenticated"; then
-  err "SSH to GitHub failed. Run: ssh-keygen -t ed25519 && cat ~/.ssh/id_ed25519.pub"
-  err "Then add the key to GitHub: https://github.com/settings/ssh/new"
+if ! gh auth status &>/dev/null; then
+  err "GitHub CLI not authenticated. Run: gh auth login"
   exit 2
 fi
 
@@ -148,7 +147,7 @@ FAILED=0
 for entry in "${REPOS[@]}"; do
   IFS='|' read -r repo desc tier <<< "$entry"
   local_path="$TARGET_DIR/$repo"
-  ssh_url="git@github.com:${ORG}/${repo}.git"
+  clone_url="https://github.com/${ORG}/${repo}.git"
 
   if [[ -d "$local_path/.git" ]]; then
     if $PULL_MODE; then
@@ -166,7 +165,7 @@ for entry in "${REPOS[@]}"; do
     fi
   else
     info "Cloning: $repo [$tier]"
-    if git clone "$ssh_url" "$local_path" 2>/dev/null; then
+    if git clone "$clone_url" "$local_path" 2>/dev/null; then
       log "✓ Cloned: $repo"
       CLONED=$((CLONED + 1))
     else
