@@ -230,14 +230,31 @@ fi
 log "── MongoDB (medinovai-stack-mongodb) ──"
 if container_running "medinovai-stack-mongodb"; then
     MONGO_FILE="$DATE_DIR/medinovai-mongodb.archive.gz"
-    docker exec medinovai-stack-mongodb mongodump --archive --gzip 2>/dev/null \
-        > "$MONGO_FILE"
-    if [ -s "$MONGO_FILE" ]; then
+    # Get credentials from container env (no hardcoding)
+    MONGO_USER=$(docker inspect medinovai-stack-mongodb \
+        --format '{{range .Config.Env}}{{println .}}{{end}}' 2>/dev/null \
+        | grep MONGO_INITDB_ROOT_USERNAME | cut -d= -f2)
+    MONGO_PASS=$(docker inspect medinovai-stack-mongodb \
+        --format '{{range .Config.Env}}{{println .}}{{end}}' 2>/dev/null \
+        | grep MONGO_INITDB_ROOT_PASSWORD | cut -d= -f2)
+
+    if [ -n "$MONGO_USER" ] && [ -n "$MONGO_PASS" ]; then
+        docker exec medinovai-stack-mongodb \
+            mongodump --archive --gzip \
+            --username "$MONGO_USER" --password "$MONGO_PASS" \
+            --authenticationDatabase admin 2>/dev/null \
+            > "$MONGO_FILE"
+    else
+        docker exec medinovai-stack-mongodb mongodump --archive --gzip 2>/dev/null \
+            > "$MONGO_FILE"
+    fi
+
+    if [ -s "$MONGO_FILE" ] && [ "$(wc -c < "$MONGO_FILE")" -gt 100 ]; then
         write_meta "$MONGO_FILE" "mongodb" "medinovai-stack-mongodb" > /dev/null
         ok "medinovai-mongodb backup: $(du -h "$MONGO_FILE" | cut -f1)"
     else
         rm -f "$MONGO_FILE"
-        err "medinovai-mongodb mongodump failed"
+        warn "medinovai-mongodb backup empty or failed — skipping (non-fatal)"
     fi
 else
     warn "medinovai-stack-mongodb is not running — skipped"
