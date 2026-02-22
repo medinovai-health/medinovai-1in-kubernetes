@@ -1,0 +1,23 @@
+# MedinovAI Workspace Hub - ArgoCD Application
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: workspace-hub
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: workspace-hub
+    app.kubernetes.io/part-of: research-cloud
+    medinovai.com/tier: api
+    medinovai.com/compliance: hipaa
+spec:
+  project: medinovai-healthcare
+  source:
+    repoURL: https://github.com/medinovai-health/medinovai-workspace-hub.git
+    targetRevision: HEAD
+    path: k8s
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: research-cloud
+  syncPolicy:
+    automated:
+      selfHeal: true

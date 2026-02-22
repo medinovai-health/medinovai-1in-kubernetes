@@ -1,0 +1,23 @@
+# MedinovAI Cohort Studio - ArgoCD Application
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cohort-studio
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: cohort-studio
+    app.kubernetes.io/part-of: research-cloud
+    medinovai.com/tier: api
+    medinovai.com/compliance: hipaa
+spec:
+  project: medinovai-healthcare
+  source:
+    repoURL: https://github.com/medinovai-health/medinovai-cohort-studio.git
+    targetRevision: HEAD
+    path: k8s
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: research-cloud
+  syncPolicy:
+    automated:
+      selfHeal: true

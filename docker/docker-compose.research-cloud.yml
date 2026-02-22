@@ -1,0 +1,202 @@
+# MedinovAI Research Cloud - Local Development Stack
+# OrbStack-optimized Docker Compose for the Research Cloud platform.
+#
+# Ports 30000-30099 reserved for research cloud services.
+#
+# Usage:
+#   docker compose -f docker/docker-compose.research-cloud.yml up -d
+
+services:
+  # ===== Infrastructure =====
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: medinovai_research
+      POSTGRES_USER: medinovai
+      POSTGRES_PASSWORD: medinovai_dev_pass
+    ports:
+      - "30001:5432"
+    volumes:
+      - rc-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U medinovai -d medinovai_research"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "30002:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "30010:9200"
+    volumes:
+      - rc-esdata:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9200/_cluster/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # ===== Research Cloud Services =====
+
+  medinovai-epg:
+    build:
+      context: ../../medinovai-epg
+      dockerfile: Dockerfile
+    ports:
+      - "30011:8080"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://medinovai:medinovai_dev_pass@postgres:5432/medinovai_research
+      REDIS_URL: redis://redis:6379/0
+      KEYCLOAK_ISSUER_URL: http://keycloak:8080/realms/medinovai
+      KEYCLOAK_AUDIENCE: medinovai-api
+      AUDIT_SERVICE_URL: http://medinovai-audit:8080
+      SITE_ID: dev-site-001
+      KMS_PROVIDER: local
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  cohort-studio:
+    build:
+      context: ../../medinovai-cohort-studio
+      dockerfile: Dockerfile
+    ports:
+      - "30021:8080"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://medinovai:medinovai_dev_pass@postgres:5432/medinovai_research
+      KEYCLOAK_ISSUER_URL: http://keycloak:8080/realms/medinovai
+      KEYCLOAK_AUDIENCE: medinovai-api
+      AUDIT_SERVICE_URL: http://medinovai-audit:8080
+      EPG_URL: http://medinovai-epg:8080
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  workspace-hub:
+    build:
+      context: ../../medinovai-workspace-hub
+      dockerfile: Dockerfile
+    ports:
+      - "30023:8080"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://medinovai:medinovai_dev_pass@postgres:5432/medinovai_research
+      KEYCLOAK_ISSUER_URL: http://keycloak:8080/realms/medinovai
+      KEYCLOAK_AUDIENCE: medinovai-api
+      AUDIT_SERVICE_URL: http://medinovai-audit:8080
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  medinovai-audit:
+    build:
+      context: ../../medinovai-audit-trail-explorer
+      dockerfile: Dockerfile
+    ports:
+      - "30012:8080"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://medinovai:medinovai_dev_pass@postgres:5432/medinovai_research
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  encryption-vault:
+    build:
+      context: ../../medinovai-encryption-vault
+      dockerfile: Dockerfile
+    ports:
+      - "30013:8080"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://medinovai:medinovai_dev_pass@postgres:5432/medinovai_research
+      KMS_PROVIDER: local
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  consent-api:
+    build:
+      context: ../../medinovai-consent-preference-api
+      dockerfile: Dockerfile
+    ports:
+      - "30014:8080"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://medinovai:medinovai_dev_pass@postgres:5432/medinovai_research
+      AUDIT_SERVICE_URL: http://medinovai-audit:8080
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ===== Observability =====
+
+  prometheus:
+    image: prom/prometheus:v2.48.0
+    ports:
+      - "30004:9090"
+    volumes:
+      - rc-prometheus:/prometheus
+
+  grafana:
+    image: grafana/grafana:10.2.0
+    ports:
+      - "30005:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: medinovai
+    volumes:
+      - rc-grafana:/var/lib/grafana
+
+volumes:
+  rc-pgdata:
+  rc-esdata:
+  rc-prometheus:
+  rc-grafana:
+
+networks:
+  default:
+    name: medinovai-research-cloud

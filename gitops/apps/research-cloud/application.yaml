@@ -1,0 +1,51 @@
+# MedinovAI Research Cloud - ArgoCD Application
+# Research data platform namespace orchestration
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: research-cloud
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: research-cloud
+    app.kubernetes.io/part-of: medinovai
+    app.kubernetes.io/component: research-platform
+    medinovai.com/product: research-cloud
+    medinovai.com/compliance: hipaa
+  annotations:
+    notifications.argoproj.io/subscribe.on-sync-succeeded.slack: medinovai-deployments
+    notifications.argoproj.io/subscribe.on-sync-failed.slack: medinovai-alerts
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: medinovai-healthcare
+
+  source:
+    repoURL: https://github.com/medinovai-health/medinovai-infrastructure.git
+    targetRevision: HEAD
+    path: kubernetes/overlays/research-cloud
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: research-cloud
+
+  syncPolicy:
+    automated:
+      prune: false
+      selfHeal: true
+      allowEmpty: false
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+      - ServerSideApply=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+
+  info:
+    - name: Documentation
+      value: https://docs.medinovai.com/research-cloud
+    - name: Compliance
+      value: HIPAA, FDA 21 CFR Part 11

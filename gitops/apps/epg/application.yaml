@@ -1,0 +1,23 @@
+# MedinovAI Edge Privacy Gateway - ArgoCD Application
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: epg
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: epg
+    app.kubernetes.io/part-of: research-cloud
+    medinovai.com/tier: data-gateway
+    medinovai.com/compliance: hipaa
+spec:
+  project: medinovai-healthcare
+  source:
+    repoURL: https://github.com/medinovai-health/medinovai-epg.git
+    targetRevision: HEAD
+    path: k8s
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: research-cloud
+  syncPolicy:
+    automated:
+      selfHeal: true
