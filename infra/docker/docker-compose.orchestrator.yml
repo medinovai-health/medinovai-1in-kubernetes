@@ -53,11 +53,11 @@ services:
       - "8002:8002"
 
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:3000/api/health || exit 0"]
+      test: ["CMD-SHELL", "curl -sf http://localhost:8001/health || python3 -c 'import urllib.request; urllib.request.urlopen(\"http://localhost:8001/health\")' 2>/dev/null && exit 0 || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 60s
+      start_period: 90s
 
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -67,36 +67,18 @@ services:
       com.medinovai.managed-by: medinovai-Deploy
       com.medinovai.version: "${ORCHESTRATOR_TAG:-latest}"
 
-  # ChromaDB vector database — persistent AI memory
-  medinovai-chromadb:
-    image: chromadb/chroma:latest
-    container_name: medinovai-chromadb
-    hostname: chromadb
-    restart: unless-stopped
-
-    volumes:
-      - chromadb-data:/chroma/chroma
-
-    environment:
-      - IS_PERSISTENT=TRUE
-      - ANONYMIZED_TELEMETRY=FALSE
-
-    networks:
-      - medinovai-orchestrator-network
-
-    ports:
-      - "8003:8000"
-
-    healthcheck:
-      disable: true
+  # Note: medinovai-chromadb is managed by the AtlasOS stack (docker-compose.yml)
+  # It is declared as external here to avoid conflict; AtlasOS ensures it runs.
 
 networks:
   medinovai-orchestrator-network:
     name: medinovai-orchestrator-network
-    driver: bridge
+    external: true
 
 volumes:
   orchestrator-data:
     name: medinovai-orchestrator-data
+    external: true
   chromadb-data:
     name: medinovai-chromadb-data
+    external: true
