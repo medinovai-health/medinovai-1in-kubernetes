@@ -240,3 +240,104 @@ dashboards: ## Open Grafana dashboards
 
 logs: ## Follow deploy logs
 	@kubectl logs -f -n medinovai-services -l app.kubernetes.io/part-of=atlasos --tail=50
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# TEST2 Local Stack — Full Greenfield Docker Compose Deployment
+# Port range: 16600-16999. No Cursor required.
+# Docs: docs/TEST2-DEPLOYMENT-RUNBOOK.md
+# ═══════════════════════════════════════════════════════════════════════════════
+
+COMPOSE_TEST2 := docker compose -p test2 --env-file infra/docker/test2.env \
+  -f infra/docker/docker-compose.TEST2-full.yml
+
+.PHONY: test2-preflight test2-network test2-up test2-up-infra test2-down
+.PHONY: test2-down-volumes test2-status test2-wait test2-smoke test2-diagnose
+.PHONY: test2-logs test2-kafka-reset test2-rebuild test2-rebuild-svc test2-ps
+
+test2-preflight: ## [TEST2] Validate images, ports, Kafka volumes, env vars
+	python3 infra/docker/preflight-check.py
+
+test2-preflight-ci: ## [TEST2] Pre-flight check with --skip-images (for CI)
+	python3 infra/docker/preflight-check.py --skip-images
+
+test2-network: ## [TEST2] Create TEST2-network if it doesn't exist
+	@docker network inspect TEST2-network >/dev/null 2>&1 && \
+	  echo "TEST2-network already exists" || \
+	  (docker network create TEST2-network && echo "TEST2-network created")
+
+test2-up: ## [TEST2] Full tiered deploy: preflight → network → infra → kafka → all → smoke
+	bash infra/docker/test2-deploy.sh
+
+test2-up-infra: test2-network ## [TEST2] Deploy infrastructure tier only (DBs, caches, monitoring)
+	$(COMPOSE_TEST2) up -d \
+	  postgres-primary postgres-clinical redis-cache mongodb rabbitmq \
+	  elasticsearch vault zookeeper loki prometheus grafana jaeger mailhog
+
+test2-down: ## [TEST2] Stop all TEST2 containers (keep volumes)
+	$(COMPOSE_TEST2) down
+
+test2-down-volumes: ## [TEST2] Stop TEST2 and destroy ALL data volumes (⚠️ destructive)
+	@echo "WARNING: This destroys all TEST2 data. Press Ctrl+C to cancel, Enter to continue..."
+	@read _confirm
+	$(COMPOSE_TEST2) down -v
+
+test2-status: ## [TEST2] Show health of all TEST2 services
+	@echo ""
+	@docker ps --filter "name=TEST2" --format "{{.Names}}: {{.Status}}" | sort
+	@echo ""
+	@echo "Total:    $$(docker ps --filter 'name=TEST2' -q | wc -l | tr -d ' ')"
+	@echo "Healthy:  $$(docker ps --filter 'name=TEST2' --format '{{.Status}}' | grep -c '(healthy)' || true)"
+	@echo "Crashing: $$(docker ps --filter 'name=TEST2' --format '{{.Status}}' | grep -c 'Restarting' || true)"
+	@echo "Starting: $$(docker ps --filter 'name=TEST2' --format '{{.Status}}' | grep -c 'health: starting' || true)"
+
+test2-ps: ## [TEST2] Full docker ps output for TEST2 containers
+	$(COMPOSE_TEST2) ps
+
+test2-wait: ## [TEST2] Block until all TEST2 services healthy (timeout: 600s)
+	python3 infra/docker/health-wait.py
+
+test2-smoke: ## [TEST2] Run smoke tests against live TEST2 stack
+	python3 infra/docker/test2-smoke-test.py
+
+test2-diagnose: ## [TEST2] Auto-triage all unhealthy TEST2 containers
+	bash infra/docker/test2-diagnose.sh
+
+test2-diagnose-all: ## [TEST2] Show diagnostics for ALL TEST2 containers
+	bash infra/docker/test2-diagnose.sh --all
+
+test2-logs: ## [TEST2] Follow logs from all TEST2 services (last 30 lines)
+	$(COMPOSE_TEST2) logs -f --tail=30
+
+test2-logs-svc: ## [TEST2] Follow logs from one service: make test2-logs-svc SVC=medinovai-registry
+	@echo "Tailing logs for: $(SVC)"
+	$(COMPOSE_TEST2) logs -f --tail=50 $(SVC)
+
+test2-kafka-reset: ## [TEST2] Fix InconsistentClusterIdException — resets Kafka + Zookeeper volumes
+	@echo "Stopping kafka and zookeeper..."
+	@docker stop TEST2-kafka TEST2-zookeeper 2>/dev/null || true
+	@docker rm TEST2-kafka TEST2-zookeeper 2>/dev/null || true
+	@echo "Removing volumes (test2-kafka-data and test2-zookeeper-data)..."
+	@docker volume rm test2-kafka-data test2-zookeeper-data 2>/dev/null || true
+	@echo "Starting zookeeper..."
+	$(COMPOSE_TEST2) up -d zookeeper
+	@echo "Waiting 25s for zookeeper..."
+	@sleep 25
+	@echo "Starting kafka..."
+	$(COMPOSE_TEST2) up -d kafka
+	@echo "Kafka reset complete. Watch logs: make test2-logs-svc SVC=kafka"
+
+test2-rebuild: ## [TEST2] Rebuild all 16 Dockerfile.TEST2 images
+	bash infra/docker/build-all-test2.sh
+
+test2-rebuild-svc: ## [TEST2] Rebuild and restart one service: make test2-rebuild-svc SVC=medinovai-registry
+	@echo "Rebuilding service: $(SVC)"
+	$(COMPOSE_TEST2) build $(SVC)
+	$(COMPOSE_TEST2) up -d --force-recreate $(SVC)
+
+test2-shell: ## [TEST2] Open shell in a service: make test2-shell SVC=medinovai-registry
+	docker exec -it TEST2-$(SVC) /bin/bash || docker exec -it TEST2-$(SVC) /bin/sh
+
+test2-help: ## [TEST2] Show all TEST2 make targets
+	@grep -E '^test2-[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
+	  awk 'BEGIN {FS = ":.*?## "}; {printf "  %-30s %s\n", $$1, $$2}'
+
