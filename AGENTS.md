@@ -59,3 +59,57 @@ These actions ALWAYS require human approval:
 2. **Orient**: Classify as `transient` (timeout, 502/503, connection reset), `structural` (401/403, schema mismatch, config missing), or `logic` (validation failure, business rule violation).
 3. **Decide**: Transient = retry with backoff + check if circuit breaker should open. Structural = stop, log, escalate. Logic = analyze, fix the logic, test.
 4. **Act**: Execute. Log classification and outcome. Update service health status if degraded.
+
+---
+
+## TEST2 Local Deployment
+
+### Quick Build
+
+```bash
+# From medinovai-Deploy repo:
+make test2-rebuild-svc SVC=medinovai-real-time-stream-bus
+
+# Or directly:
+docker build -f Dockerfile.TEST2 \
+  -t ghcr.io/myonsite-healthcare/medinovai-real-time-stream-bus:latest .
+```
+
+### Service Details
+
+| Property | Value |
+|----------|-------|
+| Compose service | `medinovai-real-time-stream-bus` |
+| Host port | `16672` |
+| Healthcheck URL | `http://localhost:3000/health` |
+| Entry point | `main_test2.py (uvicorn FastAPI on port 3000)` |
+| Docker file | `Dockerfile.TEST2` |
+
+### Original Issue
+
+Original Dockerfile is Node.js for a Python FastAPI service; Python CMD had decorator syntax in one-liner causing SyntaxError; listens on port 3000 not 8080
+
+### Test Locally
+
+```bash
+# After building:
+docker run -d --name test-medinovai-real-time-stream-bus -p 16672:8080 \
+  ghcr.io/myonsite-healthcare/medinovai-real-time-stream-bus:latest
+
+# Check health:
+curl http://localhost:16672/health
+
+# Stop:
+docker rm -f test-medinovai-real-time-stream-bus
+```
+
+### Related Files
+
+- `Dockerfile.TEST2` — Custom Dockerfile for TEST2 deployment
+- `main_test2.py` — Python FastAPI implementation (if original was broken)
+- `requirements_test2.txt` — Dependencies for TEST2 build (if different)
+
+### Full Stack Context
+
+See `medinovai-Deploy/AGENTS.md#TEST2-local-deployment` for complete
+deployment instructions, Kafka reset procedures, and troubleshooting.

@@ -1,0 +1,61 @@
+name: Validate Dockerfile.TEST2
+
+on:
+  pull_request:
+    paths:
+      - 'Dockerfile.TEST2'
+      - 'main_test2.py'
+      - 'requirements_test2.txt'
+      - 'requirements.txt'
+  push:
+    branches:
+      - main
+    paths:
+      - 'Dockerfile.TEST2'
+
+jobs:
+  build-and-test:
+    name: Build + Health Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Dockerfile.TEST2
+        run: |
+          docker build -f Dockerfile.TEST2 -t test-image:medinovai-real-time-stream-bus:ci .
+          echo "Build succeeded"
+
+      - name: Run container and check /health endpoint
+        run: |
+          docker run -d --name test-medinovai-real-time-stream-bus \
+            -p 3000:3000 \
+            -e SERVICE_NAME=medinovai-real-time-stream-bus \
+            test-image:medinovai-real-time-stream-bus:ci
+          
+          echo "Waiting 15s for service to start..."
+          sleep 15
+          
+          echo "Checking health endpoint..."
+          HTTP_STATUS=$(curl -sf -o /dev/null -w "%{http_code}" http://localhost:3000/health || echo "000")
+          echo "HTTP status: $HTTP_STATUS"
+          
+          if [[ "$HTTP_STATUS" == "200" ]]; then
+            echo "PASS: Health check returned HTTP 200"
+          else
+            echo "FAIL: Expected HTTP 200, got $HTTP_STATUS"
+            docker logs test-medinovai-real-time-stream-bus
+            exit 1
+          fi
+
+      - name: Check Prometheus metrics endpoint
+        run: |
+          HTTP_STATUS=$(curl -sf -o /dev/null -w "%{http_code}" http://localhost:3000/metrics 2>/dev/null || echo "000")
+          if [[ "$HTTP_STATUS" == "200" ]]; then
+            echo "PASS: /metrics endpoint responding"
+          else
+            echo "INFO: /metrics returned $HTTP_STATUS (may not be present in all services)"
+          fi
+
+      - name: Cleanup
+        if: always()
+        run: docker rm -f test-medinovai-real-time-stream-bus 2>/dev/null || true

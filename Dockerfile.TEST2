@@ -1,6 +1,7 @@
-FROM python:3.12-slim
+FROM ghcr.io/myonsite-healthcare/medinovai-python-base:3.12
+# Base image includes: fastapi, uvicorn, pydantic, requests, httpx, prometheus-client
 WORKDIR /app
-RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
+# curl already available in base image
 RUN pip install --no-cache-dir fastapi "uvicorn[standard]" pydantic kafka-python redis aiohttp pyyaml
 COPY main_test2.py .
 ENV SERVICE_NAME=medinovai-real-time-stream-bus PORT=3000

@@ -1,7 +1,32 @@
+from prometheus_client import Counter, Histogram, make_asgi_app
 from fastapi import FastAPI
 import uvicorn
 
 app = FastAPI(title="MedinovAI Real-Time Stream Bus", version="1.0.0")
+
+# ── Prometheus metrics ────────────────────────────────────────────────────────
+_REQUEST_COUNT = Counter(
+    'http_requests_total', 'HTTP request count',
+    ['method', 'path', 'status']
+)
+_REQUEST_LATENCY = Histogram(
+    'http_request_duration_seconds', 'HTTP request latency',
+    ['method', 'path']
+)
+
+@app.middleware("http")
+async def _metrics_middleware(request, call_next):
+    import time as _time
+    start = _time.time()
+    response = await call_next(request)
+    duration = _time.time() - start
+    path = request.url.path
+    _REQUEST_COUNT.labels(request.method, path, response.status_code).inc()
+    _REQUEST_LATENCY.labels(request.method, path).observe(duration)
+    return response
+
+# Mount Prometheus metrics endpoint
+app.mount("/metrics", make_asgi_app())
 
 @app.get("/health")
 def health():
