@@ -1,0 +1,23 @@
+# AtlasOS Heartbeat Checks — medinovai-Deploy
+# Generated: 2026-02-23
+# Version: 1.0.0
+
+repo: medinovai-Deploy
+agent_id: deployment-agent
+squad: infrastructure-squad
+
+checks:
+
+  - type: prometheus
+    name: error_rate
+    query: "sum(rate(http_requests_total{service='medinovai-Deploy',status=~'5..'}[5m])) / sum(rate(http_requests_total{service='medinovai-Deploy'}[5m]))"
+    threshold: 0.05
+    comparison: lt
+    interval: 60s
+    on_failure: alert
+
+  - type: dependency
+    name: dependency_health
+    check_all_dependencies: true
+    interval: 60s
+    on_failure: feed_ooda_brain

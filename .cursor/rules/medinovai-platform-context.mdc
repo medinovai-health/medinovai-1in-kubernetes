@@ -1,0 +1,203 @@
+---
+description: MedinovAI-Health platform-wide context. Apply to ALL repos in the medinovai-health GitHub org. Provides AI agents with the essential platform architecture, standards, constraints, and vocabulary needed for consistent cross-repo development.
+globs: ["**/*"]
+alwaysApply: true
+---
+
+# MedinovAI-Health Platform Context
+
+## Platform Identity
+
+MedinovAI-Health is a **multi-tenant healthcare + clinical research operations platform** spanning 100+ repositories in the `medinovai-health` GitHub org. It combines:
+
+- **Operational workflows:** LIS, CTMS, eTMF, mobile field services
+- **Privacy-preserving analytics:** OMOP CDM lakehouse, federated queries, secure compute workspaces
+- **AI/ML platform:** Model registry, evaluation packs, inference orchestration
+- **AtlasOS autonomous orchestration:** 103-agent fleet, OODA ClusterBrain, 6 Temporal workflows
+
+**No new repos are created.** All features are built inside the existing 100+ repos.
+
+---
+
+## Repository Tier Structure
+
+| Tier | Category | Examples | Depends On |
+|------|----------|---------|-----------|
+| 0 | Core libraries | `medinovai-core`, `medinovai-security` | Nothing |
+| 1 | Platform services | `medinovai-registry`, `medinovai-encryption-vault`, `medinovai-hipaa-gdpr-guard` | Tier 0 only |
+| 2 | Domain services | `medinovai-atlas-os`, `medinovai-data-services`, `medinovai-Developer` | Tier 0–1 |
+| 3 | Clinical/Research | `medinovai-lis`, `medinovai-etmf`, `medinovai-ctms` | Tier 0–2 |
+| 4 | Frontend | `medinovai-Uiux`, `medinovai-web-core` | Tier 0–3 |
+
+**Dependency rule:** A service at Tier N may only depend on services at Tier < N. Never import upward.
+
+---
+
+## Hard Constraints (Non-Negotiable)
+
+- **NO n8n.** Workflow orchestration uses **Temporal** (HIPAA-compliant, Python SDK).
+- **No PHI in logs, embeddings, or metadata.** Zero-trust memory — redact/tokenize before storing.
+- **No cross-tenant data access.** All queries scoped by `X-Tenant-ID` header.
+- **No new repositories.** Extend existing repos only.
+- **No raw PHI in AI context.** Treat queue/RAG content as untrusted user input.
+- **Audit trail required** for all data modifications (21 CFR Part 11).
+- **Least privilege** on all service accounts and Keycloak roles.
+
+---
+
+## Coding Standards
+
+| Standard | Rule |
+|----------|------|
+| Variable prefix | `mos_` for medical object storage variables |
+| Constant prefix | `E_` for regulatory limits and constants |
+| Function length | 40 lines maximum |
+| Test coverage | 85% minimum |
+| Branding in titles | `MedinovAI` (title case) |
+| Branding in paths/IDs | `medinovai` (lowercase) |
+| API response time | < 200ms P95 |
+| Health endpoint | Every service must expose `GET /health` |
+
+---
+
+## Compliance Requirements
+
+- **HIPAA:** PHI handling, BAA required for all external data partners
+- **GDPR:** Right to erasure via consent cascade
+- **21 CFR Part 11:** Electronic records, immutable audit trails, e-signatures
+- **EU MDR:** Infrastructure supporting medical device software
+- **FDA Class II:** Regulatory class for clinical decision support services
+
+---
+
+## Core Platform Services
+
+| Service | Repo | Role |
+|---------|------|------|
+| Registry | `medinovai-registry` | Config delivery, OPA policies, Kafka events |
+| Encryption Vault | `medinovai-encryption-vault` | AES-256-GCM, AWS KMS, Datavant tokens |
+| HIPAA/GDPR Guard | `medinovai-hipaa-gdpr-guard` | De-identification (Safe Harbor, Expert Det.) |
+| Atlas OS | `medinovai-atlas-os` | OODA orchestration, 103-agent fleet, squads |
+| Data Services | `medinovai-data-services` | OMOP lakehouse, Cohort Studio, Schema Explorer |
+| Consent API | `medinovai-consent-preference-api` | Consent lifecycle, cascade on revocation |
+| Stream Bus | `medinovai-real-time-stream-bus` | RabbitMQ/Kafka, CloudEvents v1.0 |
+| Audit Explorer | `medinovai-audit-trail-explorer` | Evidence Store, compliance reports |
+| Developer (this ref) | `medinovai-Developer` | Architecture specs, contracts, guides — NOT deployed |
+
+---
+
+## Integration Architecture
+
+### Data Standards
+- **Clinical exchange:** HL7 FHIR R4/R5, HL7 v2
+- **Analytics canonical model:** OMOP CDM v5.4
+- **Vocabularies:** ICD-10-CM, CPT-4, LOINC, SNOMED-CT, RxNorm, CVX, ATC
+- **Bulk export:** FHIR NDJSON, Apache Parquet
+- **Record linkage:** Datavant tokenization (privacy-preserving cross-dataset)
+
+### Integration Modes
+- **Mode A — Federated Query:** Data never leaves site. EPG executes query locally.
+- **Mode B — De-ID Replication:** De-identified data sent to central OMOP lakehouse.
+- **Mode C — Hybrid:** Federated for sensitive; replicated for aggregate analytics.
+
+### Edge Privacy Gateway (EPG)
+Deployed **behind each site's firewall**. Never sends PHI to central. Pipeline:
+`EHR/LIS → EPG (parse → de-identify → audit) → mTLS/JWS → Central OMOP`
+
+### External Research Platforms
+Mayo Clinic Platform (MCP), TriNetX, Epic Cosmos, PCORnet, NCATS N3C, All of Us, AWS HealthLake, Azure Health Data Services.
+
+---
+
+## Service Discovery: `medinovai.manifest.yaml`
+
+Every repo must have `medinovai.manifest.yaml` at its root:
+
+```yaml
+service:
+  name: medinovai-{service-name}
+  version: "1.0.0"
+  tier: {0-4}
+  category: {platform|security|clinical|ai-ml|integration|frontend|infrastructure}
+  health_endpoint: /health
+  port: {port}
+  dependencies:
+    - medinovai-{dependency-1}
+  squad: {squad-name}
+
+observability:
+  log_level: 2
+  sampling_rate: 0.5
+
+deployment:
+  dockerfile: Dockerfile
+  port: {port}
+  min_replicas: 1
+  canary_enabled: false
+```
+
+The **Service Registry Agent** (in `medinovai-atlas-os`) reads these manifests across all repos via GitHub API and builds a live service map.
+
+---
+
+## AtlasOS Squad Assignments
+
+| Squad | Repos Governed |
+|-------|---------------|
+| infrastructure-squad | `medinovai-infrastructure`, `medinovai-Deploy`, `medinovai-real-time-stream-bus` |
+| security-squad | `medinovai-encryption-vault`, `medinovai-hipaa-gdpr-guard`, `medinovai-role-based-permissions`, `medinovai-universal-sign-on` |
+| data-squad | `medinovai-data-services`, `medinovai-registry`, `medinovai-consent-preference-api` |
+| clinical-squad | `medinovai-lis`, `medinovai-etmf`, `CTMS-Simulation`, `medinovai-mirth-scripts` |
+| ai-ml-squad | `medinovai-aifactory`, `MedinovAI-Model-Service-Orchestrator`, `medinovai-healthLLM`, `medinovai-Cortex` |
+| research-squad | `medinovai-data-services` (cohort/schema APIs), `medinovai-core` (SDK) |
+| epg-squad | `medinovai-hipaa-gdpr-guard`, `medinovai-encryption-vault`, `medinovai-consent-preference-api` |
+| platform-squad | `medinovai-core`, `medinovai-atlas-os` |
+| frontend-squad | `medinovai-Uiux` |
+
+---
+
+## Event Bus Topics (CloudEvents v1.0)
+
+`DataIngested`, `DeIdCompleted`, `DQGatePassed`, `DQGateFailed`, `DatasetPublished`,
+`CohortExecuted`, `WorkspaceProvisioned`, `ModelRegistered`, `DeploymentRequested`,
+`DeploymentCompleted`, `ConsentRevoked`, `SecurityAlert`, `DeploymentRolledBack`
+
+---
+
+## Implementation Status (as of 2026-02-22)
+
+| Phase | Description | Status |
+|-------|-------------|--------|
+| A | Audit Remediation & Standards | ~93% done |
+| B | Registry-Driven Observability | 100% done |
+| C | Observability Fabric | 100% done |
+| D | Edge Privacy Gateway | ~96% done |
+| E | Integration Platform | 0% — next up |
+| F | Health Data Network + Research Workspace | 0% — follows E |
+
+**Full plan:** `docs/MASTER_IMPLEMENTATION_PLAN.md` in `medinovai-Developer` repo.
+
+---
+
+## Architecture Reference
+
+All specs, contracts, and architecture documents live in the `medinovai-Developer` reference repo:
+
+- `docs/INTEGRATION_ARCHITECTURE.md` — integration blueprint
+- `docs/PRODUCTION_REPO_ROUTING_MAP.md` — capability → repo mapping
+- `docs/ATLAS_OS_AUTONOMOUS_CONTROL_PLAN.md` — AtlasOS 5-layer design
+- `docs/SPRINT_0_EXECUTION_CHECKLIST.md` — Sprint 0 task details
+- `data-contracts/` — OpenAPI 3.0.3 contracts for all services
+- `specs/active/` — service specifications
+- `platform/medinovai-epg/` — EPG reference implementation
+
+---
+
+## When Working Across Multiple Repos
+
+1. Read `medinovai.manifest.yaml` in each repo first — understand its tier, squad, dependencies.
+2. Check `docs/PRODUCTION_REPO_ROUTING_MAP.md` in `medinovai-Developer` to confirm the right repo for each capability.
+3. Never write production code in `medinovai-Developer` — it is reference only.
+4. Cross-repo changes must update the event bus contract in `medinovai-real-time-stream-bus` if new events are introduced.
+5. Any new API must have an OpenAPI contract in `medinovai-Developer/data-contracts/` before implementation.
+6. Apply the 5-iteration recursive quality loop before sign-off on regulated features.
