@@ -1,0 +1,29 @@
+# AtlasOS Heartbeat Checks — medinovai-real-time-stream-bus
+# Generated: 2026-02-23
+# Version: 1.0.0
+
+repo: medinovai-real-time-stream-bus
+agent_id: stream-agent
+squad: infrastructure-squad
+
+checks:
+  - type: http
+    name: health_check
+    endpoint: http://medinovai-real-time-stream-bus:8080/health
+    expected_status: 200
+    timeout_seconds: 10
+    interval: 30s
+    on_failure: feed_ooda_brain
+  - type: prometheus
+    name: error_rate
+    query: "sum(rate(http_requests_total{service='medinovai-real-time-stream-bus',status=~'5..'}[5m])) / sum(rate(http_requests_total{service='medinovai-real-time-stream-bus'}[5m]))"
+    threshold: 0.05
+    comparison: lt
+    interval: 60s
+    on_failure: alert
+
+  - type: dependency
+    name: dependency_health
+    check_all_dependencies: true
+    interval: 60s
+    on_failure: feed_ooda_brain

@@ -1,3 +1,14 @@
+service:
+  name: medinovai-real-time-stream-bus
+  version: "1.0.0"
+  tier: 1
+  category: platform
+  health_endpoint: /health
+  port: 8080
+  dependencies:
+    - medinovai-core
+  squad: infrastructure-squad
+
 module:
   name: "medinovai-real-time-stream-bus"
   version: "0.0.0"
