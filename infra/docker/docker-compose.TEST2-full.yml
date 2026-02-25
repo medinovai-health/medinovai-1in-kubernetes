@@ -917,9 +917,9 @@ services:
       REGISTRY_URL: http://medinovai-registry:8080
       OLLAMA_HOST: http://host.docker.internal:11434
       AI_MODEL_PRIMARY: ${AI_MODEL_PRIMARY:-deepseek-r1:70b}
-      PORT: 8000
+      PORT: 8080
     ports:
-      - "16677:8000"
+      - "16677:8080"
     extra_hosts:
       - "host.docker.internal:host-gateway"
     healthcheck:
@@ -1608,9 +1608,9 @@ services:
       KEYCLOAK_URL: http://keycloak:8080
       SUPERADMIN_EMAIL: ${SUPERADMIN_EMAIL:-superadmin@medinov.ai}
       SUPERADMIN_PASSWORD: ${SUPERADMIN_PASSWORD:-TEST2_superadmin_2026}
-      PORT: 5173
+      PORT: 8080
     ports:
-      - "16731:5173"    # Master Portal  →  http://localhost:16731
+      - "16731:8080"    # Master Portal  →  http://localhost:16731
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:8080/health"]
       interval: 15s
