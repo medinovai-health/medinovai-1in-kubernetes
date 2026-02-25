@@ -33,6 +33,8 @@ echo ""
 
 # ── 2. Validate atlasos.json ──────────────────────────────────────────────────
 log "Step 2/4: Validating atlasos.json..."
+# ATLASOS_CONFIG_PATH is the AtlasOS env var; OPENCLAW_CONFIG_PATH is the legacy
+# env var still read by the engine binary internals — both point to same file
 DOCTOR_OUT=$(ATLASOS_CONFIG_PATH="$ATLAS_DIR/atlasos.json" \
   OPENCLAW_CONFIG_PATH="$ATLAS_DIR/atlasos.json" \
   "$ATLASOS_ENGINE_BIN" "$ATLASOS_ENGINE_INDEX" doctor 2>&1 || true)
