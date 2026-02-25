@@ -174,9 +174,11 @@ services:
       dockerfile: Dockerfile
     container_name: ceo-atlas-gateway
     ports:
-      - "41010:18789"
+      - "18789:8080"    # Tailscale Funnel → localhost:18789 → container:8080
+      - "41010:8080"    # Direct access → localhost:41010
     environment:
       PYTHONUNBUFFERED: "1"
+      PORT: "8080"
       VAULT_ADDR: http://vault:8200
       VAULT_TOKEN: ${VAULT_DEV_ROOT_TOKEN_ID:-medinovai-dev-token}
       AUDIT_SERVICE_URL: http://audit-chain:8084
@@ -198,7 +200,7 @@ services:
       audit-chain:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:18789/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -210,7 +212,10 @@ services:
       - "host.docker.internal:host-gateway"
 
   # ─── AtlasOS UI (Chat + Deployment) ────────────────────────────────────
+  # Use profile "ui" to build: docker compose --profile ui up -d atlas-ui
   atlas-ui:
+    profiles:
+      - ui
     build:
       context: ${ATLASOS_PATH:-../../repos/AtlasOS}/ui
       dockerfile: Dockerfile
