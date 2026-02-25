@@ -24,7 +24,8 @@ ENV ?= onprem-prod
 .PHONY: health gpu-status agent-status status vault-status
 .PHONY: rotate-secrets drift-check backup cert-check docker-backup docker-backup-verify docker-restore
 .PHONY: orchestrator-start orchestrator-stop orchestrator-update orchestrator-rollback orchestrator-logs orchestrator-status
-.PHONY: ceo-stack ceo-stack-stop ceo-stack-update production-deploy
+.PHONY: ceo-stack ceo-stack-stop ceo-stack-update ceo-stack-rebuild production-deploy
+.PHONY: mcp-status mcp-health mcp-list generate-mcp-compose scaffold-connector seed-connector
 .PHONY: validate validate-k8s smoke-test dashboards logs
 
 # ─── Help ───────────────────────────────────────────────────────────────────
@@ -194,6 +195,60 @@ ceo-stack: ## Start the full CEO intelligence stack
 ceo-stack-stop: ## Stop CEO stack (preserves all volumes/data)
 	@docker compose -f $(CEO_COMPOSE) stop
 	@echo "CEO stack stopped. All data preserved."
+
+ceo-stack-rebuild: ## [CEO] Rebuild and restart all MCP containers (after code changes)
+	@echo "Rebuilding all MCP containers..."
+	@ATLASOS_PATH=$(ATLASOS_PATH) docker compose -f $(CEO_COMPOSE) up -d --build --force-recreate \
+	  mcp-vtiger mcp-quickbooks mcp-google mcp-lis mcp-mattermost mcp-twilio mcp-3cx
+	@echo "Waiting 10s for health checks..."
+	@sleep 10
+	@make mcp-health
+
+mcp-status: ## [MCP] Show health and status of all CEO MCP connectors
+	@echo "=== CEO MCP Connectors ==="
+	@docker ps --format "{{.Names}}\t{{.Status}}" | grep "ceo-mcp-" | sort
+
+mcp-health: ## [MCP] Hit /health on every active MCP connector
+	@echo "=== MCP Connector Health ==="
+	@for name_port in vtiger:41601 quickbooks:41602 google:41603 lis:41604 mattermost:41605 twilio:41606 3cx:41607; do \
+	  name=$$(echo $$name_port | cut -d: -f1); \
+	  port=$$(echo $$name_port | cut -d: -f2); \
+	  result=$$(python3 -c "import urllib.request,json; \
+	    r=urllib.request.urlopen('http://localhost:$$port/health',timeout=3); \
+	    d=json.loads(r.read()); print('OK status='+d.get('status','?'))" 2>&1); \
+	  echo "  mcp-$$name ($$port): $$result"; \
+	done
+
+mcp-list: ## [MCP] List all connectors in registry (stable + planned)
+	@python3 infra/scripts/generate-mcp-compose.py \
+	  --registry $(ATLASOS_PATH)/services/mcp-connectors/CONNECTOR_REGISTRY.yml \
+	  --list
+
+generate-mcp-compose: ## [MCP] Regenerate MCP section in docker-compose.ceo.yml from registry
+	@echo "Generating MCP compose blocks (status=$(or $(STATUS),stable))..."
+	@pip3 install -q pyyaml 2>/dev/null || true
+	@python3 infra/scripts/generate-mcp-compose.py \
+	  --registry $(ATLASOS_PATH)/services/mcp-connectors/CONNECTOR_REGISTRY.yml \
+	  --compose $(CEO_COMPOSE) \
+	  --status $(or $(STATUS),stable)
+
+scaffold-connector: ## [MCP] Scaffold a new connector: make scaffold-connector NAME=stripe
+	@if [[ -z "$(NAME)" ]]; then \
+	  echo "Usage: make scaffold-connector NAME=<connector-id>"; \
+	  echo "Available (planned):"; \
+	  python3 infra/scripts/generate-mcp-compose.py \
+	    --registry $(ATLASOS_PATH)/services/mcp-connectors/CONNECTOR_REGISTRY.yml \
+	    --list 2>/dev/null | grep "planned" | awk '{print "  "$$1}'; \
+	  exit 1; \
+	fi
+	@ATLASOS_PATH=$(ATLASOS_PATH) bash infra/scripts/scaffold-connector.sh $(NAME)
+
+seed-connector: ## [MCP] Seed credentials for a connector: make seed-connector NAME=vtiger
+	@if [[ -z "$(NAME)" ]]; then \
+	  echo "Usage: make seed-connector NAME=<connector-id>"; \
+	  exit 1; \
+	fi
+	@bash infra/scripts/seed-vault-credentials.sh $(NAME)
 
 ceo-stack-update: ## Safe update CEO stack: backup → pull → restart
 	@echo "Step 1/2: Pre-update backup..."
