@@ -151,7 +151,13 @@ services:
       VAULT_ADDR: http://vault:8200
       VAULT_TOKEN: ${VAULT_DEV_ROOT_TOKEN_ID:-medinovai-dev-token}
       AUDIT_SERVICE_URL: http://audit-chain:8084
-      QUICKBOOKS_MCP_URL: http://mcp-quickbooks:8080
+      MCP_VTIGER_URL: http://mcp-vtiger:8080
+      MCP_QUICKBOOKS_URL: http://mcp-quickbooks:8080
+      MCP_GOOGLE_URL: http://mcp-google:8080
+      MCP_LIS_URL: http://mcp-lis:8080
+      MCP_MATTERMOST_URL: http://mcp-mattermost:8080
+      MCP_TWILIO_URL: http://mcp-twilio:8080
+      MCP_3CX_URL: http://mcp-3cx:8080
     depends_on:
       vault:
         condition: service_healthy
@@ -293,9 +299,11 @@ services:
       AUDIT_SERVICE_URL: "http://audit-chain:8084"
       MCP_VTIGER_URL: "http://mcp-vtiger:8080"
       MCP_QUICKBOOKS_URL: "http://mcp-quickbooks:8080"
-      MCP_GOOGLE_URL: "http://mcp-google-workspace:8080"
+      MCP_GOOGLE_URL: "http://mcp-google:8080"
       MCP_LIS_URL: "http://mcp-lis:8080"
       MCP_MATTERMOST_URL: "http://mcp-mattermost:8080"
+      MCP_TWILIO_URL: "http://mcp-twilio:8080"
+      MCP_3CX_URL: "http://mcp-3cx:8080"
       CORRELATION_INTERVAL_MIN: "${CORRELATION_INTERVAL_MIN:-15}"
     volumes:
       - correlation-data:/data/correlations
@@ -330,9 +338,11 @@ services:
       CORRELATION_ENGINE_URL: "http://correlation-engine:8085"
       MCP_VTIGER_URL: "http://mcp-vtiger:8080"
       MCP_QUICKBOOKS_URL: "http://mcp-quickbooks:8080"
-      MCP_GOOGLE_URL: "http://mcp-google-workspace:8080"
+      MCP_GOOGLE_URL: "http://mcp-google:8080"
       MCP_LIS_URL: "http://mcp-lis:8080"
       MCP_MATTERMOST_URL: "http://mcp-mattermost:8080"
+      MCP_TWILIO_URL: "http://mcp-twilio:8080"
+      MCP_3CX_URL: "http://mcp-3cx:8080"
       MORNING_BRIEFING_HOUR: "${MORNING_BRIEFING_HOUR:-7}"
       EOD_BRIEFING_HOUR: "${EOD_BRIEFING_HOUR:-18}"
     volumes:
@@ -377,6 +387,19 @@ services:
       - ceo-network
 
   # ─── MCP Connectors ───────────────────────────────────────────────────
+  # All connectors run on internal port 8080 (set via PORT env var).
+  # base_connector.py reads PORT env and uses it, overriding per-connector defaults.
+  # Host ports: 41601-41607 (see infra/PORT_REGISTRY.md)
+  #
+  # Internal URLs (used by intelligence services):
+  #   VTiger:          http://mcp-vtiger:8080
+  #   QuickBooks:      http://mcp-quickbooks:8080
+  #   Google:          http://mcp-google:8080
+  #   LIS:             http://mcp-lis:8080
+  #   Mattermost:      http://mcp-mattermost:8080
+  #   Twilio:          http://mcp-twilio:8080
+  #   3CX:             http://mcp-3cx:8080
+
   mcp-vtiger:
     build:
       context: ${ATLASOS_PATH:-../../repos/AtlasOS}/services/mcp-connectors
@@ -387,6 +410,7 @@ services:
     ports:
       - "41601:8080"
     environment:
+      PORT: "8080"
       VAULT_ADDR: http://vault:8200
       VAULT_TOKEN: ${VAULT_DEV_ROOT_TOKEN_ID:-medinovai-dev-token}
       VAULT_SECRET_PATH: medinovai-secrets/atlasos/vtiger
@@ -402,6 +426,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 15s
     restart: unless-stopped
     networks:
       - ceo-network
@@ -416,6 +441,7 @@ services:
     ports:
       - "41602:8080"
     environment:
+      PORT: "8080"
       VAULT_ADDR: http://vault:8200
       VAULT_TOKEN: ${VAULT_DEV_ROOT_TOKEN_ID:-medinovai-dev-token}
       VAULT_SECRET_PATH: medinovai-secrets/atlasos/quickbooks
@@ -431,6 +457,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 15s
     restart: unless-stopped
     networks:
       - ceo-network
@@ -445,16 +472,23 @@ services:
     ports:
       - "41603:8080"
     environment:
+      PORT: "8080"
       VAULT_ADDR: http://vault:8200
       VAULT_TOKEN: ${VAULT_DEV_ROOT_TOKEN_ID:-medinovai-dev-token}
       VAULT_SECRET_PATH: medinovai-secrets/atlasos/google-workspace
       AUDIT_SERVICE_URL: http://audit-chain:8084
-      CONNECTOR_NAME: google-workspace
+      CONNECTOR_NAME: google_workspace
     depends_on:
       vault:
         condition: service_healthy
       audit-chain:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
     restart: unless-stopped
     networks:
       - ceo-network
@@ -469,6 +503,7 @@ services:
     ports:
       - "41604:8080"
     environment:
+      PORT: "8080"
       VAULT_ADDR: http://vault:8200
       VAULT_TOKEN: ${VAULT_DEV_ROOT_TOKEN_ID:-medinovai-dev-token}
       VAULT_SECRET_PATH: medinovai-secrets/atlasos/lis
@@ -479,6 +514,12 @@ services:
         condition: service_healthy
       audit-chain:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
     restart: unless-stopped
     networks:
       - ceo-network
@@ -493,6 +534,7 @@ services:
     ports:
       - "41605:8080"
     environment:
+      PORT: "8080"
       VAULT_ADDR: http://vault:8200
       VAULT_TOKEN: ${VAULT_DEV_ROOT_TOKEN_ID:-medinovai-dev-token}
       VAULT_SECRET_PATH: medinovai-secrets/atlasos/mattermost
@@ -503,6 +545,74 @@ services:
         condition: service_healthy
       audit-chain:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    restart: unless-stopped
+    networks:
+      - ceo-network
+
+  mcp-twilio:
+    build:
+      context: ${ATLASOS_PATH:-../../repos/AtlasOS}/services/mcp-connectors
+      dockerfile: Dockerfile
+      args:
+        CONNECTOR_NAME: twilio
+    container_name: ceo-mcp-twilio
+    ports:
+      - "41606:8080"
+    environment:
+      PORT: "8080"
+      VAULT_ADDR: http://vault:8200
+      VAULT_TOKEN: ${VAULT_DEV_ROOT_TOKEN_ID:-medinovai-dev-token}
+      VAULT_SECRET_PATH: medinovai-secrets/atlasos/twilio
+      AUDIT_SERVICE_URL: http://audit-chain:8084
+      CONNECTOR_NAME: twilio
+    depends_on:
+      vault:
+        condition: service_healthy
+      audit-chain:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    restart: unless-stopped
+    networks:
+      - ceo-network
+
+  mcp-3cx:
+    build:
+      context: ${ATLASOS_PATH:-../../repos/AtlasOS}/services/mcp-connectors
+      dockerfile: Dockerfile
+      args:
+        CONNECTOR_NAME: threecx
+    container_name: ceo-mcp-3cx
+    ports:
+      - "41607:8080"
+    environment:
+      PORT: "8080"
+      VAULT_ADDR: http://vault:8200
+      VAULT_TOKEN: ${VAULT_DEV_ROOT_TOKEN_ID:-medinovai-dev-token}
+      VAULT_SECRET_PATH: medinovai-secrets/atlasos/threecx
+      AUDIT_SERVICE_URL: http://audit-chain:8084
+      CONNECTOR_NAME: threecx
+    depends_on:
+      vault:
+        condition: service_healthy
+      audit-chain:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
     restart: unless-stopped
     networks:
       - ceo-network
@@ -539,6 +649,7 @@ volumes:
   correlation-data:
   briefing-data:
   decision-data:
+  # No named volumes for MCP connectors — stateless, credentials from Vault
 
 networks:
   ceo-network:
