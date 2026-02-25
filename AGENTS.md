@@ -181,7 +181,111 @@ Tier 6 UI:         multimodal-ui-shell, medinovaios
 
 ### Files
 
-| File | Purpose |
+---
+
+## CEO Stack / AtlasOS Gateway — Critical Config Rules
+
+### Architecture
+
+```
+WhatsApp → Meta → Tailscale Funnel → localhost:18789
+                                    → OpenClaw (native LaunchAgent: ai.openclaw.gateway)
+                                    → ~/.atlas/atlasos.json (CEO agent "Arjun")
+                                    → openclaw-sbx-agent-ceo sandbox container
+```
+
+**OpenClaw runs natively on the host** (not in Docker). It is a Node.js process managed
+by `~/Library/LaunchAgents/ai.openclaw.gateway.plist`.
+`~/.openclaw` is a symlink to `~/.atlas` — same directory.
+
+### ⛔ NEVER DO THIS
+
+```yaml
+# docker-compose.ceo.yml — WRONG
+atlas-gateway:
+  ports:
+    - "18789:8080"   # ← BREAKS WhatsApp. Port 18789 belongs to OpenClaw.
+```
+
+Port **18789** is reserved for the native OpenClaw gateway. If Docker binds it first,
+WhatsApp goes down. The CEO docker stack uses **41010** only.
+
+### Protected Files (NEVER overwrite during upgrade)
+
+| File | What it contains |
+|------|-----------------|
+| `~/.atlas/atlasos.json` | CEO agent "Arjun", WhatsApp/Telegram/Mattermost bindings, model config, all agents |
+| `~/.atlas/openclaw.json` | OpenClaw gateway config, port, auth token |
+| `~/.atlas/credentials/` | WhatsApp QR pairing, Telegram pairing, Mattermost tokens |
+| `~/.atlas/devices/` | Paired device state (losing this forces WhatsApp re-pair) |
+| `~/Library/LaunchAgents/ai.openclaw.gateway.plist` | The LaunchAgent that keeps WhatsApp alive |
+
+### Config Preservation Workflow
+
+```bash
+# BEFORE any upgrade — always run this first:
+make pre-upgrade           # Backs up everything + validates config + checks port 18789
+
+# After upgrade — if WhatsApp breaks:
+make gateway-doctor        # Check for config validation errors
+make gateway-doctor FIX=1  # Auto-fix minor issues
+make gateway-restart       # Restart the native gateway
+
+# Emergency restore:
+make config-restore                    # Restore from latest backup
+make config-restore BACKUP=20260225    # Restore from specific timestamp
+make config-list-backups               # Show all available snapshots
+```
+
+### Config Backup
+
+- **Automatic**: Daily at 3 AM via `com.medinovai.config-backup` LaunchAgent
+- **Manual**: `make config-backup`
+- **Location**: `~/.atlas-backups/` (20 snapshots retained)
+- **What's backed up**: `atlasos.json`, `openclaw.json`, `credentials/`, `devices/`,
+  all LaunchAgent plists, `docker-compose.ceo.yml`
+
+### CEO Stack Quick Start
+
+```bash
+# Start CEO Docker stack (intelligence services, not the gateway):
+ATLASOS_PATH=~/Github/medinovai-health/medinovai-Atlas \
+  docker compose -f infra/docker/docker-compose.ceo.yml up -d
+
+# Check gateway (WhatsApp):
+make gateway-status
+
+# Check CEO stack containers:
+docker ps --filter "name=ceo-" --format "{{.Names}}: {{.Status}}"
+```
+
+### CEO Stack Ports
+
+| Service | Host Port | Purpose |
+|---------|-----------|---------|
+| `ceo-atlas-command` | 41000 | CEO command center UI |
+| `ceo-atlas-gateway` | 41010 | CEO stack health stub (NOT WhatsApp) |
+| `ceo-vault` | 41100 | Secrets |
+| `ceo-postgres` | 41200 | Database |
+| `ceo-redis` | 41300 | Cache |
+| `ceo-chromadb` | 41400 | Vector DB |
+| `ceo-audit-chain` | 41500 | Audit log |
+| `ceo-correlation-engine` | 41510 | Intelligence |
+| `ceo-briefing-engine` | 41520 | Morning/evening briefings |
+| `ceo-decision-tracker` | 41530 | Decision log |
+| OpenClaw gateway | **18789** | WhatsApp/Telegram (**native, not Docker**) |
+
+### File | Purpose |
+|------|---------|
+| `infra/docker/docker-compose.ceo.yml` | CEO Docker infrastructure |
+| `infra/launchd/start-ceo-stack.sh` | CEO Docker startup script |
+| `infra/launchd/com.medinovai.ceo-stack.plist` | CEO stack LaunchAgent |
+| `infra/scripts/backup-atlasos-config.sh` | Config backup + restore |
+| `infra/scripts/pre-upgrade-check.sh` | Pre-upgrade safety check |
+
+---
+
+### File | Purpose |
 |------|---------|
 | `infra/docker/docker-compose.TEST2-full.yml` | Full stack definition |
 | `infra/docker/test2.env` | Environment variables (gitignored) |

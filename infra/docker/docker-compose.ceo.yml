@@ -174,8 +174,10 @@ services:
       dockerfile: Dockerfile
     container_name: ceo-atlas-gateway
     ports:
-      - "18789:8080"    # Tailscale Funnel → localhost:18789 → container:8080
       - "41010:8080"    # Direct access → localhost:41010
+      # NOTE: port 18789 is reserved for the native OpenClaw/AtlasOS gateway process
+      # (LaunchAgent: ai.openclaw.gateway). Tailscale Funnel → localhost:18789 → OpenClaw.
+      # DO NOT map 18789 here or WhatsApp will stop working.
     environment:
       PYTHONUNBUFFERED: "1"
       PORT: "8080"

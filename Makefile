@@ -341,3 +341,45 @@ test2-help: ## [TEST2] Show all TEST2 make targets
 	@grep -E '^test2-[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
 	  awk 'BEGIN {FS = ":.*?## "}; {printf "  %-30s %s\n", $$1, $$2}'
 
+
+# ─── AtlasOS Config Preservation ─────────────────────────────────────────────
+
+config-backup: ## [CONFIG] Backup atlasos.json, credentials, LaunchAgents to ~/.atlas-backups/
+	@bash infra/scripts/backup-atlasos-config.sh
+
+config-restore: ## [CONFIG] Restore config from latest backup: make config-restore (or BACKUP=timestamp)
+	@bash infra/scripts/backup-atlasos-config.sh --restore $(or $(BACKUP),latest)
+
+config-list-backups: ## [CONFIG] List all available config backups
+	@ls -la ~/.atlas-backups/ | grep -v "^total\|^d.*\.$\|^d.*\.\.$" | sort -r | head -25
+
+pre-upgrade: ## [UPGRADE] Run safety check + backup before any system upgrade
+	@bash infra/scripts/pre-upgrade-check.sh
+
+gateway-restart: ## [OPENCLAW] Restart the native OpenClaw gateway (port 18789 / WhatsApp)
+	@echo "Restarting OpenClaw gateway..."
+	@launchctl unload ~/Library/LaunchAgents/ai.openclaw.gateway.plist 2>/dev/null || true
+	@sleep 2
+	@launchctl load ~/Library/LaunchAgents/ai.openclaw.gateway.plist
+	@echo "Gateway reloaded. Waiting 8s for WhatsApp connect..."
+	@sleep 8
+	@lsof -iTCP:18789 -sTCP:LISTEN -nP 2>/dev/null | grep LISTEN || echo "WARNING: port 18789 not listening"
+
+gateway-status: ## [OPENCLAW] Check OpenClaw gateway + WhatsApp status
+	@echo "=== Port 18789 owner ==="
+	@lsof -iTCP:18789 -sTCP:LISTEN -nP 2>/dev/null | grep LISTEN || echo "Nothing on 18789"
+	@echo ""
+	@echo "=== Gateway response ==="
+	@curl -sf http://localhost:18789/ | head -c 200 2>&1 || echo "No response"
+	@echo ""
+	@echo "=== Last 10 gateway log lines ==="
+	@tail -10 ~/.atlas/logs/gateway.log 2>/dev/null || echo "No log found"
+
+gateway-doctor: ## [OPENCLAW] Validate atlasos.json config (fix: make gateway-doctor FIX=1)
+	@if [[ "$(FIX)" == "1" ]]; then \
+	  OPENCLAW_CONFIG_PATH=~/.atlas/atlasos.json \
+	  ~/.local/node/bin/node ~/.local/node/lib/node_modules/openclaw/dist/index.js doctor --fix; \
+	else \
+	  OPENCLAW_CONFIG_PATH=~/.atlas/atlasos.json \
+	  ~/.local/node/bin/node ~/.local/node/lib/node_modules/openclaw/dist/index.js doctor; \
+	fi
