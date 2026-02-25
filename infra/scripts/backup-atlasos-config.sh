@@ -1,16 +1,16 @@
 #!/bin/bash
 # ─── backup-atlasos-config.sh ────────────────────────────────────────────────
-# Backs up all AtlasOS/OpenClaw config and credentials before any upgrade.
+# Backs up all AtlasOS/AtlasOS config and credentials before any upgrade.
 # Safe to run any time; idempotent. Creates timestamped + "latest" symlink.
 #
 # What is backed up:
 #   ~/.atlas/atlasos.json          - CEO agent config, WhatsApp/Telegram/channel bindings,
 #                                    model config, agent definitions (Arjun + team)
-#   ~/.atlas/openclaw.json         - OpenClaw gateway config
+#   ~/.atlas/atlasos.json         - AtlasOS gateway config
 #   ~/.atlas/credentials/          - WhatsApp pairing, Telegram pairing, Mattermost tokens
 #   ~/.atlas/devices/              - Paired device state
-#   ~/Library/LaunchAgents/ai.*    - All AtlasOS/OpenClaw LaunchAgent plists
-#   ~/Library/LaunchAgents/com.openclaw.* - Voice bridge and other plists
+#   ~/Library/LaunchAgents/ai.*    - All AtlasOS/AtlasOS LaunchAgent plists
+#   ~/Library/LaunchAgents/com.atlasos.* - Voice bridge and other plists
 #   infra/docker/docker-compose.ceo.yml  - CEO Docker stack config
 #
 # Usage:
@@ -51,22 +51,22 @@ if [[ "${1:-}" == "--restore" ]]; then
   SAFETY_BACKUP="$BACKUP_ROOT/pre-restore-${TIMESTAMP}"
   mkdir -p "$SAFETY_BACKUP"
   [[ -f "$ATLAS_DIR/atlasos.json" ]] && cp "$ATLAS_DIR/atlasos.json" "$SAFETY_BACKUP/"
-  [[ -f "$ATLAS_DIR/openclaw.json" ]] && cp "$ATLAS_DIR/openclaw.json" "$SAFETY_BACKUP/"
+  [[ -f "$ATLAS_DIR/atlasos.json" ]] && cp "$ATLAS_DIR/atlasos.json" "$SAFETY_BACKUP/"
   log "Safety backup of current state: $SAFETY_BACKUP"
 
   # Stop gateway before restore
-  launchctl unload "$HOME/Library/LaunchAgents/ai.openclaw.gateway.plist" 2>/dev/null || true
+  launchctl unload "$HOME/Library/LaunchAgents/ai.atlasos.gateway.plist" 2>/dev/null || true
 
   # Restore files
   [[ -f "$RESTORE_FROM/atlasos.json" ]] && cp "$RESTORE_FROM/atlasos.json" "$ATLAS_DIR/atlasos.json" && log "Restored: atlasos.json"
-  [[ -f "$RESTORE_FROM/openclaw.json" ]] && cp "$RESTORE_FROM/openclaw.json" "$ATLAS_DIR/openclaw.json" && log "Restored: openclaw.json"
+  [[ -f "$RESTORE_FROM/atlasos.json" ]] && cp "$RESTORE_FROM/atlasos.json" "$ATLAS_DIR/atlasos.json" && log "Restored: atlasos.json"
   [[ -d "$RESTORE_FROM/credentials" ]] && rsync -a "$RESTORE_FROM/credentials/" "$ATLAS_DIR/credentials/" && log "Restored: credentials/"
   [[ -d "$RESTORE_FROM/devices" ]] && rsync -a "$RESTORE_FROM/devices/" "$ATLAS_DIR/devices/" && log "Restored: devices/"
   [[ -d "$RESTORE_FROM/LaunchAgents" ]] && rsync -a "$RESTORE_FROM/LaunchAgents/" "$HOME/Library/LaunchAgents/" && log "Restored: LaunchAgents"
 
   # Restart gateway
   sleep 2
-  launchctl load "$HOME/Library/LaunchAgents/ai.openclaw.gateway.plist" && log "Gateway restarted"
+  launchctl load "$HOME/Library/LaunchAgents/ai.atlasos.gateway.plist" && log "Gateway restarted"
   log "Restore complete."
   exit 0
 fi
@@ -80,9 +80,9 @@ if [[ -f "$ATLAS_DIR/atlasos.json" ]]; then
   cp "$ATLAS_DIR/atlasos.json" "$BACKUP_DIR/atlasos.json"
   log "  ✓ atlasos.json ($(wc -c < "$ATLAS_DIR/atlasos.json" | tr -d ' ') bytes)"
 fi
-if [[ -f "$ATLAS_DIR/openclaw.json" ]]; then
-  cp "$ATLAS_DIR/openclaw.json" "$BACKUP_DIR/openclaw.json"
-  log "  ✓ openclaw.json"
+if [[ -f "$ATLAS_DIR/atlasos.json" ]]; then
+  cp "$ATLAS_DIR/atlasos.json" "$BACKUP_DIR/atlasos.json"
+  log "  ✓ atlasos.json"
 fi
 
 # Credentials (WhatsApp pairing, Telegram, Mattermost tokens)
@@ -100,9 +100,9 @@ fi
 # LaunchAgent plists
 mkdir -p "$BACKUP_DIR/LaunchAgents"
 for plist in "$HOME/Library/LaunchAgents"/ai.atlasos.*.plist \
-             "$HOME/Library/LaunchAgents"/ai.openclaw.*.plist \
+             "$HOME/Library/LaunchAgents"/ai.atlasos.*.plist \
              "$HOME/Library/LaunchAgents"/ai.medinovai.*.plist \
-             "$HOME/Library/LaunchAgents"/com.openclaw.*.plist \
+             "$HOME/Library/LaunchAgents"/com.atlasos.*.plist \
              "$HOME/Library/LaunchAgents"/com.medinovai.*.plist \
              "$HOME/Library/LaunchAgents"/com.atlasos.*.plist; do
   [[ -f "$plist" ]] && cp "$plist" "$BACKUP_DIR/LaunchAgents/" && log "  ✓ LaunchAgent: $(basename "$plist")"

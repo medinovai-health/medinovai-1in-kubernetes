@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Initial repository structure with full directory layout
-- Migrated Atlas autonomous brain architecture from OpenClaw
+- Migrated Atlas autonomous brain architecture from AtlasOS
 - Migrated AI governance framework (GOV-01 through GOV-10)
 - 7 deploy agent workspaces: platform, eng, security, data, ai-ml, supervisor, guardian
 - 10+ agent skills: infra-provision, service-deploy, health-audit, cost-optimize, drift-remediate, ci-monitor, pr-review, dependency-planner, pipeline-doctor, release-manager

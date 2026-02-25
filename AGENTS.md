@@ -189,14 +189,14 @@ Tier 6 UI:         multimodal-ui-shell, medinovaios
 
 ```
 WhatsApp → Meta → Tailscale Funnel → localhost:18789
-                                    → OpenClaw (native LaunchAgent: ai.openclaw.gateway)
+                                    → AtlasOS (native LaunchAgent: ai.atlasos.gateway)
                                     → ~/.atlas/atlasos.json (CEO agent "Arjun")
-                                    → openclaw-sbx-agent-ceo sandbox container
+                                    → atlasos-sbx-agent-ceo sandbox container
 ```
 
-**OpenClaw runs natively on the host** (not in Docker). It is a Node.js process managed
-by `~/Library/LaunchAgents/ai.openclaw.gateway.plist`.
-`~/.openclaw` is a symlink to `~/.atlas` — same directory.
+**AtlasOS runs natively on the host** (not in Docker). It is a Node.js process managed
+by `~/Library/LaunchAgents/ai.atlasos.gateway.plist`.
+`~/.openclaw` is a legacy symlink to `~/.atlas` (same directory, kept for compatibility).
 
 ### ⛔ NEVER DO THIS
 
@@ -204,10 +204,10 @@ by `~/Library/LaunchAgents/ai.openclaw.gateway.plist`.
 # docker-compose.ceo.yml — WRONG
 atlas-gateway:
   ports:
-    - "18789:8080"   # ← BREAKS WhatsApp. Port 18789 belongs to OpenClaw.
+    - "18789:8080"   # ← BREAKS WhatsApp. Port 18789 belongs to AtlasOS.
 ```
 
-Port **18789** is reserved for the native OpenClaw gateway. If Docker binds it first,
+Port **18789** is reserved for the native AtlasOS gateway. If Docker binds it first,
 WhatsApp goes down. The CEO docker stack uses **41010** only.
 
 ### Protected Files (NEVER overwrite during upgrade)
@@ -215,10 +215,10 @@ WhatsApp goes down. The CEO docker stack uses **41010** only.
 | File | What it contains |
 |------|-----------------|
 | `~/.atlas/atlasos.json` | CEO agent "Arjun", WhatsApp/Telegram/Mattermost bindings, model config, all agents |
-| `~/.atlas/openclaw.json` | OpenClaw gateway config, port, auth token |
+| `~/.atlas/atlasos.json` | AtlasOS gateway config, port, auth token |
 | `~/.atlas/credentials/` | WhatsApp QR pairing, Telegram pairing, Mattermost tokens |
 | `~/.atlas/devices/` | Paired device state (losing this forces WhatsApp re-pair) |
-| `~/Library/LaunchAgents/ai.openclaw.gateway.plist` | The LaunchAgent that keeps WhatsApp alive |
+| `~/Library/LaunchAgents/ai.atlasos.gateway.plist` | The LaunchAgent that keeps WhatsApp alive |
 
 ### Config Preservation Workflow
 
@@ -242,7 +242,7 @@ make config-list-backups               # Show all available snapshots
 - **Automatic**: Daily at 3 AM via `com.medinovai.config-backup` LaunchAgent
 - **Manual**: `make config-backup`
 - **Location**: `~/.atlas-backups/` (20 snapshots retained)
-- **What's backed up**: `atlasos.json`, `openclaw.json`, `credentials/`, `devices/`,
+- **What's backed up**: `atlasos.json`, `atlasos.json`, `credentials/`, `devices/`,
   all LaunchAgent plists, `docker-compose.ceo.yml`
 
 ### CEO Stack Quick Start
@@ -273,7 +273,7 @@ docker ps --filter "name=ceo-" --format "{{.Names}}: {{.Status}}"
 | `ceo-correlation-engine` | 41510 | Intelligence |
 | `ceo-briefing-engine` | 41520 | Morning/evening briefings |
 | `ceo-decision-tracker` | 41530 | Decision log |
-| OpenClaw gateway | **18789** | WhatsApp/Telegram (**native, not Docker**) |
+| AtlasOS gateway | **18789** | WhatsApp/Telegram (**native, not Docker**) |
 
 ### File | Purpose |
 |------|---------|

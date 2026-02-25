@@ -356,16 +356,16 @@ config-list-backups: ## [CONFIG] List all available config backups
 pre-upgrade: ## [UPGRADE] Run safety check + backup before any system upgrade
 	@bash infra/scripts/pre-upgrade-check.sh
 
-gateway-restart: ## [OPENCLAW] Restart the native OpenClaw gateway (port 18789 / WhatsApp)
-	@echo "Restarting OpenClaw gateway..."
-	@launchctl unload ~/Library/LaunchAgents/ai.openclaw.gateway.plist 2>/dev/null || true
+gateway-restart: ## [OPENCLAW] Restart the native AtlasOS gateway (port 18789 / WhatsApp)
+	@echo "Restarting AtlasOS gateway..."
+	@launchctl unload ~/Library/LaunchAgents/ai.atlasos.gateway.plist 2>/dev/null || true
 	@sleep 2
-	@launchctl load ~/Library/LaunchAgents/ai.openclaw.gateway.plist
+	@launchctl load ~/Library/LaunchAgents/ai.atlasos.gateway.plist
 	@echo "Gateway reloaded. Waiting 8s for WhatsApp connect..."
 	@sleep 8
 	@lsof -iTCP:18789 -sTCP:LISTEN -nP 2>/dev/null | grep LISTEN || echo "WARNING: port 18789 not listening"
 
-gateway-status: ## [OPENCLAW] Check OpenClaw gateway + WhatsApp status
+gateway-status: ## [OPENCLAW] Check AtlasOS gateway + WhatsApp status
 	@echo "=== Port 18789 owner ==="
 	@lsof -iTCP:18789 -sTCP:LISTEN -nP 2>/dev/null | grep LISTEN || echo "Nothing on 18789"
 	@echo ""
@@ -377,9 +377,9 @@ gateway-status: ## [OPENCLAW] Check OpenClaw gateway + WhatsApp status
 
 gateway-doctor: ## [OPENCLAW] Validate atlasos.json config (fix: make gateway-doctor FIX=1)
 	@if [[ "$(FIX)" == "1" ]]; then \
-	  OPENCLAW_CONFIG_PATH=~/.atlas/atlasos.json \
+	  ATLASOS_CONFIG_PATH=~/.atlas/atlasos.json OPENCLAW_CONFIG_PATH=~/.atlas/atlasos.json \
 	  ~/.local/node/bin/node ~/.local/node/lib/node_modules/openclaw/dist/index.js doctor --fix; \
 	else \
-	  OPENCLAW_CONFIG_PATH=~/.atlas/atlasos.json \
+	  ATLASOS_CONFIG_PATH=~/.atlas/atlasos.json OPENCLAW_CONFIG_PATH=~/.atlas/atlasos.json \
 	  ~/.local/node/bin/node ~/.local/node/lib/node_modules/openclaw/dist/index.js doctor; \
 	fi

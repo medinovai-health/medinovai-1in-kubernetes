@@ -12,8 +12,9 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ATLAS_DIR="$HOME/.atlas"
-OPENCLAW_BIN="/Users/mayanktrivedi/.local/node/bin/node"
-OPENCLAW_INDEX="/Users/mayanktrivedi/.local/node/lib/node_modules/openclaw/dist/index.js"
+# The AtlasOS gateway engine binary (package name is internal, brand is AtlasOS)
+ATLASOS_ENGINE_BIN="/Users/mayanktrivedi/.local/node/bin/node"
+ATLASOS_ENGINE_INDEX="/Users/mayanktrivedi/.local/node/lib/node_modules/openclaw/dist/index.js"
 
 log()  { echo "$(date '+%H:%M:%S') [pre-upgrade] $*"; }
 warn() { echo "$(date '+%H:%M:%S') [WARN] $*" >&2; }
@@ -32,18 +33,19 @@ echo ""
 
 # ── 2. Validate atlasos.json ──────────────────────────────────────────────────
 log "Step 2/4: Validating atlasos.json..."
-DOCTOR_OUT=$(OPENCLAW_CONFIG_PATH="$ATLAS_DIR/atlasos.json" \
-  "$OPENCLAW_BIN" "$OPENCLAW_INDEX" doctor 2>&1 || true)
+DOCTOR_OUT=$(ATLASOS_CONFIG_PATH="$ATLAS_DIR/atlasos.json" \
+  OPENCLAW_CONFIG_PATH="$ATLAS_DIR/atlasos.json" \
+  "$ATLASOS_ENGINE_BIN" "$ATLASOS_ENGINE_INDEX" doctor 2>&1 || true)
 if echo "$DOCTOR_OUT" | grep -qi "config validation failed\|Invalid config"; then
   warn "atlasos.json has validation errors:"
   echo "$DOCTOR_OUT" | grep -E "invalid|error|Error|Invalid" | head -10
-  warn "Run: OPENCLAW_CONFIG_PATH=~/.atlas/atlasos.json openclaw doctor --fix"
+  warn "Run: make gateway-doctor FIX=1"
   warn "     Then re-run this check."
   fail "Config has errors — fix before upgrading to prevent WhatsApp downtime."
 fi
 log "  ✓ atlasos.json is valid"
 
-# ── 3. Check port 18789 is owned by OpenClaw (not Docker) ─────────────────────
+# ── 3. Check port 18789 is owned by AtlasOS (not Docker) ─────────────────────
 log "Step 3/4: Checking port 18789 ownership..."
 PORT_OWNER=$(lsof -iTCP:18789 -sTCP:LISTEN -nP 2>/dev/null | grep LISTEN | awk '{print $1}' | head -1)
 if [[ "$PORT_OWNER" == "com.docke" ]]; then
@@ -51,10 +53,10 @@ if [[ "$PORT_OWNER" == "com.docke" ]]; then
   warn "Check docker-compose.ceo.yml for '18789:' mapping and remove it."
   fail "Port conflict detected — WhatsApp will be down after upgrade."
 elif [[ "$PORT_OWNER" == "node" ]]; then
-  log "  ✓ Port 18789 owned by OpenClaw gateway (node process)"
+  log "  ✓ Port 18789 owned by AtlasOS gateway (node process)"
 elif [[ -z "$PORT_OWNER" ]]; then
-  warn "Port 18789 is not listening — OpenClaw gateway may be down."
-  warn "Run: launchctl load ~/Library/LaunchAgents/ai.openclaw.gateway.plist"
+  warn "Port 18789 is not listening — AtlasOS gateway may be down."
+  warn "Run: launchctl load ~/Library/LaunchAgents/ai.atlasos.gateway.plist"
   # Non-fatal: gateway might just not be started yet
 fi
 

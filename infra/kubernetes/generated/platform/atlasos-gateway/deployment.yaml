@@ -1,10 +1,10 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: openclaw
+  name: atlasos-gateway
   namespace: platform
   labels:
-    app: openclaw
+    app: atlasos-gateway
     atlasos.io/managed: "true"
   annotations:
     atlasos.io/sidecar-enabled: "true"
@@ -12,16 +12,16 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      app: openclaw
+      app: atlasos-gateway
   template:
     metadata:
       labels:
-        app: openclaw
+        app: atlasos-gateway
         atlasos.io/managed: "true"
     spec:
       containers:
-      - name: openclaw
-        image: openclaw:latest
+      - name: atlasos-gateway
+        image: atlasos-gateway:latest
         ports:
         - containerPort: 3000
           name: http

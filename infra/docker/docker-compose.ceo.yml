@@ -146,8 +146,8 @@ services:
       KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID:-atlas-command}
       KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:-}
       # Backend connections (internal Docker network)
-      OPENCLAW_GATEWAY_URL: http://atlas-gateway:18789
-      OPENCLAW_TOKEN: ${OPENCLAW_TOKEN:-}
+      ATLASOS_GATEWAY_URL: http://atlas-gateway:18789
+      ATLASOS_TOKEN: ${ATLASOS_TOKEN:-}
       VAULT_ADDR: http://vault:8200
       VAULT_TOKEN: ${VAULT_DEV_ROOT_TOKEN_ID:-medinovai-dev-token}
       AUDIT_SERVICE_URL: http://audit-chain:8084
@@ -175,8 +175,8 @@ services:
     container_name: ceo-atlas-gateway
     ports:
       - "41010:8080"    # Direct access → localhost:41010
-      # NOTE: port 18789 is reserved for the native OpenClaw/AtlasOS gateway process
-      # (LaunchAgent: ai.openclaw.gateway). Tailscale Funnel → localhost:18789 → OpenClaw.
+      # NOTE: port 18789 is reserved for the native AtlasOS gateway process
+      # (LaunchAgent: ai.atlasos.gateway). Tailscale Funnel → localhost:18789 → AtlasOS.
       # DO NOT map 18789 here or WhatsApp will stop working.
     environment:
       PYTHONUNBUFFERED: "1"
