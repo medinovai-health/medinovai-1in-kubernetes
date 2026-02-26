@@ -11,9 +11,11 @@
   nodes: [
     {
       hostname: "mac-studio",
+      actual_hostname: "aifactory.local",
       role: "server",
-      lan_ip: "192.168.0.100",          // Update with actual LAN IP
-      tailscale_ip: "100.x.x.x",        // Populated after Tailscale setup
+      lan_ip: "192.168.68.54",          // WiFi; ethernet: 192.168.0.102
+      tailscale_ip: "100.106.54.9",     // mayanks-mac-studio-1.tail3b5737.ts.net
+      ssh_user: "mayanktrivedi",
       os: "darwin",
       arch: "arm64",
       gpu: false,
@@ -34,9 +36,11 @@
     },
     {
       hostname: "macbook-pro",
+      actual_hostname: "Mayank-MBP25-7472.local",
       role: "agent",
-      lan_ip: "dynamic",
-      tailscale_ip: "100.x.x.x",
+      lan_ip: "dynamic",               // DHCP; current: 192.168.68.87
+      tailscale_ip: "100.79.214.33",   // mayank-mbp25.tail3b5737.ts.net
+      ssh_user: "mayanktrivedi",
       os: "darwin",
       arch: "arm64",
       gpu: false,
@@ -54,16 +58,17 @@
     },
     {
       hostname: "dgx-1",
+      actual_hostname: "spark-08dd",
       role: "agent",
-      lan_ip: "192.168.68.78",
-      tailscale_ip: "100.x.x.x",
+      lan_ip: "192.168.68.78",          // WiFi (wlP9s9); ethernet: 192.168.0.100
+      tailscale_ip: "100.125.48.57",    // spark-08dd.tail3b5737.ts.net
       os: "linux",
       arch: "amd64",
       gpu: true,
-      gpu_model: "NVIDIA-A100",         // Update with actual model
-      gpu_count: 8,                      // Update with actual count
-      gpu_memory_mib: 81920,
-      ssh_user: "root",
+      gpu_model: "NVIDIA-GB10",         // DGX Spark GB10 Superchip
+      gpu_count: 1,
+      gpu_memory_mib: 131072,           // 128 GB unified memory
+      ssh_user: "mayank",               // nvsync key: ~/Library/Application Support/NVIDIA/Sync/config/nvsync.key
       labels: {
         "role": "gpu-worker",
         "gpu": "true",
@@ -77,16 +82,17 @@
     },
     {
       hostname: "dgx-2",
+      actual_hostname: "spark-d0a6",
       role: "agent",
-      lan_ip: "192.168.68.85",
-      tailscale_ip: "100.x.x.x",
+      lan_ip: "192.168.68.60",          // WiFi (wlP9s9); ethernet: 192.168.0.101
+      tailscale_ip: "100.94.48.43",     // spark-d0a6.tail3b5737.ts.net
       os: "linux",
       arch: "amd64",
       gpu: true,
-      gpu_model: "NVIDIA-A100",
-      gpu_count: 8,
-      gpu_memory_mib: 81920,
-      ssh_user: "root",
+      gpu_model: "NVIDIA-GB10",         // DGX Spark GB10 Superchip
+      gpu_count: 1,
+      gpu_memory_mib: 131072,           // 128 GB unified memory
+      ssh_user: "mayank",
       labels: {
         "role": "gpu-worker",
         "gpu": "true",

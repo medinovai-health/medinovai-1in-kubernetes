@@ -7,17 +7,16 @@ resources:
   - ../../services/ai-inference
 
 patches:
-  # Increase GPU resources for production inference
+  # DGX Spark (GB10 Superchip) presents as 1 GPU device — do NOT patch gpu count.
+  # Base ollama.yaml already requests/limits nvidia.com/gpu: "1" which is correct.
+  # Increase memory limits to take advantage of GB10's 128 GB unified memory.
   - target:
       kind: DaemonSet
       name: ollama
     patch: |-
       - op: replace
-        path: /spec/template/spec/containers/0/resources/requests/nvidia.com~1gpu
-        value: "2"
-      - op: replace
-        path: /spec/template/spec/containers/0/resources/limits/nvidia.com~1gpu
-        value: "2"
-      - op: replace
         path: /spec/template/spec/containers/0/resources/limits/memory
         value: "64Gi"
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/memory
+        value: "16Gi"
