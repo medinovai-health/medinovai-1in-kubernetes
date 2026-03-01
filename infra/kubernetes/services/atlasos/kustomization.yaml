@@ -19,3 +19,8 @@ resources:
   - correlation-engine.yaml
   - decision-tracker.yaml
   - mcp-connectors.yaml
+  - agent-platform.yaml
+  - ooda-brain.yaml
+  - stos.yaml
+  - compliance.yaml
+  - post-agi.yaml

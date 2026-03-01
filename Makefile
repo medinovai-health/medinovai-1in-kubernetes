@@ -199,9 +199,11 @@ ceo-stack-stop: ## Stop CEO stack (preserves all volumes/data)
 ceo-stack-rebuild: ## [CEO] Rebuild and restart all MCP containers (after code changes)
 	@echo "Rebuilding all MCP containers..."
 	@ATLASOS_PATH=$(ATLASOS_PATH) docker compose -f $(CEO_COMPOSE) up -d --build --force-recreate \
-	  mcp-vtiger mcp-quickbooks mcp-google mcp-lis mcp-mattermost mcp-twilio mcp-3cx
-	@echo "Waiting 10s for health checks..."
-	@sleep 10
+	  mcp-vtiger mcp-quickbooks mcp-google mcp-lis mcp-mattermost mcp-twilio mcp-3cx \
+	  mcp-google-ads mcp-linkedin mcp-google-analytics mcp-pagerduty \
+	  mcp-linear-jira mcp-google-trends mcp-glassdoor mcp-crunchbase
+	@echo "Waiting 15s for health checks..."
+	@sleep 15
 	@make mcp-health
 
 mcp-status: ## [MCP] Show health and status of all CEO MCP connectors
@@ -210,7 +212,7 @@ mcp-status: ## [MCP] Show health and status of all CEO MCP connectors
 
 mcp-health: ## [MCP] Hit /health on every active MCP connector
 	@echo "=== MCP Connector Health ==="
-	@for name_port in vtiger:41601 quickbooks:41602 google:41603 lis:41604 mattermost:41605 twilio:41606 3cx:41607; do \
+	@for name_port in vtiger:41601 quickbooks:41602 google:41603 lis:41604 mattermost:41605 twilio:41606 3cx:41607 google-ads:41608 linkedin:41609 google-analytics:41610 pagerduty:41611 linear-jira:41612 google-trends:41613 glassdoor:41614 crunchbase:41615; do \
 	  name=$$(echo $$name_port | cut -d: -f1); \
 	  port=$$(echo $$name_port | cut -d: -f2); \
 	  result=$$(python3 -c "import urllib.request,json; \
