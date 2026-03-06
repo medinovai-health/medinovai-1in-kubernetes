@@ -372,21 +372,22 @@ make stop && make start
 
 Use a single Keycloak owner per runtime:
 
-- Compose platform mode -> tier0 Keycloak in `medinovai-Deploy`
-- Compose standalone mode -> external `medinovai-security-service`
-- Kubernetes platform mode -> tier0 Keycloak service
+- Kubernetes platform mode (enforced) -> tier0 Keycloak in `medinovai-Deploy`
+- Compose standalone mode (allowed for local dev) -> external `medinovai-security-service`
+- Compose platform mode -> advisory topology reference only
 
 Validate before deploy:
 
 ```bash
-bash scripts/validation/validate_keycloak_ownership.sh --runtime compose --compose-mode platform --mode warn
 bash scripts/validation/validate_keycloak_ownership.sh --runtime k8s --mode warn
+bash scripts/validation/validate_keycloak_ownership.sh --runtime k8s --mode enforce
+bash scripts/validation/validate_keycloak_ownership.sh --runtime compose --compose-mode standalone --mode warn
 ```
 
-If rollout is complete and stable, switch to strict mode:
+Kubernetes deploy entrypoint keeps this as a hard preflight gate:
 
 ```bash
-bash scripts/validation/validate_keycloak_ownership.sh --runtime compose --compose-mode platform --mode enforce
+bash scripts/deploy/deploy_tier.sh 1
 ```
 
 ### Scenario: Bootstrap failure (fresh host)

@@ -2,20 +2,27 @@
   "version": "1.0.0",
   "policy": {
     "single_owner_per_environment": true,
-    "default_mode": "warn"
+    "default_mode": "warn",
+    "default_mode_by_runtime": {
+      "k8s": "enforce",
+      "compose": "warn"
+    },
+    "enforced_runtime": "k8s",
+    "compose_policy": "advisory_unless_strict"
   },
   "owners": {
     "compose": {
       "standalone": {
         "owner": "medinovai-security-service",
         "expected_url": "http://localhost:8081",
-        "notes": "Use when running the security service repository directly."
+        "notes": "Allowed for local standalone development when running the security service repository directly."
       },
       "platform": {
         "owner": "medinovai-deploy-tier0",
         "expected_url": "http://medinovai-keycloak:8080",
         "host_port": 9080,
-        "notes": "Use when deploying from medinovai-Deploy compose tier files."
+        "optional": true,
+        "notes": "Informational reference for compose platform topology; not a default blocker for standalone local development."
       }
     },
     "k8s": {

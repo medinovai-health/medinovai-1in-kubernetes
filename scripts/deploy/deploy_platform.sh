@@ -103,6 +103,10 @@ validate_keycloak_ownership() {
         --runtime compose \
         --compose-mode "$KEYCLOAK_MODE" \
         --mode "$KEYCLOAK_OWNERSHIP_MODE" | tee -a "$LOG_DIR/deploy.log"; then
+        if [[ "$KEYCLOAK_MODE" == "standalone" && "$KEYCLOAK_OWNERSHIP_MODE" == "warn" ]]; then
+            log_warn "Keycloak ownership validation reported advisory issues for standalone compose; continuing."
+            return 0
+        fi
         log_fail "Keycloak ownership validation failed."
         return 1
     fi

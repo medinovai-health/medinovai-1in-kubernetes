@@ -27,10 +27,13 @@ if [[ ! -f "$CONFIG_FILE" ]]; then
 fi
 
 if [[ -z "$MODE" ]]; then
-  MODE="$(python3 - <<'PY' "$CONFIG_FILE"
+  MODE="$(python3 - <<'PY' "$CONFIG_FILE" "$RUNTIME"
 import json, sys
 cfg = json.load(open(sys.argv[1], "r", encoding="utf-8"))
-print(cfg.get("policy", {}).get("default_mode", "warn"))
+runtime = sys.argv[2]
+policy = cfg.get("policy", {})
+runtime_defaults = policy.get("default_mode_by_runtime", {})
+print(runtime_defaults.get(runtime, policy.get("default_mode", "warn")))
 PY
 )"
 fi
@@ -45,7 +48,11 @@ ISSUES=0
 emit_issue() {
   local msg="$1"
   if [[ "$MODE" == "warn" ]]; then
-    echo "WARN: $msg"
+    if [[ "$RUNTIME" == "compose" ]]; then
+      echo "WARN (advisory): $msg"
+    else
+      echo "WARN: $msg"
+    fi
   else
     echo "ERROR: $msg"
     ISSUES=$((ISSUES + 1))
@@ -110,17 +117,17 @@ check_k8s_platform() {
   local tier1_security="$REPO_ROOT/infra/kubernetes/services/tier1/security.yaml"
 
   if ! file_has_regex "$tier0_k" "^\\s*-\\s*keycloak\\.yaml\\s*$"; then
-    emit_issue "Tier0 kustomization must include keycloak.yaml for platform k8s mode."
+    emit_issue "Tier0 kustomization must include keycloak.yaml (centralized Keycloak owner for k8s)."
   fi
 
   if file_has_regex "$tier1_k" "^\\s*-\\s*keycloak\\.yaml\\s*$"; then
-    emit_issue "Tier1 kustomization must not include keycloak.yaml (single-owner violation)."
+    emit_issue "Tier1 kustomization must not include keycloak.yaml (single-owner violation: keycloak ownership must stay in tier0)."
   fi
 
   if ! file_has_regex "$tier1_security" "KEYCLOAK_URL"; then
-    emit_issue "Tier1 security manifest is missing KEYCLOAK_URL."
+    emit_issue "Tier1 security manifest is missing KEYCLOAK_URL (required to consume centralized tier0 Keycloak)."
   elif ! file_has_regex "$tier1_security" "http://keycloak\\.medinovai-data\\.svc\\.cluster\\.local:9080"; then
-    emit_issue "Tier1 security KEYCLOAK_URL must point to tier0 Keycloak service DNS."
+    emit_issue "Tier1 security KEYCLOAK_URL must point to tier0 service DNS http://keycloak.medinovai-data.svc.cluster.local:9080 (namespace/service mismatch)."
   fi
 }
 

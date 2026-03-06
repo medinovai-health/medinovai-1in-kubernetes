@@ -19,7 +19,7 @@ KEYCLOAK_VALIDATOR="$REPO_ROOT/scripts/validation/validate_keycloak_ownership.sh
 TIER="${1:-}"
 CRITICAL_PATH=false
 DRY_RUN=false
-KEYCLOAK_OWNERSHIP_MODE="${KEYCLOAK_OWNERSHIP_MODE:-warn}"
+KEYCLOAK_OWNERSHIP_MODE="${KEYCLOAK_OWNERSHIP_MODE:-enforce}"
 
 shift || true
 while [[ $# -gt 0 ]]; do
@@ -126,7 +126,10 @@ deploy_atlasos_infra() {
     deploy_kustomize "$K8S_DIR/services/atlasos-sidecar" "AtlasOS sidecar config"
 }
 
-validate_keycloak_ownership
+if ! validate_keycloak_ownership; then
+    log "  ERROR: Keycloak ownership preflight failed for k8s deployment."
+    exit 1
+fi
 
 case "$TIER" in
     0)       deploy_tier_0 ;;

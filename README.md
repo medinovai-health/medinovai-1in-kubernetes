@@ -104,18 +104,18 @@ For the full 25-step instantiation including Tailscale mesh, DGX GPU nodes, and 
 
 Only one Keycloak owner is allowed per environment/runtime.
 
-- `compose + platform`: `medinovai-Deploy` tier0 owns Keycloak (`medinovai-keycloak`).
-- `compose + standalone`: external `medinovai-security-service` owns Keycloak.
-- `k8s + platform`: tier0 Keycloak in `infra` is the canonical owner.
+- `k8s + platform` (enforced): `medinovai-Deploy` tier0 owns Keycloak and is the canonical platform owner.
+- `compose + standalone` (allowed): `medinovai-security-service` may own Keycloak for local development.
+- `compose + platform` (informational/advisory): reference topology only, not a default blocker for standalone local workflows.
 
 Validation is built into deploy entrypoints:
 
 ```bash
-# Warn-only (default during rollout)
-bash scripts/deploy/deploy_platform.sh --keycloak-ownership-mode warn
+# Kubernetes preflight is enforced by default in deploy_tier
+bash scripts/deploy/deploy_tier.sh 1
 
-# Enforced mode (fails on ownership conflicts)
-bash scripts/deploy/deploy_platform.sh --keycloak-ownership-mode enforce
+# Compose validation stays advisory by default for local standalone
+bash scripts/deploy/deploy_platform.sh --keycloak-mode standalone --keycloak-ownership-mode warn
 ```
 
 ## Greenfield Instantiation
