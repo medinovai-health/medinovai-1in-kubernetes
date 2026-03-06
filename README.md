@@ -100,6 +100,24 @@ make smoke-test
 
 For the full 25-step instantiation including Tailscale mesh, DGX GPU nodes, and AtlasOS embedding, see below.
 
+## Keycloak Ownership Policy
+
+Only one Keycloak owner is allowed per environment/runtime.
+
+- `compose + platform`: `medinovai-Deploy` tier0 owns Keycloak (`medinovai-keycloak`).
+- `compose + standalone`: external `medinovai-security-service` owns Keycloak.
+- `k8s + platform`: tier0 Keycloak in `infra` is the canonical owner.
+
+Validation is built into deploy entrypoints:
+
+```bash
+# Warn-only (default during rollout)
+bash scripts/deploy/deploy_platform.sh --keycloak-ownership-mode warn
+
+# Enforced mode (fails on ownership conflicts)
+bash scripts/deploy/deploy_platform.sh --keycloak-ownership-mode enforce
+```
+
 ## Greenfield Instantiation
 
 Full setup from blank to running platform in 25 steps (~70 min). Critical path only: 15 steps (~25 min).

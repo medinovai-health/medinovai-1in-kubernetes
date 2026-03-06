@@ -4,6 +4,7 @@ kind: Kustomization
 namespace: medinovai-security
 
 resources:
+  # Keycloak is owned by tier0 (infra). Do not add keycloak.yaml here.
   - secrets-manager-bridge.yaml
   - security.yaml
   - universal-sign-on.yaml

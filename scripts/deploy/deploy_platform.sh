@@ -11,6 +11,8 @@
 #   bash scripts/deploy/deploy_platform.sh --critical-path-only # 12-service MVP
 #   bash scripts/deploy/deploy_platform.sh --dry-run            # Preview only
 #   bash scripts/deploy/deploy_platform.sh --no-build           # Skip image builds
+#   bash scripts/deploy/deploy_platform.sh --keycloak-mode platform|standalone
+#   bash scripts/deploy/deploy_platform.sh --keycloak-ownership-mode warn|enforce
 # ─────────────────────────────────────────────────────────────────────────────
 
 set -euo pipefail
@@ -21,6 +23,7 @@ DEPENDENCY_GRAPH="$PROJECT_ROOT/config/dependency-graph.json"
 COMPOSE_DIR="$PROJECT_ROOT/infra/docker"
 CHECKPOINT_DIR="${HOME}/.medinovai-deploy/checkpoints/platform"
 LOG_DIR="$PROJECT_ROOT/outputs/deploy-$(date +%Y%m%d-%H%M%S)"
+KEYCLOAK_VALIDATOR="$PROJECT_ROOT/scripts/validation/validate_keycloak_ownership.sh"
 
 SINGLE_TIER=""
 START_TIER=0
@@ -31,6 +34,8 @@ MAX_RETRIES=3
 HEALTH_TIMEOUT=120
 HEALTH_INTERVAL=5
 STOP_ON_FAIL=true
+KEYCLOAK_MODE="${KEYCLOAK_MODE:-platform}"
+KEYCLOAK_OWNERSHIP_MODE="${KEYCLOAK_OWNERSHIP_MODE:-warn}"
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -42,6 +47,8 @@ while [[ $# -gt 0 ]]; do
         --max-retries)        MAX_RETRIES="$2"; shift 2 ;;
         --health-timeout)     HEALTH_TIMEOUT="$2"; shift 2 ;;
         --no-stop-on-fail)    STOP_ON_FAIL=false; shift ;;
+        --keycloak-mode)      KEYCLOAK_MODE="$2"; shift 2 ;;
+        --keycloak-ownership-mode) KEYCLOAK_OWNERSHIP_MODE="$2"; shift 2 ;;
         *)                    echo "Unknown option: $1"; exit 1 ;;
     esac
 done
@@ -75,6 +82,34 @@ COMPOSE_TIER0="$COMPOSE_DIR/docker-compose.tier0-infra.yml"
 COMPOSE_TIER1="$COMPOSE_DIR/docker-compose.tier1-security.yml"
 COMPOSE_TIER2="$COMPOSE_DIR/docker-compose.tier2-platform.yml"
 COMPOSE_DEV="$COMPOSE_DIR/docker-compose.dev.yml"
+
+# ─── Ownership Validation ────────────────────────────────────────────────────
+
+validate_keycloak_ownership() {
+    if [[ ! -x "$KEYCLOAK_VALIDATOR" ]]; then
+        log_warn "Keycloak ownership validator missing: $KEYCLOAK_VALIDATOR"
+        return 0
+    fi
+
+    log "Validating Keycloak ownership (runtime=compose, mode=$KEYCLOAK_MODE, policy=$KEYCLOAK_OWNERSHIP_MODE)..."
+
+    local security_compose=""
+    if [[ -n "${SECURITY_SERVICE_COMPOSE_FILE:-}" ]]; then
+        security_compose="$SECURITY_SERVICE_COMPOSE_FILE"
+    fi
+
+    if ! SECURITY_SERVICE_COMPOSE_FILE="$security_compose" \
+        bash "$KEYCLOAK_VALIDATOR" \
+        --runtime compose \
+        --compose-mode "$KEYCLOAK_MODE" \
+        --mode "$KEYCLOAK_OWNERSHIP_MODE" | tee -a "$LOG_DIR/deploy.log"; then
+        log_fail "Keycloak ownership validation failed."
+        return 1
+    fi
+
+    log_ok "Keycloak ownership validation completed."
+    return 0
+}
 
 # ─── Health Check Functions ──────────────────────────────────────────────────
 
@@ -322,6 +357,10 @@ echo "║     MedinovAI Platform — Tiered Deployment Orchestrator     ║"
 echo "║     $(date -u +%Y-%m-%dT%H:%M:%SZ)                              ║"
 echo "╚══════════════════════════════════════════════════════════════╝"
 echo -e "${NC}"
+
+if ! validate_keycloak_ownership; then
+    exit 1
+fi
 
 # Ensure docker network exists
 if ! docker network inspect medinovai-network &>/dev/null; then

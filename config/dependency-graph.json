@@ -87,7 +87,14 @@
           "type": "infrastructure",
           "port": 9080,
           "health": "GET /health/ready",
-          "depends_on": ["postgres-primary"]
+          "depends_on": ["postgres-primary"],
+          "ownership": {
+            "runtime": {
+              "compose": "platform",
+              "k8s": "platform"
+            },
+            "owner": "medinovai-deploy-tier0"
+          }
         },
         {
           "id": "pgbouncer",

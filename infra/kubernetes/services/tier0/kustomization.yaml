@@ -6,3 +6,4 @@ resources:
   - postgres-clinical.yaml
   - redis.yaml
   - minio.yaml
+  - keycloak.yaml

@@ -36,7 +36,7 @@ spec:
             - name: REGISTRY_URL
               value: "http://medinovai-registry.medinovai-services:8080"
             - name: KEYCLOAK_URL
-              value: "http://keycloak.medinovai-data:8080"
+              value: "http://keycloak.medinovai-data.svc.cluster.local:9080"
             - name: DATABASE_URL
               value: "postgresql://medinovai:medinovai_dev@postgres-primary.medinovai-data:5432/medinovai_main"
             - name: REDIS_URL

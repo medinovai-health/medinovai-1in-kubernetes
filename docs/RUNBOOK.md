@@ -368,6 +368,27 @@ make stop && make start
 
 ## Deployment Operations Runbook
 
+### Scenario: Keycloak ownership conflict
+
+Use a single Keycloak owner per runtime:
+
+- Compose platform mode -> tier0 Keycloak in `medinovai-Deploy`
+- Compose standalone mode -> external `medinovai-security-service`
+- Kubernetes platform mode -> tier0 Keycloak service
+
+Validate before deploy:
+
+```bash
+bash scripts/validation/validate_keycloak_ownership.sh --runtime compose --compose-mode platform --mode warn
+bash scripts/validation/validate_keycloak_ownership.sh --runtime k8s --mode warn
+```
+
+If rollout is complete and stable, switch to strict mode:
+
+```bash
+bash scripts/validation/validate_keycloak_ownership.sh --runtime compose --compose-mode platform --mode enforce
+```
+
 ### Scenario: Bootstrap failure (fresh host)
 
 1. Run preflight validation: `bash scripts/validation/validate_setup.sh`

@@ -1,0 +1,33 @@
+{
+  "version": "1.0.0",
+  "policy": {
+    "single_owner_per_environment": true,
+    "default_mode": "warn"
+  },
+  "owners": {
+    "compose": {
+      "standalone": {
+        "owner": "medinovai-security-service",
+        "expected_url": "http://localhost:8081",
+        "notes": "Use when running the security service repository directly."
+      },
+      "platform": {
+        "owner": "medinovai-deploy-tier0",
+        "expected_url": "http://medinovai-keycloak:8080",
+        "host_port": 9080,
+        "notes": "Use when deploying from medinovai-Deploy compose tier files."
+      }
+    },
+    "k8s": {
+      "platform": {
+        "owner": "medinovai-deploy-tier0",
+        "service_dns": "http://keycloak.medinovai-data.svc.cluster.local:9080",
+        "namespace": "medinovai-data",
+        "notes": "Tier0 owns Keycloak for Kubernetes deployments."
+      }
+    }
+  },
+  "deprecations": {
+    "k8s_tier1_keycloak_manifest": "infra/kubernetes/services/tier1/keycloak.yaml"
+  }
+}

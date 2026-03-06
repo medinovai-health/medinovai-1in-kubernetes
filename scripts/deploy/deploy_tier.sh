@@ -7,26 +7,46 @@
 #   bash scripts/deploy/deploy_tier.sh gpu         # Deploy GPU services
 #   bash scripts/deploy/deploy_tier.sh all         # Deploy all tiers in order
 #   bash scripts/deploy/deploy_tier.sh all --critical-path-only
+#   bash scripts/deploy/deploy_tier.sh all --keycloak-ownership-mode=warn|enforce
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(dirname "$(dirname "$SCRIPT_DIR")")"
 K8S_DIR="$REPO_ROOT/infra/kubernetes"
+KEYCLOAK_VALIDATOR="$REPO_ROOT/scripts/validation/validate_keycloak_ownership.sh"
 
 TIER="${1:-}"
 CRITICAL_PATH=false
 DRY_RUN=false
+KEYCLOAK_OWNERSHIP_MODE="${KEYCLOAK_OWNERSHIP_MODE:-warn}"
 
 shift || true
-for arg in "$@"; do
-    case "$arg" in
-        --critical-path-only) CRITICAL_PATH=true ;;
-        --dry-run)            DRY_RUN=true ;;
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --critical-path-only) CRITICAL_PATH=true; shift ;;
+        --dry-run) DRY_RUN=true; shift ;;
+        --keycloak-ownership-mode) KEYCLOAK_OWNERSHIP_MODE="$2"; shift 2 ;;
+        --keycloak-ownership-mode=*) KEYCLOAK_OWNERSHIP_MODE="${1#*=}"; shift ;;
+        *) shift ;;
     esac
 done
 
 log() { echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] $1"; }
+
+validate_keycloak_ownership() {
+    if [[ ! -x "$KEYCLOAK_VALIDATOR" ]]; then
+        log "  WARNING: Keycloak ownership validator missing: $KEYCLOAK_VALIDATOR"
+        return 0
+    fi
+
+    log "  Validating Keycloak ownership (runtime=k8s, mode=$KEYCLOAK_OWNERSHIP_MODE)..."
+    bash "$KEYCLOAK_VALIDATOR" \
+      --runtime k8s \
+      --mode "$KEYCLOAK_OWNERSHIP_MODE" | while read -r line; do
+        log "    $line"
+      done
+}
 
 deploy_kustomize() {
     local dir="$1"
@@ -106,6 +126,8 @@ deploy_atlasos_infra() {
     deploy_kustomize "$K8S_DIR/services/atlasos-sidecar" "AtlasOS sidecar config"
 }
 
+validate_keycloak_ownership
+
 case "$TIER" in
     0)       deploy_tier_0 ;;
     1)       deploy_tier_1 ;;
@@ -139,7 +161,7 @@ case "$TIER" in
         fi
         ;;
     *)
-        echo "Usage: $0 <tier> [--dry-run] [--critical-path-only]"
+        echo "Usage: $0 <tier> [--dry-run] [--critical-path-only] [--keycloak-ownership-mode warn|enforce]"
         echo "  Tiers: 0, 1, 2, 3, 4, 5, 6, atlasos, gpu, agents, all"
         exit 1
         ;;
