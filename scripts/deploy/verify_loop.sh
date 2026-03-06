@@ -55,7 +55,7 @@ declare -A SERVICE_MAP
 SERVICE_MAP["tier0:medinovai-postgres"]="5432:pg_isready"
 SERVICE_MAP["tier0:medinovai-redis"]="6379:redis"
 SERVICE_MAP["tier0:medinovai-vault"]="8200:/v1/sys/health"
-SERVICE_MAP["tier0:medinovai-keycloak"]="18081:/health/ready"
+SERVICE_MAP["tier0:medinovai-keycloak"]="8081:/health/ready"
 SERVICE_MAP["tier0:medinovai-prometheus"]="9090:/-/healthy"
 SERVICE_MAP["tier0:medinovai-grafana"]="13001:/api/health"
 

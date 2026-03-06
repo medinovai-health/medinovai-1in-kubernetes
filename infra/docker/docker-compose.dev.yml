@@ -261,7 +261,7 @@ services:
     restart: unless-stopped
     command: start-dev
     ports:
-      - "${KEYCLOAK_HTTP_PORT:-18081}:8080"
+      - "${KEYCLOAK_HTTP_PORT:-8081}:8080"
     environment:
       KC_DB: postgres
       # Use existing local dev database to avoid bootstrap ordering issues
@@ -357,7 +357,7 @@ services:
       # ── Keycloak OIDC (replaces old AUTH_SERVICE_URL) ────────────────────
       # medinovaiOS is a confidential OIDC client — server-side code exchange.
       KEYCLOAK_URL: http://medinovai-keycloak:8080
-      KEYCLOAK_PUBLIC_URL: http://localhost:${KEYCLOAK_HTTP_PORT:-18081}
+      KEYCLOAK_PUBLIC_URL: ${KEYCLOAK_PUBLIC_URL:-http://localhost:8081}
       KEYCLOAK_REALM: medinov-ai
       KEYCLOAK_CLIENT_ID: medinovaios
       KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:-}
