@@ -78,6 +78,28 @@ medinovai-Deploy/
 └── Makefile                    # All operations: make help
 ```
 
+## Blank Host Quickstart (4 Steps)
+
+Minimum path from a fresh machine to a running platform:
+
+```bash
+# 1. Check prerequisites (Docker, kubectl, helm, etc.)
+make prerequisites
+
+# 2. Bootstrap infrastructure (Docker Compose, Vault, namespaces, storage)
+make bootstrap
+
+# 3. Deploy all services in tiered order
+make deploy-all
+
+# 4. Verify everything is healthy
+make smoke-test
+```
+
+**Requirements**: Docker Desktop (or OrbStack) running, SSH key added to GitHub, `.env` file configured from `infra/docker/.env.example`.
+
+For the full 25-step instantiation including Tailscale mesh, DGX GPU nodes, and AtlasOS embedding, see below.
+
 ## Greenfield Instantiation
 
 Full setup from blank to running platform in 25 steps (~70 min). Critical path only: 15 steps (~25 min).

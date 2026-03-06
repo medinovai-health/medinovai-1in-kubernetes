@@ -32,46 +32,55 @@ if $DRY_RUN; then
     echo "[DRY RUN] Would deploy:"
 fi
 
+apply_manifest() {
+    local name="$1"
+    local file="$2"
+    local resource_type="${3:-deployment}"
+    local resource_name="${4:-$name}"
+
+    echo ""
+    echo "▸ Deploying $name..."
+
+    if [ ! -f "$file" ]; then
+        echo "  ⚠ Manifest not found: $file — skipping"
+        return 0
+    fi
+
+    if $DRY_RUN; then
+        echo "  [DRY RUN] kubectl apply -f $file"
+        return 0
+    fi
+
+    kubectl apply -f "$file" 2>&1 | while read -r line; do echo "  $line"; done
+
+    echo "  Waiting for $resource_type/$resource_name..."
+    kubectl rollout status "$resource_type/$resource_name" \
+        -n medinovai-monitoring --timeout=120s 2>/dev/null || \
+        echo "  ⚠ Rollout status check timed out for $resource_name"
+}
+
 echo "▸ Step 1: Create monitoring namespace..."
-echo "  kubectl create namespace medinovai-monitoring --dry-run=client -o yaml | kubectl apply -f -"
+if $DRY_RUN; then
+    echo "  [DRY RUN] kubectl create namespace medinovai-monitoring"
+else
+    kubectl create namespace medinovai-monitoring --dry-run=client -o yaml | kubectl apply -f -
+    echo "  ✓ Namespace ready"
+fi
 
-echo ""
-echo "▸ Step 2: Deploy Prometheus..."
-echo "  TODO: Apply $MONITORING_DIR/prometheus/ manifests"
-echo "  - Prometheus server (metrics collection)"
-echo "  - ServiceMonitor CRDs for auto-discovery"
-echo "  - Recording rules and alert rules"
+apply_manifest "Prometheus" "$MONITORING_DIR/prometheus.yaml" "statefulset" "prometheus"
+apply_manifest "Grafana" "$MONITORING_DIR/grafana.yaml" "deployment" "grafana"
+apply_manifest "Alertmanager" "$MONITORING_DIR/alertmanager.yaml" "deployment" "alertmanager"
+apply_manifest "Loki" "$MONITORING_DIR/loki.yaml" "statefulset" "loki"
 
-echo ""
-echo "▸ Step 3: Deploy Grafana..."
-echo "  TODO: Apply $MONITORING_DIR/grafana/ manifests"
-echo "  - Grafana server with persistent storage"
-echo "  - Pre-configured dashboards:"
-echo "    - Platform Overview"
-echo "    - Service Detail (per service)"
-echo "    - AI Model Health"
-echo "    - Cost Center"
-echo "    - Security Posture"
-echo "    - Deploy Pipeline Metrics"
-echo "  - Datasource: Prometheus, Loki"
-
-echo ""
-echo "▸ Step 4: Deploy Alertmanager..."
-echo "  TODO: Apply $MONITORING_DIR/alertmanager/ manifests"
-echo "  - Alert routing:"
-echo "    - P1 Critical → PagerDuty (page)"
-echo "    - P2 High → PagerDuty (notify) + Slack #incidents"
-echo "    - P3 Medium → Slack #eng"
-echo "    - P4 Low → Slack #ops-digest"
-echo "  - Inhibition rules (suppress low-priority during incidents)"
-echo "  - Silence management"
-
-echo ""
-echo "▸ Step 5: Deploy Loki..."
-echo "  TODO: Apply $MONITORING_DIR/loki/ manifests"
-echo "  - Loki for log aggregation"
-echo "  - Promtail DaemonSet for log collection"
-echo "  - Retention: 30 days (staging), 90 days (production)"
+if [ -f "$MONITORING_DIR/alert-rules.yaml" ]; then
+    echo ""
+    echo "▸ Applying alert rules..."
+    if $DRY_RUN; then
+        echo "  [DRY RUN] kubectl apply -f $MONITORING_DIR/alert-rules.yaml"
+    else
+        kubectl apply -f "$MONITORING_DIR/alert-rules.yaml" 2>&1 | while read -r line; do echo "  $line"; done
+    fi
+fi
 
 echo ""
 echo "✓ Monitoring stack deployment complete."

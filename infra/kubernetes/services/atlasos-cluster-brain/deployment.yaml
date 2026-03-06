@@ -133,6 +133,12 @@ spec:
                 name: atlasos-secrets
                 optional: true
           env:
+            - name: REGISTRY_URL
+              value: "http://medinovai-registry.medinovai:8000"
+            - name: SERVICE_NAME
+              value: "atlasos-cluster-brain"
+            - name: PORT
+              value: "8100"
             - name: SLACK_WEBHOOK_URL
               valueFrom:
                 secretKeyRef:
@@ -150,11 +156,13 @@ spec:
             httpGet:
               path: /health
               port: 8100
-            initialDelaySeconds: 10
+            initialDelaySeconds: 15
             periodSeconds: 10
+            failureThreshold: 2
           livenessProbe:
             httpGet:
               path: /health
               port: 8100
-            initialDelaySeconds: 15
-            periodSeconds: 30
+            initialDelaySeconds: 45
+            periodSeconds: 15
+            failureThreshold: 3

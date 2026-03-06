@@ -1,0 +1,76 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: medinovai-alert-rules
+  namespace: medinovai-monitoring
+  labels:
+    app: prometheus
+    release: prometheus
+spec:
+  groups:
+    - name: medinovai-deployment
+      rules:
+        - alert: PodRestartSpike
+          expr: increase(kube_pod_container_status_restarts_total[5m]) > 3
+          for: 2m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Pod {{ $labels.pod }} in {{ $labels.namespace }} restarting frequently"
+            description: "Pod has restarted more than 3 times in the last 5 minutes."
+
+        - alert: DeploymentRolloutStalled
+          expr: kube_deployment_status_condition{condition="Progressing",status="false"} == 1
+          for: 10m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Deployment {{ $labels.deployment }} in {{ $labels.namespace }} rollout stalled"
+            description: "Deployment has not progressed for more than 10 minutes."
+
+        - alert: ServiceDown
+          expr: up == 0
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Target {{ $labels.instance }} is down"
+            description: "Service has been unreachable for more than 2 minutes."
+
+        - alert: HighMemoryUsage
+          expr: container_memory_working_set_bytes / container_spec_memory_limit_bytes > 0.9
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Container {{ $labels.container }} in {{ $labels.pod }} memory > 90% of limit"
+            description: "Container memory usage is above 90% of its configured limit."
+
+    - name: medinovai-infrastructure
+      rules:
+        - alert: PersistentVolumeUsageHigh
+          expr: kubelet_volume_stats_used_bytes / kubelet_volume_stats_capacity_bytes > 0.85
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "PV {{ $labels.persistentvolumeclaim }} usage above 85%"
+            description: "Persistent volume is running low on space."
+
+        - alert: NodeNotReady
+          expr: kube_node_status_condition{condition="Ready",status="true"} == 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Node {{ $labels.node }} is not ready"
+            description: "Kubernetes node has been not-ready for more than 5 minutes."
+
+        - alert: PodOOMKilled
+          expr: kube_pod_container_status_last_terminated_reason{reason="OOMKilled"} == 1
+          for: 0m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Container {{ $labels.container }} in {{ $labels.pod }} was OOM killed"
+            description: "Container was terminated due to out-of-memory. Consider increasing memory limits."

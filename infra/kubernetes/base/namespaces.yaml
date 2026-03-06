@@ -5,6 +5,9 @@ metadata:
   labels:
     app.kubernetes.io/managed-by: medinovai-deploy
     medinovai.com/tier: system
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/warn: restricted
 ---
 apiVersion: v1
 kind: Namespace
@@ -13,6 +16,9 @@ metadata:
   labels:
     app.kubernetes.io/managed-by: medinovai-deploy
     medinovai.com/tier: security
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/warn: restricted
 ---
 apiVersion: v1
 kind: Namespace
@@ -21,6 +27,9 @@ metadata:
   labels:
     app.kubernetes.io/managed-by: medinovai-deploy
     medinovai.com/tier: platform
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/warn: restricted
 ---
 apiVersion: v1
 kind: Namespace
@@ -29,6 +38,9 @@ metadata:
   labels:
     app.kubernetes.io/managed-by: medinovai-deploy
     medinovai.com/tier: data
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/warn: restricted
 ---
 apiVersion: v1
 kind: Namespace
@@ -37,6 +49,9 @@ metadata:
   labels:
     app.kubernetes.io/managed-by: medinovai-deploy
     medinovai.com/tier: ai
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/warn: restricted
 ---
 apiVersion: v1
 kind: Namespace
@@ -45,6 +60,9 @@ metadata:
   labels:
     app.kubernetes.io/managed-by: medinovai-deploy
     medinovai.com/tier: clinical
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/warn: restricted
 ---
 apiVersion: v1
 kind: Namespace
@@ -53,6 +71,9 @@ metadata:
   labels:
     app.kubernetes.io/managed-by: medinovai-deploy
     medinovai.com/tier: monitoring
+    pod-security.kubernetes.io/enforce: baseline
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/warn: restricted
 ---
 apiVersion: v1
 kind: Namespace
@@ -61,3 +82,6 @@ metadata:
   labels:
     app.kubernetes.io/managed-by: medinovai-deploy
     medinovai.com/tier: intelligence
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/warn: restricted

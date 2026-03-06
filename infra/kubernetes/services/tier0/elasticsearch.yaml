@@ -72,3 +72,14 @@ spec:
         resources:
           requests:
             storage: 30Gi
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: elasticsearch-pdb
+  namespace: infra
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: elasticsearch

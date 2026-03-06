@@ -120,6 +120,10 @@ fi
 
 # Validate required passwords
 if [[ -z "${KEYCLOAK_ADMIN_PASSWORD:-}" ]]; then
+  if [[ "${ENVIRONMENT:-dev}" != "dev" ]]; then
+    err "KEYCLOAK_ADMIN_PASSWORD is required for ${ENVIRONMENT}. Set it in infra/docker/.env."
+    exit 1
+  fi
   warn "KEYCLOAK_ADMIN_PASSWORD not set in .env — using 'localdev'. CHANGE IN PRODUCTION."
 fi
 if [[ -z "${SUPERADMIN_PASSWORD:-}" ]]; then

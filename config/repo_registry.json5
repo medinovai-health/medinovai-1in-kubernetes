@@ -493,6 +493,54 @@
       "category": "frontend-app",
       "tier": 1,
       "sidecar_enabled": true
+    },
+    {
+      "name": "medinovai-agent-provisioner",
+      "category": "platform",
+      "tier": 1,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "medinovai-agent-config-api",
+      "category": "platform",
+      "tier": 1,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "medinovai-rbac-guard",
+      "category": "security",
+      "tier": 1,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "atlasos-stream-bus-bridge",
+      "category": "platform",
+      "tier": 2,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "medinovai-lobster-engine",
+      "category": "platform",
+      "tier": 2,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "medinovai-escalation-resolver",
+      "category": "platform",
+      "tier": 2,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "medinovai-mcp-deploy",
+      "category": "platform",
+      "tier": 2,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "medinovai-webhook-receiver",
+      "category": "backend-service",
+      "tier": 2,
+      "sidecar_enabled": true
     }
   ]
 }

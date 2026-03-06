@@ -363,3 +363,80 @@ cp ~/.atlas/atlas.json.backup.YYYYMMDD_HHMMSS ~/.atlas/atlas.json
 # Restart
 make stop && make start
 ```
+
+---
+
+## Deployment Operations Runbook
+
+### Scenario: Bootstrap failure (fresh host)
+
+1. Run preflight validation: `bash scripts/validation/validate_setup.sh`
+2. Check the exact step that failed in the output
+3. Common causes:
+   - Missing binaries: install via `bash scripts/bootstrap/prerequisites.sh`
+   - Missing `.env` file: copy from `infra/docker/.env.example` and fill in values
+   - Docker not running: verify `docker ps` works
+4. Fix the root cause and re-run: `bash scripts/bootstrap/bootstrap-all.sh`
+5. Bootstrap is idempotent -- re-running skips completed steps
+
+### Scenario: Vault is sealed / unreachable
+
+1. Check Vault status: `vault status -address=http://localhost:8200`
+2. If sealed:
+   - Dev mode: restart the container -- it auto-unseals
+   - Production: unseal with configured unseal keys
+3. If container is down: `docker compose -f infra/docker/docker-compose.dev.yml up -d vault`
+4. Wait for health: `until vault status &>/dev/null; do sleep 1; done`
+5. Re-run secret seeding if needed: `bash scripts/bootstrap/init-vault.sh --seed-only`
+
+### Scenario: Canary deployment stuck
+
+1. Check canary pod status: `kubectl get pods -l track=canary -n medinovai-services`
+2. Check pod events: `kubectl describe pod <canary-pod> -n medinovai-services`
+3. Check logs: `kubectl logs -l track=canary -n medinovai-services --tail=50`
+4. If CrashLoopBackOff: fix the image, rebuild, and re-deploy
+5. Abort canary: `kubectl delete deployment <service>-canary -n medinovai-services`
+6. The stable deployment remains untouched
+
+### Scenario: Full service rollback
+
+1. Single service: `bash scripts/deploy/rollback_service.sh --service <name> --environment <env>`
+2. This runs `kubectl rollout undo` and waits for health
+3. Verify: `kubectl rollout status deployment/<name> -n medinovai-services`
+4. Check audit log: `tail -1 outputs/deploy-audit.jsonl | python3 -m json.tool`
+
+### Scenario: Full-stack rollback (all services)
+
+1. Identify the blast radius: which tier(s) are affected?
+2. Rollback by tier in reverse order (highest tier first):
+   ```bash
+   for svc in $(kubectl get deployments -n medinovai-services -o name); do
+     kubectl rollout undo "$svc" -n medinovai-services
+   done
+   ```
+3. Wait for all rollouts: `kubectl rollout status deployment --all -n medinovai-services --timeout=300s`
+4. Verify tier0 health: `kubectl get pods -n medinovai-data`
+
+### Scenario: DGX node won't join cluster
+
+1. Verify K3s server is running: `kubectl get nodes` (from the server node)
+2. Verify node token exists: `cat $DEPLOY_HOME/node-token`
+3. On the DGX node, check K3s agent logs: `journalctl -u k3s-agent -f`
+4. Verify Tailscale connectivity: `tailscale ping <server-ip>`
+5. If token mismatch: copy the correct token from server and re-run `init-dgx.sh`
+
+### Scenario: Secret rotation emergency
+
+1. Generate new secrets: `bash scripts/bootstrap/init-secrets.sh --cloud vault --environment production`
+2. Update affected services: `kubectl rollout restart deployment -n medinovai-services`
+3. Verify services come back healthy: `kubectl get pods -n medinovai-services -w`
+4. Invalidate old AppRole tokens: rotate via `vault write -f auth/approle/role/<name>/secret-id`
+5. Log the rotation event in `outputs/deploy-audit.jsonl`
+
+### Scenario: Monitoring stack not collecting metrics
+
+1. Check Prometheus is running: `kubectl get pods -n medinovai-monitoring`
+2. Check Prometheus targets: `kubectl port-forward svc/prometheus -n medinovai-monitoring 9090:9090`, then visit `http://localhost:9090/targets`
+3. If targets are down, check ServiceMonitor selectors match service labels
+4. Check Grafana datasource: `kubectl port-forward svc/grafana -n medinovai-monitoring 3000:3000`
+5. Re-deploy monitoring: `bash scripts/monitoring/setup_monitoring.sh`

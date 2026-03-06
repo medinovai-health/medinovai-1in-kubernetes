@@ -1,0 +1,222 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: medinovai-lis
+  namespace: medinovai-services
+  labels:
+    app: medinovai-lis
+    tier: domain
+    app.kubernetes.io/managed-by: medinovai-deploy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: medinovai-lis
+  template:
+    metadata:
+      labels:
+        app: medinovai-lis
+        tier: domain
+        app.kubernetes.io/managed-by: medinovai-deploy
+    spec:
+      containers:
+        - name: medinovai-lis
+          image: medinovai-lis:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8000
+          env:
+            - name: SERVICE_NAME
+              value: "medinovai-lis"
+            - name: PORT
+              value: "8000"
+            - name: REGISTRY_URL
+              value: "http://medinovai-registry.medinovai-services:8080"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            failureThreshold: 2
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 45
+            periodSeconds: 15
+            failureThreshold: 3
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "50m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: medinovai-lis
+  namespace: medinovai-services
+  labels:
+    app: medinovai-lis
+    tier: domain
+    app.kubernetes.io/managed-by: medinovai-deploy
+spec:
+  selector:
+    app: medinovai-lis
+  ports:
+    - port: 8000
+      targetPort: 8000
+      protocol: TCP
+      name: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: medinovai-lis-platform
+  namespace: medinovai-services
+  labels:
+    app: medinovai-lis-platform
+    tier: domain
+    app.kubernetes.io/managed-by: medinovai-deploy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: medinovai-lis-platform
+  template:
+    metadata:
+      labels:
+        app: medinovai-lis-platform
+        tier: domain
+        app.kubernetes.io/managed-by: medinovai-deploy
+    spec:
+      containers:
+        - name: medinovai-lis-platform
+          image: medinovai-lis-platform:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8000
+          env:
+            - name: SERVICE_NAME
+              value: "medinovai-lis-platform"
+            - name: PORT
+              value: "8000"
+            - name: REGISTRY_URL
+              value: "http://medinovai-registry.medinovai-services:8080"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            failureThreshold: 2
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 45
+            periodSeconds: 15
+            failureThreshold: 3
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "50m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: medinovai-lis-platform
+  namespace: medinovai-services
+  labels:
+    app: medinovai-lis-platform
+    tier: domain
+    app.kubernetes.io/managed-by: medinovai-deploy
+spec:
+  selector:
+    app: medinovai-lis-platform
+  ports:
+    - port: 8000
+      targetPort: 8000
+      protocol: TCP
+      name: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: medinovai-lis-ui
+  namespace: medinovai-services
+  labels:
+    app: medinovai-lis-ui
+    tier: domain
+    app.kubernetes.io/managed-by: medinovai-deploy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: medinovai-lis-ui
+  template:
+    metadata:
+      labels:
+        app: medinovai-lis-ui
+        tier: domain
+        app.kubernetes.io/managed-by: medinovai-deploy
+    spec:
+      containers:
+        - name: medinovai-lis-ui
+          image: medinovai-lis-ui:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 3000
+          env:
+            - name: SERVICE_NAME
+              value: "medinovai-lis-ui"
+            - name: PORT
+              value: "3000"
+            - name: REGISTRY_URL
+              value: "http://medinovai-registry.medinovai-services:8080"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            failureThreshold: 2
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 45
+            periodSeconds: 15
+            failureThreshold: 3
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "50m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: medinovai-lis-ui
+  namespace: medinovai-services
+  labels:
+    app: medinovai-lis-ui
+    tier: domain
+    app.kubernetes.io/managed-by: medinovai-deploy
+spec:
+  selector:
+    app: medinovai-lis-ui
+  ports:
+    - port: 3000
+      targetPort: 3000
+      protocol: TCP
+      name: http

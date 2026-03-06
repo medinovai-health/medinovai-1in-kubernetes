@@ -2,7 +2,7 @@
 # deploy_agents.sh -- Deploy domain-specific AGENTS.md + HEARTBEAT.md to all repos
 set -euo pipefail
 
-GITHUB_DIR="/Users/mayanktrivedi/Github"
+GITHUB_DIR="${GITHUB_DIR:?GITHUB_DIR is required. Set to your GitHub repos directory.}"
 TEMPLATES_DIR="$GITHUB_DIR/MedinovAI Atlas/templates"
 COMMIT_MSG="Add domain-specific AI agent specification"
 

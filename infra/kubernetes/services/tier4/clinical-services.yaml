@@ -1,0 +1,666 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: medinovai-patient-onboarding
+  namespace: medinovai-services
+  labels:
+    app: medinovai-patient-onboarding
+    tier: domain
+    app.kubernetes.io/managed-by: medinovai-deploy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: medinovai-patient-onboarding
+  template:
+    metadata:
+      labels:
+        app: medinovai-patient-onboarding
+        tier: domain
+        app.kubernetes.io/managed-by: medinovai-deploy
+    spec:
+      containers:
+        - name: medinovai-patient-onboarding
+          image: medinovai-patient-onboarding:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8000
+          env:
+            - name: SERVICE_NAME
+              value: "medinovai-patient-onboarding"
+            - name: PORT
+              value: "8000"
+            - name: REGISTRY_URL
+              value: "http://medinovai-registry.medinovai-services:8080"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            failureThreshold: 2
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 45
+            periodSeconds: 15
+            failureThreshold: 3
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "50m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: medinovai-patient-onboarding
+  namespace: medinovai-services
+  labels:
+    app: medinovai-patient-onboarding
+    tier: domain
+    app.kubernetes.io/managed-by: medinovai-deploy
+spec:
+  selector:
+    app: medinovai-patient-onboarding
+  ports:
+    - port: 8000
+      targetPort: 8000
+      protocol: TCP
+      name: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: medinovai-patientmatching
+  namespace: medinovai-services
+  labels:
+    app: medinovai-patientmatching
+    tier: domain
+    app.kubernetes.io/managed-by: medinovai-deploy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: medinovai-patientmatching
+  template:
+    metadata:
+      labels:
+        app: medinovai-patientmatching
+        tier: domain
+        app.kubernetes.io/managed-by: medinovai-deploy
+    spec:
+      containers:
+        - name: medinovai-patientmatching
+          image: medinovai-patientmatching:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SERVICE_NAME
+              value: "medinovai-patientmatching"
+            - name: PORT
+              value: "8080"
+            - name: REGISTRY_URL
+              value: "http://medinovai-registry.medinovai-services:8080"
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            failureThreshold: 2
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 45
+            periodSeconds: 15
+            failureThreshold: 3
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "50m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: medinovai-patientmatching
+  namespace: medinovai-services
+  labels:
+    app: medinovai-patientmatching
+    tier: domain
+    app.kubernetes.io/managed-by: medinovai-deploy
+spec:
+  selector:
+    app: medinovai-patientmatching
+  ports:
+    - port: 8080
+      targetPort: 8080
+      protocol: TCP
+      name: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: medinovai-health-timeline
+  namespace: medinovai-services
+  labels:
+    app: medinovai-health-timeline
+    tier: domain
+    app.kubernetes.io/managed-by: medinovai-deploy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: medinovai-health-timeline
+  template:
+    metadata:
+      labels:
+        app: medinovai-health-timeline
+        tier: domain
+        app.kubernetes.io/managed-by: medinovai-deploy
+    spec:
+      containers:
+        - name: medinovai-health-timeline
+          image: medinovai-health-timeline:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8000
+          env:
+            - name: SERVICE_NAME
+              value: "medinovai-health-timeline"
+            - name: PORT
+              value: "8000"
+            - name: REGISTRY_URL
+              value: "http://medinovai-registry.medinovai-services:8080"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            failureThreshold: 2
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 45
+            periodSeconds: 15
+            failureThreshold: 3
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "50m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: medinovai-health-timeline
+  namespace: medinovai-services
+  labels:
+    app: medinovai-health-timeline
+    tier: domain
+    app.kubernetes.io/managed-by: medinovai-deploy
+spec:
+  selector:
+    app: medinovai-health-timeline
+  ports:
+    - port: 8000
+      targetPort: 8000
+      protocol: TCP
+      name: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: medinovai-care-team-chat
+  namespace: medinovai-services
+  labels:
+    app: medinovai-care-team-chat
+    tier: domain
+    app.kubernetes.io/managed-by: medinovai-deploy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: medinovai-care-team-chat
+  template:
+    metadata:
+      labels:
+        app: medinovai-care-team-chat
+        tier: domain
+        app.kubernetes.io/managed-by: medinovai-deploy
+    spec:
+      containers:
+        - name: medinovai-care-team-chat
+          image: medinovai-care-team-chat:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8000
+          env:
+            - name: SERVICE_NAME
+              value: "medinovai-care-team-chat"
+            - name: PORT
+              value: "8000"
+            - name: REGISTRY_URL
+              value: "http://medinovai-registry.medinovai-services:8080"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            failureThreshold: 2
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 45
+            periodSeconds: 15
+            failureThreshold: 3
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "50m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: medinovai-care-team-chat
+  namespace: medinovai-services
+  labels:
+    app: medinovai-care-team-chat
+    tier: domain
+    app.kubernetes.io/managed-by: medinovai-deploy
+spec:
+  selector:
+    app: medinovai-care-team-chat
+  ports:
+    - port: 8000
+      targetPort: 8000
+      protocol: TCP
+      name: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: medinovai-smart-scheduler
+  namespace: medinovai-services
+  labels:
+    app: medinovai-smart-scheduler
+    tier: domain
+    app.kubernetes.io/managed-by: medinovai-deploy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: medinovai-smart-scheduler
+  template:
+    metadata:
+      labels:
+        app: medinovai-smart-scheduler
+        tier: domain
+        app.kubernetes.io/managed-by: medinovai-deploy
+    spec:
+      containers:
+        - name: medinovai-smart-scheduler
+          image: medinovai-smart-scheduler:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8000
+          env:
+            - name: SERVICE_NAME
+              value: "medinovai-smart-scheduler"
+            - name: PORT
+              value: "8000"
+            - name: REGISTRY_URL
+              value: "http://medinovai-registry.medinovai-services:8080"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            failureThreshold: 2
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 45
+            periodSeconds: 15
+            failureThreshold: 3
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "50m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: medinovai-smart-scheduler
+  namespace: medinovai-services
+  labels:
+    app: medinovai-smart-scheduler
+    tier: domain
+    app.kubernetes.io/managed-by: medinovai-deploy
+spec:
+  selector:
+    app: medinovai-smart-scheduler
+  ports:
+    - port: 8000
+      targetPort: 8000
+      protocol: TCP
+      name: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: medinovai-wait-list-balancer
+  namespace: medinovai-services
+  labels:
+    app: medinovai-wait-list-balancer
+    tier: domain
+    app.kubernetes.io/managed-by: medinovai-deploy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: medinovai-wait-list-balancer
+  template:
+    metadata:
+      labels:
+        app: medinovai-wait-list-balancer
+        tier: domain
+        app.kubernetes.io/managed-by: medinovai-deploy
+    spec:
+      containers:
+        - name: medinovai-wait-list-balancer
+          image: medinovai-wait-list-balancer:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SERVICE_NAME
+              value: "medinovai-wait-list-balancer"
+            - name: PORT
+              value: "8080"
+            - name: REGISTRY_URL
+              value: "http://medinovai-registry.medinovai-services:8080"
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            failureThreshold: 2
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 45
+            periodSeconds: 15
+            failureThreshold: 3
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "50m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: medinovai-wait-list-balancer
+  namespace: medinovai-services
+  labels:
+    app: medinovai-wait-list-balancer
+    tier: domain
+    app.kubernetes.io/managed-by: medinovai-deploy
+spec:
+  selector:
+    app: medinovai-wait-list-balancer
+  ports:
+    - port: 8080
+      targetPort: 8080
+      protocol: TCP
+      name: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: medinovai-virtual-triage
+  namespace: medinovai-services
+  labels:
+    app: medinovai-virtual-triage
+    tier: domain
+    app.kubernetes.io/managed-by: medinovai-deploy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: medinovai-virtual-triage
+  template:
+    metadata:
+      labels:
+        app: medinovai-virtual-triage
+        tier: domain
+        app.kubernetes.io/managed-by: medinovai-deploy
+    spec:
+      containers:
+        - name: medinovai-virtual-triage
+          image: medinovai-virtual-triage:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8000
+          env:
+            - name: SERVICE_NAME
+              value: "medinovai-virtual-triage"
+            - name: PORT
+              value: "8000"
+            - name: REGISTRY_URL
+              value: "http://medinovai-registry.medinovai-services:8080"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            failureThreshold: 2
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 45
+            periodSeconds: 15
+            failureThreshold: 3
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "50m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: medinovai-virtual-triage
+  namespace: medinovai-services
+  labels:
+    app: medinovai-virtual-triage
+    tier: domain
+    app.kubernetes.io/managed-by: medinovai-deploy
+spec:
+  selector:
+    app: medinovai-virtual-triage
+  ports:
+    - port: 8000
+      targetPort: 8000
+      protocol: TCP
+      name: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: medinovai-telehealth-hub
+  namespace: medinovai-services
+  labels:
+    app: medinovai-telehealth-hub
+    tier: domain
+    app.kubernetes.io/managed-by: medinovai-deploy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: medinovai-telehealth-hub
+  template:
+    metadata:
+      labels:
+        app: medinovai-telehealth-hub
+        tier: domain
+        app.kubernetes.io/managed-by: medinovai-deploy
+    spec:
+      containers:
+        - name: medinovai-telehealth-hub
+          image: medinovai-telehealth-hub:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SERVICE_NAME
+              value: "medinovai-telehealth-hub"
+            - name: PORT
+              value: "8080"
+            - name: REGISTRY_URL
+              value: "http://medinovai-registry.medinovai-services:8080"
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            failureThreshold: 2
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 45
+            periodSeconds: 15
+            failureThreshold: 3
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "50m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: medinovai-telehealth-hub
+  namespace: medinovai-services
+  labels:
+    app: medinovai-telehealth-hub
+    tier: domain
+    app.kubernetes.io/managed-by: medinovai-deploy
+spec:
+  selector:
+    app: medinovai-telehealth-hub
+  ports:
+    - port: 8080
+      targetPort: 8080
+      protocol: TCP
+      name: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: medinovai-remote-vitals-ingest
+  namespace: medinovai-services
+  labels:
+    app: medinovai-remote-vitals-ingest
+    tier: domain
+    app.kubernetes.io/managed-by: medinovai-deploy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: medinovai-remote-vitals-ingest
+  template:
+    metadata:
+      labels:
+        app: medinovai-remote-vitals-ingest
+        tier: domain
+        app.kubernetes.io/managed-by: medinovai-deploy
+    spec:
+      containers:
+        - name: medinovai-remote-vitals-ingest
+          image: medinovai-remote-vitals-ingest:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8000
+          env:
+            - name: SERVICE_NAME
+              value: "medinovai-remote-vitals-ingest"
+            - name: PORT
+              value: "8000"
+            - name: REGISTRY_URL
+              value: "http://medinovai-registry.medinovai-services:8080"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            failureThreshold: 2
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 45
+            periodSeconds: 15
+            failureThreshold: 3
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "50m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: medinovai-remote-vitals-ingest
+  namespace: medinovai-services
+  labels:
+    app: medinovai-remote-vitals-ingest
+    tier: domain
+    app.kubernetes.io/managed-by: medinovai-deploy
+spec:
+  selector:
+    app: medinovai-remote-vitals-ingest
+  ports:
+    - port: 8000
+      targetPort: 8000
+      protocol: TCP
+      name: http

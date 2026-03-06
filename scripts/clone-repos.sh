@@ -43,6 +43,9 @@ for arg in "$@"; do
 done
 
 # ── All MedinovAI repositories ────────────────────────────────────────────────
+# Source of truth: config/dependency-graph.json (200+ services) and
+# config/repo_registry.json5 (repo → deployment metadata).
+# This list covers repos that need local cloning for development.
 # Format: "repo-name|description|tier"
 # Tier: ai-infra | platform | product | standards | tools
 declare -a REPOS=(

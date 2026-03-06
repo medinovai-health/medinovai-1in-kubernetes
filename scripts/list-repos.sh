@@ -27,6 +27,9 @@ G="\033[0;32m"; Y="\033[1;33m"; R="\033[0;31m"; B="\033[0;34m"; NC="\033[0m"; BO
 DIM="\033[2m"
 
 # ── All repos grouped by tier ─────────────────────────────────────────────────
+# Source of truth: config/dependency-graph.json and config/repo_registry.json5
+# Run: python3 -c "import json; [print(s['id']) for t in json.load(open('config/dependency-graph.json'))['tiers'].values() for s in t.get('services',[])]"
+# to see all service IDs from the canonical graph.
 declare -a AI_INFRA=(
   "medinovai-aifactory"
   "medinovai-aifactory-1"

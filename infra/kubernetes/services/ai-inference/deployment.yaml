@@ -46,8 +46,14 @@ spec:
       containers:
         - name: ai-inference
           image: REGISTRY/ai-inference:IMAGE_TAG
+          securityContext:
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
           ports:
             - containerPort: 8080
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
           resources:
             requests:
               cpu: 1000m
@@ -81,3 +87,6 @@ spec:
               port: 8080
             failureThreshold: 30
             periodSeconds: 10
+      volumes:
+        - name: tmp
+          emptyDir: {}

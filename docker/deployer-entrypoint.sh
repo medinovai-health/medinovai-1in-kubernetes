@@ -1,15 +1,14 @@
 #!/usr/bin/env bash
 # ─── deployer-entrypoint.sh ───────────────────────────────────────────────────
-# Runs inside the medinovai-deployer container. Two phases:
+# Runs inside the medinovai-deployer container.
 #
 # Phase 1 — Bootstrap (runs once, idempotent):
 #   Installs Atlas, writes config and workspace files into named volumes,
 #   writes sentinel file to unblock downstream services.
 #
-# Phase 2 — Watchdog (runs forever after bootstrap):
-#   Every  5 min: health check all services, POST results to medinovaiOS
-#   Every 60 min: drift check (k8s manifest vs cluster state)
-#   Every 24 hrs: database backup + certificate expiry check
+# Watchdog duties (health check, drift check, backup, cert rotation, secret audit)
+# are now handled by AtlasOS agents. See config/agent_crons.yaml for cron schedules
+# and agent assignments.
 #
 # Volumes expected:
 #   /atlas-home        → atlas-config  (atlas.json + .env + workspaces)
@@ -18,10 +17,9 @@
 #
 # Sentinel file: /atlas-home/.deploy-complete
 #   Written on bootstrap success — Docker healthcheck reads this to unblock
-#   downstream services. The watchdog loop runs regardless of sentinel state.
+#   downstream services. Container stays alive after bootstrap (sleep).
 #
-# Idempotency: if the sentinel already exists, bootstrap is skipped and the
-#   container jumps directly to the watchdog loop.
+# Idempotency: if the sentinel already exists, bootstrap is skipped.
 #   To force re-bootstrap: remove the atlas-config volume and re-run compose up.
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -33,12 +31,6 @@ ATLAS_UI_OUT="${ATLAS_UI_OUT:-/atlas-ui-built}"
 SENTINEL="$ATLAS_HOME/.deploy-complete"
 REPO_ROOT="/repo"
 
-# Watchdog interval overrides (seconds) — set via env for testing
-HEALTH_INTERVAL="${WATCHDOG_HEALTH_INTERVAL:-300}"       # 5 min
-DRIFT_INTERVAL="${WATCHDOG_DRIFT_INTERVAL:-3600}"        # 60 min
-BACKUP_INTERVAL="${WATCHDOG_BACKUP_INTERVAL:-86400}"     # 24 hr
-MEDINOVAIOS_URL="${MEDINOVAIOS_URL:-http://medinovaios:3030}"
-
 # ── Colours ───────────────────────────────────────────────────────────────────
 G="\033[0;32m"; Y="\033[1;33m"; R="\033[0;31m"; B="\033[0;34m"; NC="\033[0m"; BOLD="\033[1m"
 log()  { echo -e "${G}[deployer]${NC} $(date -u '+%H:%M:%S') $*"; }
@@ -49,21 +41,20 @@ ok()   { echo -e "${G}  ✓${NC} $*"; }
 
 echo ""
 echo -e "${BOLD}${G}╔══════════════════════════════════════════════════════════╗${NC}"
-echo -e "${BOLD}${G}║  MedinovAI Deploy Agent — Bootstrap + Watchdog          ║${NC}"
+echo -e "${BOLD}${G}║  MedinovAI Deploy Agent — Bootstrap                      ║${NC}"
 echo -e "${BOLD}${G}╚══════════════════════════════════════════════════════════╝${NC}"
 echo ""
 log "ATLAS_HOME       = $ATLAS_HOME"
 log "ATLAS_WORKSPACES = $ATLAS_WORKSPACES"
 log "ATLAS_UI_OUT     = $ATLAS_UI_OUT"
-log "Health interval  = ${HEALTH_INTERVAL}s"
-log "Drift interval   = ${DRIFT_INTERVAL}s"
-log "Backup interval  = ${BACKUP_INTERVAL}s"
 echo ""
 
-# ── Idempotency check — skip bootstrap, go straight to watchdog ──────────────
+# ── Idempotency check — skip bootstrap if sentinel exists ─────────────────────
 if [ -f "$SENTINEL" ]; then
-    log "Sentinel found at $SENTINEL — bootstrap already complete. Entering watchdog."
-    # Jump directly to watchdog (defined below)
+    log "Sentinel found at $SENTINEL — bootstrap already complete."
+    log "Watchdog duties handled by AtlasOS agents (see config/agent_crons.yaml)."
+    log "Keeping container alive."
+    exec sleep infinity
 fi
 
 # ── Step 1: Ensure volume directories exist ───────────────────────────────────

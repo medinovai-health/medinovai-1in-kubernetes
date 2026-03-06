@@ -47,8 +47,14 @@ spec:
       containers:
         - name: api-gateway
           image: REGISTRY/api-gateway:IMAGE_TAG
+          securityContext:
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
           ports:
             - containerPort: 3000
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
           resources:
             requests:
               cpu: 250m
@@ -81,3 +87,6 @@ spec:
               port: 3000
             failureThreshold: 30
             periodSeconds: 10
+      volumes:
+        - name: tmp
+          emptyDir: {}

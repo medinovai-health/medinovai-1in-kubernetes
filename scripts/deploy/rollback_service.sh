@@ -51,7 +51,21 @@ fi
 
 echo ""
 echo "▸ Post-rollback health check..."
-echo "  TODO: Verify service health endpoint"
+HEALTH_OK=false
+for attempt in 1 2 3 4 5; do
+    if kubectl exec -n medinovai-services deploy/"$SERVICE" -- \
+        sh -c "wget -qO- http://localhost:8000/health 2>/dev/null || curl -sf http://localhost:8000/health 2>/dev/null" &>/dev/null; then
+        echo "  ✓ Health endpoint OK (attempt $attempt)"
+        HEALTH_OK=true
+        break
+    fi
+    echo "  Attempt $attempt/5 — waiting 10s..."
+    sleep 10
+done
+
+if ! $HEALTH_OK; then
+    echo "  ⚠ Health check did not pass after 5 attempts (service may not expose /health)"
+fi
 
 echo ""
 echo "✓ Rollback of $SERVICE in $ENVIRONMENT complete."

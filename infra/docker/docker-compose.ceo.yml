@@ -12,157 +12,13 @@
 #   make ceo-stack
 # ─────────────────────────────────────────────────────────────────────────────
 
-x-common-env: &common-env
-  VAULT_ADDR: http://vault:8200
-  VAULT_TOKEN: ${VAULT_DEV_ROOT_TOKEN_ID:-medinovai-dev-token}
-  DATABASE_URL: postgresql://atlasos:atlasos-secure-change-me@postgres:5432/atlasos
-  KEYCLOAK_URL: http://keycloak:8080
-  KEYCLOAK_REALM: medinov-ai
-  KEYCLOAK_AUDIENCE: medinovai-atlas
-  AUTH_ENABLED: "false"
-  ATLASOS_DEV_MODE: "true"
-
-x-vault-env: &vault-env
-  VAULT_ADDR: http://vault:8200
-  VAULT_TOKEN: ${VAULT_DEV_ROOT_TOKEN_ID:-medinovai-dev-token}
-
-x-mcp-env: &mcp-env
-  MCP_VTIGER_URL: http://mcp-vtiger:8080
-  MCP_QUICKBOOKS_URL: http://mcp-quickbooks:8080
-  MCP_GOOGLE_URL: http://mcp-google:8080
-  MCP_LIS_URL: http://mcp-lis:8080
-  MCP_MATTERMOST_URL: http://mcp-mattermost:8080
-  MCP_TWILIO_URL: http://mcp-twilio:8080
-  MCP_3CX_URL: http://mcp-3cx:8080
-  MCP_GOOGLE_ADS_URL: http://mcp-google-ads:8080
-  MCP_LINKEDIN_URL: http://mcp-linkedin:8080
-  MCP_GA4_URL: http://mcp-google-analytics:8080
-  MCP_PAGERDUTY_URL: http://mcp-pagerduty:8080
-  MCP_LINEAR_URL: http://mcp-linear-jira:8080
-  MCP_GOOGLE_TRENDS_URL: http://mcp-google-trends:8080
-  MCP_GLASSDOOR_URL: http://mcp-glassdoor:8080
-  MCP_CRUNCHBASE_URL: http://mcp-crunchbase:8080
-
-x-restart: &restart
-  restart: unless-stopped
-
-x-network: &network
-  networks:
-    - ceo-network
-
-x-hc: &hc
-  interval: 30s
-  timeout: 10s
-  retries: 3
-  start_period: 15s
-
 services:
-
-  # ═══════════════════════════════════════════════════════════════════════════
-  # INFRASTRUCTURE
-  # ═══════════════════════════════════════════════════════════════════════════
-
-  postgres:
-    image: pgvector/pgvector:pg16
-    container_name: ceo-postgres
-    ports:
-      - "41200:5432"
-    environment:
-      POSTGRES_DB: atlas
-      POSTGRES_USER: medinovai
-      POSTGRES_HOST_AUTH_METHOD: trust
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
-      - ${ATLASOS_PATH:-../../repos/AtlasOS}/scripts/ceo-db-init.sql:/docker-entrypoint-initdb.d/01-ceo-init.sql:ro
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U medinovai -d atlas"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-    <<: [*restart, *network]
-
-  atlasos-migrations:
-    build:
-      context: ${ATLASOS_PATH:-../../repos/AtlasOS}
-      dockerfile: services/migrations/Dockerfile
-    container_name: ceo-atlasos-migrations
-    environment:
-      DATABASE_URL: postgresql://atlasos:atlasos-secure-change-me@postgres:5432/atlasos
-    depends_on:
-      postgres:
-        condition: service_healthy
-    restart: "no"
-    <<: *network
-
-  vault:
-    image: hashicorp/vault:1.15
-    container_name: ceo-vault
-    cap_add:
-      - IPC_LOCK
-    ports:
-      - "41100:8200"
-    environment:
-      VAULT_DEV_ROOT_TOKEN_ID: ${VAULT_DEV_ROOT_TOKEN_ID:-medinovai-dev-token}
-      VAULT_DEV_LISTEN_ADDRESS: "0.0.0.0:8200"
-      VAULT_ADDR: "http://0.0.0.0:8200"
-      VAULT_API_ADDR: "http://vault:8200"
-    volumes:
-      - vault-data:/vault/data
-    healthcheck:
-      test: ["CMD", "vault", "status"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
-    <<: [*restart, *network]
-
-  vault-init:
-    image: hashicorp/vault:1.15
-    container_name: ceo-vault-init
-    depends_on:
-      vault:
-        condition: service_healthy
-    environment:
-      VAULT_ADDR: "http://vault:8200"
-      VAULT_TOKEN: ${VAULT_DEV_ROOT_TOKEN_ID:-medinovai-dev-token}
-    entrypoint: /bin/sh
-    command:
-      - -c
-      - |
-        sleep 2
-        vault secrets enable -path=medinovai-secrets kv-v2 2>/dev/null || true
-        vault kv put medinovai-secrets/atlasos/config initialized=true created_at="$$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-        vault policy write atlasos-read - <<POLICY
-        path "medinovai-secrets/data/atlasos/*" {
-          capabilities = ["read", "list"]
-        }
-        path "medinovai-secrets/metadata/atlasos/*" {
-          capabilities = ["read", "list"]
-        }
-        POLICY
-        vault policy write atlasos-admin - <<POLICY
-        path "medinovai-secrets/data/atlasos/*" {
-          capabilities = ["create", "read", "update", "delete", "list"]
-        }
-        path "medinovai-secrets/metadata/atlasos/*" {
-          capabilities = ["read", "list", "delete"]
-        }
-        POLICY
-        echo "Vault initialized with AtlasOS secrets engine and policies"
-    restart: "no"
-    <<: *network
-
-  redis:
-    image: redis:7-alpine
-    container_name: ceo-redis
-    ports:
-      - "41300:6379"
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-    <<: [*restart, *network]
+  # ─── Infrastructure (shared with platform via medinovai-dev network) ────
+  # vault, postgres, redis are provided by docker-compose.dev.yml:
+  #   medinovai-vault  (8200)
+  #   medinovai-postgres (5432)
+  #   medinovai-redis  (6379)
+  # Start platform infra first: docker compose -f docker-compose.dev.yml up -d
 
   chromadb:
     image: chromadb/chroma:latest
@@ -172,68 +28,368 @@ services:
     volumes:
       - chromadb-data:/chroma/chroma
     healthcheck:
-      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/localhost/8000'"]
+      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v2/heartbeat')\""]
       interval: 10s
       timeout: 5s
       retries: 5
-    <<: [*restart, *network]
+    restart: unless-stopped
+    networks:
+      - ceo-network
 
-  # ─── Keycloak SSO ──────────────────────────────────────────────────────
-  keycloak:
-    image: quay.io/keycloak/keycloak:26.1
-    container_name: ceo-keycloak
-    command: start-dev --import-realm
+  # ─── AtlasOS CO-CEO Command Center UI ──────────────────────────────────
+  atlas-command:
+    build:
+      context: ${ATLAS_COMMAND_PATH:-../../repos/atlas-command}
+      dockerfile: Dockerfile
+    container_name: ceo-atlas-command
     ports:
-      - "41080:8080"
+      - "41000:3000"
     environment:
-      KC_BOOTSTRAP_ADMIN_USERNAME: admin
-      KC_BOOTSTRAP_ADMIN_PASSWORD: MedinovAI-Admin-2026!
-      KC_DB: postgres
-      KC_DB_URL: jdbc:postgresql://postgres:5432/atlas
-      KC_DB_USERNAME: medinovai
-      KC_DB_PASSWORD: ""
-      KC_HOSTNAME_STRICT: "false"
-      KC_HTTP_ENABLED: "true"
-      KC_PROXY_HEADERS: xforwarded
-      KC_HEALTH_ENABLED: "true"
-    volumes:
-      - ${ATLASOS_PATH:-../../repos/AtlasOS}/config/keycloak:/opt/keycloak/data/import:ro
+      NODE_ENV: production
+      NEXTAUTH_URL: http://localhost:41000
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-atlas-ceo-secret-change-in-production}
+      # Google OAuth (direct)
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      # Keycloak OIDC (medinovai-security-service)
+      KEYCLOAK_URL: ${KEYCLOAK_URL:-http://host.docker.internal:9080}
+      KEYCLOAK_REALM: ${KEYCLOAK_REALM:-medinovai}
+      KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID:-atlas-command}
+      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:-}
+      # Backend connections (internal Docker network)
+      OPENCLAW_GATEWAY_URL: http://atlas-gateway:18789
+      OPENCLAW_TOKEN: ${OPENCLAW_TOKEN:-}
+      VAULT_ADDR: http://medinovai-vault:8200
+      VAULT_TOKEN: ${VAULT_DEV_ROOT_TOKEN_ID:-medinovai-dev-token}
+      AUDIT_SERVICE_URL: http://audit-chain:8084
+      QUICKBOOKS_MCP_URL: http://mcp-quickbooks:8080
     depends_on:
-      postgres:
+      audit-chain:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/8080 && echo -e 'GET /realms/master HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && cat <&3 | grep -q 'public_key'"]
-      interval: 10s
+      test: ["CMD", "curl", "-sf", "-o", "/dev/null", "http://localhost:3000"]
+      interval: 30s
       timeout: 10s
-      retries: 15
-      start_period: 45s
-    <<: [*restart, *network]
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - ceo-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
-  keycloak-init:
-    image: python:3.12-slim
-    container_name: ceo-keycloak-init
-    depends_on:
-      keycloak:
-        condition: service_healthy
+  # ─── AtlasOS Gateway (Agent Runtime) ───────────────────────────────────
+  atlas-gateway:
+    build:
+      context: ${ATLASOS_PATH:-../../repos/AtlasOS}
+      dockerfile: Dockerfile
+    container_name: ceo-atlas-gateway
+    ports:
+      - "41010:18789"
     environment:
-      KEYCLOAK_URL: http://keycloak:8080
-      KEYCLOAK_REALM: medinov-ai
-      KEYCLOAK_ADMIN: admin
-      KEYCLOAK_ADMIN_PASSWORD: MedinovAI-Admin-2026!
-      ATLAS_ROOT: /app
+      PYTHONUNBUFFERED: "1"
+      VAULT_ADDR: http://medinovai-vault:8200
+      VAULT_TOKEN: ${VAULT_DEV_ROOT_TOKEN_ID:-medinovai-dev-token}
+      AUDIT_SERVICE_URL: http://audit-chain:8084
+      REDIS_URL: redis://medinovai-redis:6379
+      POSTGRES_URL: postgresql://medinovai@medinovai-postgres:5432/atlas
+      AIFACTORY_ENDPOINT: ${AIFACTORY_ENDPOINT:-http://host.docker.internal:5000}
+      OLLAMA_HOST: ${OLLAMA_HOST:-http://host.docker.internal:11434}
+      CHROMADB_URL: http://chromadb:8000
     volumes:
-      - ${ATLASOS_PATH:-../../repos/AtlasOS}/lib:/app/lib:ro
-      - ${ATLASOS_PATH:-../../repos/AtlasOS}/config:/app/config:ro
-      - ${ATLASOS_PATH:-../../repos/AtlasOS}/scripts:/app/scripts:ro
-    entrypoint: /bin/sh
-    command:
-      - -c
-      - |
-        pip install -q requests pyyaml 2>/dev/null
-        python3 /app/scripts/keycloak_bootstrap.py
-    restart: "no"
-    <<: *network
+      - atlas-data:/data
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      audit-chain:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:18789/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+    networks:
+      - ceo-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
+  # ─── AtlasOS UI (Chat + Deployment) ────────────────────────────────────
+  atlas-ui:
+    build:
+      context: ${ATLASOS_PATH:-../../repos/AtlasOS}/ui
+      dockerfile: Dockerfile
+    container_name: ceo-atlas-ui
+    ports:
+      - "41020:3737"
+    environment:
+      NODE_ENV: production
+      PORT: "3737"
+      AIFACTORY_ENDPOINT: ${AIFACTORY_ENDPOINT:-http://host.docker.internal:5000}
+      AI_MODEL: ${AI_MODEL:-qwen2.5:32b}
+      OLLAMA_HOST: ${OLLAMA_HOST:-http://host.docker.internal:11434}
+      CHROMADB_URL: http://chromadb:8000
+      POSTGRES_URL: postgresql://medinovai@medinovai-postgres:5432/atlas
+      REDIS_URL: redis://medinovai-redis:6379
+      VAULT_ADDR: http://medinovai-vault:8200
+      AUDIT_SERVICE_URL: http://audit-chain:8084
+    volumes:
+      - atlas-data:/data
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      audit-chain:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3737/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - ceo-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  # ─── Zero-Trust Audit Chain ────────────────────────────────────────────
+  audit-chain:
+    build:
+      context: ${ATLASOS_PATH:-../../repos/AtlasOS}/services/audit-chain
+      dockerfile: Dockerfile
+    container_name: ceo-audit-chain
+    ports:
+      - "41500:8084"
+    environment:
+      AUDIT_LOG_PATH: /data/audit/audit.jsonl
+      FLASK_ENV: production
+    volumes:
+      - audit-data:/data/audit
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8084/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - ceo-network
+
+  # ─── Intelligence Services ─────────────────────────────────────────────
+  correlation-engine:
+    build:
+      context: ${ATLASOS_PATH:-../../repos/AtlasOS}/services/correlation-engine
+      dockerfile: Dockerfile
+    container_name: ceo-correlation-engine
+    depends_on:
+      audit-chain:
+        condition: service_healthy
+    ports:
+      - "41510:8085"
+    environment:
+      VAULT_ADDR: "http://medinovai-vault:8200"
+      VAULT_TOKEN: ${VAULT_DEV_ROOT_TOKEN_ID:-medinovai-dev-token}
+      AUDIT_SERVICE_URL: "http://audit-chain:8084"
+      MCP_VTIGER_URL: "http://mcp-vtiger:8080"
+      MCP_QUICKBOOKS_URL: "http://mcp-quickbooks:8080"
+      MCP_GOOGLE_URL: "http://mcp-google-workspace:8080"
+      MCP_LIS_URL: "http://mcp-lis:8080"
+      MCP_MATTERMOST_URL: "http://mcp-mattermost:8080"
+      CORRELATION_INTERVAL_MIN: "${CORRELATION_INTERVAL_MIN:-15}"
+    volumes:
+      - correlation-data:/data/correlations
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8085/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    restart: unless-stopped
+    networks:
+      - ceo-network
+
+  briefing-engine:
+    build:
+      context: ${ATLASOS_PATH:-../../repos/AtlasOS}/services/briefing-engine
+      dockerfile: Dockerfile
+    container_name: ceo-briefing-engine
+    depends_on:
+      audit-chain:
+        condition: service_healthy
+      correlation-engine:
+        condition: service_healthy
+    ports:
+      - "41520:8086"
+    environment:
+      VAULT_ADDR: "http://medinovai-vault:8200"
+      VAULT_TOKEN: ${VAULT_DEV_ROOT_TOKEN_ID:-medinovai-dev-token}
+      AUDIT_SERVICE_URL: "http://audit-chain:8084"
+      CORRELATION_ENGINE_URL: "http://correlation-engine:8085"
+      MCP_VTIGER_URL: "http://mcp-vtiger:8080"
+      MCP_QUICKBOOKS_URL: "http://mcp-quickbooks:8080"
+      MCP_GOOGLE_URL: "http://mcp-google-workspace:8080"
+      MCP_LIS_URL: "http://mcp-lis:8080"
+      MCP_MATTERMOST_URL: "http://mcp-mattermost:8080"
+      MORNING_BRIEFING_HOUR: "${MORNING_BRIEFING_HOUR:-7}"
+      EOD_BRIEFING_HOUR: "${EOD_BRIEFING_HOUR:-18}"
+    volumes:
+      - briefing-data:/data/briefings
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8086/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    restart: unless-stopped
+    networks:
+      - ceo-network
+
+  decision-tracker:
+    build:
+      context: ${ATLASOS_PATH:-../../repos/AtlasOS}/services/decision-tracker
+      dockerfile: Dockerfile
+    container_name: ceo-decision-tracker
+    depends_on:
+      audit-chain:
+        condition: service_healthy
+    ports:
+      - "41530:8087"
+    environment:
+      VAULT_ADDR: "http://medinovai-vault:8200"
+      VAULT_TOKEN: ${VAULT_DEV_ROOT_TOKEN_ID:-medinovai-dev-token}
+      AUDIT_SERVICE_URL: "http://audit-chain:8084"
+      CORRELATION_ENGINE_URL: "http://correlation-engine:8085"
+    volumes:
+      - decision-data:/data/decisions
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8087/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    restart: unless-stopped
+    networks:
+      - ceo-network
+
+  # ─── MCP Connectors ───────────────────────────────────────────────────
+  mcp-vtiger:
+    build:
+      context: ${ATLASOS_PATH:-../../repos/AtlasOS}/services/mcp-connectors
+      dockerfile: Dockerfile
+      args:
+        CONNECTOR_NAME: vtiger
+    container_name: ceo-mcp-vtiger
+    ports:
+      - "41601:8080"
+    environment:
+      VAULT_ADDR: http://medinovai-vault:8200
+      VAULT_TOKEN: ${VAULT_DEV_ROOT_TOKEN_ID:-medinovai-dev-token}
+      VAULT_SECRET_PATH: medinovai-secrets/atlasos/vtiger
+      AUDIT_SERVICE_URL: http://audit-chain:8084
+      CONNECTOR_NAME: vtiger
+    depends_on:
+      audit-chain:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - ceo-network
+
+  mcp-quickbooks:
+    build:
+      context: ${ATLASOS_PATH:-../../repos/AtlasOS}/services/mcp-connectors
+      dockerfile: Dockerfile
+      args:
+        CONNECTOR_NAME: quickbooks
+    container_name: ceo-mcp-quickbooks
+    ports:
+      - "41602:8080"
+    environment:
+      VAULT_ADDR: http://medinovai-vault:8200
+      VAULT_TOKEN: ${VAULT_DEV_ROOT_TOKEN_ID:-medinovai-dev-token}
+      VAULT_SECRET_PATH: medinovai-secrets/atlasos/quickbooks
+      AUDIT_SERVICE_URL: http://audit-chain:8084
+      CONNECTOR_NAME: quickbooks
+    depends_on:
+      audit-chain:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - ceo-network
+
+  mcp-google:
+    build:
+      context: ${ATLASOS_PATH:-../../repos/AtlasOS}/services/mcp-connectors
+      dockerfile: Dockerfile
+      args:
+        CONNECTOR_NAME: google_workspace
+    container_name: ceo-mcp-google
+    ports:
+      - "41603:8080"
+    environment:
+      VAULT_ADDR: http://medinovai-vault:8200
+      VAULT_TOKEN: ${VAULT_DEV_ROOT_TOKEN_ID:-medinovai-dev-token}
+      VAULT_SECRET_PATH: medinovai-secrets/atlasos/google-workspace
+      AUDIT_SERVICE_URL: http://audit-chain:8084
+      CONNECTOR_NAME: google-workspace
+    depends_on:
+      audit-chain:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - ceo-network
+
+  mcp-lis:
+    build:
+      context: ${ATLASOS_PATH:-../../repos/AtlasOS}/services/mcp-connectors
+      dockerfile: Dockerfile
+      args:
+        CONNECTOR_NAME: lis
+    container_name: ceo-mcp-lis
+    ports:
+      - "41604:8080"
+    environment:
+      VAULT_ADDR: http://medinovai-vault:8200
+      VAULT_TOKEN: ${VAULT_DEV_ROOT_TOKEN_ID:-medinovai-dev-token}
+      VAULT_SECRET_PATH: medinovai-secrets/atlasos/lis
+      AUDIT_SERVICE_URL: http://audit-chain:8084
+      CONNECTOR_NAME: lis
+    depends_on:
+      audit-chain:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - ceo-network
+
+  mcp-mattermost:
+    build:
+      context: ${ATLASOS_PATH:-../../repos/AtlasOS}/services/mcp-connectors
+      dockerfile: Dockerfile
+      args:
+        CONNECTOR_NAME: mattermost
+    container_name: ceo-mcp-mattermost
+    ports:
+      - "41605:8080"
+    environment:
+      VAULT_ADDR: http://medinovai-vault:8200
+      VAULT_TOKEN: ${VAULT_DEV_ROOT_TOKEN_ID:-medinovai-dev-token}
+      VAULT_SECRET_PATH: medinovai-secrets/atlasos/mattermost
+      AUDIT_SERVICE_URL: http://audit-chain:8084
+      CONNECTOR_NAME: mattermost
+    depends_on:
+      audit-chain:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - ceo-network
+
+  # ─── PDF Processing ────────────────────────────────────────────────────
   stirling-pdf:
     image: docker.stirlingpdf.com/stirlingtools/stirling-pdf:latest
     container_name: ceo-stirling-pdf
@@ -247,1441 +403,24 @@ services:
       - stirling-data:/customFiles
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/api/v1/info/status"]
-      <<: *hc
+      interval: 30s
+      timeout: 10s
+      retries: 3
       start_period: 30s
-    <<: [*restart, *network]
-
-  # ═══════════════════════════════════════════════════════════════════════════
-  # CEO COMMAND CENTER (atlas-command + gateway)
-  # ═══════════════════════════════════════════════════════════════════════════
-
-  atlas-command:
-    build:
-      context: ${ATLAS_COMMAND_PATH:-../../repos/atlas-command}
-      dockerfile: Dockerfile
-    container_name: ceo-atlas-command
-    ports:
-      - "41000:3000"
-    environment:
-      NODE_ENV: production
-      NEXTAUTH_URL: http://localhost:41000
-      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-atlas-ceo-secret-change-in-production}
-      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
-      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
-      KEYCLOAK_URL: ${KEYCLOAK_URL:-http://host.docker.internal:41080}
-      KEYCLOAK_REALM: ${KEYCLOAK_REALM:-medinov-ai}
-      KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID:-atlas-command}
-      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:-}
-      ATLASOS_GATEWAY_URL: http://atlas-gateway:8080
-      ATLASOS_TOKEN: ${ATLASOS_TOKEN:-}
-      VAULT_ADDR: http://vault:8200
-      VAULT_TOKEN: ${VAULT_DEV_ROOT_TOKEN_ID:-medinovai-dev-token}
-      AUDIT_SERVICE_URL: http://audit-chain:8084
-      <<: *mcp-env
-    depends_on:
-      vault:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:3000 || exit 1"]
-      <<: *hc
-    <<: [*restart, *network]
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-
-  atlas-gateway:
-    build:
-      context: ${ATLASOS_PATH:-../../repos/AtlasOS}
-      dockerfile: Dockerfile
-    container_name: ceo-atlas-gateway
-    ports:
-      - "41010:8080"
-    environment:
-      PYTHONUNBUFFERED: "1"
-      PORT: "8080"
-      <<: *vault-env
-      AUDIT_SERVICE_URL: http://audit-chain:8084
-      REDIS_URL: redis://redis:6379
-      POSTGRES_URL: postgresql://medinovai@postgres:5432/atlas
-      AIFACTORY_ENDPOINT: ${AIFACTORY_ENDPOINT:-http://host.docker.internal:5000}
-      OLLAMA_HOST: ${OLLAMA_HOST:-http://host.docker.internal:11434}
-      CHROMADB_URL: http://chromadb:8000
-    volumes:
-      - atlas-data:/data
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-    depends_on:
-      vault:
-        condition: service_healthy
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      audit-chain:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
-      <<: *hc
-      start_period: 30s
-    <<: [*restart, *network]
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-
-  # ─── AtlasOS UI (Chat + Deployment) ────────────────────────────────────
-  atlas-ui:
-    profiles:
-      - ui
-    build:
-      context: ${ATLASOS_PATH:-../../repos/AtlasOS}/ui
-      dockerfile: Dockerfile
-      args:
-        ATLAS_VERSION: ${ATLAS_VERSION:-1.3.0}
-        ATLAS_GIT_SHA: ${ATLAS_GIT_SHA:-unknown}
-        BUILD_TIME: ${BUILD_TIME:-unknown}
-        NEXT_PUBLIC_KEYCLOAK_URL: http://localhost:41080
-        NEXT_PUBLIC_KEYCLOAK_REALM: medinov-ai
-        NEXT_PUBLIC_KEYCLOAK_CLIENT_ID: medinovai-atlas
-        NEXT_PUBLIC_AUTH_ENABLED: "true"
-        NEXT_PUBLIC_DEMO_MODE: "true"
-    container_name: ceo-atlas-ui
-    ports:
-      - "41020:3737"
-    environment:
-      NODE_ENV: production
-      PORT: "3737"
-      NEXTAUTH_URL: http://localhost:41020
-      AUTH_BRIDGE_URL: http://auth-bridge:8250
-      AIFACTORY_ENDPOINT: ${AIFACTORY_ENDPOINT:-http://host.docker.internal:5000}
-      AI_MODEL: ${AI_MODEL:-qwen2.5:32b}
-      OLLAMA_HOST: ${OLLAMA_HOST:-http://host.docker.internal:11434}
-      CHROMADB_URL: http://chromadb:8000
-      POSTGRES_URL: postgresql://medinovai@postgres:5432/atlas
-      REDIS_URL: redis://redis:6379
-      VAULT_ADDR: http://vault:8200
-      AUDIT_SERVICE_URL: http://audit-chain:8084
-      ATLAS_HOME: /data/atlas
-      ATLASOS_GATEWAY_URL: http://atlas-gateway:8080
-      OODA_BRAIN_URL: http://ooda-brain:8000
-      SERVICE_REGISTRY_URL: http://service-registry:8002
-      HEALTH_PROBE_URL: http://health-probe:8003
-      FLEET_MONITOR_URL: http://fleet-monitor:8014
-      SQUAD_MANAGER_URL: http://squad-manager:8001
-    volumes:
-      - atlas-data:/data
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-    depends_on:
-      vault:
-        condition: service_healthy
-      keycloak:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3737/api/health"]
-      <<: *hc
-    <<: [*restart, *network]
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-
-  # ─── Auth Bridge ────────────────────────────────────────────────────────
-  auth-bridge:
-    build:
-      context: ${ATLASOS_PATH:-../../repos/AtlasOS}/services/auth-bridge
-      dockerfile: Dockerfile
-    container_name: ceo-auth-bridge
-    ports:
-      - "41250:8250"
-    environment:
-      PORT: "8250"
-      KEYCLOAK_URL: http://keycloak:8080
-      KEYCLOAK_REALM: medinov-ai
-      KEYCLOAK_CLIENT_ID: medinovai-atlas
-      OIDC_DISCOVERY_URL: http://keycloak:8080/realms/medinov-ai/.well-known/openid-configuration
-      OIDC_AUDIENCE: medinovai-atlas
-      AUTH_SECRET: ${AUTH_SECRET:-ceo-auth-bridge-secret}
-      EVENT_BUS_URL: http://event-bus:8088
-      TENANCY_ENGINE_URL: http://tenancy-engine:8204
-    volumes:
-      - ${ATLASOS_PATH:-../../repos/AtlasOS}/lib:/app/lib:ro
-      - ${ATLASOS_PATH:-../../repos/AtlasOS}/config:/app/config:ro
-    depends_on:
-      keycloak:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8250/health', timeout=5)\" 2>/dev/null || exit 1"]
-      <<: *hc
-    <<: [*restart, *network]
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-
-  # ═══════════════════════════════════════════════════════════════════════════
-  # CEO INTELLIGENCE SERVICES
-  # ═══════════════════════════════════════════════════════════════════════════
-
-  audit-chain:
-    build:
-      context: ${ATLASOS_PATH:-../../repos/AtlasOS}
-      dockerfile: services/audit-chain/Dockerfile
-    container_name: ceo-audit-chain
-    ports:
-      - "41500:8084"
-    environment:
-      <<: *common-env
-      AUDIT_LOG_PATH: /data/audit/audit.jsonl
-      FLASK_ENV: production
-    volumes:
-      - audit-data:/data/audit
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8084/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    <<: [*restart, *network]
-
-  correlation-engine:
-    build:
-      context: ${ATLASOS_PATH:-../../repos/AtlasOS}
-      dockerfile: services/correlation-engine/Dockerfile
-    container_name: ceo-correlation-engine
-    ports:
-      - "41510:8085"
-    environment:
-      <<: [*vault-env, *mcp-env]
-      AUDIT_SERVICE_URL: http://audit-chain:8084
-      CORRELATION_INTERVAL_MIN: "${CORRELATION_INTERVAL_MIN:-15}"
-    volumes:
-      - correlation-data:/data/correlations
-    depends_on:
-      vault:
-        condition: service_healthy
-      audit-chain:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8085/health"]
-      <<: *hc
-    <<: [*restart, *network]
-
-  briefing-engine:
-    build:
-      context: ${ATLASOS_PATH:-../../repos/AtlasOS}
-      dockerfile: services/briefing-engine/Dockerfile
-    container_name: ceo-briefing-engine
-    ports:
-      - "41520:8086"
-    environment:
-      <<: [*vault-env, *mcp-env]
-      AUDIT_SERVICE_URL: http://audit-chain:8084
-      CORRELATION_ENGINE_URL: http://correlation-engine:8085
-      MORNING_BRIEFING_HOUR: "${MORNING_BRIEFING_HOUR:-7}"
-      EOD_BRIEFING_HOUR: "${EOD_BRIEFING_HOUR:-18}"
-    volumes:
-      - briefing-data:/data/briefings
-    depends_on:
-      vault:
-        condition: service_healthy
-      audit-chain:
-        condition: service_healthy
-      correlation-engine:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8086/health"]
-      <<: *hc
-    <<: [*restart, *network]
-
-  decision-tracker:
-    build:
-      context: ${ATLASOS_PATH:-../../repos/AtlasOS}
-      dockerfile: services/decision-tracker/Dockerfile
-    container_name: ceo-decision-tracker
-    ports:
-      - "41530:8087"
-    environment:
-      <<: *vault-env
-      AUDIT_SERVICE_URL: http://audit-chain:8084
-      CORRELATION_ENGINE_URL: http://correlation-engine:8085
-    volumes:
-      - decision-data:/data/decisions
-    depends_on:
-      vault:
-        condition: service_healthy
-      audit-chain:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8087/health"]
-      <<: *hc
-    <<: [*restart, *network]
-
-  # ═══════════════════════════════════════════════════════════════════════════
-  # MCP CONNECTORS — Core Business Integrations (ports 41601-41607)
-  # ═══════════════════════════════════════════════════════════════════════════
-
-  mcp-vtiger:
-    build:
-      context: ${ATLASOS_PATH:-../../repos/AtlasOS}/services/mcp-connectors
-      dockerfile: Dockerfile
-      args:
-        CONNECTOR_NAME: vtiger
-    container_name: ceo-mcp-vtiger
-    ports:
-      - "41601:8080"
-    environment:
-      PORT: "8080"
-      <<: *vault-env
-      VAULT_SECRET_PATH: medinovai-secrets/atlasos/vtiger
-      AUDIT_SERVICE_URL: http://audit-chain:8084
-      CONNECTOR_NAME: vtiger
-    volumes:
-      - ${ATLASOS_PATH:-../../repos/AtlasOS}/lib:/app/lib:ro
-    depends_on:
-      vault:
-        condition: service_healthy
-      audit-chain:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
-      <<: *hc
-    <<: [*restart, *network]
-
-  mcp-quickbooks:
-    build:
-      context: ${ATLASOS_PATH:-../../repos/AtlasOS}/services/mcp-connectors
-      dockerfile: Dockerfile
-      args:
-        CONNECTOR_NAME: quickbooks
-    container_name: ceo-mcp-quickbooks
-    ports:
-      - "41602:8080"
-    environment:
-      PORT: "8080"
-      <<: *vault-env
-      VAULT_SECRET_PATH: medinovai-secrets/atlasos/quickbooks
-      AUDIT_SERVICE_URL: http://audit-chain:8084
-      CONNECTOR_NAME: quickbooks
-    volumes:
-      - ${ATLASOS_PATH:-../../repos/AtlasOS}/lib:/app/lib:ro
-    depends_on:
-      vault:
-        condition: service_healthy
-      audit-chain:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
-      <<: *hc
-    <<: [*restart, *network]
-
-  mcp-google:
-    build:
-      context: ${ATLASOS_PATH:-../../repos/AtlasOS}/services/mcp-connectors
-      dockerfile: Dockerfile
-      args:
-        CONNECTOR_NAME: google_workspace
-    container_name: ceo-mcp-google
-    ports:
-      - "41603:8080"
-    environment:
-      PORT: "8080"
-      <<: *vault-env
-      VAULT_SECRET_PATH: medinovai-secrets/atlasos/google-workspace
-      AUDIT_SERVICE_URL: http://audit-chain:8084
-      CONNECTOR_NAME: google_workspace
-    volumes:
-      - ${ATLASOS_PATH:-../../repos/AtlasOS}/lib:/app/lib:ro
-    depends_on:
-      vault:
-        condition: service_healthy
-      audit-chain:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
-      <<: *hc
-    <<: [*restart, *network]
-
-  mcp-lis:
-    build:
-      context: ${ATLASOS_PATH:-../../repos/AtlasOS}/services/mcp-connectors
-      dockerfile: Dockerfile
-      args:
-        CONNECTOR_NAME: lis
-    container_name: ceo-mcp-lis
-    ports:
-      - "41604:8080"
-    environment:
-      PORT: "8080"
-      <<: *vault-env
-      VAULT_SECRET_PATH: medinovai-secrets/atlasos/lis
-      AUDIT_SERVICE_URL: http://audit-chain:8084
-      CONNECTOR_NAME: lis
-    volumes:
-      - ${ATLASOS_PATH:-../../repos/AtlasOS}/lib:/app/lib:ro
-    depends_on:
-      vault:
-        condition: service_healthy
-      audit-chain:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
-      <<: *hc
-    <<: [*restart, *network]
-
-  mcp-mattermost:
-    build:
-      context: ${ATLASOS_PATH:-../../repos/AtlasOS}/services/mcp-connectors
-      dockerfile: Dockerfile
-      args:
-        CONNECTOR_NAME: mattermost
-    container_name: ceo-mcp-mattermost
-    ports:
-      - "41605:8080"
-    environment:
-      PORT: "8080"
-      <<: *vault-env
-      VAULT_SECRET_PATH: medinovai-secrets/atlasos/mattermost
-      AUDIT_SERVICE_URL: http://audit-chain:8084
-      CONNECTOR_NAME: mattermost
-    volumes:
-      - ${ATLASOS_PATH:-../../repos/AtlasOS}/lib:/app/lib:ro
-    depends_on:
-      vault:
-        condition: service_healthy
-      audit-chain:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
-      <<: *hc
-    <<: [*restart, *network]
-
-  mcp-twilio:
-    build:
-      context: ${ATLASOS_PATH:-../../repos/AtlasOS}/services/mcp-connectors
-      dockerfile: Dockerfile
-      args:
-        CONNECTOR_NAME: twilio
-    container_name: ceo-mcp-twilio
-    ports:
-      - "41606:8080"
-    environment:
-      PORT: "8080"
-      <<: *vault-env
-      VAULT_SECRET_PATH: medinovai-secrets/atlasos/twilio
-      AUDIT_SERVICE_URL: http://audit-chain:8084
-      CONNECTOR_NAME: twilio
-    volumes:
-      - ${ATLASOS_PATH:-../../repos/AtlasOS}/lib:/app/lib:ro
-    depends_on:
-      vault:
-        condition: service_healthy
-      audit-chain:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
-      <<: *hc
-    <<: [*restart, *network]
-
-  mcp-3cx:
-    build:
-      context: ${ATLASOS_PATH:-../../repos/AtlasOS}/services/mcp-connectors
-      dockerfile: Dockerfile
-      args:
-        CONNECTOR_NAME: threecx
-    container_name: ceo-mcp-3cx
-    ports:
-      - "41607:8080"
-    environment:
-      PORT: "8080"
-      <<: *vault-env
-      VAULT_SECRET_PATH: medinovai-secrets/atlasos/threecx
-      AUDIT_SERVICE_URL: http://audit-chain:8084
-      CONNECTOR_NAME: threecx
-    volumes:
-      - ${ATLASOS_PATH:-../../repos/AtlasOS}/lib:/app/lib:ro
-    depends_on:
-      vault:
-        condition: service_healthy
-      audit-chain:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
-      <<: *hc
-    <<: [*restart, *network]
-
-  # ═══════════════════════════════════════════════════════════════════════════
-  # MCP CONNECTORS — External Data / Arjun Learning Intelligence (41608-41615)
-  # ═══════════════════════════════════════════════════════════════════════════
-
-  mcp-google-ads:
-    build:
-      context: ${ATLASOS_PATH:-../../repos/AtlasOS}/services/mcp-connectors
-      dockerfile: Dockerfile
-      args:
-        CONNECTOR_NAME: google_ads
-    container_name: ceo-mcp-google-ads
-    ports:
-      - "41608:8080"
-    environment:
-      PORT: "8080"
-      <<: *vault-env
-      VAULT_SECRET_PATH: medinovai-secrets/atlasos/google-ads
-      AUDIT_SERVICE_URL: http://audit-chain:8084
-      CONNECTOR_NAME: google_ads
-    volumes:
-      - ${ATLASOS_PATH:-../../repos/AtlasOS}/lib:/app/lib:ro
-    depends_on:
-      vault:
-        condition: service_healthy
-      audit-chain:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
-      <<: *hc
-    <<: [*restart, *network]
-
-  mcp-linkedin:
-    build:
-      context: ${ATLASOS_PATH:-../../repos/AtlasOS}/services/mcp-connectors
-      dockerfile: Dockerfile
-      args:
-        CONNECTOR_NAME: linkedin
-    container_name: ceo-mcp-linkedin
-    ports:
-      - "41609:8080"
-    environment:
-      PORT: "8080"
-      <<: *vault-env
-      VAULT_SECRET_PATH: medinovai-secrets/atlasos/linkedin
-      AUDIT_SERVICE_URL: http://audit-chain:8084
-      CONNECTOR_NAME: linkedin
-    volumes:
-      - ${ATLASOS_PATH:-../../repos/AtlasOS}/lib:/app/lib:ro
-    depends_on:
-      vault:
-        condition: service_healthy
-      audit-chain:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
-      <<: *hc
-    <<: [*restart, *network]
-
-  mcp-google-analytics:
-    build:
-      context: ${ATLASOS_PATH:-../../repos/AtlasOS}/services/mcp-connectors
-      dockerfile: Dockerfile
-      args:
-        CONNECTOR_NAME: google_analytics
-    container_name: ceo-mcp-google-analytics
-    ports:
-      - "41610:8080"
-    environment:
-      PORT: "8080"
-      <<: *vault-env
-      VAULT_SECRET_PATH: medinovai-secrets/atlasos/google-analytics
-      AUDIT_SERVICE_URL: http://audit-chain:8084
-      CONNECTOR_NAME: google_analytics
-    volumes:
-      - ${ATLASOS_PATH:-../../repos/AtlasOS}/lib:/app/lib:ro
-    depends_on:
-      vault:
-        condition: service_healthy
-      audit-chain:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
-      <<: *hc
-    <<: [*restart, *network]
-
-  mcp-pagerduty:
-    build:
-      context: ${ATLASOS_PATH:-../../repos/AtlasOS}/services/mcp-connectors
-      dockerfile: Dockerfile
-      args:
-        CONNECTOR_NAME: pagerduty
-    container_name: ceo-mcp-pagerduty
-    ports:
-      - "41611:8080"
-    environment:
-      PORT: "8080"
-      <<: *vault-env
-      VAULT_SECRET_PATH: medinovai-secrets/atlasos/pagerduty
-      AUDIT_SERVICE_URL: http://audit-chain:8084
-      CONNECTOR_NAME: pagerduty
-    volumes:
-      - ${ATLASOS_PATH:-../../repos/AtlasOS}/lib:/app/lib:ro
-    depends_on:
-      vault:
-        condition: service_healthy
-      audit-chain:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
-      <<: *hc
-    <<: [*restart, *network]
-
-  mcp-linear-jira:
-    build:
-      context: ${ATLASOS_PATH:-../../repos/AtlasOS}/services/mcp-connectors
-      dockerfile: Dockerfile
-      args:
-        CONNECTOR_NAME: linear_jira
-    container_name: ceo-mcp-linear-jira
-    ports:
-      - "41612:8080"
-    environment:
-      PORT: "8080"
-      <<: *vault-env
-      VAULT_SECRET_PATH: medinovai-secrets/atlasos/linear
-      AUDIT_SERVICE_URL: http://audit-chain:8084
-      CONNECTOR_NAME: linear_jira
-    volumes:
-      - ${ATLASOS_PATH:-../../repos/AtlasOS}/lib:/app/lib:ro
-    depends_on:
-      vault:
-        condition: service_healthy
-      audit-chain:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
-      <<: *hc
-    <<: [*restart, *network]
-
-  mcp-google-trends:
-    build:
-      context: ${ATLASOS_PATH:-../../repos/AtlasOS}/services/mcp-connectors
-      dockerfile: Dockerfile
-      args:
-        CONNECTOR_NAME: google_trends
-    container_name: ceo-mcp-google-trends
-    ports:
-      - "41613:8080"
-    environment:
-      PORT: "8080"
-      <<: *vault-env
-      AUDIT_SERVICE_URL: http://audit-chain:8084
-      CONNECTOR_NAME: google_trends
-    volumes:
-      - ${ATLASOS_PATH:-../../repos/AtlasOS}/lib:/app/lib:ro
-    depends_on:
-      vault:
-        condition: service_healthy
-      audit-chain:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
-      <<: *hc
-    <<: [*restart, *network]
-
-  mcp-glassdoor:
-    build:
-      context: ${ATLASOS_PATH:-../../repos/AtlasOS}/services/mcp-connectors
-      dockerfile: Dockerfile
-      args:
-        CONNECTOR_NAME: glassdoor
-    container_name: ceo-mcp-glassdoor
-    ports:
-      - "41614:8080"
-    environment:
-      PORT: "8080"
-      <<: *vault-env
-      VAULT_SECRET_PATH: medinovai-secrets/atlasos/glassdoor
-      AUDIT_SERVICE_URL: http://audit-chain:8084
-      CONNECTOR_NAME: glassdoor
-    volumes:
-      - ${ATLASOS_PATH:-../../repos/AtlasOS}/lib:/app/lib:ro
-    depends_on:
-      vault:
-        condition: service_healthy
-      audit-chain:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
-      <<: *hc
-    <<: [*restart, *network]
-
-  mcp-crunchbase:
-    build:
-      context: ${ATLASOS_PATH:-../../repos/AtlasOS}/services/mcp-connectors
-      dockerfile: Dockerfile
-      args:
-        CONNECTOR_NAME: crunchbase
-    container_name: ceo-mcp-crunchbase
-    ports:
-      - "41615:8080"
-    environment:
-      PORT: "8080"
-      <<: *vault-env
-      VAULT_SECRET_PATH: medinovai-secrets/atlasos/crunchbase
-      AUDIT_SERVICE_URL: http://audit-chain:8084
-      CONNECTOR_NAME: crunchbase
-    volumes:
-      - ${ATLASOS_PATH:-../../repos/AtlasOS}/lib:/app/lib:ro
-    depends_on:
-      vault:
-        condition: service_healthy
-      audit-chain:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
-      <<: *hc
-    <<: [*restart, *network]
-
-  # ═══════════════════════════════════════════════════════════════════════════
-  # AGENT PLATFORM CORE
-  # ═══════════════════════════════════════════════════════════════════════════
-
-  event-bus:
-    build:
-      context: ${ATLASOS_PATH:-../../repos/AtlasOS}
-      dockerfile: services/event-bus/Dockerfile
-    container_name: ceo-event-bus
-    ports:
-      - "41701:8088"
-    environment:
-      <<: *common-env
-      EVENTS_DIR: /data/events
-      STORAGE_BACKEND: file
-    volumes:
-      - events-data:/data/events
-    healthcheck:
-      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8088/health')\" 2>/dev/null || exit 1"]
-      <<: *hc
-    depends_on:
-      postgres:
-        condition: service_healthy
-    <<: [*restart, *network]
-
-  memory-service:
-    build:
-      context: ${ATLASOS_PATH:-../../repos/AtlasOS}
-      dockerfile: services/memory-service/Dockerfile
-    container_name: ceo-memory-service
-    ports:
-      - "41703:8201"
-    environment:
-      <<: *common-env
-      EVENT_BUS_URL: http://event-bus:8088
-      MEMORY_DIR: /data/memory
-    volumes:
-      - memory-data:/data/memory
-    healthcheck:
-      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8201/health')\" 2>/dev/null || exit 1"]
-      <<: *hc
-    depends_on:
-      event-bus:
-        condition: service_healthy
-    <<: [*restart, *network]
-
-  skill-engine:
-    build:
-      context: ${ATLASOS_PATH:-../../repos/AtlasOS}
-      dockerfile: services/skill-engine/Dockerfile
-    container_name: ceo-skill-engine
-    ports:
-      - "41704:8090"
-    environment:
-      <<: *common-env
-      ATLAS_ROOT: /app
-      SKILL_INDEX_PATH: /app/config/skill_index.yaml
-      ARTIFACT_ROOT: /data/artifacts
-      AUDIT_SERVICE_URL: http://audit-chain:8084
-      EVENT_BUS_URL: http://event-bus:8088
-    volumes:
-      - ${ATLASOS_PATH:-../../repos/AtlasOS}/config:/app/config:ro
-      - ${ATLASOS_PATH:-../../repos/AtlasOS}/skills:/app/skills:ro
-      - skill-artifacts:/data/artifacts
-    healthcheck:
-      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8090/health')\" 2>/dev/null || exit 1"]
-      <<: *hc
-    depends_on:
-      event-bus:
-        condition: service_healthy
-    <<: [*restart, *network]
-
-  agent-runtime:
-    build:
-      context: ${ATLASOS_PATH:-../../repos/AtlasOS}
-      dockerfile: services/agent-runtime/Dockerfile
-    container_name: ceo-agent-runtime
-    ports:
-      - "41710:8200"
-    environment:
-      <<: *common-env
-      ATLAS_ROOT: /app
-      EVENT_BUS_URL: http://event-bus:8088
-      SKILL_ENGINE_URL: http://skill-engine:8090
-      MEMORY_SERVICE_URL: http://memory-service:8201
-      AGENT_MESH_URL: http://agent-mesh:8203
-      SECURITY_MESH_URL: http://security-mesh:8207
-      GOVERNANCE_URL: http://governance-runtime:8208
-      LLM_ENDPOINT: ${LLM_ENDPOINT:-http://host.docker.internal:5000}
-    volumes:
-      - ${ATLASOS_PATH:-../../repos/AtlasOS}/config:/app/config:ro
-      - ${ATLASOS_PATH:-../../repos/AtlasOS}/workspaces:/app/workspaces:ro
-      - ${ATLASOS_PATH:-../../repos/AtlasOS}/skills:/app/skills:ro
-      - ${ATLASOS_PATH:-../../repos/AtlasOS}/templates:/app/templates:ro
-    healthcheck:
-      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8200/health')\" 2>/dev/null || exit 1"]
-      <<: *hc
-    depends_on:
-      event-bus:
-        condition: service_healthy
-      skill-engine:
-        condition: service_healthy
-      memory-service:
-        condition: service_healthy
-    <<: [*restart, *network]
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-
-  agent-orchestrator:
-    build:
-      context: ${ATLASOS_PATH:-../../repos/AtlasOS}
-      dockerfile: services/agent-orchestrator/Dockerfile
-    container_name: ceo-agent-orchestrator
-    ports:
-      - "41711:8202"
-    environment:
-      <<: *common-env
-      ATLAS_ROOT: /app
-      AGENT_RUNTIME_URL: http://agent-runtime:8200
-      EVENT_BUS_URL: http://event-bus:8088
-      MEMORY_SERVICE_URL: http://memory-service:8201
-      HEARTBEAT_URL: http://heartbeat-executor:8205
-      LEARNING_URL: http://learning-engine:8206
-    volumes:
-      - ${ATLASOS_PATH:-../../repos/AtlasOS}/config:/app/config:ro
-    healthcheck:
-      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8202/health')\" 2>/dev/null || exit 1"]
-      <<: *hc
-    depends_on:
-      event-bus:
-        condition: service_healthy
-    <<: [*restart, *network]
-
-  agent-mesh:
-    build:
-      context: ${ATLASOS_PATH:-../../repos/AtlasOS}
-      dockerfile: services/agent-mesh/Dockerfile
-    container_name: ceo-agent-mesh
-    ports:
-      - "41712:8203"
-    environment:
-      <<: *common-env
-      AGENT_RUNTIME_URL: http://agent-runtime:8200
-      EVENT_BUS_URL: http://event-bus:8088
-      AUDIT_SERVICE_URL: http://audit-chain:8084
-      SECURITY_MESH_URL: http://security-mesh:8207
-    healthcheck:
-      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8203/health')\" 2>/dev/null || exit 1"]
-      <<: *hc
-    depends_on:
-      audit-chain:
-        condition: service_healthy
-    <<: [*restart, *network]
-
-  security-mesh:
-    build:
-      context: ${ATLASOS_PATH:-../../repos/AtlasOS}
-      dockerfile: services/security-mesh/Dockerfile
-    container_name: ceo-security-mesh
-    ports:
-      - "41713:8207"
-    environment:
-      <<: *common-env
-      EVENT_BUS_URL: http://event-bus:8088
-      AGENT_RUNTIME_URL: http://agent-runtime:8200
-      ORCHESTRATOR_URL: http://agent-orchestrator:8202
-    healthcheck:
-      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8207/health')\" 2>/dev/null || exit 1"]
-      <<: *hc
-    depends_on:
-      audit-chain:
-        condition: service_healthy
-    <<: [*restart, *network]
-
-  governance-runtime:
-    build:
-      context: ${ATLASOS_PATH:-../../repos/AtlasOS}
-      dockerfile: services/governance-runtime/Dockerfile
-    container_name: ceo-governance-runtime
-    ports:
-      - "41714:8208"
-    environment:
-      <<: *common-env
-      ATLAS_ROOT: /app
-      EVENT_BUS_URL: http://event-bus:8088
-      AUDIT_SERVICE_URL: http://audit-chain:8084
-      SECURITY_MESH_URL: http://security-mesh:8207
-      STOS_ORCHESTRATOR_URL: http://stos-orchestrator:8100
-    volumes:
-      - ${ATLASOS_PATH:-../../repos/AtlasOS}/config:/app/config:ro
-    healthcheck:
-      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8208/health')\" 2>/dev/null || exit 1"]
-      <<: *hc
-    depends_on:
-      audit-chain:
-        condition: service_healthy
-    <<: [*restart, *network]
-
-  heartbeat-executor:
-    build:
-      context: ${ATLASOS_PATH:-../../repos/AtlasOS}
-      dockerfile: services/heartbeat-executor/Dockerfile
-    container_name: ceo-heartbeat-executor
-    ports:
-      - "41715:8205"
-    environment:
-      <<: *common-env
-      ATLAS_ROOT: /app
-      AGENT_RUNTIME_URL: http://agent-runtime:8200
-      EVENT_BUS_URL: http://event-bus:8088
-    volumes:
-      - ${ATLASOS_PATH:-../../repos/AtlasOS}/workspaces:/app/workspaces:ro
-    healthcheck:
-      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8205/health')\" 2>/dev/null || exit 1"]
-      <<: *hc
-    depends_on:
-      event-bus:
-        condition: service_healthy
-    <<: [*restart, *network]
-
-  learning-engine:
-    build:
-      context: ${ATLASOS_PATH:-../../repos/AtlasOS}
-      dockerfile: services/learning-engine/Dockerfile
-    container_name: ceo-learning-engine
-    ports:
-      - "41716:8206"
-    environment:
-      <<: *common-env
-      MEMORY_SERVICE_URL: http://memory-service:8201
-      EVENT_BUS_URL: http://event-bus:8088
-    healthcheck:
-      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8206/health')\" 2>/dev/null || exit 1"]
-      <<: *hc
-    depends_on:
-      memory-service:
-        condition: service_healthy
-    <<: [*restart, *network]
-
-  tenancy-engine:
-    build:
-      context: ${ATLASOS_PATH:-../../repos/AtlasOS}
-      dockerfile: services/tenancy-engine/Dockerfile
-    container_name: ceo-tenancy-engine
-    ports:
-      - "41717:8204"
-    environment:
-      <<: *common-env
-      ATLAS_ROOT: /app
-      TENANCY_DATA_DIR: /data/tenancy
-    volumes:
-      - ${ATLASOS_PATH:-../../repos/AtlasOS}/config:/app/config:ro
-      - tenancy-data:/data/tenancy
-    healthcheck:
-      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8204/health')\" 2>/dev/null || exit 1"]
-      <<: *hc
-    <<: [*restart, *network]
-
-  # ═══════════════════════════════════════════════════════════════════════════
-  # OODA BRAIN + FLEET MANAGEMENT
-  # ═══════════════════════════════════════════════════════════════════════════
-
-  ooda-brain:
-    build:
-      context: ${ATLASOS_PATH:-../../repos/AtlasOS}
-      dockerfile: services/ooda_brain/Dockerfile
-    container_name: ceo-ooda-brain
-    ports:
-      - "41720:8000"
-    environment:
-      <<: *common-env
-      EVENT_BUS_URL: http://event-bus:8088
-      SQUAD_MANAGER_URL: http://squad-manager:8001
-      FLEET_MONITOR_URL: http://fleet-monitor:8014
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      <<: *hc
-    depends_on:
-      event-bus:
-        condition: service_healthy
-    <<: [*restart, *network]
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-
-  squad-manager:
-    build:
-      context: ${ATLASOS_PATH:-../../repos/AtlasOS}
-      dockerfile: services/squad_manager/Dockerfile
-    container_name: ceo-squad-manager
-    ports:
-      - "41721:8001"
-    environment:
-      <<: *common-env
-      ATLAS_ROOT: /app
-    volumes:
-      - ${ATLASOS_PATH:-../../repos/AtlasOS}/config:/app/config:ro
-      - ${ATLASOS_PATH:-../../repos/AtlasOS}/workspaces:/app/workspaces:ro
-    healthcheck:
-      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8001/health')\" 2>/dev/null || exit 1"]
-      <<: *hc
-    <<: [*restart, *network]
-
-  fleet-monitor:
-    build:
-      context: ${ATLASOS_PATH:-../../repos/AtlasOS}
-      dockerfile: services/fleet_monitor/Dockerfile
-    container_name: ceo-fleet-monitor
-    ports:
-      - "41722:8014"
-    environment:
-      <<: *common-env
-      ATLAS_ROOT: /app
-    volumes:
-      - ${ATLASOS_PATH:-../../repos/AtlasOS}/config:/app/config:ro
-      - ${ATLASOS_PATH:-../../repos/AtlasOS}/workspaces:/app/workspaces:ro
-    healthcheck:
-      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8014/health')\" 2>/dev/null || exit 1"]
-      <<: *hc
-    <<: [*restart, *network]
-
-  service-registry:
-    build:
-      context: ${ATLASOS_PATH:-../../repos/AtlasOS}
-      dockerfile: services/service_registry/Dockerfile
-    container_name: ceo-service-registry
-    ports:
-      - "41723:8002"
-    environment:
-      <<: *common-env
-      REPOS_ROOT: /repos
-    volumes:
-      - ${ATLASOS_PATH:-../../repos/AtlasOS}:/repos:ro
-    healthcheck:
-      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8002/health')\" 2>/dev/null || exit 1"]
-      <<: *hc
-    <<: [*restart, *network]
-
-  health-probe:
-    build:
-      context: ${ATLASOS_PATH:-../../repos/AtlasOS}
-      dockerfile: services/health_probe/Dockerfile
-    container_name: ceo-health-probe
-    ports:
-      - "41724:8003"
-    environment:
-      <<: *common-env
-    healthcheck:
-      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8003/health')\" 2>/dev/null || exit 1"]
-      <<: *hc
-    <<: [*restart, *network]
-
-  rule-compiler:
-    build:
-      context: ${ATLASOS_PATH:-../../repos/AtlasOS}
-      dockerfile: services/rule-compiler/Dockerfile
-    container_name: ceo-rule-compiler
-    ports:
-      - "41725:8211"
-    environment:
-      <<: *common-env
-      ATLAS_ROOT: /app
-      AUDIT_SERVICE_URL: http://audit-chain:8084
-      EVENT_BUS_URL: http://event-bus:8088
-    volumes:
-      - ${ATLASOS_PATH:-../../repos/AtlasOS}/config:/app/config:ro
-      - ${ATLASOS_PATH:-../../repos/AtlasOS}/skills:/app/skills
-      - ${ATLASOS_PATH:-../../repos/AtlasOS}/workspaces:/app/workspaces
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8211/health"]
-      <<: *hc
-    depends_on:
-      audit-chain:
-        condition: service_healthy
-      event-bus:
-        condition: service_healthy
-    <<: [*restart, *network]
-
-  engine-registry:
-    build:
-      context: ${ATLASOS_PATH:-../../repos/AtlasOS}
-      dockerfile: services/engine-registry/Dockerfile
-    container_name: ceo-engine-registry
-    ports:
-      - "41726:8213"
-    environment:
-      <<: *common-env
-      ATLAS_ROOT: /app
-      RULE_COMPILER_URL: http://rule-compiler:8211
-      AUDIT_SERVICE_URL: http://audit-chain:8084
-    volumes:
-      - ${ATLASOS_PATH:-../../repos/AtlasOS}/config:/app/config:ro
-      - ${ATLASOS_PATH:-../../repos/AtlasOS}/skills:/app/skills:ro
-      - ${ATLASOS_PATH:-../../repos/AtlasOS}/workspaces:/app/workspaces:ro
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8213/health"]
-      <<: *hc
-    depends_on:
-      rule-compiler:
-        condition: service_healthy
-    <<: [*restart, *network]
-
-  rollup-engine:
-    build:
-      context: ${ATLASOS_PATH:-../../repos/AtlasOS}
-      dockerfile: services/rollup-engine/Dockerfile
-    container_name: ceo-rollup-engine
-    ports:
-      - "41744:8089"
-    environment:
-      <<: *common-env
-      AUDIT_SERVICE_URL: http://audit-chain:8084
-      EVENT_BUS_URL: http://event-bus:8088
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8089/health"]
-      <<: *hc
-    depends_on:
-      audit-chain:
-        condition: service_healthy
-    <<: [*restart, *network]
-
-  # ═══════════════════════════════════════════════════════════════════════════
-  # STOS (Silent Trial Operating System)
-  # ═══════════════════════════════════════════════════════════════════════════
-
-  stos-orchestrator:
-    build:
-      context: ${ATLASOS_PATH:-../../repos/AtlasOS}
-      dockerfile: services/stos-orchestrator/Dockerfile
-    container_name: ceo-stos-orchestrator
-    ports:
-      - "41730:8100"
-    environment:
-      <<: *common-env
-    volumes:
-      - stos-data:/data/stos
-    healthcheck:
-      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8100/health')\" 2>/dev/null || exit 1"]
-      <<: *hc
-    depends_on:
-      postgres:
-        condition: service_healthy
-    <<: [*restart, *network]
-
-  stos-model-registry:
-    build: { context: "${ATLASOS_PATH:-../../repos/AtlasOS}", dockerfile: services/stos-model-registry/Dockerfile }
-    container_name: ceo-stos-model-registry
-    ports: ["41731:8103"]
-    environment: { <<: *common-env }
-    volumes: [stos-data:/data/stos]
-    healthcheck: { test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8103/health')\" 2>/dev/null || exit 1"], <<: *hc }
-    <<: [*restart, *network]
-
-  stos-inference-service:
-    build: { context: "${ATLASOS_PATH:-../../repos/AtlasOS}", dockerfile: services/stos-inference-service/Dockerfile }
-    container_name: ceo-stos-inference
-    ports: ["41732:8101"]
-    environment: { <<: *common-env, FEATURE_STORE_URL: "http://stos-feature-store:8102", MODEL_REGISTRY_URL: "http://stos-model-registry:8103" }
-    volumes: [stos-data:/data/stos]
-    healthcheck: { test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8101/health')\" 2>/dev/null || exit 1"], <<: *hc }
-    <<: [*restart, *network]
-
-  stos-feature-store:
-    build: { context: "${ATLASOS_PATH:-../../repos/AtlasOS}", dockerfile: services/stos-feature-store/Dockerfile }
-    container_name: ceo-stos-feature-store
-    ports: ["41733:8102"]
-    environment: { <<: *common-env }
-    volumes: [stos-data:/data/stos]
-    healthcheck: { test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8102/health')\" 2>/dev/null || exit 1"], <<: *hc }
-    <<: [*restart, *network]
-
-  stos-evaluation-engine:
-    build: { context: "${ATLASOS_PATH:-../../repos/AtlasOS}", dockerfile: services/stos-evaluation-engine/Dockerfile }
-    container_name: ceo-stos-eval
-    ports: ["41734:8104"]
-    environment: { <<: *common-env }
-    volumes: [stos-data:/data/stos]
-    healthcheck: { test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8104/health')\" 2>/dev/null || exit 1"], <<: *hc }
-    <<: [*restart, *network]
-
-  stos-evidence-bundle:
-    build: { context: "${ATLASOS_PATH:-../../repos/AtlasOS}", dockerfile: services/stos-evidence-bundle/Dockerfile }
-    container_name: ceo-stos-evidence
-    ports: ["41735:8108"]
-    environment: { <<: *common-env }
-    volumes: [stos-data:/data/stos]
-    depends_on: { audit-chain: { condition: service_healthy } }
-    healthcheck: { test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8108/health')\" 2>/dev/null || exit 1"], <<: *hc }
-    <<: [*restart, *network]
-
-  stos-phi-boundary:
-    build: { context: "${ATLASOS_PATH:-../../repos/AtlasOS}", dockerfile: services/stos-phi-boundary/Dockerfile }
-    container_name: ceo-stos-phi
-    ports: ["41736:8109"]
-    environment: { <<: *common-env }
-    volumes: [stos-data:/data/stos]
-    healthcheck: { test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8109/health')\" 2>/dev/null || exit 1"], <<: *hc }
-    <<: [*restart, *network]
-
-  # ═══════════════════════════════════════════════════════════════════════════
-  # CLINICAL + GOVERNANCE + COMPLIANCE
-  # ═══════════════════════════════════════════════════════════════════════════
-
-  explainability:
-    build: { context: "${ATLASOS_PATH:-../../repos/AtlasOS}", dockerfile: services/explainability/Dockerfile }
-    container_name: ceo-explainability
-    ports: ["41740:8220"]
-    environment: { <<: *common-env }
-    depends_on: { postgres: { condition: service_healthy } }
-    healthcheck: { test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8220/health')\" 2>/dev/null || exit 1"], <<: *hc }
-    <<: [*restart, *network]
-
-  clinical-workflows:
-    build: { context: "${ATLASOS_PATH:-../../repos/AtlasOS}", dockerfile: services/clinical-workflows/Dockerfile }
-    container_name: ceo-clinical-workflows
-    ports: ["41741:8230"]
-    environment: { <<: *common-env }
-    depends_on: { postgres: { condition: service_healthy } }
-    healthcheck: { test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8230/health')\" 2>/dev/null || exit 1"], <<: *hc }
-    <<: [*restart, *network]
-
-  metering:
-    build: { context: "${ATLASOS_PATH:-../../repos/AtlasOS}", dockerfile: services/metering/Dockerfile }
-    container_name: ceo-metering
-    ports: ["41742:8095"]
-    environment: { <<: *common-env }
-    volumes: [metering-data:/data/metering]
-    healthcheck: { test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8095/health')\" 2>/dev/null || exit 1"], <<: *hc }
-    <<: [*restart, *network]
-
-  incident-response:
-    build: { context: "${ATLASOS_PATH:-../../repos/AtlasOS}", dockerfile: services/incident-response/Dockerfile }
-    container_name: ceo-incident-response
-    ports: ["41743:8261"]
-    environment: { <<: *common-env }
-    healthcheck: { test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8261/health')\" 2>/dev/null || exit 1"], <<: *hc }
-    <<: [*restart, *network]
-
-  workflow-runtime:
-    build: { context: "${ATLASOS_PATH:-../../repos/AtlasOS}", dockerfile: services/workflow-runtime/Dockerfile }
-    container_name: ceo-workflow-runtime
-    ports: ["41745:8097"]
-    environment: { <<: *common-env }
-    volumes: [workflow-data:/data/workflow]
-    healthcheck: { test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8097/health')\" 2>/dev/null || exit 1"], <<: *hc }
-    <<: [*restart, *network]
-
-  bias-testing:
-    build: { context: "${ATLASOS_PATH:-../../repos/AtlasOS}", dockerfile: services/bias-testing/Dockerfile }
-    container_name: ceo-bias-testing
-    ports: ["41770:8221"]
-    environment: { <<: *common-env }
-    depends_on: { postgres: { condition: service_healthy } }
-    healthcheck: { test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8221/health')\" 2>/dev/null || exit 1"], <<: *hc }
-    <<: [*restart, *network]
-
-  integration-gateway:
-    build: { context: "${ATLASOS_PATH:-../../repos/AtlasOS}", dockerfile: services/integration-gateway/Dockerfile }
-    container_name: ceo-integration-gw
-    ports: ["41771:8240"]
-    environment: { <<: *common-env }
-    depends_on: { postgres: { condition: service_healthy } }
-    healthcheck: { test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8240/health')\" 2>/dev/null || exit 1"], <<: *hc }
-    <<: [*restart, *network]
-
-  health-data-network:
-    build: { context: "${ATLASOS_PATH:-../../repos/AtlasOS}", dockerfile: services/health-data-network/Dockerfile }
-    container_name: ceo-health-data-net
-    ports: ["41772:8265"]
-    environment: { <<: *common-env }
-    depends_on: { postgres: { condition: service_healthy } }
-    healthcheck: { test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8265/health')\" 2>/dev/null || exit 1"], <<: *hc }
-    <<: [*restart, *network]
-
-  # ─── Compliance Suite ───────────────────────────────────────────────────
-  pccp-engine:
-    build: { context: "${ATLASOS_PATH:-../../repos/AtlasOS}", dockerfile: services/pccp-engine/Dockerfile }
-    container_name: ceo-pccp-engine
-    ports: ["41760:8401"]
-    environment: { <<: *common-env, EVENT_BUS_URL: "http://event-bus:8088", GOVERNANCE_URL: "http://governance-runtime:8208" }
-    volumes: [pccp-data:/data/pccp]
-    depends_on: { event-bus: { condition: service_healthy } }
-    healthcheck: { test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8401/health')\" 2>/dev/null || exit 1"], <<: *hc }
-    <<: [*restart, *network]
-
-  breach-notify:
-    build: { context: "${ATLASOS_PATH:-../../repos/AtlasOS}", dockerfile: services/breach-notify/Dockerfile }
-    container_name: ceo-breach-notify
-    ports: ["41761:8402"]
-    environment: { <<: *common-env, EVENT_BUS_URL: "http://event-bus:8088", SECURITY_MESH_URL: "http://security-mesh:8207" }
-    volumes: [breach-data:/data/breach]
-    depends_on: { event-bus: { condition: service_healthy } }
-    healthcheck: { test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8402/health')\" 2>/dev/null || exit 1"], <<: *hc }
-    <<: [*restart, *network]
-
-  e-signatures:
-    build: { context: "${ATLASOS_PATH:-../../repos/AtlasOS}", dockerfile: services/e-signatures/Dockerfile }
-    container_name: ceo-e-signatures
-    ports: ["41762:8403"]
-    environment: { <<: *common-env, EVENT_BUS_URL: "http://event-bus:8088" }
-    volumes: [esig-data:/data/esig]
-    depends_on: { event-bus: { condition: service_healthy } }
-    healthcheck: { test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8403/health')\" 2>/dev/null || exit 1"], <<: *hc }
-    <<: [*restart, *network]
-
-  hazard-log:
-    build: { context: "${ATLASOS_PATH:-../../repos/AtlasOS}", dockerfile: services/hazard-log/Dockerfile }
-    container_name: ceo-hazard-log
-    ports: ["41763:8404"]
-    environment: { <<: *common-env, EVENT_BUS_URL: "http://event-bus:8088", GOVERNANCE_URL: "http://governance-runtime:8208" }
-    volumes: [hazard-data:/data/hazard-log]
-    depends_on: { event-bus: { condition: service_healthy } }
-    healthcheck: { test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8404/health')\" 2>/dev/null || exit 1"], <<: *hc }
-    <<: [*restart, *network]
-
-  capa-workflow:
-    build: { context: "${ATLASOS_PATH:-../../repos/AtlasOS}", dockerfile: services/capa-workflow/Dockerfile }
-    container_name: ceo-capa-workflow
-    ports: ["41764:8405"]
-    environment: { <<: *common-env, EVENT_BUS_URL: "http://event-bus:8088", GOVERNANCE_URL: "http://governance-runtime:8208", HAZARD_LOG_URL: "http://hazard-log:8404" }
-    volumes: [capa-data:/data/capa]
-    depends_on: { event-bus: { condition: service_healthy } }
-    healthcheck: { test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8405/health')\" 2>/dev/null || exit 1"], <<: *hc }
-    <<: [*restart, *network]
-
-  consent-mgmt:
-    build: { context: "${ATLASOS_PATH:-../../repos/AtlasOS}", dockerfile: services/consent-mgmt/Dockerfile }
-    container_name: ceo-consent-mgmt
-    ports: ["41765:8406"]
-    environment: { <<: *common-env, EVENT_BUS_URL: "http://event-bus:8088", TENANCY_ENGINE_URL: "http://tenancy-engine:8204", PHI_BOUNDARY_URL: "http://stos-phi-boundary:8109" }
-    volumes: [consent-data:/data/consent]
-    depends_on: { event-bus: { condition: service_healthy } }
-    healthcheck: { test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8406/health')\" 2>/dev/null || exit 1"], <<: *hc }
-    <<: [*restart, *network]
-
-  # ═══════════════════════════════════════════════════════════════════════════
-  # POST-AGI CAPABILITIES
-  # ═══════════════════════════════════════════════════════════════════════════
-
-  self-learning:
-    build: { context: "${ATLASOS_PATH:-../../repos/AtlasOS}", dockerfile: services/self-learning/Dockerfile }
-    container_name: ceo-self-learning
-    ports: ["41750:8240"]
-    environment: { <<: *common-env, STORAGE_BACKEND: postgresql }
-    depends_on: { postgres: { condition: service_healthy } }
-    healthcheck: { test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8240/health')\" 2>/dev/null || exit 1"], <<: *hc }
-    <<: [*restart, *network]
-
-  gamification:
-    build: { context: "${ATLASOS_PATH:-../../repos/AtlasOS}", dockerfile: services/gamification/Dockerfile }
-    container_name: ceo-gamification
-    ports: ["41751:8247"]
-    environment: { <<: *common-env, STORAGE_BACKEND: postgresql }
-    depends_on: { postgres: { condition: service_healthy } }
-    healthcheck: { test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8247/health')\" 2>/dev/null || exit 1"], <<: *hc }
-    <<: [*restart, *network]
-
-  digital-twins:
-    build: { context: "${ATLASOS_PATH:-../../repos/AtlasOS}", dockerfile: services/digital-twins/Dockerfile }
-    container_name: ceo-digital-twins
-    ports: ["41752:8242"]
-    environment: { <<: *common-env }
-    depends_on: { postgres: { condition: service_healthy } }
-    healthcheck: { test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8242/health')\" 2>/dev/null || exit 1"], <<: *hc }
-    <<: [*restart, *network]
-
-  cognitive-arch:
-    build: { context: "${ATLASOS_PATH:-../../repos/AtlasOS}", dockerfile: services/cognitive-arch/Dockerfile }
-    container_name: ceo-cognitive-arch
-    ports: ["41753:8244"]
-    environment: { <<: *common-env }
-    depends_on: { postgres: { condition: service_healthy } }
-    healthcheck: { test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8244/health')\" 2>/dev/null || exit 1"], <<: *hc }
-    <<: [*restart, *network]
-
-  predictive-analytics:
-    build: { context: "${ATLASOS_PATH:-../../repos/AtlasOS}", dockerfile: services/predictive-analytics/Dockerfile }
-    container_name: ceo-predictive-analytics
-    ports: ["41754:8245"]
-    environment: { <<: *common-env }
-    depends_on: { postgres: { condition: service_healthy } }
-    healthcheck: { test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8245/health')\" 2>/dev/null || exit 1"], <<: *hc }
-    <<: [*restart, *network]
-
-  federated-intelligence:
-    build: { context: "${ATLASOS_PATH:-../../repos/AtlasOS}", dockerfile: services/federated-intelligence/Dockerfile }
-    container_name: ceo-federated-intel
-    ports: ["41755:8243"]
-    environment: { <<: *common-env }
-    depends_on: { postgres: { condition: service_healthy } }
-    healthcheck: { test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8243/health')\" 2>/dev/null || exit 1"], <<: *hc }
-    <<: [*restart, *network]
-
-  autonomous-ops:
-    build: { context: "${ATLASOS_PATH:-../../repos/AtlasOS}", dockerfile: services/autonomous-ops/Dockerfile }
-    container_name: ceo-autonomous-ops
-    ports: ["41756:8246"]
-    environment: { <<: *common-env, STORAGE_BACKEND: postgresql }
-    depends_on: { postgres: { condition: service_healthy } }
-    healthcheck: { test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8246/health')\" 2>/dev/null || exit 1"], <<: *hc }
-    <<: [*restart, *network]
-
-  skill-calibration:
-    build:
-      context: ${ATLASOS_PATH:-../../repos/AtlasOS}
-      dockerfile: services/skill-calibration/Dockerfile
-    container_name: ceo-skill-calibration
-    ports:
-      - "41270:8270"
-    environment:
-      <<: *common-env
-      ATLAS_ROOT: /app
-      AUDIT_SERVICE_URL: http://audit-chain:8084
-      EVENT_BUS_URL: http://event-bus:8088
-      LEDGER_DIR: /data/state/evidence
-      SCORES_DIR: /data/state/scores
-      CALIBRATION_DIR: /data/state/calibration
-      ITEM_BANK_DIR: /data/state/item_bank
-      RUBRIC_DIR: /data/state/rubrics
-      SRP_DIR: /data/state/srp
-      VALIDITY_DIR: /data/state/selection_validity
-    volumes:
-      - skill-calibration-data:/data
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8270/health || exit 1"]
-      <<: *hc
-    depends_on:
-      event-bus:
-        condition: service_healthy
-    <<: [*restart, *network]
-
-  # ─── PDF Processing ──────────────────────────────────────────────────────
-  # Stirling PDF already defined above in Infrastructure section
-
-# ═══════════════════════════════════════════════════════════════════════════
-# NETWORK + VOLUMES
-# ═══════════════════════════════════════════════════════════════════════════
-
-networks:
-  ceo-network:
-    driver: bridge
-    name: medinovai-ceo-network
+    restart: unless-stopped
+    networks:
+      - ceo-network
 
 volumes:
-  postgres-data:
-  vault-data:
   chromadb-data:
   atlas-data:
   audit-data:
+  stirling-data:
   correlation-data:
   briefing-data:
   decision-data:
-  stirling-data:
-  events-data:
-  memory-data:
-  skill-artifacts:
-  tenancy-data:
-  stos-data:
-  metering-data:
-  workflow-data:
-  pccp-data:
-  breach-data:
-  esig-data:
-  hazard-data:
-  capa-data:
-  consent-data:
-  skill-calibration-data:
+
+networks:
+  ceo-network:
+    external: true
+    name: medinovai-dev_medinovai-dev

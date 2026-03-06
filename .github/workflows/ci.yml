@@ -16,8 +16,11 @@ jobs:
         run: |
           curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
           sudo mv kustomize /usr/local/bin/
+          KUBECONFORM_VERSION=v0.6.6
+          curl -sL "https://github.com/yannh/kubeconform/releases/download/${KUBECONFORM_VERSION}/kubeconform-linux-amd64.tar.gz" | tar xz
+          sudo mv kubeconform /usr/local/bin/
 
-      - name: Validate K8s manifests
+      - name: Validate K8s manifests (kustomize)
         run: |
           for dir in infra/kubernetes/services/*/; do
             if [ -f "$dir/kustomization.yaml" ]; then
@@ -28,6 +31,44 @@ jobs:
 
       - name: Validate base
         run: kustomize build infra/kubernetes/base > /dev/null
+
+      - name: Schema validation (kubeconform)
+        run: |
+          ERRORS=0
+          for f in $(find infra/kubernetes -name '*.yaml' -not -name 'kustomization.yaml'); do
+            if ! kubeconform -strict -ignore-missing-schemas -summary "$f"; then
+              ERRORS=$((ERRORS + 1))
+            fi
+          done
+          if [ "$ERRORS" -gt 0 ]; then
+            echo "::error::$ERRORS manifest(s) failed schema validation"
+            exit 1
+          fi
+
+      - name: Vault path consistency check
+        run: |
+          python3 -c "
+          import yaml, glob, sys, re
+          vault_paths = set()
+          for f in glob.glob('infra/kubernetes/external-secrets/external-secret-*.yaml'):
+              with open(f) as fh:
+                  for doc in yaml.safe_load_all(fh):
+                      if doc and doc.get('kind') == 'ExternalSecret':
+                          for entry in doc.get('spec', {}).get('data', []):
+                              key = entry.get('remoteRef', {}).get('key', '')
+                              if key:
+                                  vault_paths.add(key)
+          # Verify paths match medinovai-secrets/ mount
+          errors = []
+          for path in sorted(vault_paths):
+              if not path.startswith('medinovai/') and not path.startswith('infra/') and not path.startswith('keycloak/'):
+                  errors.append(f'Unexpected Vault path prefix: {path}')
+          if errors:
+              for e in errors:
+                  print(f'::error::{e}')
+              sys.exit(1)
+          print(f'Validated {len(vault_paths)} Vault paths')
+          "
 
       - name: Shell lint
         run: |

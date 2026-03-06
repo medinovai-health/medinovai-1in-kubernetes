@@ -1,106 +1,12 @@
----
-description: AI Governance Controls -- enforces 10 mandatory healthcare AI governance controls during development
-alwaysApply: true
----
-
-# AI Governance Controls (Development-Time Enforcement)
-
-These rules enforce the 10 mandatory AI governance controls defined in `docs/AI_GOVERNANCE_FRAMEWORK.md`. They apply to all code, configuration, and documentation changes across the MedinovAI platform.
-
-## 1. Model Risk Register (GOV-01)
-
-Before deploying any AI model, prompt, or pipeline change:
-- Verify the model is registered in the Model Risk Register (`templates/ai-ml/config/model_risk_register_schema.json`).
-- If creating a new AI model or integrating a new vendor model, a registry entry MUST be created before any deployment.
-- Every model must have a `risk_class`, `impact_classification`, and `mitigation_plan` with a defined `fallback_mechanism`.
-- No unregistered AI model may run in production.
-
-## 2. Pre-Deployment Validation (GOV-02)
-
-- All AI model changes must pass the pre-deployment validation pipeline (`workflows/ai-model-validation.lobster.md`) before reaching production.
-- This includes: benchmark evaluation, bias audit, explainability check, shadow deployment, and approval gates.
-- Clinical-use models require Chief Medical Officer approval.
-- Never bypass the validation pipeline. There are no shortcuts for patient safety.
-
-## 3. Bias Testing (GOV-03)
-
-- Every AI model that affects patient care must be tested for bias across demographics before deployment.
-- Use the formal Bias Testing Protocol (`templates/ai-ml/skills/bias-testing/SKILL.md`).
-- Demographics to test: age, sex, race/ethnicity, language, socioeconomic status, disability status.
-- If you are adding or modifying an AI model, ensure bias testing is included in your testing plan.
-- A model that fails bias testing CANNOT be deployed until remediation is complete and approved.
-
-## 4. Human Override Pathways (GOV-04)
-
-- Every AI recommendation presented to a clinician MUST include an override mechanism.
-- Overrides must not add friction or penalty to the clinician's workflow.
-- When building clinician-facing AI features, always implement:
-  - An explicit override action (equally accessible as accept)
-  - Override audit logging (who, when, what, why)
-  - No punitive metrics tied to override frequency
-- Reference: `templates/ai-ml/AGENTS.md` and `templates/clinical/AGENTS.md` (Human Override Pathways sections).
-
-## 5. Explainability Standards (GOV-05)
-
-- All AI outputs must include explainability fields proportional to the model's risk class.
-- Reference the Explainability Standards (`templates/ai-ml/config/explainability_standards.md`) for required fields per tier:
-  - Low risk: `confidence_score`, `ai_generated`
-  - Medium risk: + `contributing_factors`
-  - High risk: + `reasoning_chain`, `data_sources`
-  - Critical risk: + `uncertainty_quantification`, `alternative_recommendations`, `limitations`
-- All AI-generated content MUST be labeled as AI-generated (`ai_generated: true`).
-- When designing AI output schemas, include these fields from the start. Do not add them as an afterthought.
-
-## 6. Performance Monitoring (GOV-06)
-
-- Every deployed AI model must have heartbeat monitoring for accuracy drift, alert fatigue, and clinical outcomes.
-- Reference: `templates/ai-ml/HEARTBEAT.md` (checks #9, #10, #11, #12).
-- When deploying a model, ensure:
-  - Baseline performance metrics are captured during shadow deployment.
-  - Drift detection thresholds are configured (default: 5% alert, 10% auto-disable).
-  - Alert-to-action ratios are tracked for clinician-facing alerts.
-
-## 7. Data Lineage Tracking (GOV-07)
-
-- Every data source feeding into an AI model must have a lineage record conforming to `templates/data/config/data_lineage_schema.json`.
-- When creating or modifying data pipelines:
-  - Document every transformation step with input/output hashes.
-  - Record PHI handling at each step.
-  - Link data sources to consuming models in the Model Risk Register.
-  - Document consent basis and retention policy.
-- Reference: `templates/data/AGENTS.md` (Data Lineage Tracking section).
-
-## 8. Vendor Accountability (GOV-08)
-
-- When integrating any third-party AI model, API, or service:
-  - Ensure a vendor contract exists with terms from `templates/docs-standards/vendor-ai-accountability-terms.md`.
-  - Record the contract reference in the Model Risk Register (`vendor_contract_ref` field).
-  - Verify the vendor provides: model documentation, performance benchmarks, known limitations, and change notification.
-- Never integrate a vendor AI model without a signed accountability agreement.
-
-## 9. Incident Response (GOV-09)
-
-- When encountering AI model failures, anomalous behavior, or suspected patient impact:
-  - Follow the AI Incident Response Protocol (`templates/ai-ml/skills/ai-incident-response/SKILL.md`).
-  - Classify severity: AI-Sev1 (patient harm), AI-Sev2 (potential harm/threshold breach), AI-Sev3 (degraded accuracy).
-  - Quarantined models may NOT be re-enabled without full re-validation (GOV-02) and governance board approval (Sev1).
-- When building AI features, always implement a model quarantine mechanism and fallback.
-
-## 10. Cross-Functional Oversight (GOV-10)
-
-- New clinical AI deployments require AI Governance Board approval.
-- Critical-risk model deployments require governance board chair sign-off.
-- Reference: `docs/AI_GOVERNANCE_BOARD.md` for board composition, authority, and escalation paths.
-- Any team member may escalate AI concerns to the governance board at any time.
-
-## Quick Reference
-
-| When you are... | Check these controls |
-|-----------------|---------------------|
-| Creating a new AI model | GOV-01 (register), GOV-02 (validate), GOV-03 (bias test), GOV-05 (explainability) |
-| Modifying a production model | GOV-02 (re-validate), GOV-03 (re-test bias), GOV-06 (update monitoring) |
-| Building clinician-facing AI features | GOV-04 (override pathway), GOV-05 (explainability), GOV-06 (alert fatigue) |
-| Integrating a vendor AI | GOV-01 (register), GOV-08 (vendor terms), GOV-02 (validate) |
-| Creating a data pipeline for AI | GOV-07 (lineage tracking) |
-| Responding to an AI incident | GOV-09 (incident response), GOV-10 (escalation) |
-| Deploying to production | GOV-02 (full pipeline), GOV-10 (board approval if clinical) |
+# AI Governance Controls
+Enforce GOV-01 through GOV-10 at development time.
+- GOV-01: Verify model is registered in Model Risk Register before deployment
+- GOV-02: All AI model changes must pass pre-deployment validation pipeline
+- GOV-03: Bias testing required for models affecting patient care
+- GOV-04: Human override pathway required for all clinician-facing AI
+- GOV-05: Explainability fields proportional to model risk class
+- GOV-06: Heartbeat monitoring for accuracy drift and alert fatigue
+- GOV-07: Data lineage tracking for all AI data sources
+- GOV-08: Vendor accountability terms for third-party AI
+- GOV-09: AI incident response protocol for failures
+- GOV-10: AI Governance Board approval for clinical deployments

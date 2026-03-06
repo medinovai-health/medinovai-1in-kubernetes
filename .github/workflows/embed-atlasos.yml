@@ -17,6 +17,7 @@ on:
 jobs:
   embed:
     runs-on: self-hosted
+    environment: production
     steps:
       - uses: actions/checkout@v4
 
