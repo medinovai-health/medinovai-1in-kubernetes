@@ -25,6 +25,10 @@ const CLIENT_ID     = process.env.KEYCLOAK_CLIENT_ID   ?? 'medinovaios';
 const CLIENT_SECRET = process.env.KEYCLOAK_CLIENT_SECRET ?? '';
 const REDIRECT_URI  = process.env.KEYCLOAK_REDIRECT_URI ?? 'http://localhost:3030/api/sso/callback';
 const JWKS_URI      = process.env.KEYCLOAK_JWKS_URI     ?? `${KC_URL}/realms/${KC_REALM}/protocol/openid-connect/certs`;
+const FORCE_SECURE_COOKIE = process.env.SSO_COOKIE_SECURE;
+const IS_LOCAL_HTTP =
+  KC_PUBLIC_URL.startsWith('http://localhost') ||
+  REDIRECT_URI.startsWith('http://localhost');
 
 const TOKEN_ENDPOINT  = `${KC_URL}/realms/${KC_REALM}/protocol/openid-connect/token`;
 const AUTH_ENDPOINT   = `${KC_PUBLIC_URL}/realms/${KC_REALM}/protocol/openid-connect/auth`;
@@ -38,7 +42,10 @@ const COOKIE_STATE    = 'kc_state';
 // Cookie options — httpOnly prevents XSS token theft
 const COOKIE_OPTS = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
+  // Local development uses http://localhost, so secure cookies would be dropped.
+  secure: FORCE_SECURE_COOKIE
+    ? FORCE_SECURE_COOKIE === 'true'
+    : process.env.NODE_ENV === 'production' && !IS_LOCAL_HTTP,
   sameSite: 'lax' as const,
   path: '/',
 };
