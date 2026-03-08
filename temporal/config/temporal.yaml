@@ -1,0 +1,84 @@
+# MedinovAI Temporal Workflow Engine Configuration
+# Document ID: INFRA-TEMPORAL-001
+# Date: 2026-02-23
+# Status: Active — Sprint 0 POC
+#
+# Temporal is the HIPAA-compliant workflow orchestration engine for MedinovAI.
+# It replaces all custom schedulers and n8n — this is a hard architecture decision.
+#
+# Production namespace uses Temporal Cloud with mTLS.
+# Local development uses Temporal Server (Docker).
+
+temporal:
+  # Target environment: local | staging | production
+  environment: local
+
+  # Temporal Cloud settings (HIPAA-compliant namespace)
+  # Fill in production values via environment variables — never hardcode
+  cloud:
+    namespace: "${TEMPORAL_NAMESPACE}"          # e.g., medinovai-prod.abc123
+    address: "${TEMPORAL_HOST_URL}"             # e.g., medinovai-prod.abc123.tmprl.cloud:7233
+    tls:
+      enabled: true
+      client_cert_path: "${TEMPORAL_TLS_CERT}"  # Path to mTLS client cert
+      client_key_path: "${TEMPORAL_TLS_KEY}"    # Path to mTLS client key
+      server_name: "${TEMPORAL_NAMESPACE}"
+
+  # Local development settings (Docker Temporal server)
+  local:
+    address: "localhost:7233"
+    namespace: "default"
+    tls:
+      enabled: false
+
+  # Task queues — one per workflow type
+  task_queues:
+    partner_onboarding: "medinovai-partner-onboarding"
+    cohort_study_evidence: "medinovai-cohort-study"
+    model_lifecycle: "medinovai-model-lifecycle"
+    incident_response: "medinovai-incident-response"
+    data_refresh: "medinovai-data-refresh"
+    consent_cascade: "medinovai-consent-cascade"
+    hello_world: "medinovai-hello-world"    # Sprint 0 POC
+
+  # Worker settings
+  workers:
+    max_concurrent_workflow_tasks: 10
+    max_concurrent_activity_tasks: 20
+    max_concurrent_local_activities: 5
+
+  # Workflow defaults
+  workflow_defaults:
+    execution_timeout: "24h"
+    run_timeout: "24h"
+    task_timeout: "10s"
+    retry_policy:
+      initial_interval: "1s"
+      backoff_coefficient: 2.0
+      max_interval: "100s"
+      max_attempts: 3
+
+  # Activity defaults
+  activity_defaults:
+    start_to_close_timeout: "5m"
+    schedule_to_close_timeout: "30m"
+    retry_policy:
+      initial_interval: "1s"
+      backoff_coefficient: 2.0
+      max_interval: "30s"
+      max_attempts: 5
+
+# HIPAA compliance settings for Temporal
+compliance:
+  # Workflow payloads must never contain PHI
+  phi_in_payloads: forbidden
+  # All workflow IDs logged to Evidence Store on completion
+  evidence_store_logging: true
+  # Correlation ID required in all workflow inputs for 21 CFR Part 11 traceability
+  correlation_id_required: true
+  # Data encryption at rest and in transit
+  encryption:
+    at_rest: true   # Temporal Cloud encrypts at rest
+    in_transit: true  # mTLS enforced for all connections
+  # Audit trail: every workflow start/complete/fail logged
+  audit_trail: true
