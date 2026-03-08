@@ -40,13 +40,30 @@ if ! "$DOCKER_BIN" info >/dev/null 2>&1; then
 fi
 log "Docker is ready."
 
-# ── 3. Start CEO stack ────────────────────────────────────────────────────────
-ATLASOS_PATH="${ATLASOS_PATH:-/Users/mayanktrivedi/Github/medinovai-health/medinovai-Atlas}"
+# ── 3. Load credentials from AtlasOS .env ─────────────────────────────────────
+ATLASOS_PATH="${ATLASOS_PATH:-/Users/mayanktrivedi/Github/medinovai-health/AtlasOS}"
+ATLASOS_ENV_FILE="${ATLASOS_ENV_FILE:-$ATLASOS_PATH/.env}"
+
+if [ -f "$ATLASOS_ENV_FILE" ]; then
+  log "Loading credentials from $ATLASOS_ENV_FILE"
+  # Export all non-comment, non-empty lines as env vars
+  set -a
+  # shellcheck disable=SC1090
+  source "$ATLASOS_ENV_FILE"
+  set +a
+else
+  log "WARNING: $ATLASOS_ENV_FILE not found — WhatsApp and AI credentials may be missing"
+fi
+
+# ── 4. Start CEO stack ────────────────────────────────────────────────────────
 log "Starting CEO stack... (ATLASOS_PATH=$ATLASOS_PATH)"
 
+export ATLASOS_PATH
+export AIFACTORY_ENDPOINT="${AIFACTORY_ENDPOINT:-http://host.docker.internal:8300}"
+export OLLAMA_HOST="${OLLAMA_HOST:-http://host.docker.internal:11434}"
+
 # Note: no -p flag → project name defaults to "docker" (directory name)
-# This matches the project name the containers were originally created with
-ATLASOS_PATH="$ATLASOS_PATH" "$DOCKER_BIN" compose -f "$CEO_COMPOSE" \
+"$DOCKER_BIN" compose -f "$CEO_COMPOSE" \
   up -d --no-recreate 2>&1 || \
   log "WARNING: compose up exited non-zero (some containers may already be running — this is OK)"
 
@@ -56,16 +73,15 @@ if "$DOCKER_BIN" ps --filter "name=ceo-atlas-gateway" --format "{{.Status}}" | g
   log "ceo-atlas-gateway is running. WhatsApp webhook live on port 18789 (Tailscale Funnel active)."
 else
   log "WARNING: ceo-atlas-gateway did not start. Attempting targeted start..."
-  ATLASOS_PATH="$ATLASOS_PATH" "$DOCKER_BIN" compose -f "$CEO_COMPOSE" \
+  "$DOCKER_BIN" compose -f "$CEO_COMPOSE" \
     up -d atlas-gateway 2>&1 || true
 fi
 
-# ── 4. Keep running (launchd KeepAlive monitors this process) ─────────────────
+# ── 5. Keep running (launchd KeepAlive monitors this process) ─────────────────
 log "CEO stack is running. Monitoring every 60s..."
 while true; do
   sleep 60
   # Health pulse - restart any stopped containers without rebuilding
-  ATLASOS_PATH="${ATLASOS_PATH:-/Users/mayanktrivedi/Github/medinovai-health/medinovai-Atlas}" \
-    "$DOCKER_BIN" compose -f "$CEO_COMPOSE" \
+  "$DOCKER_BIN" compose -f "$CEO_COMPOSE" \
     up -d --no-recreate 2>/dev/null || true
 done
