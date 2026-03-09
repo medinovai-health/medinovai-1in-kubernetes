@@ -11,8 +11,15 @@ ENGINE="${ATLASOS_DIR}/packages/engine/medinovai-engine.mjs"
 NODE='/opt/homebrew/bin/node'
 STATE_DIR="${ATLASOS_STATE_DIR:-${HOME}/.atlas}"
 LOG_TAG='[atlas-engine]'
+NATIVE_GATEWAY_MODE="${ATLASOS_NATIVE_GATEWAY_MODE:-disabled}"
 
 log() { echo "$(date '+%Y-%m-%dT%H:%M:%S') $LOG_TAG $*"; }
+
+if [[ "$NATIVE_GATEWAY_MODE" != "manual" ]]; then
+    log "Native gateway disabled. Production traffic belongs to ceo-atlas-gateway (Docker)."
+    log "Set ATLASOS_NATIVE_GATEWAY_MODE=manual only for break-glass diagnostics."
+    exit 0
+fi
 
 # ── 1. Source credentials ─────────────────────────────────────────────────────
 set -a

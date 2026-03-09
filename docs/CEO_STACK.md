@@ -72,9 +72,19 @@ make ceo-audit-verify
 5. **Add integrations**: Enter credentials for each system in the Settings page. They are stored in Vault.
 6. **Test connections**: Use "Test Connection" on each integration card.
 
+## Gateway Runtime Source Of Truth
+
+- `ceo-atlas-gateway` is the production owner of port `18789`.
+- The gateway container bind-mounts the live host runtime from `~/.atlas`.
+- `ATLASOS_CONFIG_PATH` resolves to `~/.atlas/atlasos.json` inside the container.
+- `ATLASOS_STATE_DIR` resolves to `~/.atlas/` inside the container.
+- The native `com.medinovai.atlas-engine` LaunchAgent is diagnostic-only and should remain disabled in production.
+
 ## Configuration
 
-All configuration is done through the Atlas Command UI at `/settings`. No `.env` files are used for application secrets.
+All configuration is done through the Atlas Command UI at `/settings` or through the live
+runtime under `~/.atlas` for break-glass recovery. No application secrets should be
+committed to the repo.
 
 Environment variables for Docker orchestration only:
 
@@ -84,6 +94,8 @@ Environment variables for Docker orchestration only:
 | `ATLAS_COMMAND_PORT` | 3000 | Command Center port |
 | `ATLAS_UI_PORT` | 3737 | Atlas UI port |
 | `ATLAS_GATEWAY_PORT` | 18789 | Gateway port |
+| `ATLAS_GATEWAY_UID` | 0 | Container user ID for writing mounted `~/.atlas` state |
+| `ATLAS_GATEWAY_GID` | 0 | Container group ID for writing mounted `~/.atlas` state |
 | `AUDIT_PORT` | 8084 | Audit service port |
 | `AIFACTORY_ENDPOINT` | http://host.docker.internal:5000 | AIFactory endpoint |
 | `OLLAMA_HOST` | http://host.docker.internal:11434 | Ollama endpoint |

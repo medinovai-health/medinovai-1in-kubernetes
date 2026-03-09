@@ -47,29 +47,41 @@ if echo "$DOCTOR_OUT" | grep -qi "config validation failed\|Invalid config"; the
 fi
 log "  ✓ atlasos.json is valid"
 
-# ── 3. Check port 18789 is owned by AtlasOS (not Docker) ─────────────────────
+# ── 3. Check port 18789 is owned by the Docker gateway ────────────────────────
 log "Step 3/4: Checking port 18789 ownership..."
 PORT_OWNER=$(lsof -iTCP:18789 -sTCP:LISTEN -nP 2>/dev/null | grep LISTEN | awk '{print $1}' | head -1)
 if [[ "$PORT_OWNER" == "com.docke" ]]; then
-  warn "Port 18789 is bound by Docker — this will break WhatsApp."
-  warn "Check docker-compose.ceo.yml for '18789:' mapping and remove it."
-  fail "Port conflict detected — WhatsApp will be down after upgrade."
+  log "  ✓ Port 18789 owned by Docker gateway"
 elif [[ "$PORT_OWNER" == "node" ]]; then
-  log "  ✓ Port 18789 owned by AtlasOS gateway (node process)"
+  warn "Port 18789 is still bound by the legacy native gateway."
+  warn "Disable the native LaunchAgent and restart the CEO Docker gateway."
+  fail "Legacy gateway ownership detected — Telegram/WhatsApp may drift."
 elif [[ -z "$PORT_OWNER" ]]; then
   warn "Port 18789 is not listening — AtlasOS gateway may be down."
-  warn "Run: launchctl load ~/Library/LaunchAgents/ai.atlasos.gateway.plist"
-  # Non-fatal: gateway might just not be started yet
+  warn "Run: make ceo-stack && make gateway-restart"
+  fail "Gateway is not listening on 18789."
 fi
 
 # ── 4. Warn about known risky files ───────────────────────────────────────────
 log "Step 4/4: Checking for config drift risks..."
 RISKY=0
 
-# Check docker-compose.ceo.yml doesn't have 18789 mapped
+# Check docker-compose.ceo.yml keeps 18789 mapped to the gateway
 CEO_COMPOSE="$(dirname "$(dirname "$SCRIPT_DIR")")/infra/docker/docker-compose.ceo.yml"
-if grep -q '"18789:' "$CEO_COMPOSE" 2>/dev/null; then
-  warn "docker-compose.ceo.yml still has 18789 port mapping — REMOVE IT"
+if ! grep -q '"18789:' "$CEO_COMPOSE" 2>/dev/null; then
+  warn "docker-compose.ceo.yml is missing the 18789 gateway port mapping"
+  RISKY=1
+fi
+
+# Check docker-compose.ceo.yml mounts the live ~/.atlas runtime
+if ! grep -q '\${HOME}/.atlas:/data/.atlas' "$CEO_COMPOSE" 2>/dev/null; then
+  warn "docker-compose.ceo.yml is not mounting ~/.atlas into the gateway"
+  RISKY=1
+fi
+
+# Check docker-compose.ceo.yml passes Telegram credentials through
+if ! grep -q 'TELEGRAM_BOT_TOKEN' "$CEO_COMPOSE" 2>/dev/null; then
+  warn "docker-compose.ceo.yml is not passing TELEGRAM_BOT_TOKEN to the gateway"
   RISKY=1
 fi
 

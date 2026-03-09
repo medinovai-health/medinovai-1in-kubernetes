@@ -4,10 +4,10 @@
 <!--
   LaunchAgent: com.medinovai.atlas-engine
   ─────────────────────────────────────────────────────────────────────────────
-  Runs the AtlasOS engine natively on the Mac Studio.
-  Handles: WhatsApp (Web socket session), Mattermost, voice, agent heartbeats.
-  Reads config from: ~/.atlas/atlasos.json
-  State dir: ~/.atlas/
+  Legacy native AtlasOS gateway runner.
+  Production channel traffic now belongs to the Dockerized ceo-atlas-gateway,
+  which bind-mounts ~/.atlas and owns port 18789.
+  This LaunchAgent is retained for manual diagnostics only.
 
   IMPORTANT: Run as the user (LaunchAgent, not LaunchDaemon).
   The engine needs the user's WhatsApp Web session and home directory.
@@ -29,18 +29,13 @@
     <string>/Users/mayanktrivedi/Github/medinovai-health/medinovai-Deploy/infra/launchd/run-atlas-engine.sh</string>
   </array>
 
-  <!-- Start automatically when user session begins -->
+  <!-- Diagnostic-only: do not start automatically in production -->
   <key>RunAtLoad</key>
-  <true/>
+  <false/>
 
-  <!-- Restart on crash (not on clean exit) -->
+  <!-- Diagnostic-only: do not restart automatically -->
   <key>KeepAlive</key>
-  <dict>
-    <key>SuccessfulExit</key>
-    <false/>
-    <key>Crashed</key>
-    <true/>
-  </dict>
+  <false/>
 
   <!-- 60s backoff to prevent rapid restart loops -->
   <key>ThrottleInterval</key>
@@ -64,7 +59,10 @@
     <!-- AtlasOS reads config and session state from ~/.atlas/ -->
     <key>ATLASOS_STATE_DIR</key>
     <string>/Users/mayanktrivedi/.atlas</string>
-    <!-- Gateway port must match Tailscale Funnel target AND atlasos.json gateway.port -->
+    <!-- Native gateway is manual/diagnostic only. -->
+    <key>ATLASOS_NATIVE_GATEWAY_MODE</key>
+    <string>disabled</string>
+    <!-- Gateway port retained for manual recovery if Docker gateway is offline. -->
     <key>ATLASOS_GATEWAY_PORT</key>
     <string>18789</string>
     <!-- Disable node compile cache to avoid stale build issues -->

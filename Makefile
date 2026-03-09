@@ -413,24 +413,25 @@ config-list-backups: ## [CONFIG] List all available config backups
 pre-upgrade: ## [UPGRADE] Run safety check + backup before any system upgrade
 	@bash infra/scripts/pre-upgrade-check.sh
 
-gateway-restart: ## [OPENCLAW] Restart the native AtlasOS gateway (port 18789 / WhatsApp)
-	@echo "Restarting AtlasOS gateway..."
-	@launchctl unload ~/Library/LaunchAgents/ai.atlasos.gateway.plist 2>/dev/null || true
-	@sleep 2
-	@launchctl load ~/Library/LaunchAgents/ai.atlasos.gateway.plist
-	@echo "Gateway reloaded. Waiting 8s for WhatsApp connect..."
+gateway-restart: ## [OPENCLAW] Restart the Docker AtlasOS gateway (port 18789 / WhatsApp / Telegram)
+	@echo "Restarting Docker AtlasOS gateway..."
+	@ATLASOS_PATH=$(ATLASOS_PATH) docker compose -f $(CEO_COMPOSE) restart atlas-gateway
+	@echo "Gateway restarted. Waiting 8s for channel reconnect..."
 	@sleep 8
 	@lsof -iTCP:18789 -sTCP:LISTEN -nP 2>/dev/null | grep LISTEN || echo "WARNING: port 18789 not listening"
 
-gateway-status: ## [OPENCLAW] Check AtlasOS gateway + WhatsApp status
+gateway-status: ## [OPENCLAW] Check Docker AtlasOS gateway + channel status
 	@echo "=== Port 18789 owner ==="
 	@lsof -iTCP:18789 -sTCP:LISTEN -nP 2>/dev/null | grep LISTEN || echo "Nothing on 18789"
 	@echo ""
+	@echo "=== Docker gateway status ==="
+	@ATLASOS_PATH=$(ATLASOS_PATH) docker compose -f $(CEO_COMPOSE) ps atlas-gateway 2>/dev/null || echo "Gateway container not running"
+	@echo ""
 	@echo "=== Gateway response ==="
-	@curl -sf http://localhost:18789/ | head -c 200 2>&1 || echo "No response"
+	@curl -sf http://localhost:18789/health | head -c 200 2>&1 || echo "No response"
 	@echo ""
 	@echo "=== Last 10 gateway log lines ==="
-	@tail -10 ~/.atlas/logs/gateway.log 2>/dev/null || echo "No log found"
+	@ATLASOS_PATH=$(ATLASOS_PATH) docker compose -f $(CEO_COMPOSE) logs --tail=10 atlas-gateway 2>/dev/null || echo "No log found"
 
 # ─── 4-Environment Management ────────────────────────────────────────────────
 # Canonical environment management for all MedinovAI environments.
