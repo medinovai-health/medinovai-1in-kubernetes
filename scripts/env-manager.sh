@@ -36,6 +36,26 @@ ALL_LAYERS=(
 
 VALID_ENVS="dev qa staging prod"
 
+resolve_env_file() {
+  local env="$1"
+  local repo_env="$ENVS_DIR/${env}.env"
+  if [[ -f "$repo_env" ]]; then
+    printf '%s\n' "$repo_env"
+    return 0
+  fi
+  if [[ "$env" == "prod" && -f "/etc/atlasos/prod.env" ]]; then
+    printf '%s\n' "/etc/atlasos/prod.env"
+    return 0
+  fi
+  return 1
+}
+
+env_value() {
+  local env_file="$1"
+  local key="$2"
+  grep "^${key}=" "$env_file" | cut -d= -f2- | head -n 1
+}
+
 usage() {
   cat <<EOF
 MedinovAI Environment Manager
@@ -66,7 +86,20 @@ validate_env() {
 compose_cmd() {
   local env="$1"
   shift
-  local layers=("$@")
+  local env_file
+  env_file="$(resolve_env_file "$env")" || {
+    echo "ERROR: Missing env file for '$env'. Expected $ENVS_DIR/${env}.env"
+    if [[ "$env" == "prod" ]]; then
+      echo "       or /etc/atlasos/prod.env"
+    fi
+    exit 1
+  }
+  local layers=()
+  while [[ "$#" -gt 0 && "$1" == /* ]]; do
+    layers+=("$1")
+    shift
+  done
+  local compose_args=("$@")
 
   local -a file_args=()
   for layer in "${layers[@]}"; do
@@ -78,9 +111,10 @@ compose_cmd() {
   docker compose \
     "${file_args[@]}" \
     --env-file "$ENVS_DIR/base.env" \
-    --env-file "$ENVS_DIR/${env}.env" \
+    --env-file "$env_file" \
     -p "atlasos-${env}" \
-    --project-directory "$REPO_ROOT"
+    --project-directory "$REPO_ROOT" \
+    "${compose_args[@]}"
 }
 
 cmd_start() {
@@ -102,9 +136,11 @@ cmd_start() {
 
   echo ""
   echo "Environment '$env' started."
-  echo "  Keycloak:  http://localhost:$(grep KEYCLOAK_PORT "$ENVS_DIR/${env}.env" | cut -d= -f2)"
-  echo "  Grafana:   http://localhost:$(grep GRAFANA_PORT "$ENVS_DIR/${env}.env" | cut -d= -f2 || echo 'N/A')"
-  echo "  Event Bus: http://localhost:$(grep EVENT_BUS_PORT "$ENVS_DIR/${env}.env" | cut -d= -f2)"
+  local env_file
+  env_file="$(resolve_env_file "$env")"
+  echo "  Keycloak:  http://localhost:$(env_value "$env_file" KEYCLOAK_PORT)"
+  echo "  Grafana:   http://localhost:$(env_value "$env_file" GRAFANA_PORT || echo 'N/A')"
+  echo "  Event Bus: http://localhost:$(env_value "$env_file" EVENT_BUS_PORT)"
 }
 
 cmd_activate() {
@@ -137,10 +173,11 @@ cmd_status() {
     local count
     count=$(docker compose -p "$project" ps -q 2>/dev/null | wc -l | tr -d ' ')
     if [[ "$count" -gt 0 ]]; then
-      local env_file="$ENVS_DIR/${env}.env"
+      local env_file
+      env_file="$(resolve_env_file "$env" 2>/dev/null || true)"
       local ooda_port=""
-      if [[ -f "$env_file" ]]; then
-        ooda_port=$(grep '^OODA_BRAIN_PORT=' "$env_file" | cut -d= -f2)
+      if [[ -n "$env_file" && -f "$env_file" ]]; then
+        ooda_port=$(env_value "$env_file" OODA_BRAIN_PORT)
       fi
       if [[ -n "$ooda_port" ]] && curl -sf "http://127.0.0.1:${ooda_port}/health" >/dev/null 2>&1; then
         echo "  $env: $count containers running, health probes passing"
@@ -165,7 +202,7 @@ cmd_bootstrap() {
 
   if [[ -f "$SECURITY_SERVICE_ROOT/scripts/bootstrap_environment.py" ]]; then
     local kc_port
-    kc_port=$(grep KEYCLOAK_PORT "$ENVS_DIR/${env}.env" | cut -d= -f2)
+    kc_port=$(env_value "$(resolve_env_file "$env")" KEYCLOAK_PORT)
     echo "  Running Keycloak bootstrap for $env..."
     python3 "$SECURITY_SERVICE_ROOT/scripts/bootstrap_environment.py" \
       --env "$env" \
