@@ -318,6 +318,7 @@ services:
       # Local-first LLM fleet (Mac Studio GPU gateway on host)
       AIFACTORY_ENDPOINT: ${AIFACTORY_ENDPOINT:-http://host.docker.internal:8300}
       OLLAMA_HOST: http://host.docker.internal:11434
+      OLLAMA_API_KEY: "ollama-local"
       CHROMADB_URL: http://chromadb:8000
       # AtlasOS support services
       REDIS_URL: redis://redis:6379
