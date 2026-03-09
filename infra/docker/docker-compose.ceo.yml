@@ -331,6 +331,11 @@ services:
     volumes:
       - atlas-data:/data
       - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ${ATLASOS_PATH:-../../repos/AtlasOS}/config/atlasos.json5:/app/config/atlasos.json5:ro
+      - ${HOME}/.atlas/workspace-ops:/home/appuser/.atlas/workspace-ops:ro
+      - ${ATLASOS_PATH:-../../repos/AtlasOS}/scripts:/app/scripts:ro
+      - ${ATLASOS_PATH:-../../repos/AtlasOS}/docs:/app/docs:ro
+      - ${ATLASOS_PATH:-../../repos/AtlasOS}/skills:/app/skills:ro
     depends_on:
       vault:
         condition: service_healthy
