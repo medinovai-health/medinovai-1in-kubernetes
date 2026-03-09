@@ -19,6 +19,7 @@ COMPOSE_DIR="$REPO_ROOT/infra/docker/compose"
 ENVS_DIR="$REPO_ROOT/envs"
 ATLASOS_ROOT="${ATLASOS_ROOT:-$REPO_ROOT/../AtlasOS}"
 SECURITY_SERVICE_ROOT="${SECURITY_SERVICE_ROOT:-$REPO_ROOT/../medinovai-security-service}"
+RUNTIME_SYNC_SCRIPT="$REPO_ROOT/scripts/sync-atlas-runtime.sh"
 
 CORE_LAYERS=(
   "$COMPOSE_DIR/docker-compose.base.yml"
@@ -41,10 +42,12 @@ MedinovAI Environment Manager
 
 Usage:
   $0 start <env> [--all|--core]    Start an environment
+  $0 activate <env> [--all|--core] Start an environment and sync ~/.atlas
   $0 stop <env>                     Stop an environment
   $0 status                         Show all running environments
   $0 bootstrap <env>                Bootstrap Keycloak + DB for an environment
   $0 promote <from> <to>            Promote changes between environments
+  $0 verify <env>                   Verify live runtime drift + local-first policy
   $0 logs <env> [service]           Tail logs for an environment
 
 Environments: dev, qa, staging, prod
@@ -104,6 +107,19 @@ cmd_start() {
   echo "  Event Bus: http://localhost:$(grep EVENT_BUS_PORT "$ENVS_DIR/${env}.env" | cut -d= -f2)"
 }
 
+cmd_activate() {
+  local env="$1"
+  local mode="${2:---core}"
+  cmd_start "$env" "$mode"
+  if [[ -x "$RUNTIME_SYNC_SCRIPT" ]]; then
+    echo ""
+    echo "Syncing authoritative runtime into ~/.atlas..."
+    ATLASOS_ROOT="$ATLASOS_ROOT" DEPLOY_ROOT="$REPO_ROOT" "$RUNTIME_SYNC_SCRIPT" "$env"
+  else
+    echo "WARNING: $RUNTIME_SYNC_SCRIPT not found or not executable"
+  fi
+}
+
 cmd_stop() {
   local env="$1"
   validate_env "$env"
@@ -121,7 +137,16 @@ cmd_status() {
     local count
     count=$(docker compose -p "$project" ps -q 2>/dev/null | wc -l | tr -d ' ')
     if [[ "$count" -gt 0 ]]; then
-      echo "  $env: $count containers running"
+      local env_file="$ENVS_DIR/${env}.env"
+      local ooda_port=""
+      if [[ -f "$env_file" ]]; then
+        ooda_port=$(grep '^OODA_BRAIN_PORT=' "$env_file" | cut -d= -f2)
+      fi
+      if [[ -n "$ooda_port" ]] && curl -sf "http://127.0.0.1:${ooda_port}/health" >/dev/null 2>&1; then
+        echo "  $env: $count containers running, health probes passing"
+      else
+        echo "  $env: $count containers running, health probes degraded"
+      fi
     else
       echo "  $env: not running"
     fi
@@ -185,12 +210,21 @@ cmd_logs() {
   fi
 }
 
+cmd_verify() {
+  local env="$1"
+  validate_env "$env"
+  ATLASOS_ROOT="$ATLASOS_ROOT" DEPLOY_ROOT="$REPO_ROOT" python3 "$ATLASOS_ROOT/scripts/write_runtime_status.py" --fail-on-drift
+  echo "Runtime verification passed for $env."
+}
+
 case "${1:-}" in
   start)     cmd_start "${2:?env required}" "${3:---core}" ;;
+  activate)  cmd_activate "${2:?env required}" "${3:---core}" ;;
   stop)      cmd_stop "${2:?env required}" ;;
   status)    cmd_status ;;
   bootstrap) cmd_bootstrap "${2:?env required}" ;;
   promote)   cmd_promote "${2:?from env required}" "${3:?to env required}" ;;
   logs)      cmd_logs "${2:?env required}" "${3:-}" ;;
+  verify)    cmd_verify "${2:?env required}" ;;
   *)         usage ;;
 esac
