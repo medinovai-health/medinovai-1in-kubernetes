@@ -5,6 +5,8 @@
 # Self-corrects config problems before starting. Never stops responding.
 # ─────────────────────────────────────────────────────────────────────────────
 ATLASOS_DIR='/Users/mayanktrivedi/Github/medinovai-health/AtlasOS'
+DEPLOY_ROOT='/Users/mayanktrivedi/Github/medinovai-health/medinovai-Deploy'
+SYNC_SCRIPT="${DEPLOY_ROOT}/scripts/sync-atlas-runtime.sh"
 ENGINE="${ATLASOS_DIR}/packages/engine/medinovai-engine.mjs"
 NODE='/opt/homebrew/bin/node'
 STATE_DIR="${ATLASOS_STATE_DIR:-${HOME}/.atlas}"
@@ -30,7 +32,7 @@ set +a
 
 # Read primary model from runtime config (ground truth)
 _PRIMARY_MODEL=$("$NODE" -e "try{const c=JSON.parse(require('fs').readFileSync('${STATE_DIR}/atlasos.json','utf8'));const m=c.agents?.defaults?.model;console.log(typeof m==='string'?m:m?.primary||'unknown')}catch(e){console.log('unknown')}" 2>/dev/null || echo 'unknown')
-log "Model routing: Primary (${_PRIMARY_MODEL}) → Anthropic ($([ -n "$ANTHROPIC_API_KEY" ] && echo 'key SET' || echo 'key empty')) → Embedded (smollm2:360m)"
+log "Model routing: Primary (${_PRIMARY_MODEL}) → local fallbacks → cloud escalation only"
 
 # ── 1b. Ensure Ollama is running (local-first model provider) ────────────────
 if ! curl -sf http://127.0.0.1:11434/ > /dev/null 2>&1; then
@@ -154,6 +156,12 @@ JSEOF
 # ── 3. Gateway startup loop (auto-recovers, never permanently stops) ──────────
 heal_config
 
+if [ -x "$SYNC_SCRIPT" ]; then
+    log "Syncing authoritative runtime before gateway start"
+    ATLASOS_ROOT="$ATLASOS_DIR" DEPLOY_ROOT="$DEPLOY_ROOT" ATLAS_HOME="$STATE_DIR" "$SYNC_SCRIPT" prod || \
+      log "WARNING: runtime sync failed; continuing with existing state"
+fi
+
 MAX_RETRIES=20
 attempt=0
 
@@ -180,6 +188,9 @@ while true; do
     # Non-zero exit — self-heal cycle
     log "Non-zero exit — healing config + waiting before retry..."
     heal_config
+    if [ -x "$SYNC_SCRIPT" ]; then
+        ATLASOS_ROOT="$ATLASOS_DIR" DEPLOY_ROOT="$DEPLOY_ROOT" ATLAS_HOME="$STATE_DIR" "$SYNC_SCRIPT" prod >/dev/null 2>&1 || true
+    fi
 
     # Re-source credentials in case they became available
     [ -f "${ATLASOS_DIR}/.env" ] && { set -a; source "${ATLASOS_DIR}/.env"; set +a; }
