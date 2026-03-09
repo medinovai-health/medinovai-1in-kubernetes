@@ -32,6 +32,7 @@ main() {
   log "Syncing workspace bootstrap files from $ATLASOS_ROOT/workspaces"
 
   while IFS= read -r workspace; do
+    [[ -d "$workspace" ]] || continue
     local_name="$(basename "$workspace")"
     sync_workspace "$workspace" "$local_name"
   done < <(printf '%s\n' "$ATLASOS_ROOT"/workspaces/*)
