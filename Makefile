@@ -432,6 +432,33 @@ gateway-status: ## [OPENCLAW] Check AtlasOS gateway + WhatsApp status
 	@echo "=== Last 10 gateway log lines ==="
 	@tail -10 ~/.atlas/logs/gateway.log 2>/dev/null || echo "No log found"
 
+# ─── 4-Environment Management ────────────────────────────────────────────────
+# Canonical environment management for all MedinovAI environments.
+# Replaces per-repo docker-compose and env files.
+# Docs: docs/FOUR_ENVIRONMENT_DEPLOYMENT.md
+
+.PHONY: env-start env-stop env-status env-bootstrap env-promote env-logs
+
+env-start: ## Start an environment: make env-start ENV=dev [LAYERS=all|core]
+	@$(SCRIPTS)/env-manager.sh start $(ENV) --$(or $(LAYERS),core)
+
+env-stop: ## Stop an environment: make env-stop ENV=dev
+	@$(SCRIPTS)/env-manager.sh stop $(ENV)
+
+env-status: ## Show status of all environments
+	@$(SCRIPTS)/env-manager.sh status
+
+env-bootstrap: ## Bootstrap Keycloak + DB: make env-bootstrap ENV=dev
+	@$(SCRIPTS)/env-manager.sh bootstrap $(ENV)
+
+env-promote: ## Promote between environments: make env-promote FROM=qa TO=staging
+	@$(SCRIPTS)/env-manager.sh promote $(FROM) $(TO)
+
+env-logs: ## Tail logs: make env-logs ENV=dev [SERVICE=keycloak]
+	@$(SCRIPTS)/env-manager.sh logs $(ENV) $(SERVICE)
+
+# ──────────────────────────────────────────────────────────────────────────────
+
 gateway-doctor: ## [OPENCLAW] Validate atlasos.json config (fix: make gateway-doctor FIX=1)
 	@if [[ "$(FIX)" == "1" ]]; then \
 	  ATLASOS_CONFIG_PATH=~/.atlas/atlasos.json OPENCLAW_CONFIG_PATH=~/.atlas/atlasos.json \
