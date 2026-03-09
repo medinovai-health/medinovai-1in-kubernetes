@@ -1,0 +1,262 @@
+# MedinovAI Platform — Agent Runtime Layer
+# Agent platform, brain, invocation gateway, entity lifecycle, memory,
+# skill engine, heartbeat, learning, tenancy, tools, sessions, cron.
+
+services:
+
+  agent-platform:
+    build:
+      context: ${ATLASOS_ROOT:-../../../AtlasOS}
+      dockerfile: services/agent-platform/Dockerfile
+    ports:
+      - "${AGENT_RUNTIME_PORT:-9200}:8200"
+    environment:
+      EVENT_BUS_URL: http://event-bus:8088
+      LLM_ENDPOINT: ${LLM_ENDPOINT:-http://aifactory-gateway:8300}
+      ATLASOS_LOCAL_MODEL: ${ATLASOS_LOCAL_MODEL:-qwen2.5:14b}
+      ATLASOS_PRIMARY_MODEL: ${ATLASOS_PRIMARY_MODEL:-qwen2.5:14b}
+      SKILL_ENGINE_URL: http://skill-engine:8090
+      MEMORY_SERVICE_URL: http://memory-service:8201
+      AUDIT_SERVICE_URL: http://audit-chain:8084
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: ${KEYCLOAK_REALM:-medinov-ai}
+      AUTH_ENABLED: ${AUTH_ENABLED:-true}
+    depends_on:
+      event-bus:
+        condition: service_healthy
+      skill-engine:
+        condition: service_healthy
+      memory-service:
+        condition: service_healthy
+      audit-chain:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8200/health')"]
+      interval: 10s
+      retries: 5
+    restart: unless-stopped
+
+  agent-brain:
+    build:
+      context: ${ATLASOS_ROOT:-../../../AtlasOS}
+      dockerfile: services/agent-brain/Dockerfile
+    ports:
+      - "${AGENT_BRAIN_PORT:-8290}:8290"
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-atlasos}:${DB_PASSWORD}@atlasos-db:5432/atlasos
+      PORT: "8290"
+      MEMORY_SERVICE_URL: http://memory-service:8201
+      LEARNING_ENGINE_URL: http://learning-engine:8206
+    depends_on:
+      atlasos-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8290/health')"]
+      interval: 10s
+      retries: 5
+    restart: unless-stopped
+
+  atlas-invocation-gateway:
+    build:
+      context: ${ATLASOS_ROOT:-../../../AtlasOS}
+      dockerfile: services/atlas-invocation-gateway/Dockerfile
+    ports:
+      - "${AIP_REST_PORT:-8285}:8285"
+      - "${AIP_GRPC_PORT:-50051}:50051"
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-atlasos}:${DB_PASSWORD}@atlasos-db:5432/atlasos
+      EVENT_BUS_URL: http://event-bus:8088
+      AGENT_RUNTIME_URL: http://agent-platform:8200
+      AGENT_BRAIN_URL: http://agent-brain:8290
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: ${KEYCLOAK_REALM:-medinov-ai}
+      RBAC_ENABLED: ${RBAC_ENABLED:-true}
+    depends_on:
+      atlasos-db:
+        condition: service_healthy
+      event-bus:
+        condition: service_healthy
+      agent-brain:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8285/health')"]
+      interval: 10s
+      retries: 5
+    restart: unless-stopped
+
+  entity-lifecycle-gateway:
+    build:
+      context: ${ATLASOS_ROOT:-../../../AtlasOS}
+      dockerfile: services/entity-lifecycle-gateway/Dockerfile
+    ports:
+      - "${ENTITY_LIFECYCLE_PORT:-8282}:8280"
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-atlasos}:${DB_PASSWORD}@atlasos-db:5432/atlasos
+      EVENT_BUS_URL: http://event-bus:8088
+      PORT: "8280"
+      ATLAS_ROOT: /app
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: ${KEYCLOAK_REALM:-medinov-ai}
+    depends_on:
+      atlasos-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8280/health')"]
+      interval: 10s
+      retries: 5
+    restart: unless-stopped
+
+  memory-service:
+    build:
+      context: ${ATLASOS_ROOT:-../../../AtlasOS}
+      dockerfile: services/memory-service/Dockerfile
+    ports:
+      - "${MEMORY_SERVICE_PORT:-8201}:8201"
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-atlasos}:${DB_PASSWORD}@atlasos-db:5432/atlasos
+      EVENT_BUS_URL: http://event-bus:8088
+      STORAGE_BACKEND: ${MEMORY_STORAGE_BACKEND:-postgresql}
+    depends_on:
+      atlasos-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8201/health')"]
+      interval: 10s
+      retries: 5
+    restart: unless-stopped
+
+  skill-engine:
+    build:
+      context: ${ATLASOS_ROOT:-../../../AtlasOS}
+      dockerfile: services/skill-engine/Dockerfile
+    ports:
+      - "${SKILL_ENGINE_PORT:-8083}:8090"
+    environment:
+      EVENT_BUS_URL: http://event-bus:8088
+      PORT: "8090"
+      AUDIT_SERVICE_URL: http://audit-chain:8084
+    depends_on:
+      event-bus:
+        condition: service_healthy
+      audit-chain:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8090/health')"]
+      interval: 10s
+      retries: 5
+    restart: unless-stopped
+
+  heartbeat-executor:
+    build:
+      context: ${ATLASOS_ROOT:-../../../AtlasOS}
+      dockerfile: services/heartbeat-executor/Dockerfile
+    ports:
+      - "${HEARTBEAT_EXECUTOR_PORT:-8205}:8205"
+    environment:
+      EVENT_BUS_URL: http://event-bus:8088
+      AGENT_RUNTIME_URL: http://agent-platform:8200
+    depends_on:
+      event-bus:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8205/health')"]
+      interval: 10s
+      retries: 5
+    restart: unless-stopped
+
+  learning-engine:
+    build:
+      context: ${ATLASOS_ROOT:-../../../AtlasOS}
+      dockerfile: services/learning-engine/Dockerfile
+    ports:
+      - "${LEARNING_ENGINE_PORT:-8206}:8206"
+    environment:
+      EVENT_BUS_URL: http://event-bus:8088
+    depends_on:
+      event-bus:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8206/health')"]
+      interval: 10s
+      retries: 5
+    restart: unless-stopped
+
+  tenancy-engine:
+    build:
+      context: ${ATLASOS_ROOT:-../../../AtlasOS}
+      dockerfile: services/tenancy-engine/Dockerfile
+    ports:
+      - "${TENANCY_ENGINE_PORT:-8204}:8204"
+    environment:
+      EVENT_BUS_URL: http://event-bus:8088
+    depends_on:
+      event-bus:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8204/health')"]
+      interval: 10s
+      retries: 5
+    restart: unless-stopped
+
+  tool-executor:
+    build:
+      context: ${ATLASOS_ROOT:-../../../AtlasOS}
+      dockerfile: services/tool-executor/Dockerfile
+    ports:
+      - "${TOOL_EXECUTOR_PORT:-8270}:8270"
+    environment:
+      PORT: "8270"
+      ATLAS_WORKSPACE_ROOT: /workspaces
+      SANDBOX_ENABLED: "true"
+    volumes:
+      - tool-state:/workspaces
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8270/health')"]
+      interval: 10s
+      retries: 5
+    restart: unless-stopped
+
+  session-bus:
+    build:
+      context: ${ATLASOS_ROOT:-../../../AtlasOS}
+      dockerfile: services/session-bus/Dockerfile
+    ports:
+      - "${SESSION_BUS_PORT:-8280}:8280"
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-atlasos}:${DB_PASSWORD}@atlasos-db:5432/atlasos
+      EVENT_BUS_URL: http://event-bus:8088
+      LLM_ENDPOINT: ${LLM_ENDPOINT:-http://aifactory-gateway:8300}
+      PORT: "8280"
+      AGENT_RUNTIME_URL: http://agent-platform:8200
+    depends_on:
+      atlasos-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8280/health')"]
+      interval: 10s
+      retries: 5
+    restart: unless-stopped
+
+  cron-engine:
+    build:
+      context: ${ATLASOS_ROOT:-../../../AtlasOS}
+      dockerfile: services/cron-engine/Dockerfile
+    ports:
+      - "${CRON_ENGINE_PORT:-8291}:8291"
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-atlasos}:${DB_PASSWORD}@atlasos-db:5432/atlasos
+      EVENT_BUS_URL: http://event-bus:8088
+      LLM_ENDPOINT: ${LLM_ENDPOINT:-http://aifactory-gateway:8300}
+      PORT: "8291"
+      AGENT_RUNTIME_URL: http://agent-platform:8200
+    depends_on:
+      atlasos-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8291/health')"]
+      interval: 10s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  tool-state:
