@@ -104,7 +104,7 @@ services:
     volumes:
       - vault-data:/vault/data
     healthcheck:
-      test: ["CMD", "vault", "status"]
+      test: ["CMD-SHELL", "VAULT_ADDR=http://127.0.0.1:8200 vault status >/dev/null"]
       interval: 10s
       retries: 5
     restart: unless-stopped
@@ -134,7 +134,7 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     healthcheck:
-      test: ["CMD", "traefik", "healthcheck", "--ping"]
+      test: ["CMD-SHELL", "wget -q -T 5 -O - http://127.0.0.1/ping >/dev/null 2>&1"]
       interval: 10s
       retries: 5
     restart: unless-stopped
