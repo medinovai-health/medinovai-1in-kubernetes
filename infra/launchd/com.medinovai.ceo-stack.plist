@@ -4,8 +4,9 @@
 <!--
   LaunchDaemon: com.medinovai.ceo-stack
   ─────────────────────────────────────────────────────────────────────────────
-  Starts the authoritative AtlasOS prod environment on every boot,
-  BEFORE any user logs in. Restarts automatically on crash.
+  Starts the authoritative AtlasOS prod environment and the Dockerized CEO
+  gateway stack on every boot, BEFORE any user logs in. Restarts automatically
+  on crash.
 
   Install (run once as root):
     sudo cp /Users/mayanktrivedi/Github/medinovai-health/medinovai-Deploy/infra/launchd/com.medinovai.ceo-stack.plist \
