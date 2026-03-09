@@ -1,0 +1,151 @@
+# MedinovAI Platform — AI/ML Layer
+# AIFactory gateway, Ollama, MCP gateway, self-learning, cognitive arch,
+# predictive analytics, multi-modal AI, self-healing watchdog.
+
+services:
+
+  ollama-embedded:
+    image: ollama/ollama:latest
+    ports:
+      - "${OLLAMA_EMBEDDED_PORT:-11435}:11434"
+    environment:
+      OLLAMA_MODELS: /root/.ollama/models
+      OLLAMA_NUM_PARALLEL: "4"
+      OLLAMA_MAX_LOADED_MODELS: "3"
+    volumes:
+      - ollama-embedded-data:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 15s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+  aifactory-gateway:
+    build:
+      context: ${ATLASOS_ROOT:-../../../AtlasOS}
+      dockerfile: services/aifactory-gateway/Dockerfile
+    ports:
+      - "${AIFACTORY_GATEWAY_PORT:-8300}:8300"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8300/health')"]
+      interval: 10s
+      retries: 5
+    restart: unless-stopped
+
+  mcp-gateway:
+    build:
+      context: ${ATLASOS_ROOT:-../../../AtlasOS}
+      dockerfile: services/mcp-gateway/Dockerfile
+    ports:
+      - "${MCP_GATEWAY_PORT:-8400}:8400"
+    environment:
+      LLM_ENDPOINT: ${LLM_ENDPOINT:-http://aifactory-gateway:8300}
+      ATLASOS_LOCAL_MODEL: ${ATLASOS_LOCAL_MODEL:-qwen2.5:14b}
+      MCP_TRANSPORT: sse
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8400/health')"]
+      interval: 10s
+      retries: 5
+    restart: unless-stopped
+
+  self-learning:
+    build:
+      context: ${ATLASOS_ROOT:-../../../AtlasOS}
+      dockerfile: services/self-learning/Dockerfile
+    ports:
+      - "${SELF_LEARNING_PORT:-8240}:8240"
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-atlasos}:${DB_PASSWORD}@atlasos-db:5432/atlasos
+      EVENT_BUS_URL: http://event-bus:8088
+      PORT: "8240"
+      STORAGE_BACKEND: postgresql
+    depends_on:
+      atlasos-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8240/health')"]
+      interval: 10s
+      retries: 5
+    restart: unless-stopped
+
+  self-healing-watchdog:
+    build:
+      context: ${ATLASOS_ROOT:-../../../AtlasOS}
+      dockerfile: services/self-healing-watchdog/Dockerfile
+    ports:
+      - "${SELF_HEALING_WATCHDOG_PORT:-8262}:8260"
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-atlasos}:${DB_PASSWORD}@atlasos-db:5432/atlasos
+      EVENT_BUS_URL: http://event-bus:8088
+      LLM_ENDPOINT: ${LLM_ENDPOINT:-http://aifactory-gateway:8300}
+    depends_on:
+      self-learning:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8260/health')"]
+      interval: 10s
+      retries: 5
+    restart: unless-stopped
+
+  cognitive-arch:
+    build:
+      context: ${ATLASOS_ROOT:-../../../AtlasOS}
+      dockerfile: services/cognitive-arch/Dockerfile
+    ports:
+      - "${COGNITIVE_ARCH_PORT:-8244}:8244"
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-atlasos}:${DB_PASSWORD}@atlasos-db:5432/atlasos
+      EVENT_BUS_URL: http://event-bus:8088
+      PORT: "8244"
+      STORAGE_BACKEND: postgresql
+    depends_on:
+      atlasos-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8244/health')"]
+      interval: 10s
+      retries: 5
+    restart: unless-stopped
+
+  predictive-analytics:
+    build:
+      context: ${ATLASOS_ROOT:-../../../AtlasOS}
+      dockerfile: services/predictive-analytics/Dockerfile
+    ports:
+      - "${PREDICTIVE_ANALYTICS_PORT:-8245}:8245"
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-atlasos}:${DB_PASSWORD}@atlasos-db:5432/atlasos
+      EVENT_BUS_URL: http://event-bus:8088
+      PORT: "8245"
+      STORAGE_BACKEND: postgresql
+    depends_on:
+      atlasos-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8245/health')"]
+      interval: 10s
+      retries: 5
+    restart: unless-stopped
+
+  multi-modal-ai:
+    build:
+      context: ${ATLASOS_ROOT:-../../../AtlasOS}
+      dockerfile: services/multi-modal-ai/Dockerfile
+    ports:
+      - "${MULTI_MODAL_AI_PORT:-8264}:8264"
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-atlasos}:${DB_PASSWORD}@atlasos-db:5432/atlasos
+      EVENT_BUS_URL: http://event-bus:8088
+      STORAGE_BACKEND: postgresql
+    depends_on:
+      atlasos-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8264/health')"]
+      interval: 10s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  ollama-embedded-data:
