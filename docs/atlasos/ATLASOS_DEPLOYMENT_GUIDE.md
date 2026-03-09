@@ -1,14 +1,23 @@
 # AtlasOS Full-Stack Deployment Guide
 
-**Last verified**: 2026-02-22 — 42 containers, all healthy
-**Source repo**: `medinovai-health/medinovai-atlas-os` (branch: `feature/atlasos-full-implementation`)
-**Deploy repo**: `medinovai-health/medinovai-deploy`
+> Status: historical AtlasOS stack reference only.
+> Authoritative deployment, environment activation, and runtime sync are owned by
+> `medinovai-Deploy` via `scripts/env-manager.sh`, `scripts/sync-atlas-runtime.sh`,
+> and `infra/docker/compose/`. Do not use the AtlasOS repo's standalone
+> `docker-compose.yml` as the primary deployment path.
+
+**Last verified**: 2026-03-09
+**Authoritative deploy repo**: `medinovai-health/medinovai-deploy`
+**Service source repo**: `medinovai-health/medinovai-atlas-os`
 
 ---
 
 ## Architecture Overview
 
-AtlasOS is a multi-tenant, healthcare-grade agentic AI platform deployed as a single Docker Compose stack with profile-based service grouping:
+AtlasOS is a multi-tenant, healthcare-grade agentic AI platform whose
+authoritative deployment now lives in `medinovai-Deploy` as layered compose
+stacks plus environment management. The legacy single-stack AtlasOS compose
+layout below is retained only as historical context.
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -38,32 +47,26 @@ AtlasOS is a multi-tenant, healthcare-grade agentic AI platform deployed as a si
 
 ---
 
-## Quick Start
+## Canonical Quick Start
 
 ```bash
-# Clone the AtlasOS repo
-git clone https://github.com/medinovai-health/medinovai-atlas-os.git
-cd medinovai-atlas-os
-git checkout feature/atlasos-full-implementation
+# Work from the deploy repo
+cd ~/Github/medinovai-health/medinovai-Deploy
 
-# Start default services (MCP + Vault + PostgreSQL)
-docker compose up -d
+# Start the dev environment
+./scripts/env-manager.sh activate dev --all
 
-# Start runtime (agent swarm)
-docker compose --profile runtime up -d
+# Verify runtime drift and local-first routing
+./scripts/env-manager.sh verify dev
 
-# Start healthcare connectors
-docker compose --profile connectors up -d --build
-
-# Start compliance services
-docker compose --profile compliance up -d --build
-
-# OR start everything at once
-docker compose --profile runtime --profile connectors --profile compliance up -d --build
-
-# Check status
-docker compose --profile runtime --profile connectors --profile compliance ps
+# Show environment status
+./scripts/env-manager.sh status
 ```
+
+## Legacy AtlasOS Compose Commands
+
+The command examples below describe the older AtlasOS-local compose flow and
+should not be used as the default operating path.
 
 ---
 
@@ -410,13 +413,15 @@ lsof -i :{PORT}
 
 ---
 
-## Integration with medinovai-Deploy
+## Deployment Ownership
 
-This deployment is self-contained within the AtlasOS repo's `docker-compose.yml`. For production K3s deployment managed by medinovai-Deploy:
+Authoritative ownership is now:
 
-- Kubernetes manifests: `AtlasOS/infra/kubernetes/`
-- Helm integration: Through `medinovai-Deploy/infra/kubernetes/services/atlasos/`
-- Vault policies: `medinovai-Deploy/infra/kubernetes/vault/policies/atlasos-read.hcl`
-- CEO Stack: `medinovai-Deploy/infra/docker/docker-compose.ceo.yml`
+- Environment activation: `medinovai-Deploy/scripts/env-manager.sh`
+- Runtime sync into `~/.atlas`: `medinovai-Deploy/scripts/sync-atlas-runtime.sh`
+- Launchd boot path: `medinovai-Deploy/infra/launchd/`
+- Layered compose files: `medinovai-Deploy/infra/docker/compose/`
+- Environment files: `medinovai-Deploy/envs/` and host-local prod env overrides
 
-The AtlasOS `docker-compose.yml` is designed to run independently for development and testing, while the medinovai-Deploy orchestration handles production K3s deployment.
+AtlasOS should provide service source, config, and runtime artifacts. Deployment
+orchestration should be initiated from `medinovai-Deploy`, not from AtlasOS.
