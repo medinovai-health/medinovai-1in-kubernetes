@@ -1,0 +1,147 @@
+# MedinovAI Platform — Base Infrastructure Layer
+# Shared infrastructure: database, cache, secrets, auth, messaging, proxy.
+# All ports are env-var-driven for multi-environment support.
+#
+# Owner: medinovai-Deploy
+# Docs: docs/FOUR_ENVIRONMENT_DEPLOYMENT.md
+
+x-version-env: &version-env
+  ATLAS_VERSION: ${ATLAS_VERSION:-2.1.0}
+  ATLAS_GIT_SHA: ${ATLAS_GIT_SHA:-dev}
+
+x-db-env: &db-env
+  DATABASE_URL: postgresql://${DB_USER:-atlasos}:${DB_PASSWORD}@atlasos-db:5432/atlasos
+
+x-event-env: &event-env
+  EVENT_BUS_URL: http://event-bus:${EVENT_BUS_INTERNAL_PORT:-8088}
+
+x-llm-env: &llm-env
+  LLM_ENDPOINT: ${LLM_ENDPOINT:-http://aifactory-gateway:8300}
+  OLLAMA_HOST: ${ATLASOS_OLLAMA_URL:-http://host.docker.internal:11434}
+  ATLASOS_LOCAL_MODEL: ${ATLASOS_LOCAL_MODEL:-qwen2.5:14b}
+  ATLASOS_PRIMARY_MODEL: ${ATLASOS_PRIMARY_MODEL:-qwen2.5:14b}
+  AIFACTORY_HEALTH_URL: http://aifactory-gateway:8300/health
+  EMBEDDED_OLLAMA_HOST: ${EMBEDDED_OLLAMA_HOST:-http://ollama-embedded:11434}
+  ATLASOS_EMBEDDED_MODEL: ${ATLASOS_EMBEDDED_MODEL:-smollm2:360m}
+  MODEL_HIERARCHY_PATH: config/model_hierarchy.yaml
+
+x-auth-env: &auth-env
+  KEYCLOAK_URL: http://keycloak:8080
+  KEYCLOAK_REALM: ${KEYCLOAK_REALM:-medinov-ai}
+  KEYCLOAK_ISSUER_URL: http://keycloak:8080/realms/${KEYCLOAK_REALM:-medinov-ai}
+  KEYCLOAK_AUDIENCE: ${KEYCLOAK_AUDIENCE:-medinovai-atlas}
+  AUTH_ENABLED: ${AUTH_ENABLED:-true}
+  KEYCLOAK_DEV_ALLOW_HS256: ${KEYCLOAK_DEV_ALLOW_HS256:-false}
+
+services:
+
+  atlasos-db:
+    image: pgvector/pgvector:pg16
+    ports:
+      - "${ATLASOS_DB_PORT:-5433}:5432"
+    environment:
+      POSTGRES_DB: atlasos
+      POSTGRES_USER: ${DB_USER:-atlasos}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in env file}
+    volumes:
+      - atlasos-pg-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-atlasos}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.1
+    command: start-dev --import-realm
+    ports:
+      - "${KEYCLOAK_PORT:-8080}:8080"
+    environment:
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?Set KEYCLOAK_ADMIN_PASSWORD}
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://atlasos-db:5432/keycloak
+      KC_DB_USERNAME: ${DB_USER:-atlasos}
+      KC_DB_PASSWORD: ${DB_PASSWORD}
+      KC_HOSTNAME_STRICT: "false"
+      KC_HTTP_RELATIVE_PATH: /
+    volumes:
+      - ${KEYCLOAK_REALM_DIR:-../../medinovai-security-service/keycloak/realm-config}:/opt/keycloak/data/import
+      - keycloak-data:/opt/keycloak/data
+    depends_on:
+      atlasos-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/8080 && echo -e 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\n\\r\\n' >&3 && cat <&3 | grep -q '200'"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      retries: 5
+    restart: unless-stopped
+
+  vault:
+    image: hashicorp/vault:1.15
+    ports:
+      - "${VAULT_PORT:-8200}:8200"
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: ${VAULT_TOKEN:-medinovai-dev-token}
+      VAULT_DEV_LISTEN_ADDRESS: "0.0.0.0:8200"
+    cap_add:
+      - IPC_LOCK
+    volumes:
+      - vault-data:/vault/data
+    healthcheck:
+      test: ["CMD", "vault", "status"]
+      interval: 10s
+      retries: 5
+    restart: unless-stopped
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    ports:
+      - "${RABBITMQ_PORT:-5672}:5672"
+      - "${RABBITMQ_MGMT_PORT:-15672}:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-atlas}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:?Set RABBITMQ_PASSWORD}
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      retries: 5
+    restart: unless-stopped
+
+  traefik:
+    image: traefik:v3.0
+    ports:
+      - "${TRAEFIK_HTTP_PORT:-8080}:80"
+      - "${TRAEFIK_HTTPS_PORT:-8443}:443"
+      - "${TRAEFIK_DASHBOARD_PORT:-8091}:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    healthcheck:
+      test: ["CMD", "traefik", "healthcheck", "--ping"]
+      interval: 10s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  atlasos-pg-data:
+  keycloak-data:
+  redis-data:
+  vault-data:
+  rabbitmq-data:
