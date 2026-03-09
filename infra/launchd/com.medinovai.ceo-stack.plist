@@ -4,7 +4,7 @@
 <!--
   LaunchDaemon: com.medinovai.ceo-stack
   ─────────────────────────────────────────────────────────────────────────────
-  Starts the AtlasOS CEO Stack (docker-compose.ceo.yml) on every boot,
+  Starts the authoritative AtlasOS prod environment on every boot,
   BEFORE any user logs in. Restarts automatically on crash.
 
   Install (run once as root):
@@ -67,7 +67,7 @@
     <key>HOME</key>
     <string>/Users/mayanktrivedi</string>
     <key>ATLASOS_PATH</key>
-    <string>/Users/mayanktrivedi/Github/medinovai-health/medinovai-Atlas</string>
+    <string>/Users/mayanktrivedi/Github/medinovai-health/AtlasOS</string>
     <key>ATLAS_COMMAND_PATH</key>
     <string>/Users/mayanktrivedi/Github/_non-org/atlas-command</string>
   </dict>
