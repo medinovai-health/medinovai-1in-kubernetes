@@ -1,14 +1,35 @@
 # AtlasOS Docker Compose Reference
 
-## File Location
+> Status: legacy AtlasOS compose reference.
+> The authoritative deployment path is `medinovai-Deploy/scripts/env-manager.sh`
+> plus the layered compose files under `medinovai-Deploy/infra/docker/compose/`.
+> This document should be treated as historical background, not the default way
+> to launch AtlasOS.
+
+## Current Authoritative Files
 
 ```
-medinovai-atlas-os/docker-compose.yml
+medinovai-Deploy/infra/docker/compose/docker-compose.base.yml
+medinovai-Deploy/infra/docker/compose/docker-compose.atlasos-core.yml
+medinovai-Deploy/infra/docker/compose/docker-compose.atlasos-agents.yml
+medinovai-Deploy/infra/docker/compose/docker-compose.atlasos-governance.yml
+medinovai-Deploy/infra/docker/compose/docker-compose.atlasos-ai.yml
+medinovai-Deploy/infra/docker/compose/docker-compose.observability.yml
 ```
 
-This is a self-contained single-file deployment for the entire AtlasOS stack.
+The old `medinovai-atlas-os/docker-compose.yml` is no longer the primary
+deployment entrypoint.
 
-## Profile System
+## Current Canonical Commands
+
+```bash
+cd ~/Github/medinovai-health/medinovai-Deploy
+./scripts/env-manager.sh activate dev --all
+./scripts/env-manager.sh status
+./scripts/env-manager.sh verify dev
+```
+
+## Legacy Profile System
 
 Docker Compose profiles allow selective deployment:
 

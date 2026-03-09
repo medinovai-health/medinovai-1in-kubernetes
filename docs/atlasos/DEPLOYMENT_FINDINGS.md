@@ -1,5 +1,10 @@
 # AtlasOS Deployment Findings & Lessons Learned
 
+> Scope note: this document records findings from the older AtlasOS-local compose
+> stack. The authoritative deployment path has since moved to
+> `medinovai-Deploy/scripts/env-manager.sh` and the layered compose files under
+> `medinovai-Deploy/infra/docker/compose/`.
+
 **Date**: 2026-02-22
 **Deploy type**: Docker Compose (local, single-node)
 **Branch**: `feature/atlasos-full-implementation` on `medinovai-atlas-os`
