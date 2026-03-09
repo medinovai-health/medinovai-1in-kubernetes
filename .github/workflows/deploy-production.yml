@@ -31,8 +31,11 @@ on:
   push:
     branches: [main]
     paths:
-      - 'infra/docker/docker-compose.ceo.yml'
-      - 'infra/docker/docker-compose.orchestrator.yml'
+      - 'infra/docker/compose/**'
+      - 'infra/launchd/**'
+      - 'envs/**'
+      - 'scripts/env-manager.sh'
+      - 'scripts/sync-atlas-runtime.sh'
 
 jobs:
   # ── Gate 1: Pre-deploy backup ───────────────────────────────────────────────
@@ -69,7 +72,7 @@ jobs:
       STACK:        ${{ github.event.inputs.stack || 'ceo' }}
       TAG:          ${{ github.event.inputs.tag || 'latest' }}
       DRY_RUN:      ${{ github.event.inputs.dry_run || 'false' }}
-      ATLASOS_PATH: /Users/mayanktrivedi/Github/medinovai-health/medinovai-Atlas
+      ATLASOS_PATH: /Users/mayanktrivedi/Github/medinovai-health/AtlasOS
       REPOS_PATH:   /Users/mayanktrivedi/Github
 
     steps:
@@ -88,68 +91,24 @@ jobs:
           echo "  Commit:   ${{ github.sha }}"
           echo "══════════════════════════════════════════════════"
 
-      - name: Deploy CEO stack
-        if: env.STACK == 'ceo' || env.STACK == 'all'
+      - name: Activate authoritative prod environment
         run: |
-          COMPOSE_FILE="infra/docker/docker-compose.ceo.yml"
           if [ "$DRY_RUN" = "true" ]; then
-            echo "[DRY RUN] Would run: docker compose -f $COMPOSE_FILE pull"
-            echo "[DRY RUN] Would run: docker compose -f $COMPOSE_FILE up -d --remove-orphans"
+            echo "[DRY RUN] Would run: bash scripts/env-manager.sh activate prod --all"
+            echo "[DRY RUN] Would run: bash scripts/env-manager.sh verify prod"
           else
             export ATLASOS_PATH REPOS_PATH
-            export ORCHESTRATOR_TAG="$TAG"
-            echo "Pulling latest images..."
-            docker compose -f "$COMPOSE_FILE" pull --quiet 2>/dev/null || true
-            echo "Recreating containers (volumes preserved)..."
-            docker compose -f "$COMPOSE_FILE" up -d --remove-orphans
-            echo "✓ CEO stack deployed"
-          fi
-
-      - name: Deploy orchestrator
-        if: env.STACK == 'orchestrator' || env.STACK == 'all'
-        run: |
-          COMPOSE_FILE="infra/docker/docker-compose.orchestrator.yml"
-          if [ "$DRY_RUN" = "true" ]; then
-            echo "[DRY RUN] Would run: docker compose -f $COMPOSE_FILE up -d --build"
-          else
-            export ATLASOS_PATH REPOS_PATH
-            export AI_MODEL_PRIMARY="deepseek-r1:70b"
-            export ORCHESTRATOR_TAG="$TAG"
-            docker compose -f "$COMPOSE_FILE" up -d --build
-            echo "✓ Orchestrator deployed"
+            bash scripts/env-manager.sh activate prod --all
+            bash scripts/env-manager.sh verify prod
+            echo "✓ Authoritative prod environment activated"
           fi
 
       - name: Health check
         if: env.DRY_RUN != 'true'
         run: |
-          echo "Waiting 30s for containers to stabilise..."
-          sleep 30
-          echo ""
-          echo "── Service Health ──"
-          declare -A HEALTH_PORTS=(
-            ["ceo-briefing-engine"]=41520
-            ["ceo-decision-tracker"]=41530
-            ["ceo-correlation-engine"]=41510
-            ["ceo-audit-chain"]=41500
-            ["atlas-api"]=4000
-          )
-          HEALTH_FAIL=0
-          for svc in "${!HEALTH_PORTS[@]}"; do
-            port="${HEALTH_PORTS[$svc]}"
-            if curl -sf "http://localhost:${port}/health" > /dev/null 2>&1; then
-              echo "  ✓ $svc (port $port)"
-            else
-              echo "  ✗ $svc (port $port) — unhealthy"
-              HEALTH_FAIL=$((HEALTH_FAIL + 1))
-            fi
-          done
-          echo ""
-          if [ "$HEALTH_FAIL" -gt 0 ]; then
-            echo "⚠ ${HEALTH_FAIL} service(s) unhealthy after deploy"
-            echo "Run 'make orchestrator-rollback' to revert"
-            exit 1
-          fi
-          echo "✓ All health checks passed"
+          bash scripts/env-manager.sh status
+          bash scripts/env-manager.sh verify prod
+          echo "✓ Runtime verification passed"
 
       - name: Record deployment
         if: env.DRY_RUN != 'true'
