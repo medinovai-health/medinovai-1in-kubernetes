@@ -317,7 +317,7 @@ services:
       ATLASOS_STATE_DIR: /data/.atlas
       # Local-first LLM fleet (Mac Studio GPU gateway on host)
       AIFACTORY_ENDPOINT: ${AIFACTORY_ENDPOINT:-http://host.docker.internal:8300}
-      OLLAMA_HOST: ${OLLAMA_HOST:-http://host.docker.internal:11434}
+      OLLAMA_HOST: http://host.docker.internal:11434
       CHROMADB_URL: http://chromadb:8000
       # AtlasOS support services
       REDIS_URL: redis://redis:6379
@@ -373,8 +373,8 @@ services:
       NEXTAUTH_URL: http://localhost:41020
       AUTH_BRIDGE_URL: http://auth-bridge:8250
       AIFACTORY_ENDPOINT: ${AIFACTORY_ENDPOINT:-http://host.docker.internal:5000}
-      AI_MODEL: ${AI_MODEL:-qwen2.5:32b}
-      OLLAMA_HOST: ${OLLAMA_HOST:-http://host.docker.internal:11434}
+      AI_MODEL: ${AI_MODEL:-qwen2.5:14b}
+      OLLAMA_HOST: http://host.docker.internal:11434
       CHROMADB_URL: http://chromadb:8000
       POSTGRES_URL: postgresql://medinovai@postgres:5432/atlas
       REDIS_URL: redis://redis:6379
