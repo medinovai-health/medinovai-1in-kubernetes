@@ -30,6 +30,10 @@ x-vault-env: &vault-env
 x-channel-env: &channel-env
   ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
   OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+  TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+  TELEGRAM_WEBHOOK_URL: ${TELEGRAM_WEBHOOK_URL:-}
+  TELEGRAM_WEBHOOK_SECRET: ${TELEGRAM_WEBHOOK_SECRET:-}
+  TELEGRAM_WEBHOOK_PATH: ${TELEGRAM_WEBHOOK_PATH:-}
   WHATSAPP_PHONE_NUMBER_ID: ${WHATSAPP_PHONE_NUMBER_ID:-}
   WHATSAPP_ACCESS_TOKEN: ${WHATSAPP_ACCESS_TOKEN:-}
   WHATSAPP_OWNER_PHONE: ${WHATSAPP_OWNER_PHONE:-}
@@ -307,13 +311,14 @@ services:
       context: ${ATLASOS_PATH:-../../repos/AtlasOS}
       dockerfile: Dockerfile
     container_name: ceo-atlas-gateway
+    user: "${ATLAS_GATEWAY_UID:-0}:${ATLAS_GATEWAY_GID:-0}"
     ports:
       - "41010:8080"   # UI / API access
-      - "18789:8080"   # WhatsApp Tailscale Funnel endpoint (Mac Studio:18789 → container:8080)
+      - "18789:8080"   # Canonical public gateway endpoint (WhatsApp/Telegram)
     environment:
       PORT: "8080"
       NODE_ENV: production
-      ATLASOS_CONFIG_PATH: /app/config/atlasos.json5
+      ATLASOS_CONFIG_PATH: /data/.atlas/atlasos.json
       ATLASOS_STATE_DIR: /data/.atlas
       # Local-first LLM fleet (Mac Studio GPU gateway on host)
       AIFACTORY_ENDPOINT: ${AIFACTORY_ENDPOINT:-http://host.docker.internal:8300}
@@ -330,10 +335,8 @@ services:
       # Credentials (from host .env or shell environment)
       <<: [*vault-env, *channel-env, *mcp-env]
     volumes:
-      - atlas-data:/data
+      - ${HOME}/.atlas:/data/.atlas
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ${ATLASOS_PATH:-../../repos/AtlasOS}/config/atlasos.json5:/app/config/atlasos.json5:ro
-      - ${HOME}/.atlas/workspace-ops:/home/appuser/.atlas/workspace-ops:ro
       - ${ATLASOS_PATH:-../../repos/AtlasOS}/scripts:/app/scripts:ro
       - ${ATLASOS_PATH:-../../repos/AtlasOS}/docs:/app/docs:ro
       - ${ATLASOS_PATH:-../../repos/AtlasOS}/skills:/app/skills:ro

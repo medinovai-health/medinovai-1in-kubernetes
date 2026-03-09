@@ -189,13 +189,14 @@ Tier 6 UI:         multimodal-ui-shell, medinovaios
 
 ```
 WhatsApp → Meta → Tailscale Funnel → localhost:18789
-                                    → AtlasOS (native LaunchAgent: ai.atlasos.gateway)
+                                    → ceo-atlas-gateway (Docker)
                                     → ~/.atlas/atlasos.json (CEO agent "Arjun")
                                     → atlasos-sbx-agent-ceo sandbox container
 ```
 
-**AtlasOS runs natively on the host** (not in Docker). It is a Node.js process managed
-by `~/Library/LaunchAgents/ai.atlasos.gateway.plist`.
+**AtlasOS now runs in the `ceo-atlas-gateway` container** for production channel traffic.
+The container bind-mounts `~/.atlas` so the live runtime config, paired devices, and
+Telegram/WhatsApp credentials remain on the host. The native LaunchAgent is diagnostic-only.
 `~/.openclaw` is a legacy symlink to `~/.atlas` (same directory, kept for compatibility).
 
 ### ⛔ NEVER DO THIS
@@ -203,12 +204,13 @@ by `~/Library/LaunchAgents/ai.atlasos.gateway.plist`.
 ```yaml
 # docker-compose.ceo.yml — WRONG
 atlas-gateway:
-  ports:
-    - "18789:8080"   # ← BREAKS WhatsApp. Port 18789 belongs to AtlasOS.
+  volumes:
+    - atlas-data:/data   # ← Forks live runtime state away from ~/.atlas.
 ```
 
-Port **18789** is reserved for the native AtlasOS gateway. If Docker binds it first,
-WhatsApp goes down. The CEO docker stack uses **41010** only.
+Port **18789** belongs to the Dockerized `ceo-atlas-gateway` in production. What must
+never drift is the runtime state source: the gateway must mount the live host `~/.atlas`
+directory instead of an isolated Docker volume, or Telegram/WhatsApp pairings break.
 
 ### Protected Files (NEVER overwrite during upgrade)
 
@@ -218,7 +220,7 @@ WhatsApp goes down. The CEO docker stack uses **41010** only.
 | `~/.atlas/atlasos.json` | AtlasOS gateway config, port, auth token |
 | `~/.atlas/credentials/` | WhatsApp QR pairing, Telegram pairing, Mattermost tokens |
 | `~/.atlas/devices/` | Paired device state (losing this forces WhatsApp re-pair) |
-| `~/Library/LaunchAgents/ai.atlasos.gateway.plist` | The LaunchAgent that keeps WhatsApp alive |
+| `~/Library/LaunchAgents/ai.atlasos.gateway.plist` | Diagnostic-only native gateway fallback (must stay disabled in prod) |
 
 ### Config Preservation Workflow
 
@@ -229,7 +231,7 @@ make pre-upgrade           # Backs up everything + validates config + checks por
 # After upgrade — if WhatsApp breaks:
 make gateway-doctor        # Check for config validation errors
 make gateway-doctor FIX=1  # Auto-fix minor issues
-make gateway-restart       # Restart the native gateway
+make gateway-restart       # Restart the Docker gateway container
 
 # Emergency restore:
 make config-restore                    # Restore from latest backup
@@ -264,7 +266,7 @@ docker ps --filter "name=ceo-" --format "{{.Names}}: {{.Status}}"
 | Service | Host Port | Purpose |
 |---------|-----------|---------|
 | `ceo-atlas-command` | 41000 | CEO command center UI |
-| `ceo-atlas-gateway` | 41010 | CEO stack health stub (NOT WhatsApp) |
+| `ceo-atlas-gateway` | 41010 | CEO stack health/API endpoint |
 | `ceo-vault` | 41100 | Secrets |
 | `ceo-postgres` | 41200 | Database |
 | `ceo-redis` | 41300 | Cache |
@@ -273,7 +275,7 @@ docker ps --filter "name=ceo-" --format "{{.Names}}: {{.Status}}"
 | `ceo-correlation-engine` | 41510 | Intelligence |
 | `ceo-briefing-engine` | 41520 | Morning/evening briefings |
 | `ceo-decision-tracker` | 41530 | Decision log |
-| AtlasOS gateway | **18789** | WhatsApp/Telegram (**native, not Docker**) |
+| AtlasOS gateway | **18789** | WhatsApp/Telegram (**Dockerized ceo-atlas-gateway**) |
 
 ### File | Purpose |
 |------|---------|
