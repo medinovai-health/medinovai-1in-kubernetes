@@ -39,8 +39,18 @@ VALID_ENVS="dev qa staging prod"
 resolve_env_file() {
   local env="$1"
   local repo_env="$ENVS_DIR/${env}.env"
+  local home_prod_env="${HOME}/.atlasos/prod.env"
+  local configured_prod_env="${ATLASOS_PROD_ENV_PATH:-}"
   if [[ -f "$repo_env" ]]; then
     printf '%s\n' "$repo_env"
+    return 0
+  fi
+  if [[ "$env" == "prod" && -n "$configured_prod_env" && -f "$configured_prod_env" ]]; then
+    printf '%s\n' "$configured_prod_env"
+    return 0
+  fi
+  if [[ "$env" == "prod" && -f "$home_prod_env" ]]; then
+    printf '%s\n' "$home_prod_env"
     return 0
   fi
   if [[ "$env" == "prod" && -f "/etc/atlasos/prod.env" ]]; then
@@ -90,7 +100,7 @@ compose_cmd() {
   env_file="$(resolve_env_file "$env")" || {
     echo "ERROR: Missing env file for '$env'. Expected $ENVS_DIR/${env}.env"
     if [[ "$env" == "prod" ]]; then
-      echo "       or /etc/atlasos/prod.env"
+      echo "       or \$ATLASOS_PROD_ENV_PATH, $HOME/.atlasos/prod.env, or /etc/atlasos/prod.env"
     fi
     exit 1
   }
