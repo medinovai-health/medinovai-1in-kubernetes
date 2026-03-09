@@ -1,0 +1,10 @@
+FROM python:3.12-slim
+WORKDIR /app
+RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
+RUN pip install --no-cache-dir fastapi "uvicorn[standard]"
+RUN printf 'import os\nfrom fastapi import FastAPI\napp=FastAPI(title="medinovai-canary-rollout-orchestrator")\nSVC=os.getenv("SERVICE_NAME","medinovai-canary-rollout-orchestrator")\n@app.get("/health")\ndef h(): return {"status":"healthy","service":SVC,"version":"dev"}\n@app.get("/")\ndef r(): return {"service":SVC,"status":"running"}\n' > /app/main.py
+ENV SERVICE_NAME=medinovai-canary-rollout-orchestrator PYTHONUNBUFFERED=1
+EXPOSE 8080
+HEALTHCHECK --interval=15s --timeout=5s --start-period=20s --retries=3 \
+  CMD curl -sf http://localhost:8080/health || exit 1
+CMD ["python3", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
