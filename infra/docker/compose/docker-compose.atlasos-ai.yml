@@ -28,7 +28,7 @@ services:
     ports:
       - "${AIFACTORY_GATEWAY_PORT:-8300}:8300"
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8300/health')"]
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8300/health"]
       interval: 10s
       retries: 5
     restart: unless-stopped
