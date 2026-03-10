@@ -1,9 +1,11 @@
-# MedinovAI Platform — Agent Runtime Layer
-# Agent platform, brain, invocation gateway, entity lifecycle, memory,
-# skill engine, heartbeat, learning, tenancy, tools, sessions, cron.
+# MedinovAI Platform — AtlasOS Four-Layer Agent Runtime
+# Named assistants + functional agents enter through the shared runtime.
+# Entity agents are provisioned through entity lifecycle and persist in the
+# database. Squad agents execute delegated work under shared orchestration.
 
 services:
 
+  # Entry runtime for named assistants and shared functional agents.
   agent-platform:
     build:
       context: ${ATLASOS_ROOT:-../../../AtlasOS}
@@ -36,6 +38,7 @@ services:
       retries: 5
     restart: unless-stopped
 
+  # Shared learning and reasoning service across all four agent layers.
   agent-brain:
     build:
       context: ${ATLASOS_ROOT:-../../../AtlasOS}
@@ -56,6 +59,7 @@ services:
       retries: 5
     restart: unless-stopped
 
+  # Cross-repo invocation layer for named, functional, and entity agents.
   atlas-invocation-gateway:
     build:
       context: ${ATLASOS_ROOT:-../../../AtlasOS}
@@ -84,6 +88,8 @@ services:
       retries: 5
     restart: unless-stopped
 
+  # Provisions database-backed entity agents such as employees, SOPs,
+  # protocols, regulations, customers, clinics, and patients.
   entity-lifecycle-gateway:
     build:
       context: ${ATLASOS_ROOT:-../../../AtlasOS}

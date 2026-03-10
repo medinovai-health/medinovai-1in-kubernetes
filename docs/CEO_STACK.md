@@ -1,15 +1,20 @@
-# AtlasOS CO-CEO Stack Deployment Guide
+# AtlasOS Named Assistant Stack Deployment Guide
 
 ## Overview
 
-The CO-CEO stack deploys AtlasOS as an autonomous AI executive assistant with:
-- **atlas-command**: The CO-CEO Command Center UI (dashboard, decisions, settings)
-- **atlas-gateway**: AtlasOS agent runtime (9 workspaces, 24 crons, 7 approval workflows)
+The CEO stack deploys Arjun as one `Named Assistant` inside the broader AtlasOS
+four-layer platform:
+- **atlas-command**: The executive command center UI for the Arjun named assistant
+- **atlas-gateway**: AtlasOS runtime mounted to the live `~/.atlas` state for named assistant execution
 - **atlas-ui**: Chat and deployment management interface
 - **audit-chain**: Zero-trust hash-chained audit service
 - **MCP connectors**: Read-only connectors for vTiger, QuickBooks, Google Workspace, LIS, Mattermost
 - **HashiCorp Vault**: Centralized secrets management (never .env)
 - **Supporting infra**: PostgreSQL, Redis, ChromaDB, Stirling-PDF
+
+This stack is not the whole AtlasOS architecture. It is the deployment pattern
+for one named assistant, backed by shared functional agents, entity agents, and
+squad agents running in the AtlasOS environments managed by `medinovai-Deploy`.
 
 ## Zero-Trust Architecture
 
@@ -31,7 +36,7 @@ Every action (autonomous or approved) is hash-chained in the audit service.
 ## Quick Start
 
 ```bash
-# From medinovai-Deploy root
+# From medinovai-Deploy root: deploy the Arjun named assistant stack
 make ceo-stack
 
 # Check health
@@ -48,7 +53,7 @@ make ceo-audit-verify
 
 | Service | Port | URL |
 |---------|------|-----|
-| Atlas Command (CO-CEO UI) | 3000 | http://localhost:3000 |
+| Atlas Command (Arjun UI) | 3000 | http://localhost:3000 |
 | Atlas UI (Chat) | 3737 | http://localhost:3737 |
 | Atlas Gateway | 18789 | http://localhost:18789 |
 | Vault | 8200 | http://localhost:8200 |
@@ -79,6 +84,9 @@ make ceo-audit-verify
 - `ATLASOS_CONFIG_PATH` resolves to `~/.atlas/atlasos.json` inside the container.
 - `ATLASOS_STATE_DIR` resolves to `~/.atlas/` inside the container.
 - The native `com.medinovai.atlas-engine` LaunchAgent is diagnostic-only and should remain disabled in production.
+- This stack represents a single named assistant deployment. Employee assistants,
+  SOP/protocol/regulation agents, and other entity runtimes should reuse the
+  same four-layer AtlasOS architecture rather than fork a separate CEO-only path.
 
 ## Configuration
 
@@ -122,7 +130,7 @@ curl http://localhost:8084/audit/export > audit_export.jsonl
 | Repo | Purpose |
 |------|---------|
 | `medinovai-Deploy` | This repo - deployment orchestration |
-| `AtlasOS` (`medinovai-atlas-os`) | Agent runtime, audit chain, MCP connectors, healthcare connectors, compliance services |
+| `AtlasOS` (`medinovai-atlas-os`) | Shared agent runtime, audit chain, MCP connectors, healthcare connectors, compliance services, and the four-layer agent model |
 | `atlas-command` | CO-CEO Command Center UI |
 | `medinovai-security-service` | Vault and Keycloak (production) |
 
