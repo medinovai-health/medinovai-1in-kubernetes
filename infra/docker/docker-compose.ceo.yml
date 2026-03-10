@@ -339,6 +339,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ${ATLASOS_PATH:-../../repos/AtlasOS}/scripts:/app/scripts:ro
       - ${ATLASOS_PATH:-../../repos/AtlasOS}/docs:/app/docs:ro
+      - ${ATLASOS_PATH:-../../repos/AtlasOS}/packages/engine/docs/reference/templates:/app/docs/reference/templates:ro
       - ${ATLASOS_PATH:-../../repos/AtlasOS}/skills:/app/skills:ro
     depends_on:
       vault:
