@@ -357,6 +357,9 @@ services:
     <<: [*restart, *network]
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    networks:
+      - ceo-network
+      - atlasos-prod-default
 
   # ─── AtlasOS UI (Chat + Deployment) ────────────────────────────────────
   atlas-ui:
@@ -1693,6 +1696,9 @@ networks:
   ceo-network:
     driver: bridge
     name: medinovai-ceo-network
+  atlasos-prod-default:
+    external: true
+    name: atlasos-prod_default
 
 volumes:
   postgres-data:
