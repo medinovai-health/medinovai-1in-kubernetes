@@ -63,6 +63,22 @@ cd ~/Github/medinovai-health/medinovai-Deploy
 ./scripts/env-manager.sh status
 ```
 
+## Instance Identity
+
+Every AtlasOS deployment carries a named identity. Configure it via environment variables before starting the stack:
+
+```bash
+# In envs/base.env or per-environment file:
+ATLASOS_INSTANCE_NAME=acme-health
+ATLASOS_DISPLAY_NAME=Acme Health Systems
+ATLASOS_DEFAULT_TENANT=acme-health
+ATLASOS_ENVIRONMENT=production
+```
+
+The identity appears in all health endpoints, the UI login page, system prompts, audit logs, and inter-service calls.
+
+See [Named Deployment Identity Guide](NAMED_DEPLOYMENT_IDENTITY.md) for full details.
+
 ## Legacy AtlasOS Compose Commands
 
 The command examples below describe the older AtlasOS-local compose flow and
