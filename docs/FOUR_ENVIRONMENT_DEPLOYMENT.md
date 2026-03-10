@@ -10,7 +10,9 @@
 
 medinovai-Deploy is the single repo for launching and managing all MedinovAI
 environments. Four fully independent environments (dev, qa, staging, prod) can
-run simultaneously on the same host via Docker Compose with port offsets.
+run simultaneously on the same host via Docker Compose with port offsets. Each
+environment should host the same AtlasOS four-layer topology: `Named
+Assistants`, `Functional Agents`, `Entity Agents`, and `Squad Agents`.
 
 ## Repo Ownership
 
@@ -52,6 +54,21 @@ make env-stop ENV=dev
 | Governance | `docker-compose.atlasos-governance.yml` | Governance Runtime, Security Mesh, Change Authority, Compliance, AI Guardian, Rule Compiler |
 | AI/ML | `docker-compose.atlasos-ai.yml` | AIFactory Gateway, Ollama, MCP Gateway, Self-Learning, Cognitive Arch, Predictive Analytics, Multi-Modal, Self-Healing |
 | Observability | `docker-compose.observability.yml` | Prometheus, Loki, Tempo, Grafana |
+
+## Agent Topology
+
+Each environment deploys the same canonical AtlasOS layers:
+
+| Agent Layer | Runtime Representation |
+|---|---|
+| Named Assistants | User-facing assistants such as Arjun/CEO and future employee-specific assistants |
+| Functional Agents | Shared domain services and workspaces for finance, compliance, recruiting, security, operations, and similar domains |
+| Entity Agents | Database-backed runtime instances provisioned by `entity-lifecycle-gateway` for employees, SOPs, protocols, regulations, clinics, customers, patients, and other governed entities |
+| Squad Agents | Specialist workers used for execution, evaluation, routing, and escalations under functional supervision |
+
+Operational rule: employee agents and SOP/protocol/regulation agents are entity
+classes, not ad-hoc workspace sprawl. Only named assistants and selected
+functional agents should require long-lived workspace customizations.
 
 ## Environment Files
 

@@ -1,8 +1,8 @@
 # MedinovAI Deploy
 
-**Autonomous deployment for the entire MedinovAI platform — on-prem first.**
+**Autonomous deployment for the entire MedinovAI platform and AtlasOS four-layer agent fabric — on-prem first.**
 
-Single repo to deploy 109 services across a K3s cluster spanning Mac Studio, MacBook Pro, and DGX GPU servers. HashiCorp Vault for secrets. AtlasOS agents embedded in every repo for fully autonomous AI operations with humans only for final approvals.
+Single repo to deploy 109 services across a K3s cluster spanning Mac Studio, MacBook Pro, and DGX GPU servers. HashiCorp Vault for secrets. AtlasOS runs as a four-layer agent platform across the company: `Named Assistants`, `Functional Agents`, `Entity Agents`, and `Squad Agents`, with humans retained for approval gates and regulated actions.
 
 ## Architecture
 
@@ -27,7 +27,7 @@ Single repo to deploy 109 services across a K3s cluster spanning Mac Studio, Mac
 │  └────────────────────────────────────────────────────────────────┘      │
 │                                    │                                       │
 │                                    ▼                                       │
-│                    AtlasOS embedded in all ~162 repos                      │
+│              AtlasOS embedded across MedinovAI repos + runtimes            │
 └──────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -45,7 +45,7 @@ medinovai-Deploy/
 │   │   ├── tier0/               # PostgreSQL, Redis, Kafka, MongoDB, ES, etc.
 │   │   ├── tier1/               # Security (Keycloak, SSO, RBAC)
 │   │   ├── tier2/               # Platform core
-│   │   ├── atlasos/             # AtlasOS gateway, UI, orchestrator, event-bus
+│   │   ├── atlasos/             # AtlasOS gateway, UI, orchestrator, invocation, entity runtime
 │   │   ├── atlasos-node-agent/  # DaemonSet on every node
 │   │   ├── atlasos-cluster-brain/
 │   │   └── tier3-6/             # AI/ML, domain, integration, UI
@@ -69,7 +69,7 @@ medinovai-Deploy/
 │   │   └── deploy_service.sh   # Deploy single service
 │   ├── agents/
 │   │   ├── embed_atlasos.sh     # Distribute agent kits to all ~162 repos
-│   │   ├── create_agents.sh     # Register Atlas agents
+│   │   ├── create_agents.sh     # Register named, functional, entity, and squad agents
 │   │   └── register_crons.sh   # Agent cron jobs
 │   ├── maintenance/             # drift_check, db_backup, rotate_secrets
 │   ├── validation/              # validate_setup, smoke_test
@@ -107,7 +107,7 @@ Full setup from blank to running platform in 25 steps (~70 min). Critical path o
 | 21 | Ingress | 1 min |
 | 22 | AtlasOS node agents (DaemonSet) | 2 min |
 | 23 | AtlasOS cluster brain | 2 min |
-| 24 | Atlas agent registration + crons | 2 min |
+| 24 | Atlas four-layer agent registration + crons | 2 min |
 | 25 | Smoke tests | 2 min |
 
 ```bash
@@ -168,12 +168,19 @@ Fleet config: `config/fleet.json5`
 
 ## AtlasOS Embedding
 
-AtlasOS is embedded at every level:
+AtlasOS is embedded at every level, and every environment should preserve the same four-layer topology:
 
 1. **Node-level**: DaemonSet on every K3s node — monitors CPU, memory, disk, GPU health
 2. **Service-level**: Sidecar agents for platform services — health, latency, circuit breaking
-3. **Cluster-level**: Cluster brain (CEO + Supervisor + Guardian) with K8s API access — scaling, remediation, governance
-4. **Repo-level**: Agent kits in all ~162 repos — code quality, CI/CD, dependency management, autonomous PRs
+3. **Cluster-level**: Shared AtlasOS runtime for the canonical agent layers
+4. **Repo-level**: Agent kits in all MedinovAI repos — code quality, CI/CD, dependency management, autonomous PRs
+
+Within the shared AtlasOS runtime, the canonical agent layers are:
+
+1. **Named Assistants**: one assistant per employee or executive persona such as `ceo`/Arjun
+2. **Functional Agents**: reusable shared-domain agents such as finance, compliance, recruiting, procurement, and security
+3. **Entity Agents**: one runtime per governed entity class such as employees, SOPs, protocols, regulations, customers, clinics, and patients
+4. **Squad Agents**: specialist workers that execute delegated tasks, evaluations, and approvals inside a domain
 
 ```bash
 # Embed in all repos
