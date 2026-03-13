@@ -1,40 +1,37 @@
 service:
   name: medinovai-real-time-stream-bus
-  version: "1.0.0"
-  tier: 1
+  version: 1.0.0
+  tier: 2
   category: platform
   health_endpoint: /health
-  port: 8080
-  dependencies:
-    - medinovai-core
-  squad: infrastructure-squad
-
+  port: 7000
+  dependencies: []
+  squad: platform-squad
 module:
-  name: "medinovai-real-time-stream-bus"
-  version: "0.0.0"
+  name: medinovai-real-time-stream-bus
+  version: 1.0.0
   domain: platform
-  profile: backend-service
-  tier: 1
+  profile: platform
+  tier: 2
   status: active
-  description: "medinovai-real-time-stream-bus backend service"
-  owner: "@myonsite-healthcare"
-
+  description: medinovai-real-time-stream-bus service
+  owner: '@medinovai-health'
 deployment:
   runtime: node
   containerized: true
-  dockerfile: "./Dockerfile"
-  k8s_namespace: platform
+  dockerfile: ./Dockerfile
+  k8s_namespace: medinovai-services
   health_endpoint: /health
   ready_endpoint: /ready
-  port: 3000
+  port: 7000
   min_replicas: 1
   canary_enabled: false
   gpu_required: false
   sidecar_enabled: true
   secrets_required:
-    - atlasos-infra-secrets
-
+  - vault-runtime-secrets
 governance:
-  compliance: [HIPAA]
+  compliance:
+  - HIPAA
   phi_handling: false
   audit_required: true
