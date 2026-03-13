@@ -1,0 +1,36 @@
+service:
+  name: medinovai-infrastructure
+  version: 1.0.0
+  tier: 1
+  category: platform
+  health_endpoint: ''
+  port: 0
+  dependencies: []
+  squad: infrastructure-squad
+module:
+  name: medinovai-infrastructure
+  version: 1.0.0
+  domain: platform
+  profile: none
+  tier: 1
+  status: active
+  description: "Core platform infrastructure \u2014 IaC, Kubernetes configs, Terraform\
+    \ modules"
+  owner: '@medinovai-health'
+deployment:
+  runtime: none
+  containerized: false
+  dockerfile: ''
+  k8s_namespace: medinovai-services
+  health_endpoint: ''
+  ready_endpoint: ''
+  port: 0
+  min_replicas: 0
+  canary_enabled: false
+  gpu_required: false
+  sidecar_enabled: false
+  secrets_required: []
+governance:
+  compliance: []
+  phi_handling: false
+  audit_required: false

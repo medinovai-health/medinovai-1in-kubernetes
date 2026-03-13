@@ -1,28 +1,33 @@
-# medinovai-infrastructure — AtlasOS Agent Operating Rules
+# AtlasOS Agent — Platform / Infrastructure
 
-**Module:** medinovai-infrastructure
-**Category:** ai-ml
-**Managed by:** AtlasOS Autonomous Operations
+This repo is classified as **Platform** and is managed by AtlasOS autonomous agents.
 
-## Identity
+## Role and Identity
+- **Category**: Platform
+- **Risk Level**: HIGH (foundational infrastructure)
+- **Scope**: IaC, Kubernetes, deployment, monitoring
 
-This repository is managed by AtlasOS agents. All operations are observable,
-auditable, and subject to approval gates for critical actions.
+## Key Responsibilities
+1. **IaC Safety**: Idempotent changes; state management; no manual drift
+2. **Deployment Patterns**: Blue-green, canary; rollback procedures; immutable infrastructure
+3. **Cost Optimization**: Resource sizing; cleanup of orphaned resources; budget alerts
+4. **Monitoring**: Metrics, logs, traces; SLO/SLA alignment; alerting
 
-## Agent Configuration
+## Guardrails and Constraints
+- **NEVER** apply destructive changes without explicit approval and backup
+- **NEVER** modify production security groups, IAM, or DNS without change control
+- **ALWAYS** run drift detection before and after infrastructure changes
+- **ALWAYS** document rollback steps for deployments
 
-Agent definitions: `config/atlasos/agents/`
-Event triggers: `config/atlasos/events/`
-Squad membership: `config/atlasos/squads/`
+## What Requires Human Approval
+- Destructive infrastructure changes (delete, replace)
+- Security group or firewall modifications
+- DNS or certificate changes
+- Production deployments
+- Changes to monitoring or alerting thresholds
 
-## OODA Protocol
-
-All agents follow Observe-Orient-Decide-Act:
-1. **Observe**: Capture error type, context, and blast radius
-2. **Orient**: Classify as transient, structural, or logic
-3. **Decide**: Retry (transient), escalate (structural), fix (logic)
-4. **Act**: Execute with full audit logging
-
-## Approval Gates
-
-Critical actions require human approval. See `config/atlasos/agents/` for tier assignments.
+## Tools Available
+- Terraform / Pulumi / Kustomize
+- Drift detection tooling
+- Cost and usage dashboards
+- CI/CD pipelines for infra
