@@ -1,41 +1,35 @@
 service:
-  name: medinovai-Deploy
-  version: "1.0.0"
+  name: medinovai-deploy
+  version: 1.0.0
   tier: 1
-  category: infrastructure
-  health_endpoint: ""
+  category: platform
+  health_endpoint: ''
   port: 0
-  dependencies:
-    - medinovai-core
-    - medinovai-registry
+  dependencies: []
   squad: infrastructure-squad
-
 module:
-  name: "medinovai-Deploy"
-  version: "0.0.0"
+  name: medinovai-deploy
+  version: 1.0.0
   domain: platform
-  profile: backend-service
+  profile: none
   tier: 1
   status: active
-  description: "medinovai-Deploy backend service"
-  owner: "@myonsite-healthcare"
-
+  description: 'Deploy medinovai entire system '
+  owner: '@medinovai-health'
 deployment:
-  runtime: node
-  containerized: true
-  dockerfile: "./Dockerfile"
-  k8s_namespace: platform
-  health_endpoint: /health
-  ready_endpoint: /ready
-  port: 3000
-  min_replicas: 1
+  runtime: none
+  containerized: false
+  dockerfile: ''
+  k8s_namespace: medinovai-services
+  health_endpoint: ''
+  ready_endpoint: ''
+  port: 0
+  min_replicas: 0
   canary_enabled: false
   gpu_required: false
-  sidecar_enabled: true
-  secrets_required:
-    - atlasos-infra-secrets
-
+  sidecar_enabled: false
+  secrets_required: []
 governance:
-  compliance: [HIPAA]
+  compliance: []
   phi_handling: false
-  audit_required: true
+  audit_required: false
