@@ -1,0 +1,41 @@
+# MedinovAI Platform Context
+
+## Identity
+
+MedinovAI is a multi-tenant healthcare, clinical research, and AI platform. Repositories in the
+`medinovai-health` GitHub org must align to one platform model instead of inventing local rules.
+
+## Non-Negotiables
+
+- No PHI in logs, prompts, embeddings, fixtures, or comments.
+- No cross-tenant access. Every request path must stay tenant-scoped.
+- Every state-changing workflow requires an audit trail.
+- Least privilege for service accounts, CI tokens, and runtime roles.
+- Every deployable service must expose `GET /health`.
+- Do not create a new repo when an existing MedinovAI repo should be extended.
+
+## Tier Model
+
+- Tier 0: core libraries and shared contracts
+- Tier 1: platform and security services
+- Tier 2: domain platform services and orchestration
+- Tier 3: clinical, research, and business applications
+- Tier 4: frontend and client applications
+
+## Operating Rules
+
+- Prefer standards from `medinovai-Deploy` over repo-local conventions when they conflict.
+- Use generated `medinovai.manifest.yaml` values as the source of truth for tier, category, and squad.
+- Keep repo automation thin: reusable workflows, shared templates, and policy checks come from the hub.
+- Deployable repos must keep `.env.example`, `Dockerfile`, and health checks aligned with the manifest.
+- Mobile, library, and documentation repos still receive charters and manifests, but they do not get Docker deployment wiring.
+
+## Squad Mapping
+
+- `infrastructure-squad`: infra, deploy, observability, release automation
+- `security-squad`: auth, encryption, privacy, zero-trust controls
+- `data-squad`: data services, lineage, analytics, research data fabric
+- `clinical-squad`: LIS, CTMS, eTMF, clinical workflows, regulatory tools
+- `ai-ml-squad`: model services, LLMs, AI reasoning, agent systems
+- `frontend-squad`: web UI, client apps, mobile surfaces, design systems
+- `platform-squad`: shared runtime services, developer experience, org tooling
