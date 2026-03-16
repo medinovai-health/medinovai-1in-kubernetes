@@ -1256,6 +1256,184 @@
               }
             }
           ]
+        },
+
+        "4H_northstar": {
+          "name": "Northstar Culture OS",
+          "description": "Employee recognition, rewards, culture building, and engagement platform. Host port range: 18000-18099.",
+          "deploy_order": [
+            "northstar-identity",
+            "northstar-recognition",
+            "northstar-rewards",
+            "northstar-communications",
+            "northstar-listening",
+            "northstar-learning-reinforcement",
+            "northstar-onboarding",
+            "northstar-analytics",
+            "northstar-connector-broker",
+            "northstar-openclaw",
+            "northstar-phi-firewall",
+            "northstar-web"
+          ],
+          "host_port_range": "18000-18099",
+          "services": [
+            {
+              "id": "northstar-identity",
+              "repo": "myonsite-healthcare/Northstar",
+              "type": "python-service",
+              "port": 8000,
+              "host_port": 18000,
+              "health": "/health",
+              "tier": "critical",
+              "depends_on": {
+                "infrastructure": ["postgres-primary", "redis-cache"],
+                "services": []
+              }
+            },
+            {
+              "id": "northstar-recognition",
+              "repo": "myonsite-healthcare/Northstar",
+              "type": "python-service",
+              "port": 8000,
+              "host_port": 18001,
+              "health": "/health",
+              "tier": "high",
+              "depends_on": {
+                "infrastructure": ["postgres-primary", "redis-cache", "kafka"],
+                "services": ["northstar-identity"]
+              }
+            },
+            {
+              "id": "northstar-rewards",
+              "repo": "myonsite-healthcare/Northstar",
+              "type": "python-service",
+              "port": 8000,
+              "host_port": 18002,
+              "health": "/health",
+              "tier": "high",
+              "depends_on": {
+                "infrastructure": ["postgres-primary", "redis-cache"],
+                "services": ["northstar-identity"]
+              }
+            },
+            {
+              "id": "northstar-communications",
+              "repo": "myonsite-healthcare/Northstar",
+              "type": "python-service",
+              "port": 8000,
+              "host_port": 18003,
+              "health": "/health",
+              "tier": "normal",
+              "depends_on": {
+                "infrastructure": ["postgres-primary", "kafka"],
+                "services": ["northstar-identity"]
+              }
+            },
+            {
+              "id": "northstar-listening",
+              "repo": "myonsite-healthcare/Northstar",
+              "type": "python-service",
+              "port": 8000,
+              "host_port": 18004,
+              "health": "/health",
+              "tier": "normal",
+              "depends_on": {
+                "infrastructure": ["postgres-primary", "redis-cache", "kafka"],
+                "services": []
+              }
+            },
+            {
+              "id": "northstar-learning-reinforcement",
+              "repo": "myonsite-healthcare/Northstar",
+              "type": "python-service",
+              "port": 8000,
+              "host_port": 18005,
+              "health": "/health",
+              "tier": "normal",
+              "depends_on": {
+                "infrastructure": ["postgres-primary", "redis-cache", "kafka"],
+                "services": ["northstar-recognition"]
+              }
+            },
+            {
+              "id": "northstar-onboarding",
+              "repo": "myonsite-healthcare/Northstar",
+              "type": "python-service",
+              "port": 8000,
+              "host_port": 18006,
+              "health": "/health",
+              "tier": "normal",
+              "depends_on": {
+                "infrastructure": ["postgres-primary", "redis-cache"],
+                "services": ["northstar-identity", "northstar-recognition"]
+              }
+            },
+            {
+              "id": "northstar-analytics",
+              "repo": "myonsite-healthcare/Northstar",
+              "type": "python-service",
+              "port": 8000,
+              "host_port": 18007,
+              "health": "/health",
+              "tier": "normal",
+              "depends_on": {
+                "infrastructure": ["postgres-primary", "redis-cache", "kafka"],
+                "services": []
+              }
+            },
+            {
+              "id": "northstar-connector-broker",
+              "repo": "myonsite-healthcare/Northstar",
+              "type": "python-service",
+              "port": 8000,
+              "host_port": 18008,
+              "health": "/health",
+              "tier": "normal",
+              "depends_on": {
+                "infrastructure": ["postgres-primary", "redis-cache"],
+                "services": []
+              }
+            },
+            {
+              "id": "northstar-openclaw",
+              "repo": "myonsite-healthcare/Northstar",
+              "type": "python-service",
+              "port": 8000,
+              "host_port": 18009,
+              "health": "/health",
+              "tier": "normal",
+              "depends_on": {
+                "infrastructure": ["postgres-primary", "redis-cache", "kafka"],
+                "services": []
+              }
+            },
+            {
+              "id": "northstar-phi-firewall",
+              "repo": "myonsite-healthcare/Northstar",
+              "type": "python-service",
+              "port": 8000,
+              "host_port": 18010,
+              "health": "/health",
+              "tier": "high",
+              "depends_on": {
+                "infrastructure": ["postgres-primary", "redis-cache"],
+                "services": []
+              }
+            },
+            {
+              "id": "northstar-web",
+              "repo": "myonsite-healthcare/Northstar",
+              "type": "node-service",
+              "port": 3000,
+              "host_port": 18080,
+              "health": "/",
+              "tier": "normal",
+              "depends_on": {
+                "infrastructure": [],
+                "services": ["northstar-identity", "northstar-recognition", "northstar-analytics"]
+              }
+            }
+          ]
         }
       }
     },
@@ -1573,7 +1751,7 @@
 
   "summary": {
     "total_tiers": 8,
-    "total_services": 143,
+    "total_services": 155,
     "total_infrastructure": 19,
     "critical_path": [
       "postgres-primary",

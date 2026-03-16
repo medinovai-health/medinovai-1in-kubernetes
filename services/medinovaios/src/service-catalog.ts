@@ -109,6 +109,21 @@ export const SERVICES: ServiceDef[] = [
     requiresAuth: true,
   },
 
+  {
+    id: 'northstar',
+    name: 'Northstar',
+    description: 'Employee recognition, rewards, culture building & engagement platform',
+    category: 'Products',
+    icon: '⭐',
+    externalUrl: url(18000),
+    healthPath: '/health',
+    internalHealthUrl: 'http://northstar-identity:8000/health',
+    embed: false,
+    port: ':18000',
+    tags: ['employee', 'recognition', 'rewards', 'culture', 'engagement'],
+    requiresAuth: true,
+  },
+
   // ─── AI Platform ────────────────────────────────────────────────────────────
   {
     id: 'atlas',

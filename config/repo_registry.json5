@@ -495,7 +495,7 @@
       "sidecar_enabled": true
     },
     {
-      "name": "medinovai-agent-provisioner",
+"name": "medinovai-agent-provisioner",
       "category": "platform",
       "tier": 1,
       "sidecar_enabled": true
@@ -541,6 +541,14 @@
       "category": "backend-service",
       "tier": 2,
       "sidecar_enabled": true
+    },
+    {
+      "name": "Northstar",
+      "category": "platform",
+      "tier": 4,
+      "sidecar_enabled": true,
+      "host_port_range": "18000-18099",
+      "description": "Employee recognition, rewards, culture building, and engagement platform (Northstar Culture OS)"
     }
   ]
 }
