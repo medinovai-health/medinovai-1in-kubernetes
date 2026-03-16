@@ -1,0 +1,56 @@
+# MedinovAI Agent — systemd service unit
+# ========================================
+# Install:
+#   sudo cp medinovai-agent.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now medinovai-agent
+#
+# For user-level (no root):
+#   mkdir -p ~/.config/systemd/user/
+#   cp medinovai-agent.service ~/.config/systemd/user/
+#   systemctl --user daemon-reload
+#   systemctl --user enable --now medinovai-agent
+#
+# Logs:
+#   journalctl -u medinovai-agent -f
+#   tail -f ~/.medinovai/agent.log
+
+[Unit]
+Description=MedinovAI Node Agent
+Documentation=https://github.com/medinovai-health/medinovai-deploy
+After=network-online.target tailscaled.service
+Wants=network-online.target
+# Restart after Ollama if it exists
+After=ollama.service
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/medinovai-agent run
+Restart=on-failure
+RestartSec=30s
+TimeoutStopSec=15s
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=%h/.medinovai
+
+# Resource limits — be a good citizen
+CPUQuota=10%
+MemoryMax=256M
+Nice=10
+IOSchedulingClass=3
+
+# Environment
+Environment=PATH=/usr/local/bin:/usr/bin:/bin
+EnvironmentFile=-%h/.medinovai/agent.env
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=medinovai-agent
+
+[Install]
+WantedBy=default.target
