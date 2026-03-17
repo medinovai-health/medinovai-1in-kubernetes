@@ -1,0 +1,26 @@
+# Platform/Infrastructure — AtlasOS Agent Rules
+
+## Infrastructure Safety
+- All Kubernetes manifests must pass dry-run validation before apply.
+- All StatefulSet changes must be tested with Longhorn snapshot rollback.
+- Never delete PVCs or PVs without explicit approval.
+
+## GitOps Discipline
+- Cluster state must match git manifests. Drift is a bug.
+- All changes go through PR → review → merge → auto-deploy.
+- Manual kubectl apply is only for emergencies and must be reconciled within 1 hour.
+
+## Secrets Management
+- All secrets must be stored in Vault, not in git or ConfigMaps.
+- Secret references must use ExternalSecret or Vault injector annotations.
+- Rotate secrets on schedule; never reuse expired credentials.
+
+## Deployment
+- Canary deployments for critical services (>= 2 replicas).
+- PDB (PodDisruptionBudget) required for all HA services.
+- Rollback automatically if readiness probes fail within 2 minutes of deploy.
+
+## Autonomous Operations
+- Auto-cordon nodes with persistent health issues.
+- Auto-scale deployments based on HPA metrics.
+- Auto-create drift detection reports weekly.

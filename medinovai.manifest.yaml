@@ -1,42 +1,36 @@
-# medinovai.manifest.yaml — Module Identity Card
-# Repository: medinovai-infrastructure
-# K8s manifests, Helm charts, Terraform IaC, ArgoCD, workspace provisioning
-
 service:
   name: medinovai-infrastructure
-  version: "1.0.0"
+  version: 1.0.0
   tier: 1
-  category: infrastructure
-  health_endpoint: ""
+  category: platform
+  health_endpoint: ''
   port: 0
   dependencies: []
   squad: infrastructure-squad
-
 module:
   name: medinovai-infrastructure
-  version: "1.0.0"
-  domain: infrastructure
-  profile: iac
+  version: 1.0.0
+  domain: platform
+  profile: none
   tier: 1
   status: active
-  description: "Infrastructure-as-Code: Kubernetes, Helm umbrella chart, Terraform, ArgoCD, workspace provisioning (Jupyter/VSCode/RStudio), Temporal workflow engine"
-  owner: "@myonsite-healthcare/infrastructure"
-
-observability:
-  log_level: 2
-  sampling_rate: 0.5
-
+  description: "Core platform infrastructure \u2014 IaC, Kubernetes configs, Terraform\
+    \ modules"
+  owner: '@medinovai-health'
 deployment:
-  runtime: iac
+  runtime: none
   containerized: false
-  dockerfile: ""
-  k8s_namespace: ""
-  health_endpoint: ""
+  dockerfile: ''
+  k8s_namespace: medinovai-services
+  health_endpoint: ''
+  ready_endpoint: ''
   port: 0
   min_replicas: 0
   canary_enabled: false
-
+  gpu_required: false
+  sidecar_enabled: false
+  secrets_required: []
 governance:
-  compliance: [HIPAA, SOC2]
+  compliance: []
   phi_handling: false
-  audit_required: true
+  audit_required: false
