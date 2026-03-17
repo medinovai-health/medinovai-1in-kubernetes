@@ -1,0 +1,49 @@
+---
+description: jCodeMunch — token-efficient code navigation via MCP (replaces file reads)
+alwaysApply: true
+---
+
+# Code Navigation — jCodeMunch MCP (Always Active)
+
+**Never read full files to find code. Use jcodemunch-mcp tools instead.**
+
+A background daemon (`com.medinovai.jcodemunch`) keeps every repo under `~/Github/` pre-indexed at all times — 179+ repos, 279k+ symbols, updated within 15 minutes of any git commit.
+
+## Session Start Protocol (every session)
+
+1. Call `list_repos` — confirm this repo is indexed (it almost certainly is)
+2. If missing: `index_folder: { "path": "<current working directory>" }` — one-time, takes ~5s
+3. Use the repo's short display name for all subsequent calls (e.g. `"AtlasOS"`, `"zeroTouchMarketing"`)
+
+## Always Use These Tools
+
+| Instead of... | Use this |
+|---|---|
+| Read a file to find a function | `search_symbols: { "repo": "...", "query": "functionName" }` |
+| Read a file to understand a class | `get_file_outline: { "repo": "...", "file_path": "src/foo.py" }` |
+| Open a whole file | `get_symbol: { "repo": "...", "symbol_id": "path::Name#kind" }` |
+| Grep for a string | `search_text: { "repo": "...", "query": "string" }` |
+| Understand repo structure | `get_repo_outline: { "repo": "..." }` |
+| Get function + its imports | `get_context_bundle: { "repo": "...", "symbol_id": "..." }` |
+
+## Symbol ID Format
+
+```
+<file_path>::<qualified_name>#<kind>
+```
+
+Examples:
+- `src/main.py::UserService.login#method`
+- `openclaw/skills/_runner/index.js::SkillRunner.executeSkill#method`
+- `mcp-servers/llm-proxy/index.js::routeRequest#function`
+
+## Only Fall Back to File Reads When
+
+- You are about to **edit** a specific file (need exact content + line numbers)
+- The MCP server is unreachable
+- The file type is not indexed (images, PDFs, config-only YAML)
+
+## Cost Impact
+
+Every `search_symbols` + `get_symbol` call instead of reading a file saves ~40,000 tokens.
+All AI summaries route to local Ollama fleet (`qwen2.5-coder:32b`) — zero commercial cost.
