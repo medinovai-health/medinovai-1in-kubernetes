@@ -13,10 +13,9 @@ set -euo pipefail
 
 # ─── Configuration ────────────────────────────────────────────────────────────
 TIMEZONE="${TZ:-America/New_York}"
-# Replace with your real Slack channel IDs
-OPS_CHANNEL="${OPS_CHANNEL:-channel:C_OPS_CHANNEL_ID}"
-EXEC_CHANNEL="${EXEC_CHANNEL:-channel:C_EXEC_CHANNEL_ID}"
-SUPPORT_CHANNEL="${SUPPORT_CHANNEL:-channel:C_SUPPORT_CHANNEL_ID}"
+OPS_CHANNEL="${OPS_CHANNEL:?OPS_CHANNEL env var is required (e.g. channel:C01ABCDEF)}"
+EXEC_CHANNEL="${EXEC_CHANNEL:?EXEC_CHANNEL env var is required (e.g. channel:C02ABCDEF)}"
+SUPPORT_CHANNEL="${SUPPORT_CHANNEL:?SUPPORT_CHANNEL env var is required (e.g. channel:C03ABCDEF)}"
 
 echo "╔══════════════════════════════════════════════════════════════╗"
 echo "║          MedinovAI Atlas Cron Registration                     ║"

@@ -16,15 +16,22 @@ import type { Request, Response } from 'express';
 import { createHash, randomBytes } from 'crypto';
 
 // ── Configuration (from environment) ─────────────────────────────────────────
-const KC_URL     = process.env.KEYCLOAK_URL     ?? 'http://localhost:8081';
-const KC_REALM   = process.env.KEYCLOAK_REALM   ?? 'medinov-ai';
-const CLIENT_ID  = process.env.KEYCLOAK_CLIENT_ID    ?? 'medinovaios';
+// KC_URL: internal URL for server-to-server calls (token exchange, JWKS, logout)
+// KC_PUBLIC_URL: browser-facing URL for auth redirects (falls back to KC_URL)
+const KC_URL        = process.env.KEYCLOAK_URL        ?? 'http://localhost:8081';
+const KC_PUBLIC_URL = process.env.KEYCLOAK_PUBLIC_URL  ?? KC_URL;
+const KC_REALM      = process.env.KEYCLOAK_REALM       ?? 'medinov-ai';
+const CLIENT_ID     = process.env.KEYCLOAK_CLIENT_ID   ?? 'medinovaios';
 const CLIENT_SECRET = process.env.KEYCLOAK_CLIENT_SECRET ?? '';
-const REDIRECT_URI  = process.env.KEYCLOAK_REDIRECT_URI  ?? 'http://localhost:3030/api/sso/callback';
-const JWKS_URI      = process.env.KEYCLOAK_JWKS_URI      ?? `${KC_URL}/realms/${KC_REALM}/protocol/openid-connect/certs`;
+const REDIRECT_URI  = process.env.KEYCLOAK_REDIRECT_URI ?? 'http://localhost:3030/api/sso/callback';
+const JWKS_URI      = process.env.KEYCLOAK_JWKS_URI     ?? `${KC_URL}/realms/${KC_REALM}/protocol/openid-connect/certs`;
+const FORCE_SECURE_COOKIE = process.env.SSO_COOKIE_SECURE;
+const IS_LOCAL_HTTP =
+  KC_PUBLIC_URL.startsWith('http://localhost') ||
+  REDIRECT_URI.startsWith('http://localhost');
 
 const TOKEN_ENDPOINT  = `${KC_URL}/realms/${KC_REALM}/protocol/openid-connect/token`;
-const AUTH_ENDPOINT   = `${KC_URL}/realms/${KC_REALM}/protocol/openid-connect/auth`;
+const AUTH_ENDPOINT   = `${KC_PUBLIC_URL}/realms/${KC_REALM}/protocol/openid-connect/auth`;
 const LOGOUT_ENDPOINT = `${KC_URL}/realms/${KC_REALM}/protocol/openid-connect/logout`;
 
 // Cookie names
@@ -35,7 +42,10 @@ const COOKIE_STATE    = 'kc_state';
 // Cookie options — httpOnly prevents XSS token theft
 const COOKIE_OPTS = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
+  // Local development uses http://localhost, so secure cookies would be dropped.
+  secure: FORCE_SECURE_COOKIE
+    ? FORCE_SECURE_COOKIE === 'true'
+    : process.env.NODE_ENV === 'production' && !IS_LOCAL_HTTP,
   sameSite: 'lax' as const,
   path: '/',
 };
@@ -99,9 +109,12 @@ async function verifyJwt(token: string): Promise<JwtPayload> {
     throw new Error('Token expired');
   }
 
-  // Issuer check
-  const expectedIss = `${KC_URL}/realms/${KC_REALM}`;
-  if (payload.iss !== expectedIss) {
+  // Issuer check — accept tokens signed with either internal or public KC URL
+  const allowedIssuers = new Set([
+    `${KC_URL}/realms/${KC_REALM}`,
+    `${KC_PUBLIC_URL}/realms/${KC_REALM}`,
+  ]);
+  if (!payload.iss || !allowedIssuers.has(payload.iss)) {
     throw new Error(`Invalid issuer: ${payload.iss}`);
   }
 
@@ -140,6 +153,20 @@ function generateCodeChallenge(verifier: string): string {
   return createHash('sha256').update(verifier).digest('base64url');
 }
 
+// ── Redirect validation (prevent open-redirect attacks) ──────────────────────
+function sanitizeRedirect(raw: string | undefined): string {
+  if (!raw) return '/';
+  try {
+    const url = new URL(raw, 'http://localhost');
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return '/';
+    if (url.hostname !== 'localhost') return url.pathname + url.search + url.hash;
+    return url.pathname + url.search + url.hash;
+  } catch {
+    if (raw.startsWith('/') && !raw.startsWith('//')) return raw;
+    return '/';
+  }
+}
+
 // ── In-memory PKCE state store (keyed by state param) ─────────────────────────
 // In production, move this to Redis for multi-replica deployments.
 const pkceStore = new Map<string, { codeVerifier: string; redirectTo?: string; createdAt: number }>();
@@ -161,7 +188,7 @@ setInterval(() => {
  *   redirect  — URL to return to after login (default: '/')
  */
 export function handleLogin(req: Request, res: Response) {
-  const redirectTo = (req.query.redirect as string) || '/';
+  const redirectTo = sanitizeRedirect(req.query.redirect as string | undefined);
   const state = randomBytes(16).toString('hex');
   const codeVerifier = generateCodeVerifier();
   const codeChallenge = generateCodeChallenge(codeVerifier);

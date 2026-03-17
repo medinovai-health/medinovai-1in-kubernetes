@@ -228,6 +228,19 @@ nc -zv 100.79.214.33 30080   # api-gateway
 
 ---
 
+## Project Host Port Ranges (Docker Compose)
+
+Each project is assigned a unique 100-port block for host-side Docker Compose mappings. Internal container ports always follow the Deploy standard (8000 for Python, 3000 for Node.js). Never overlap ranges.
+
+| Project | Host Port Range | Key Services |
+|---------|-----------------|--------------|
+| Northstar | `18000–18099` | identity=18000, recognition=18001, rewards=18002, communications=18003, listening=18004, learning=18005, onboarding=18006, analytics=18007, connector=18008, openclaw=18009, phi-firewall=18010, mock-registry=18099, K8s NodePort=31800 |
+| SAES / Cortex | `3050` / `3100` | Legacy — pre-dates range policy |
+
+Register new projects here before assigning ports.
+
+---
+
 ## Smoke Test Sequence
 
 Run after any install or reinstall to verify the full stack:

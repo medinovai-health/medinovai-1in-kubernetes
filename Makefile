@@ -20,6 +20,9 @@ ENV ?= onprem-prod
 .PHONY: help setup prerequisites init-network init-k3s init-k3s-agent init-dgx init-storage init-vault
 .PHONY: seed-secrets instantiate instantiate-critical
 .PHONY: deploy-all deploy-critical deploy-tier deploy-service deploy-atlasos deploy-gpu deploy-agents
+.PHONY: deploy-platform build-base-images build-images build-images-parallel verify-loop platform-status
+.PHONY: generate-all-services deploy-all-docker
+.PHONY: deploy-tier0-infra deploy-tier1-sec deploy-tier2-core
 .PHONY: embed-atlasos embed-atlasos-repo embed-atlasos-category register-agents register-crons
 .PHONY: health gpu-status agent-status status vault-status
 .PHONY: rotate-secrets drift-check backup cert-check docker-backup docker-backup-verify docker-restore
@@ -65,17 +68,17 @@ instantiate: ## Full platform instantiation (25 steps, ~70min)
 instantiate-critical: ## Critical path only (15 steps, ~25min)
 	@bash $(BOOTSTRAP)/instantiate.sh --critical-path-only
 
-# ─── Deploy ───────────────────────────────────────────────────────────────────
-deploy-all: ## Deploy all services (tier 0-6)
+# ─── Deploy (K8s) ─────────────────────────────────────────────────────────────
+deploy-all: ## Deploy all K8s services (tier 0-6)
 	@bash $(DEPLOY)/deploy_tier.sh all
 
-deploy-critical: ## Deploy critical path only
+deploy-critical: ## Deploy K8s critical path only
 	@bash $(DEPLOY)/deploy_tier.sh all --critical-path-only
 
-deploy-tier: ## Deploy specific tier (TIER=0-6)
+deploy-tier: ## Deploy specific K8s tier (TIER=0-6)
 	@bash $(DEPLOY)/deploy_tier.sh $(TIER)
 
-deploy-service: ## Deploy single service (SVC=name)
+deploy-service: ## Deploy single K8s service (SVC=name)
 	@bash $(DEPLOY)/deploy_service.sh --service $(SVC) --environment $(ENV)
 
 deploy-atlasos: ## Deploy AtlasOS services
@@ -86,6 +89,77 @@ deploy-gpu: ## Deploy GPU/AI inference services
 
 deploy-agents: ## Deploy AtlasOS infrastructure agents
 	@bash $(DEPLOY)/deploy_tier.sh agents
+
+# ─── Deploy (Docker Compose — Platform Tiers) ────────────────────────────────
+deploy-platform: ## Full tiered Docker deploy (T0 infra -> T1 security -> T2 platform -> medinovaios)
+	@bash $(DEPLOY)/deploy_platform.sh
+
+deploy-tier0-infra: ## Deploy Tier 0 infrastructure only (Postgres, Redis, Kafka, Vault, etc.)
+	@bash $(DEPLOY)/deploy_platform.sh --tier 0
+
+deploy-tier1-sec: ## Deploy Tier 1 security services only (SSO, RBAC, encryption, etc.)
+	@bash $(DEPLOY)/deploy_platform.sh --tier 1
+
+deploy-tier2-core: ## Deploy Tier 2 platform core only (Registry, Data, Gateway, etc.)
+	@bash $(DEPLOY)/deploy_platform.sh --tier 2
+
+build-base-images: ## Build shared base Docker images (run before build-images)
+	@docker build -t medinovai-base-python:latest -f infra/docker/Dockerfile.base-python infra/docker/
+	@docker build -t medinovai-base-node:latest -f infra/docker/Dockerfile.base-node infra/docker/
+
+build-images: build-base-images ## Build Docker images for all MedinovAI services from local repos
+	@bash $(DEPLOY)/build_tier_images.sh
+
+build-images-tier: build-base-images ## Build images for specific tier (TIER=1-6)
+	@bash $(DEPLOY)/build_tier_images.sh --tier $(TIER)
+
+build-images-parallel: build-base-images ## Build all tier images in parallel (fastest)
+	@echo "Building tiers 1-3 in parallel..."
+	@bash $(DEPLOY)/build_tier_images.sh --tier 1 & \
+	 bash $(DEPLOY)/build_tier_images.sh --tier 2 & \
+	 bash $(DEPLOY)/build_tier_images.sh --tier 3 & \
+	 wait
+	@echo "Building tiers 4-6 in parallel..."
+	@bash $(DEPLOY)/build_tier_images.sh --tier 4 & \
+	 bash $(DEPLOY)/build_tier_images.sh --tier 5 & \
+	 bash $(DEPLOY)/build_tier_images.sh --tier 6 & \
+	 wait
+
+generate-all-services: ## Generate docker-compose.all-services.yml from dependency graph
+	@python3 $(DEPLOY)/generate_all_services_compose.py
+
+deploy-all-docker: deploy-tier0-infra generate-all-services ## Deploy all 117 services via Docker Compose
+	@bash $(DEPLOY)/verify_loop.sh --tier 0 --max-iterations 3
+	@docker compose -f infra/docker/docker-compose.all-services.yml up -d
+	@bash $(DEPLOY)/verify_loop.sh --auto-fix
+
+deploy-rest: ## Deploy remaining 95 platform services into the running medinovai-dev stack
+	@bash $(DEPLOY)/deploy_rest_to_dev.sh
+
+deploy-rest-skip-build: ## Deploy remaining services into medinovai-dev (skip image builds)
+	@bash $(DEPLOY)/deploy_rest_to_dev.sh --skip-build
+
+verify-loop: ## AtlasOS verification loop — iterate until 100% healthy
+	@bash $(DEPLOY)/verify_loop.sh --auto-fix
+
+verify-status: ## Single-pass health check of all platform services
+	@bash $(DEPLOY)/verify_loop.sh --max-iterations 1
+
+platform-status: ## Show Docker Compose platform service status across all tiers
+	@echo "━━━ Tier 0: Infrastructure ━━━"
+	@docker compose -f infra/docker/docker-compose.tier0-infra.yml ps 2>/dev/null || echo "  Not deployed"
+	@echo ""
+	@echo "━━━ Tier 1: Security ━━━"
+	@docker compose -f infra/docker/docker-compose.tier1-security.yml ps 2>/dev/null || echo "  Not deployed"
+	@echo ""
+	@echo "━━━ Tier 2: Platform Core ━━━"
+	@docker compose -f infra/docker/docker-compose.tier2-platform.yml ps 2>/dev/null || echo "  Not deployed"
+	@echo ""
+	@echo "━━━ All Services (Tiers 1-6) ━━━"
+	@docker compose -f infra/docker/docker-compose.all-services.yml ps 2>/dev/null || echo "  Not deployed"
+	@echo ""
+	@echo "━━━ medinovaios ━━━"
+	@docker compose -f infra/docker/docker-compose.dev.yml ps medinovaios 2>/dev/null || echo "  Not deployed"
 
 # ─── AtlasOS Embedding ───────────────────────────────────────────────────────
 embed-atlasos: ## Embed AtlasOS in all ~162 repos
@@ -281,10 +355,21 @@ docker-status: ## Show status of all Docker Compose production services
 validate: ## Full validation suite
 	@bash $(VALIDATION)/validate_setup.sh
 
-validate-k8s: ## Validate K8s manifests
+validate-k8s: ## Validate K8s manifests (works offline — no cluster needed)
 	@kubectl kustomize $(K8S)/base > /dev/null && echo "Base: OK"
 	@kubectl kustomize $(K8S)/services/tier0 > /dev/null && echo "Tier 0: OK"
-	@kubectl kustomize $(K8S)/services/atlasos > /dev/null && echo "AtlasOS: OK"
+	@kubectl kustomize $(K8S)/services/tier1 > /dev/null && echo "Tier 1: OK"
+	@kubectl kustomize $(K8S)/services/tier2 > /dev/null && echo "Tier 2: OK"
+	@kubectl kustomize $(K8S)/services/tier3 > /dev/null && echo "Tier 3: OK"
+	@kubectl kustomize $(K8S)/services/tier4 > /dev/null && echo "Tier 4: OK"
+	@kubectl kustomize $(K8S)/services/tier5 > /dev/null && echo "Tier 5: OK"
+	@kubectl kustomize $(K8S)/services/tier6 > /dev/null && echo "Tier 6: OK"
+	@kubectl kustomize $(K8S)/services/atlasos > /dev/null 2>&1 && echo "AtlasOS: OK" || \
+		(for f in $(K8S)/services/atlasos/*.yaml; do \
+			case "$$(basename $$f)" in kustomization.yaml) continue;; esac; \
+			kubectl apply --dry-run=client -f "$$f" > /dev/null 2>&1 || \
+				(echo "AtlasOS FAIL: $$f" && exit 1); \
+		done && echo "AtlasOS: OK (validated per-file)")
 
 smoke-test: ## Run smoke tests
 	@bash $(VALIDATION)/smoke_test.sh

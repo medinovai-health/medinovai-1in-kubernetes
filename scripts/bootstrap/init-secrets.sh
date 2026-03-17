@@ -14,6 +14,12 @@ PROJECT="medinovai"
 VAULT_ADDR="${VAULT_ADDR:-http://localhost:8200}"
 VAULT_TOKEN="${VAULT_TOKEN:-${VAULT_DEV_ROOT_TOKEN:-medinovai-dev-token}}"
 
+# Block dev tokens in non-dev environments
+if [[ "$ENVIRONMENT" != "staging" && "$ENVIRONMENT" != "dev" ]] && [[ "$VAULT_TOKEN" == "medinovai-dev-token" ]]; then
+    echo "FATAL: Cannot use dev token in ${ENVIRONMENT}. Set VAULT_TOKEN explicitly."
+    exit 1
+fi
+
 while [[ $# -gt 0 ]]; do
     case $1 in
         --cloud)        CLOUD="$2"; shift 2 ;;
@@ -93,17 +99,17 @@ case "$CLOUD" in
         fi
 
         # Ensure KV v2 engine is enabled
-        if ! vault secrets list -format=json 2>/dev/null | grep -q '"secret/"'; then
-            vault secrets enable -path=secret kv-v2
-            echo "  ✓ KV v2 secrets engine enabled"
+        if ! vault secrets list -format=json 2>/dev/null | grep -q '"medinovai-secrets/"'; then
+            vault secrets enable -path=medinovai-secrets kv-v2
+            echo "  ✓ KV v2 secrets engine enabled at medinovai-secrets/"
         fi
 
         # Write generated secrets into Vault KV v2
         vault_put() {
             local path="$1"; shift
-            vault kv put "secret/medinovai/$path" "$@" \
-                && echo "  ✓ secret/medinovai/$path" \
-                || echo "  ⚠ Failed to write secret/medinovai/$path"
+            vault kv put "medinovai-secrets/$path" "$@" \
+                && echo "  ✓ medinovai-secrets/$path" \
+                || echo "  ⚠ Failed to write medinovai-secrets/$path"
         }
 
         vault_put "infra/postgres"       password="$DB_PASSWORD"

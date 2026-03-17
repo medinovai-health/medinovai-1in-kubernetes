@@ -78,6 +78,46 @@ medinovai-Deploy/
 └── Makefile                    # All operations: make help
 ```
 
+## Blank Host Quickstart (4 Steps)
+
+Minimum path from a fresh machine to a running platform:
+
+```bash
+# 1. Check prerequisites (Docker, kubectl, helm, etc.)
+make prerequisites
+
+# 2. Bootstrap infrastructure (Docker Compose, Vault, namespaces, storage)
+make bootstrap
+
+# 3. Deploy all services in tiered order
+make deploy-all
+
+# 4. Verify everything is healthy
+make smoke-test
+```
+
+**Requirements**: Docker Desktop (or OrbStack) running, SSH key added to GitHub, `.env` file configured from `infra/docker/.env.example`.
+
+For the full 25-step instantiation including Tailscale mesh, DGX GPU nodes, and AtlasOS embedding, see below.
+
+## Keycloak Ownership Policy
+
+Only one Keycloak owner is allowed per environment/runtime.
+
+- `k8s + platform` (enforced): `medinovai-Deploy` tier0 owns Keycloak and is the canonical platform owner.
+- `compose + standalone` (allowed): `medinovai-security-service` may own Keycloak for local development.
+- `compose + platform` (informational/advisory): reference topology only, not a default blocker for standalone local workflows.
+
+Validation is built into deploy entrypoints:
+
+```bash
+# Kubernetes preflight is enforced by default in deploy_tier
+bash scripts/deploy/deploy_tier.sh 1
+
+# Compose validation stays advisory by default for local standalone
+bash scripts/deploy/deploy_platform.sh --keycloak-mode standalone --keycloak-ownership-mode warn
+```
+
 ## Greenfield Instantiation
 
 Full setup from blank to running platform in 25 steps (~70 min). Critical path only: 15 steps (~25 min).

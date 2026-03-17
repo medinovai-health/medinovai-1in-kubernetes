@@ -1,0 +1,814 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: medinovai-chatbot
+  namespace: medinovai-services
+  labels:
+    app: medinovai-chatbot
+    tier: domain
+    app.kubernetes.io/managed-by: medinovai-deploy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: medinovai-chatbot
+  template:
+    metadata:
+      labels:
+        app: medinovai-chatbot
+        tier: domain
+        app.kubernetes.io/managed-by: medinovai-deploy
+    spec:
+      containers:
+        - name: medinovai-chatbot
+          image: medinovai-chatbot:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8000
+          env:
+            - name: SERVICE_NAME
+              value: "medinovai-chatbot"
+            - name: PORT
+              value: "8000"
+            - name: REGISTRY_URL
+              value: "http://medinovai-registry.medinovai-services:8080"
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            failureThreshold: 2
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 8000
+            initialDelaySeconds: 45
+            periodSeconds: 15
+            failureThreshold: 3
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "200m"
+            limits:
+              memory: "2Gi"
+              cpu: "2000m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: medinovai-chatbot
+  namespace: medinovai-services
+  labels:
+    app: medinovai-chatbot
+    tier: domain
+    app.kubernetes.io/managed-by: medinovai-deploy
+spec:
+  selector:
+    app: medinovai-chatbot
+  ports:
+    - port: 8000
+      targetPort: 8000
+      protocol: TCP
+      name: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: medinovai-ai-scribe
+  namespace: medinovai-services
+  labels:
+    app: medinovai-ai-scribe
+    tier: domain
+    app.kubernetes.io/managed-by: medinovai-deploy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: medinovai-ai-scribe
+  template:
+    metadata:
+      labels:
+        app: medinovai-ai-scribe
+        tier: domain
+        app.kubernetes.io/managed-by: medinovai-deploy
+    spec:
+      containers:
+        - name: medinovai-ai-scribe
+          image: medinovai-ai-scribe:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8000
+          env:
+            - name: SERVICE_NAME
+              value: "medinovai-ai-scribe"
+            - name: PORT
+              value: "8000"
+            - name: REGISTRY_URL
+              value: "http://medinovai-registry.medinovai-services:8080"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            failureThreshold: 2
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 45
+            periodSeconds: 15
+            failureThreshold: 3
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "200m"
+            limits:
+              memory: "2Gi"
+              cpu: "2000m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: medinovai-ai-scribe
+  namespace: medinovai-services
+  labels:
+    app: medinovai-ai-scribe
+    tier: domain
+    app.kubernetes.io/managed-by: medinovai-deploy
+spec:
+  selector:
+    app: medinovai-ai-scribe
+  ports:
+    - port: 8000
+      targetPort: 8000
+      protocol: TCP
+      name: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: medinovai-doc-summarizer
+  namespace: medinovai-services
+  labels:
+    app: medinovai-doc-summarizer
+    tier: domain
+    app.kubernetes.io/managed-by: medinovai-deploy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: medinovai-doc-summarizer
+  template:
+    metadata:
+      labels:
+        app: medinovai-doc-summarizer
+        tier: domain
+        app.kubernetes.io/managed-by: medinovai-deploy
+    spec:
+      containers:
+        - name: medinovai-doc-summarizer
+          image: medinovai-doc-summarizer:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8000
+          env:
+            - name: SERVICE_NAME
+              value: "medinovai-doc-summarizer"
+            - name: PORT
+              value: "8000"
+            - name: REGISTRY_URL
+              value: "http://medinovai-registry.medinovai-services:8080"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            failureThreshold: 2
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 45
+            periodSeconds: 15
+            failureThreshold: 3
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "200m"
+            limits:
+              memory: "2Gi"
+              cpu: "2000m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: medinovai-doc-summarizer
+  namespace: medinovai-services
+  labels:
+    app: medinovai-doc-summarizer
+    tier: domain
+    app.kubernetes.io/managed-by: medinovai-deploy
+spec:
+  selector:
+    app: medinovai-doc-summarizer
+  ports:
+    - port: 8000
+      targetPort: 8000
+      protocol: TCP
+      name: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: medinovai-natural-language-query
+  namespace: medinovai-services
+  labels:
+    app: medinovai-natural-language-query
+    tier: domain
+    app.kubernetes.io/managed-by: medinovai-deploy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: medinovai-natural-language-query
+  template:
+    metadata:
+      labels:
+        app: medinovai-natural-language-query
+        tier: domain
+        app.kubernetes.io/managed-by: medinovai-deploy
+    spec:
+      containers:
+        - name: medinovai-natural-language-query
+          image: medinovai-natural-language-query:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8000
+          env:
+            - name: SERVICE_NAME
+              value: "medinovai-natural-language-query"
+            - name: PORT
+              value: "8000"
+            - name: REGISTRY_URL
+              value: "http://medinovai-registry.medinovai-services:8080"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            failureThreshold: 2
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 45
+            periodSeconds: 15
+            failureThreshold: 3
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "200m"
+            limits:
+              memory: "2Gi"
+              cpu: "2000m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: medinovai-natural-language-query
+  namespace: medinovai-services
+  labels:
+    app: medinovai-natural-language-query
+    tier: domain
+    app.kubernetes.io/managed-by: medinovai-deploy
+spec:
+  selector:
+    app: medinovai-natural-language-query
+  ports:
+    - port: 8000
+      targetPort: 8000
+      protocol: TCP
+      name: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: medinovai-anomaly-detector
+  namespace: medinovai-services
+  labels:
+    app: medinovai-anomaly-detector
+    tier: domain
+    app.kubernetes.io/managed-by: medinovai-deploy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: medinovai-anomaly-detector
+  template:
+    metadata:
+      labels:
+        app: medinovai-anomaly-detector
+        tier: domain
+        app.kubernetes.io/managed-by: medinovai-deploy
+    spec:
+      containers:
+        - name: medinovai-anomaly-detector
+          image: medinovai-anomaly-detector:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8000
+          env:
+            - name: SERVICE_NAME
+              value: "medinovai-anomaly-detector"
+            - name: PORT
+              value: "8000"
+            - name: REGISTRY_URL
+              value: "http://medinovai-registry.medinovai-services:8080"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            failureThreshold: 2
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 45
+            periodSeconds: 15
+            failureThreshold: 3
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "200m"
+            limits:
+              memory: "2Gi"
+              cpu: "2000m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: medinovai-anomaly-detector
+  namespace: medinovai-services
+  labels:
+    app: medinovai-anomaly-detector
+    tier: domain
+    app.kubernetes.io/managed-by: medinovai-deploy
+spec:
+  selector:
+    app: medinovai-anomaly-detector
+  ports:
+    - port: 8000
+      targetPort: 8000
+      protocol: TCP
+      name: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: medinovai-sentiment-monitor
+  namespace: medinovai-services
+  labels:
+    app: medinovai-sentiment-monitor
+    tier: domain
+    app.kubernetes.io/managed-by: medinovai-deploy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: medinovai-sentiment-monitor
+  template:
+    metadata:
+      labels:
+        app: medinovai-sentiment-monitor
+        tier: domain
+        app.kubernetes.io/managed-by: medinovai-deploy
+    spec:
+      containers:
+        - name: medinovai-sentiment-monitor
+          image: medinovai-sentiment-monitor:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8000
+          env:
+            - name: SERVICE_NAME
+              value: "medinovai-sentiment-monitor"
+            - name: PORT
+              value: "8000"
+            - name: REGISTRY_URL
+              value: "http://medinovai-registry.medinovai-services:8080"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            failureThreshold: 2
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 45
+            periodSeconds: 15
+            failureThreshold: 3
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "200m"
+            limits:
+              memory: "2Gi"
+              cpu: "2000m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: medinovai-sentiment-monitor
+  namespace: medinovai-services
+  labels:
+    app: medinovai-sentiment-monitor
+    tier: domain
+    app.kubernetes.io/managed-by: medinovai-deploy
+spec:
+  selector:
+    app: medinovai-sentiment-monitor
+  ports:
+    - port: 8000
+      targetPort: 8000
+      protocol: TCP
+      name: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: medinovai-drug-interaction-checker
+  namespace: medinovai-services
+  labels:
+    app: medinovai-drug-interaction-checker
+    tier: domain
+    app.kubernetes.io/managed-by: medinovai-deploy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: medinovai-drug-interaction-checker
+  template:
+    metadata:
+      labels:
+        app: medinovai-drug-interaction-checker
+        tier: domain
+        app.kubernetes.io/managed-by: medinovai-deploy
+    spec:
+      containers:
+        - name: medinovai-drug-interaction-checker
+          image: medinovai-drug-interaction-checker:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8000
+          env:
+            - name: SERVICE_NAME
+              value: "medinovai-drug-interaction-checker"
+            - name: PORT
+              value: "8000"
+            - name: REGISTRY_URL
+              value: "http://medinovai-registry.medinovai-services:8080"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            failureThreshold: 2
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 45
+            periodSeconds: 15
+            failureThreshold: 3
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "200m"
+            limits:
+              memory: "2Gi"
+              cpu: "2000m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: medinovai-drug-interaction-checker
+  namespace: medinovai-services
+  labels:
+    app: medinovai-drug-interaction-checker
+    tier: domain
+    app.kubernetes.io/managed-by: medinovai-deploy
+spec:
+  selector:
+    app: medinovai-drug-interaction-checker
+  ports:
+    - port: 8000
+      targetPort: 8000
+      protocol: TCP
+      name: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: medinovai-medical-fax-processing
+  namespace: medinovai-services
+  labels:
+    app: medinovai-medical-fax-processing
+    tier: domain
+    app.kubernetes.io/managed-by: medinovai-deploy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: medinovai-medical-fax-processing
+  template:
+    metadata:
+      labels:
+        app: medinovai-medical-fax-processing
+        tier: domain
+        app.kubernetes.io/managed-by: medinovai-deploy
+    spec:
+      containers:
+        - name: medinovai-medical-fax-processing
+          image: medinovai-medical-fax-processing:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8000
+          env:
+            - name: SERVICE_NAME
+              value: "medinovai-medical-fax-processing"
+            - name: PORT
+              value: "8000"
+            - name: REGISTRY_URL
+              value: "http://medinovai-registry.medinovai-services:8080"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            failureThreshold: 2
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 45
+            periodSeconds: 15
+            failureThreshold: 3
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "200m"
+            limits:
+              memory: "2Gi"
+              cpu: "2000m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: medinovai-medical-fax-processing
+  namespace: medinovai-services
+  labels:
+    app: medinovai-medical-fax-processing
+    tier: domain
+    app.kubernetes.io/managed-by: medinovai-deploy
+spec:
+  selector:
+    app: medinovai-medical-fax-processing
+  ports:
+    - port: 8000
+      targetPort: 8000
+      protocol: TCP
+      name: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: medinovai-content-translator
+  namespace: medinovai-services
+  labels:
+    app: medinovai-content-translator
+    tier: domain
+    app.kubernetes.io/managed-by: medinovai-deploy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: medinovai-content-translator
+  template:
+    metadata:
+      labels:
+        app: medinovai-content-translator
+        tier: domain
+        app.kubernetes.io/managed-by: medinovai-deploy
+    spec:
+      containers:
+        - name: medinovai-content-translator
+          image: medinovai-content-translator:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8000
+          env:
+            - name: SERVICE_NAME
+              value: "medinovai-content-translator"
+            - name: PORT
+              value: "8000"
+            - name: REGISTRY_URL
+              value: "http://medinovai-registry.medinovai-services:8080"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            failureThreshold: 2
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 45
+            periodSeconds: 15
+            failureThreshold: 3
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "200m"
+            limits:
+              memory: "2Gi"
+              cpu: "2000m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: medinovai-content-translator
+  namespace: medinovai-services
+  labels:
+    app: medinovai-content-translator
+    tier: domain
+    app.kubernetes.io/managed-by: medinovai-deploy
+spec:
+  selector:
+    app: medinovai-content-translator
+  ports:
+    - port: 8000
+      targetPort: 8000
+      protocol: TCP
+      name: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: medinovai-text-to-speech-narrator
+  namespace: medinovai-services
+  labels:
+    app: medinovai-text-to-speech-narrator
+    tier: domain
+    app.kubernetes.io/managed-by: medinovai-deploy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: medinovai-text-to-speech-narrator
+  template:
+    metadata:
+      labels:
+        app: medinovai-text-to-speech-narrator
+        tier: domain
+        app.kubernetes.io/managed-by: medinovai-deploy
+    spec:
+      containers:
+        - name: medinovai-text-to-speech-narrator
+          image: medinovai-text-to-speech-narrator:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8000
+          env:
+            - name: SERVICE_NAME
+              value: "medinovai-text-to-speech-narrator"
+            - name: PORT
+              value: "8000"
+            - name: REGISTRY_URL
+              value: "http://medinovai-registry.medinovai-services:8080"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            failureThreshold: 2
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 45
+            periodSeconds: 15
+            failureThreshold: 3
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "200m"
+            limits:
+              memory: "2Gi"
+              cpu: "2000m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: medinovai-text-to-speech-narrator
+  namespace: medinovai-services
+  labels:
+    app: medinovai-text-to-speech-narrator
+    tier: domain
+    app.kubernetes.io/managed-by: medinovai-deploy
+spec:
+  selector:
+    app: medinovai-text-to-speech-narrator
+  ports:
+    - port: 8000
+      targetPort: 8000
+      protocol: TCP
+      name: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: medinovai-voice-command-layer
+  namespace: medinovai-services
+  labels:
+    app: medinovai-voice-command-layer
+    tier: domain
+    app.kubernetes.io/managed-by: medinovai-deploy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: medinovai-voice-command-layer
+  template:
+    metadata:
+      labels:
+        app: medinovai-voice-command-layer
+        tier: domain
+        app.kubernetes.io/managed-by: medinovai-deploy
+    spec:
+      containers:
+        - name: medinovai-voice-command-layer
+          image: medinovai-voice-command-layer:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8000
+          env:
+            - name: SERVICE_NAME
+              value: "medinovai-voice-command-layer"
+            - name: PORT
+              value: "8000"
+            - name: REGISTRY_URL
+              value: "http://medinovai-registry.medinovai-services:8080"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            failureThreshold: 2
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 45
+            periodSeconds: 15
+            failureThreshold: 3
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "200m"
+            limits:
+              memory: "2Gi"
+              cpu: "2000m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: medinovai-voice-command-layer
+  namespace: medinovai-services
+  labels:
+    app: medinovai-voice-command-layer
+    tier: domain
+    app.kubernetes.io/managed-by: medinovai-deploy
+spec:
+  selector:
+    app: medinovai-voice-command-layer
+  ports:
+    - port: 8000
+      targetPort: 8000
+      protocol: TCP
+      name: http

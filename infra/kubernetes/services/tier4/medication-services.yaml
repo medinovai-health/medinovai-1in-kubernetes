@@ -1,0 +1,148 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: medinovai-e-prescribe-gateway
+  namespace: medinovai-services
+  labels:
+    app: medinovai-e-prescribe-gateway
+    tier: domain
+    app.kubernetes.io/managed-by: medinovai-deploy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: medinovai-e-prescribe-gateway
+  template:
+    metadata:
+      labels:
+        app: medinovai-e-prescribe-gateway
+        tier: domain
+        app.kubernetes.io/managed-by: medinovai-deploy
+    spec:
+      containers:
+        - name: medinovai-e-prescribe-gateway
+          image: medinovai-e-prescribe-gateway:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8000
+          env:
+            - name: SERVICE_NAME
+              value: "medinovai-e-prescribe-gateway"
+            - name: PORT
+              value: "8000"
+            - name: REGISTRY_URL
+              value: "http://medinovai-registry.medinovai-services:8080"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            failureThreshold: 2
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 45
+            periodSeconds: 15
+            failureThreshold: 3
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "50m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: medinovai-e-prescribe-gateway
+  namespace: medinovai-services
+  labels:
+    app: medinovai-e-prescribe-gateway
+    tier: domain
+    app.kubernetes.io/managed-by: medinovai-deploy
+spec:
+  selector:
+    app: medinovai-e-prescribe-gateway
+  ports:
+    - port: 8000
+      targetPort: 8000
+      protocol: TCP
+      name: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: medinovai-medication-tracker
+  namespace: medinovai-services
+  labels:
+    app: medinovai-medication-tracker
+    tier: domain
+    app.kubernetes.io/managed-by: medinovai-deploy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: medinovai-medication-tracker
+  template:
+    metadata:
+      labels:
+        app: medinovai-medication-tracker
+        tier: domain
+        app.kubernetes.io/managed-by: medinovai-deploy
+    spec:
+      containers:
+        - name: medinovai-medication-tracker
+          image: medinovai-medication-tracker:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8000
+          env:
+            - name: SERVICE_NAME
+              value: "medinovai-medication-tracker"
+            - name: PORT
+              value: "8000"
+            - name: REGISTRY_URL
+              value: "http://medinovai-registry.medinovai-services:8080"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            failureThreshold: 2
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 45
+            periodSeconds: 15
+            failureThreshold: 3
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "50m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: medinovai-medication-tracker
+  namespace: medinovai-services
+  labels:
+    app: medinovai-medication-tracker
+    tier: domain
+    app.kubernetes.io/managed-by: medinovai-deploy
+spec:
+  selector:
+    app: medinovai-medication-tracker
+  ports:
+    - port: 8000
+      targetPort: 8000
+      protocol: TCP
+      name: http

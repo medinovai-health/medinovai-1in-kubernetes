@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: stream-bus-bridge
+  namespace: medinovai
+  labels:
+    app.kubernetes.io/name: stream-bus-bridge
+    app.kubernetes.io/part-of: atlasos
+spec:
+  type: ClusterIP
+  ports:
+    - port: 3110
+      targetPort: 3110
+      protocol: TCP
+      name: http
+  selector:
+    app: stream-bus-bridge

@@ -9,6 +9,7 @@
 #   bash scripts/agents/embed_atlasos.sh --repo medinovai-CTMS    # Single repo
 #   bash scripts/agents/embed_atlasos.sh --category clinical      # All clinical repos
 #   bash scripts/agents/embed_atlasos.sh --all --dry-run           # Preview changes
+#   bash scripts/agents/embed_atlasos.sh --all --include-sdk      # Also copy agent auth SDK (middleware + health routes)
 # ─────────────────────────────────────────────────────────────────────────────
 
 set -euo pipefail
@@ -24,20 +25,22 @@ TARGET_CATEGORY=""
 ALL_REPOS=false
 DRY_RUN=false
 AUTO_COMMIT=false
+INCLUDE_SDK=false
 
 while [[ $# -gt 0 ]]; do
     case $1 in
-        --all)       ALL_REPOS=true; shift ;;
-        --repo)      TARGET_REPO="$2"; shift 2 ;;
-        --category)  TARGET_CATEGORY="$2"; shift 2 ;;
-        --dry-run)   DRY_RUN=true; shift ;;
-        --commit)    AUTO_COMMIT=true; shift ;;
-        *)           echo "Unknown option: $1"; exit 1 ;;
+        --all)         ALL_REPOS=true; shift ;;
+        --repo)        TARGET_REPO="$2"; shift 2 ;;
+        --category)    TARGET_CATEGORY="$2"; shift 2 ;;
+        --dry-run)     DRY_RUN=true; shift ;;
+        --commit)      AUTO_COMMIT=true; shift ;;
+        --include-sdk) INCLUDE_SDK=true; shift ;;
+        *)             echo "Unknown option: $1"; exit 1 ;;
     esac
 done
 
 if ! $ALL_REPOS && [ -z "$TARGET_REPO" ] && [ -z "$TARGET_CATEGORY" ]; then
-    echo "Usage: $0 --all | --repo <name> | --category <cat> [--dry-run] [--commit]"
+    echo "Usage: $0 --all | --repo <name> | --category <cat> [--dry-run] [--commit] [--include-sdk]"
     exit 1
 fi
 
@@ -82,6 +85,7 @@ embed_repo() {
 
     if $DRY_RUN; then
         log "    [DRY RUN] Would copy $template_dir/* → $repo_path/"
+        $INCLUDE_SDK && log "    [DRY RUN] Would copy SDK (middleware + routes) → $repo_path/atlasos-sdk/"
         return 0
     fi
 
@@ -105,6 +109,26 @@ embed_repo() {
             cp -f "$template_dir/$f" "$repo_path/$f"
         fi
     done
+
+    # Deploy SDK (middleware + health routes) when --include-sdk
+    if $INCLUDE_SDK; then
+        local sdk_middleware="$REPO_ROOT/templates/repo-agents/middleware"
+        local sdk_routes="$REPO_ROOT/templates/repo-agents/routes"
+        local dest_middleware="$repo_path/atlasos-sdk/middleware"
+        local dest_routes="$repo_path/atlasos-sdk/routes"
+        if [ -d "$sdk_middleware" ]; then
+            mkdir -p "$dest_middleware"
+            cp -f "$sdk_middleware"/agent_auth.py "$dest_middleware/" 2>/dev/null || true
+            cp -f "$sdk_middleware"/agent_auth.js "$dest_middleware/" 2>/dev/null || true
+            log "    SDK: copied middleware (agent_auth.py, agent_auth.js)"
+        fi
+        if [ -d "$sdk_routes" ]; then
+            mkdir -p "$dest_routes"
+            cp -f "$sdk_routes"/agent_health.py "$dest_routes/" 2>/dev/null || true
+            cp -f "$sdk_routes"/agent_health.js "$dest_routes/" 2>/dev/null || true
+            log "    SDK: copied routes (agent_health.py, agent_health.js)"
+        fi
+    fi
 
     # Auto-commit if requested
     if $AUTO_COMMIT; then

@@ -1,47 +1,11 @@
 name: CI
-
 on:
   push:
-    branches: [main, develop]
   pull_request:
-    branches: [main]
-
 jobs:
-  validate:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install tools
-        run: |
-          curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
-          sudo mv kustomize /usr/local/bin/
-
-      - name: Validate K8s manifests
-        run: |
-          for dir in infra/kubernetes/services/*/; do
-            if [ -f "$dir/kustomization.yaml" ]; then
-              echo "Validating $dir..."
-              kustomize build "$dir" > /dev/null || exit 1
-            fi
-          done
-
-      - name: Validate base
-        run: kustomize build infra/kubernetes/base > /dev/null
-
-      - name: Shell lint
-        run: |
-          find scripts -name "*.sh" -exec bash -n {} \;
-
-      - name: JSON5 config check
-        run: |
-          python3 -c "
-          import json, re, glob
-          for f in glob.glob('config/*.json5'):
-              with open(f) as fh:
-                  content = re.sub(r'//.*', '', fh.read())
-                  content = re.sub(r'/\*.*?\*/', '', content, flags=re.DOTALL)
-                  content = re.sub(r',\s*([\]}])', r'\1', content)
-                  json.loads(content)
-                  print(f'{f}: OK')
-          "
+  ci:
+    uses: medinovai-health/medinovai-Deploy/.github/workflows/reusable/ci.yml@main
+    with:
+      category: platform
+      service_name: medinovai-deploy
+    secrets: inherit

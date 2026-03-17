@@ -89,11 +89,14 @@ fi
 
 echo ""
 echo "▸ Checking domain certificates..."
-DOMAINS=(
-    # Add your domains here
-    # "app.medinovai.example.com"
-    # "api.medinovai.example.com"
-)
+CERT_CONFIG="${CERT_CONFIG:-$(dirname "$0")/../../config/domains.txt}"
+DOMAINS=()
+if [ -f "$CERT_CONFIG" ]; then
+    while IFS= read -r line; do
+        [[ -z "$line" || "$line" == \#* ]] && continue
+        DOMAINS+=("$line")
+    done < "$CERT_CONFIG"
+fi
 
 if [ ${#DOMAINS[@]} -eq 0 ]; then
     echo "  No domains configured for checking. Add domains to this script."
@@ -109,8 +112,19 @@ if [ "$ISSUES" -gt 0 ]; then
     if $RENEW; then
         echo ""
         echo "▸ Triggering certificate renewal..."
-        echo "  TODO: Trigger cert-manager renewal for expiring certificates"
-        echo "  TODO: Trigger ACM renewal for AWS-managed certificates"
+        if command -v kubectl &>/dev/null; then
+            echo "  Renewing cert-manager certificates..."
+            kubectl get certificates -A --no-headers 2>/dev/null | while read -r ns name rest; do
+                echo "  Renewing $ns/$name..."
+                kubectl cert-manager renew "$name" -n "$ns" 2>/dev/null || \
+                    echo "  ⚠ Could not renew $ns/$name (cert-manager CLI may not be installed)"
+            done
+        fi
+        if command -v aws &>/dev/null; then
+            echo "  Checking AWS ACM certificates..."
+            aws acm list-certificates --query 'CertificateSummaryList[?Status==`PENDING_VALIDATION`]' \
+                --output text 2>/dev/null || echo "  ⚠ AWS ACM check failed"
+        fi
     fi
     exit 2
 else

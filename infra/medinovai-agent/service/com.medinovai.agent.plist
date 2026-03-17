@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  MedinovAI Agent — macOS LaunchAgent
+  ====================================
+  Install:   cp com.medinovai.agent.plist ~/Library/LaunchAgents/
+             launchctl load ~/Library/LaunchAgents/com.medinovai.agent.plist
+
+  Uninstall: launchctl unload ~/Library/LaunchAgents/com.medinovai.agent.plist
+             rm ~/Library/LaunchAgents/com.medinovai.agent.plist
+
+  Logs:      tail -f ~/.medinovai/agent.log
+             /Library/Logs/medinovai-agent.out.log
+             /Library/Logs/medinovai-agent.err.log
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.medinovai.agent</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/local/bin/medinovai-agent</string>
+    <string>run</string>
+  </array>
+
+  <!-- Run at login and keep alive if it exits -->
+  <key>RunAtLoad</key>
+  <true/>
+
+  <key>KeepAlive</key>
+  <dict>
+    <key>SuccessfulExit</key>
+    <false/>
+    <key>Crashed</key>
+    <true/>
+  </dict>
+
+  <!-- Throttle restart to avoid tight crash loops -->
+  <key>ThrottleInterval</key>
+  <integer>30</integer>
+
+  <key>StandardOutPath</key>
+  <string>/Library/Logs/medinovai-agent.out.log</string>
+
+  <key>StandardErrorPath</key>
+  <string>/Library/Logs/medinovai-agent.err.log</string>
+
+  <!-- Environment -->
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin</string>
+    <key>HOME</key>
+    <string>PLACEHOLDER_HOME</string>
+  </dict>
+
+  <!-- Nice priority — don't compete with foreground work -->
+  <key>ProcessType</key>
+  <string>Background</string>
+
+  <key>Nice</key>
+  <integer>5</integer>
+</dict>
+</plist>

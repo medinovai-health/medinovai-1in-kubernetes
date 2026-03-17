@@ -36,6 +36,12 @@ VAULT_ADDR="${VAULT_ADDR:-http://localhost:8200}"
 VAULT_TOKEN="${VAULT_TOKEN:-${VAULT_DEV_ROOT_TOKEN:-medinovai-dev-token}}"
 export VAULT_ADDR VAULT_TOKEN
 
+# Block dev tokens in non-dev environments
+if [[ "${ENVIRONMENT:-dev}" != "dev" && "$VAULT_TOKEN" == "medinovai-dev-token" ]]; then
+    echo "FATAL: Cannot use dev token in ${ENVIRONMENT}. Set VAULT_TOKEN explicitly."
+    exit 1
+fi
+
 # ── Helpers ───────────────────────────────────────────────────────────────────
 ok()   { echo "  ✓ $*"; }
 log()  { echo "▸ $*"; }
@@ -81,11 +87,11 @@ if [[ "$SEED_ONLY" == "false" ]]; then
 
 # ── Step 1: Enable KV v2 secrets engine ───────────────────────────────────────
 log "Step 1/4 — KV v2 secrets engine"
-if engine_enabled "secret"; then
-    ok "KV v2 already enabled at secret/"
+if engine_enabled "medinovai-secrets"; then
+    ok "KV v2 already enabled at medinovai-secrets/"
 else
-    vault secrets enable -path=secret kv-v2
-    ok "KV v2 enabled at secret/"
+    vault secrets enable -path=medinovai-secrets kv-v2
+    ok "KV v2 enabled at medinovai-secrets/"
 fi
 
 # ── Step 2: Enable AppRole auth (Docker Compose / non-K8s services) ──────────
@@ -123,14 +129,14 @@ write_policy() {
     local name="$1"
     local path="$2"
     vault policy write "$name" - <<EOF
-path "secret/data/medinovai/$path" {
+path "medinovai-secrets/data/$path" {
   capabilities = ["read"]
 }
-path "secret/metadata/medinovai/$path" {
+path "medinovai-secrets/metadata/$path" {
   capabilities = ["read"]
 }
 EOF
-    ok "Policy: $name → secret/medinovai/$path"
+    ok "Policy: $name → medinovai-secrets/$path"
 }
 
 write_policy "infra-postgres"        "infra/postgres"
@@ -155,9 +161,15 @@ write_policy "medinovaios"           "keycloak/medinovaios"
 create_approle() {
     local name="$1"
     local policies="$2"
+    local sid_ttl="0"
+    local num_uses="0"
+    if [[ "${ENVIRONMENT:-dev}" != "dev" ]]; then
+        sid_ttl="24h"
+        num_uses="100"
+    fi
     vault write "auth/approle/role/$name" \
-        secret_id_ttl=0 \
-        token_num_uses=0 \
+        secret_id_ttl="$sid_ttl" \
+        token_num_uses="$num_uses" \
         token_ttl=1h \
         token_max_ttl=4h \
         token_policies="$policies"
@@ -212,13 +224,12 @@ echo ""
 seed_secret() {
     local path="$1"
     shift
-    # Check if already exists
-    if secret_exists "secret/medinovai/$path"; then
-        ok "Already exists: secret/medinovai/$path (skipping)"
+    if secret_exists "medinovai-secrets/$path"; then
+        ok "Already exists: medinovai-secrets/$path (skipping)"
         return
     fi
-    vault kv put "secret/medinovai/$path" "$@"
-    ok "Seeded: secret/medinovai/$path"
+    vault kv put "medinovai-secrets/$path" "$@"
+    ok "Seeded: medinovai-secrets/$path"
 }
 
 # Infrastructure

@@ -3,6 +3,7 @@ kind: Kustomization
 
 resources:
   - secret-store.yaml
+  - secret-stores.yaml
   - external-secret-infra.yaml
   - external-secret-atlasos.yaml
   - external-secret-security.yaml

@@ -3,7 +3,7 @@
 # Usage: bash scripts/deploy_brain.sh
 set -euo pipefail
 
-GITHUB_DIR="/Users/mayanktrivedi/Github"
+GITHUB_DIR="${GITHUB_DIR:?GITHUB_DIR is required. Set to your GitHub repos directory.}"
 MASTER_DOC="$GITHUB_DIR/MedinovAI Atlas/docs/ATLAS_AUTONOMOUS_ARCHITECTURE.md"
 MASTER_RULE="$GITHUB_DIR/MedinovAI Atlas/.cursor/rules/atlas-autonomous-brain.mdc"
 COMMIT_MSG="Add MedinovAI Atlas autonomous brain training and architecture reference"
