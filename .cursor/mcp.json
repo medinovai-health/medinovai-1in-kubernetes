@@ -1,0 +1,47 @@
+{
+  "mcpServers": {
+    "jcodemunch": {
+      "name": "jCodeMunch",
+      "description": "Token-efficient code exploration via tree-sitter AST parsing - 95%+ token savings",
+      "command": "uvx",
+      "args": ["jcodemunch-mcp"],
+      "env": {
+        "JCODEMUNCH_USE_AI_SUMMARIES": "false",
+        "GITHUB_TOKEN": "${GITHUB_TOKEN}",
+        "ANTHROPIC_API_KEY": "${ANTHROPIC_API_KEY}"
+      },
+      "disabled": false,
+      "autoApprove": [
+        "index_folder",
+        "index_repo",
+        "list_repos",
+        "search_symbols",
+        "get_symbol",
+        "get_file_outline",
+        "get_file_tree",
+        "get_repo_outline",
+        "get_context_bundle",
+        "search_text",
+        "find_references",
+        "find_importers",
+        "get_symbols",
+        "get_file_content",
+        "search_columns"
+      ]
+    },
+    "jdocmunch": {
+      "name": "jDocMunch",
+      "description": "Documentation indexing companion to jCodeMunch - for READMEs, specs, and docs",
+      "command": "uvx",
+      "args": ["jdocmunch-mcp"],
+      "env": {},
+      "disabled": false,
+      "autoApprove": [
+        "index_doc_local",
+        "search_sections",
+        "get_section",
+        "get_toc_tree"
+      ]
+    }
+  }
+}
