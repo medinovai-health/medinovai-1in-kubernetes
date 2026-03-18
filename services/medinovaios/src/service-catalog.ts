@@ -21,7 +21,8 @@ export type ServiceCategory =
   | 'Monitoring'
   | 'GitOps'
   | 'Dev Tools'
-  | 'Platform Services';
+  | 'Platform Services'
+  | 'Tailscale Services';
 
 export type HealthStatus = 'healthy' | 'degraded' | 'offline' | 'unknown';
 
@@ -331,6 +332,83 @@ export const SERVICES: ServiceDef[] = [
     port: ':30083',
     tags: ['audit', 'HIPAA', 'compliance', 'logs'],
   },
+  {
+    id: 'keycloak-iam',
+    name: 'Keycloak IAM',
+    description: 'Enterprise Identity & Access Management — SSO, RBAC, MFA, multi-tenancy',
+    category: 'Platform Services',
+    icon: '🛡️',
+    externalUrl: url(8081),
+    healthPath: '/health/ready',
+    internalHealthUrl: 'http://keycloak.medinovai-data.svc.cluster.local:9080/health/ready',
+    embed: false,
+    port: ':8081',
+    tags: ['IAM', 'SSO', 'Keycloak', 'RBAC', 'MFA', 'OIDC'],
+    requiresAuth: false,
+  },
+
+  // ─── Tailscale Services (bigscale-justice.ts.net) ─────────────────────────
+  {
+    id: 'ts-keycloak',
+    name: 'Keycloak (Tailscale)',
+    description: 'Production Keycloak SSO accessible via Tailscale network',
+    category: 'Tailscale Services',
+    icon: '🔐',
+    externalUrl: 'https://keycloak.bigscale-justice.ts.net',
+    healthPath: '/health/ready',
+    embed: false,
+    tags: ['IAM', 'SSO', 'Keycloak', 'Tailscale', 'production'],
+    requiresAuth: false,
+  },
+  {
+    id: 'ts-gitlab',
+    name: 'GitLab',
+    description: 'Git repository hosting, CI/CD pipelines, container registry',
+    category: 'Tailscale Services',
+    icon: '🦊',
+    externalUrl: 'https://gitlab.bigscale-justice.ts.net',
+    healthPath: '/',
+    embed: false,
+    tags: ['git', 'CI/CD', 'registry', 'Tailscale'],
+    requiresAuth: true,
+  },
+  {
+    id: 'ts-vtiger',
+    name: 'vTiger CRM',
+    description: 'Customer relationship management — contacts, pipeline, sales',
+    category: 'Tailscale Services',
+    icon: '👥',
+    externalUrl: 'https://vtiger.bigscale-justice.ts.net',
+    healthPath: '/',
+    embed: false,
+    tags: ['CRM', 'sales', 'contacts', 'Tailscale'],
+    requiresAuth: true,
+  },
+  {
+    id: 'ts-n8n',
+    name: 'n8n',
+    description: 'Workflow automation platform — webhooks, event-driven orchestration',
+    category: 'Tailscale Services',
+    icon: '🔗',
+    externalUrl: 'http://n8n-server.bigscale-justice.ts.net:5678',
+    healthPath: '/healthz',
+    embed: false,
+    port: ':5678',
+    tags: ['automation', 'workflows', 'webhooks', 'Tailscale'],
+    requiresAuth: true,
+  },
+  {
+    id: 'ts-vaultwarden',
+    name: 'Vaultwarden',
+    description: 'Password & secrets management — Bitwarden-compatible vault',
+    category: 'Tailscale Services',
+    icon: '🔒',
+    externalUrl: 'http://vaultwarden.bigscale-justice.ts.net',
+    healthPath: '/alive',
+    embed: false,
+    tags: ['secrets', 'passwords', 'vault', 'Tailscale'],
+    requiresAuth: true,
+  },
 ];
 
 export const CATEGORIES: ServiceCategory[] = [
@@ -340,6 +418,7 @@ export const CATEGORIES: ServiceCategory[] = [
   'GitOps',
   'Dev Tools',
   'Platform Services',
+  'Tailscale Services',
 ];
 
 export const CATEGORY_META: Record<ServiceCategory, { color: string; description: string }> = {
@@ -349,6 +428,7 @@ export const CATEGORY_META: Record<ServiceCategory, { color: string; description
   GitOps: { color: '#f59e0b', description: 'Kubernetes and deployment management' },
   'Dev Tools': { color: '#6b7280', description: 'Local development utilities' },
   'Platform Services': { color: '#3b82f6', description: 'Core infrastructure services' },
+  'Tailscale Services': { color: '#7c3aed', description: 'Production services on bigscale-justice.ts.net' },
 };
 
 export function getServiceById(id: string): ServiceDef | undefined {
