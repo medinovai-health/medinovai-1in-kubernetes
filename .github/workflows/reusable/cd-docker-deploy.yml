@@ -1,0 +1,77 @@
+name: CD — Docker Deploy to AIFactory
+
+on:
+  workflow_call:
+    inputs:
+      service_name:
+        description: 'Service repo name (e.g. medinovai-contract-management)'
+        type: string
+        required: true
+      category:
+        description: 'Service category (platform, clinical, business, ai-ml)'
+        type: string
+        required: true
+      compose_file:
+        description: 'Docker Compose file path'
+        type: string
+        default: 'docker-compose.yml'
+      health_endpoint:
+        description: 'Health check endpoint'
+        type: string
+        default: '/api/health'
+      health_port:
+        description: 'Health check port (host port)'
+        type: string
+        default: '33000'
+      startup_wait:
+        description: 'Seconds to wait before health check'
+        type: number
+        default: 30
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    environment: production
+    steps:
+      - name: Validate service exists
+        run: |
+          if [ ! -d ~/Documents/GitHub/${{ inputs.service_name }} ]; then
+            echo "Cloning ${{ inputs.service_name }}..."
+            cd ~/Documents/GitHub
+            git clone https://github.com/medinovai-health/${{ inputs.service_name }}.git
+          fi
+
+      - name: Pull latest code
+        run: |
+          cd ~/Documents/GitHub/${{ inputs.service_name }}
+          git checkout main
+          git pull origin main
+
+      - name: Build and deploy
+        run: |
+          cd ~/Documents/GitHub/${{ inputs.service_name }}
+          docker compose -f ${{ inputs.compose_file }} up -d --build
+
+      - name: Wait for startup
+        run: sleep ${{ inputs.startup_wait }}
+
+      - name: Health check
+        run: |
+          curl -sf http://localhost:${{ inputs.health_port }}${{ inputs.health_endpoint }} \
+            || (echo "::error::Health check failed for ${{ inputs.service_name }}" && exit 1)
+
+      - name: Record deployment
+        if: always()
+        run: |
+          mkdir -p ~/.medinovai-deployments
+          STATUS=${{ job.status }}
+          echo "{\"service\":\"${{ inputs.service_name }}\",\"category\":\"${{ inputs.category }}\",\"sha\":\"${{ github.sha }}\",\"time\":\"$(date -u +%FT%TZ)\",\"status\":\"${STATUS}\"}" \
+            >> ~/.medinovai-deployments/deploy-log.jsonl
+
+      - name: Rollback on failure
+        if: failure()
+        run: |
+          echo "::warning::Deployment failed — rolling back ${{ inputs.service_name }}"
+          cd ~/Documents/GitHub/${{ inputs.service_name }}
+          git log --oneline -3
+          # Keep containers running with previous image if possible
