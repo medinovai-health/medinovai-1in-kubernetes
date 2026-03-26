@@ -549,6 +549,14 @@
       "sidecar_enabled": true,
       "host_port_range": "18000-18099",
       "description": "Employee recognition, rewards, culture building, and engagement platform (Northstar Culture OS)"
+    },
+    {
+      "name": "medinovai-contract-management",
+      "category": "business",
+      "tier": 4,
+      "sidecar_enabled": true,
+      "host_port_range": "33000-33500",
+      "description": "Contract & engagement lifecycle management for myOnsite Healthcare mobile phlebotomy (LaunchOps Autopilot)"
     }
   ]
 }

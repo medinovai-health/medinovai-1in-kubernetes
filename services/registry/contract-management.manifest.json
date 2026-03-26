@@ -1,0 +1,49 @@
+{
+  "service": "contract-management",
+  "version": "1.0.0",
+  "repo": "medinovai-health/medinovai-contract-management",
+  "type": "node-service",
+  "tier": "normal",
+  "description": "Contract & engagement lifecycle management for myOnsite Healthcare mobile phlebotomy operations (LaunchOps Autopilot). Handles intake, checklist gates, billing, visits, specimen tracking, and audit trails.",
+  "host_port_range": "33000-33500",
+  "dependencies": {
+    "services": ["security"],
+    "databases": ["postgres-primary"],
+    "external": ["keycloak", "s3-object-store"]
+  },
+  "health": {
+    "endpoint": "/api/health",
+    "readiness": "/api/health",
+    "startup_timeout_seconds": 60
+  },
+  "deploy": {
+    "strategy": "rolling",
+    "canary_percentage": 10,
+    "canary_duration_minutes": 10,
+    "rollback_on_error_rate": 0.01,
+    "compose_file": "infra/docker/compose/docker-compose.contract-management.yml"
+  },
+  "resources": {
+    "cpu": { "request": "250m", "limit": "1000m" },
+    "memory": { "request": "256Mi", "limit": "1Gi" },
+    "gpu": false
+  },
+  "scaling": {
+    "min_replicas": 1,
+    "max_replicas": 3,
+    "target_cpu_percent": 70
+  },
+  "governance": {
+    "risk_class": "high",
+    "requires_approval": false,
+    "pii_handling": true,
+    "phi_handling": true,
+    "audit_logging": true,
+    "compliance": ["HIPAA", "GDPR"]
+  },
+  "ports": {
+    "app": 33000,
+    "postgres": 33001,
+    "reserved_range": "33002-33500"
+  }
+}

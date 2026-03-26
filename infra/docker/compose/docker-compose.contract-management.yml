@@ -1,0 +1,74 @@
+# ─── Contract Management (LaunchOps Autopilot) ─────────────────────────────────
+# Engagement lifecycle management for myOnsite Healthcare
+#
+# FIXED PORT RANGE: 33000-33500 (NEVER CHANGE)
+#   33000 — Next.js app
+#   33001 — PostgreSQL
+#
+# Usage:
+#   docker compose -f infra/docker/compose/docker-compose.contract-management.yml up -d
+# ─────────────────────────────────────────────────────────────────────────────────
+
+services:
+  contract-mgmt-postgres:
+    image: postgres:16-alpine
+    container_name: contract-mgmt-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${CONTRACT_MGMT_DB_USER:-launchops}
+      POSTGRES_PASSWORD: ${CONTRACT_MGMT_DB_PASSWORD:?CONTRACT_MGMT_DB_PASSWORD required}
+      POSTGRES_DB: ${CONTRACT_MGMT_DB_NAME:-launchops}
+    ports:
+      - '33001:5432'
+    volumes:
+      - contract_mgmt_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${CONTRACT_MGMT_DB_USER:-launchops}']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - medinovai
+
+  contract-mgmt-app:
+    image: medinovai/contract-management:${CONTRACT_MGMT_VERSION:-latest}
+    container_name: contract-mgmt-app
+    build:
+      context: ${CONTRACT_MGMT_REPO_PATH:-../../../medinovai-contract-management}
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      contract-mgmt-postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${CONTRACT_MGMT_DB_USER:-launchops}:${CONTRACT_MGMT_DB_PASSWORD}@contract-mgmt-postgres:5432/${CONTRACT_MGMT_DB_NAME:-launchops}?schema=public
+      NEXTAUTH_URL: ${CONTRACT_MGMT_URL:-http://192.168.68.54:33000}
+      NEXTAUTH_URL_INTERNAL: http://localhost:3000
+      NEXTAUTH_SECRET: ${CONTRACT_MGMT_AUTH_SECRET:?CONTRACT_MGMT_AUTH_SECRET required}
+      NODE_ENV: ${NODE_ENV:-production}
+      S3_ENDPOINT: ${S3_ENDPOINT:-http://192.168.68.54:9000}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY}
+      S3_SECRET_KEY: ${S3_SECRET_KEY}
+      S3_BUCKET: ${CONTRACT_MGMT_S3_BUCKET:-launchops-evidence}
+      S3_REGION: ${S3_REGION:-us-east-1}
+      SMTP_HOST: ${SMTP_HOST:-192.168.68.54}
+      SMTP_PORT: ${SMTP_PORT:-1025}
+      SMTP_FROM: ${CONTRACT_MGMT_SMTP_FROM:-noreply@myonsite-launchops.local}
+    ports:
+      - '33000:3000'
+    healthcheck:
+      test: ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://localhost:3000/api/health']
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    networks:
+      - medinovai
+
+volumes:
+  contract_mgmt_pgdata:
+
+networks:
+  medinovai:
+    name: medinovai
+    external: true
