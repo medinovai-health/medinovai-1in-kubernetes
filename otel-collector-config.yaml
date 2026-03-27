@@ -1,0 +1,124 @@
+# OpenTelemetry Collector — Production Configuration
+# Infrastructure Management (medinovai-infrastructure) — Tier 2
+#
+# Activated OTel config with exporters for production observability stack.
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+  prometheus:
+    config:
+      scrape_configs:
+        - job_name: 'infrastructure'
+          scrape_interval: 15s
+          static_configs:
+            - targets: ['localhost:9090']
+
+processors:
+  batch:
+    timeout: 5s
+    send_batch_size: 512
+    send_batch_max_size: 1024
+
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 512
+    spike_limit_mib: 128
+
+  resource:
+    attributes:
+      - key: service.name
+        value: infrastructure
+        action: upsert
+      - key: service.version
+        value: "1.0.0"
+        action: upsert
+      - key: deployment.environment
+        value: "${DEPLOY_ENV}"
+        action: upsert
+      - key: service.tier
+        value: "2"
+        action: upsert
+
+  attributes/remove_phi:
+    actions:
+      - key: patient.id
+        action: delete
+      - key: patient.name
+        action: delete
+      - key: patient.dob
+        action: delete
+      - key: patient.ssn
+        action: delete
+      - key: patient.mrn
+        action: delete
+      - key: http.request.body
+        action: delete
+      - key: http.response.body
+        action: delete
+
+  filter/health:
+    spans:
+      exclude:
+        match_type: strict
+        span_names:
+          - "GET /health"
+          - "GET /health/ready"
+          - "GET /health/live"
+
+exporters:
+  otlp/jaeger:
+    endpoint: "${JAEGER_ENDPOINT:-jaeger-collector:4317}"
+    tls:
+      insecure: false
+      cert_file: /etc/tls/client.crt
+      key_file: /etc/tls/client.key
+
+  otlp/tempo:
+    endpoint: "${TEMPO_ENDPOINT:-tempo:4317}"
+    tls:
+      insecure: false
+
+  prometheus:
+    endpoint: 0.0.0.0:8889
+    namespace: medinovai
+    const_labels:
+      service: infrastructure
+      tier: "2"
+
+  elasticsearch/logs:
+    endpoints: ["${ES_ENDPOINT:-https://elasticsearch:9200}"]
+    logs_index: "medinovai-infrastructure-logs"
+    tls:
+      insecure: false
+    retry:
+      enabled: true
+      max_elapsed_time: 300s
+
+  logging:
+    loglevel: warn
+
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+
+service:
+  extensions: [health_check]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, resource, attributes/remove_phi, filter/health, batch]
+      exporters: [otlp/jaeger, otlp/tempo]
+    metrics:
+      receivers: [otlp, prometheus]
+      processors: [memory_limiter, resource, batch]
+      exporters: [prometheus]
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, resource, attributes/remove_phi, batch]
+      exporters: [elasticsearch/logs, logging]
