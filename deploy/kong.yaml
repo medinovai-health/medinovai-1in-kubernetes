@@ -1,0 +1,132 @@
+# Kong API Gateway Configuration — Infrastructure Management (medinovai-infrastructure)
+# Auto-generated from schemas/openapi.yaml
+# Tier 2 — FDA-CLASS-I
+
+_format_version: "3.0"
+
+services:
+  - name: infrastructure
+    url: http://medinovai-infrastructure:8080
+    connect_timeout: 5000
+    write_timeout: 10000
+    read_timeout: 30000
+    retries: 3
+
+routes:
+- name: infrastructure-resources
+  paths:
+    - /api/v1/resources
+  service:
+    name: infrastructure
+    url: http://medinovai-infrastructure:8080
+  plugins:
+    - name: jwt
+      config:
+        claims_to_verify: [exp]
+    - name: acl
+      config:
+        allow: [infrastructure-read, infrastructure-write, admin]
+    - name: rate-limiting
+      config:
+        minute: 120
+        policy: redis
+    - name: request-transformer
+      config:
+        add:
+          headers:
+            - X-Correlation-ID:$(uuid)
+            - X-Service-Tier:2
+
+- name: infrastructure-clusters
+  paths:
+    - /api/v1/clusters
+  service:
+    name: infrastructure
+    url: http://medinovai-infrastructure:8080
+  plugins:
+    - name: jwt
+      config:
+        claims_to_verify: [exp]
+    - name: acl
+      config:
+        allow: [infrastructure-read, infrastructure-write, admin]
+    - name: rate-limiting
+      config:
+        minute: 120
+        policy: redis
+    - name: request-transformer
+      config:
+        add:
+          headers:
+            - X-Correlation-ID:$(uuid)
+            - X-Service-Tier:2
+
+- name: infrastructure-monitors
+  paths:
+    - /api/v1/monitors
+  service:
+    name: infrastructure
+    url: http://medinovai-infrastructure:8080
+  plugins:
+    - name: jwt
+      config:
+        claims_to_verify: [exp]
+    - name: acl
+      config:
+        allow: [infrastructure-read, infrastructure-write, admin]
+    - name: rate-limiting
+      config:
+        minute: 120
+        policy: redis
+    - name: request-transformer
+      config:
+        add:
+          headers:
+            - X-Correlation-ID:$(uuid)
+            - X-Service-Tier:2
+
+- name: infrastructure-alerts
+  paths:
+    - /api/v1/alerts
+  service:
+    name: infrastructure
+    url: http://medinovai-infrastructure:8080
+  plugins:
+    - name: jwt
+      config:
+        claims_to_verify: [exp]
+    - name: acl
+      config:
+        allow: [infrastructure-read, infrastructure-write, admin]
+    - name: rate-limiting
+      config:
+        minute: 120
+        policy: redis
+    - name: request-transformer
+      config:
+        add:
+          headers:
+            - X-Correlation-ID:$(uuid)
+            - X-Service-Tier:2
+
+# Health check route (no auth)
+- name: infrastructure-health
+  paths:
+    - /api/v1/infrastructure/health
+  service:
+    name: infrastructure
+    url: http://medinovai-infrastructure:8080/health
+  plugins: []
+
+upstreams:
+  - name: infrastructure-upstream
+    algorithm: round-robin
+    healthchecks:
+      active:
+        http_path: /health/ready
+        healthy:
+          interval: 10
+          successes: 2
+        unhealthy:
+          interval: 5
+          http_failures: 3
