@@ -1,0 +1,113 @@
+openapi: "3.0.3"
+info:
+  title: "medinovai-infrastructure API"
+  description: |
+    Platform infrastructure service — FDA Class I | IEC 62304 Class A
+
+    **Standards:**
+    - All endpoints require JWT Bearer authentication
+    - Errors return standard MedinovAI error envelope
+    - Rate limiting headers included on every response
+    - Audit trail logged for all data mutations
+  version: "1.0.0"
+  contact:
+    name: "MedinovAI Platform Team"
+    email: "platform@medinovai.com"
+  license:
+    name: "Proprietary"
+
+servers:
+  - url: "https://api.medinovai.health/v1"
+    description: "Production"
+  - url: "https://api.staging.medinovai.health/v1"
+    description: "Staging"
+
+security:
+  - BearerAuth: []
+
+paths:
+  /health:
+    get:
+      operationId: "getHealth"
+      summary: "Service health check"
+      security: []
+      tags: ["System"]
+      responses:
+        "200":
+          description: "Service is healthy"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+
+  # TODO: Add service-specific endpoints here
+  # Follow pattern: /api/v1/{resource} with standard CRUD operations
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    HealthResponse:
+      type: object
+      required: [status, version, uptime]
+      properties:
+        status:
+          type: string
+          enum: [healthy, degraded, unhealthy]
+        version:
+          type: string
+          example: "1.0.0"
+        uptime:
+          type: number
+          description: "Uptime in seconds"
+        checks:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              status:
+                type: string
+
+    ErrorEnvelope:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message, traceId]
+          properties:
+            code:
+              type: string
+              example: "VALIDATION_ERROR"
+            message:
+              type: string
+            details:
+              type: object
+            traceId:
+              type: string
+              format: uuid
+
+    # Standard pagination
+    PaginatedResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items: {}
+        pagination:
+          type: object
+          properties:
+            total:
+              type: integer
+            limit:
+              type: integer
+            offset:
+              type: integer
+            hasMore:
+              type: boolean
