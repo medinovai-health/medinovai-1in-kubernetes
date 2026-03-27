@@ -1,0 +1,9 @@
+name: Security Surface Sync
+on:
+  push:
+    branches: [main]
+    paths: [security-surface.yaml, medinovai.manifest.yaml]
+jobs:
+  sync:
+    uses: medinovai-health/medinovai-security-service/.github/workflows/security-surface-sync.yml@main
+    secrets: inherit
