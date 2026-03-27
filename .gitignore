@@ -1,21 +1,54 @@
 # MedinovAI Standard .gitignore
+# Generated from medinovai-ai-standards/REPO_BOOTSTRAP.md
 
-node_modules/
-vendor/
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-.Python
-pip-log.txt
-pip-delete-this-directory.txt
+# Secrets & credentials (NEVER commit these)
+.env
+.env.*
+*.pem
+*.key
+*.pfx
+*.p12
+secrets/
+credentials/
+config/local.*
 
-.vscode/
+# IDE & Editor
 .idea/
+.vscode/
 *.swp
 *.swo
 *~
+.DS_Store
+Thumbs.db
 
+# Build artifacts
+dist/
+build/
+out/
+*.log
+*.tmp
+
+# Test artifacts
+coverage/
+.coverage
+htmlcov/
+*.coverage
+test-results/
+junit-*.xml
+
+# Dependency directories
+node_modules/
+vendor/
+.venv/
+venv/
+env/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.eggs/
+
+# OS files
 .DS_Store
 .DS_Store?
 ._*
@@ -24,68 +57,18 @@ pip-delete-this-directory.txt
 ehthumbs.db
 Thumbs.db
 
-*.log
-logs/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-pids
-*.pid
-*.seed
-*.pid.lock
-
-coverage/
-*.lcov
-.nyc_output
-
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
+# Python specific
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.nox/
+*.egg
 dist/
 build/
-*.egg-info/
-.tox/
-.coverage
-.pytest_cache/
-
-*.key
-*.pem
-*.p12
-*.pfx
-secrets/
-.secrets/
-
-tmp/
-temp/
-*.tmp
-*.temp
-
-*.db
-*.sqlite
-*.sqlite3
-
-.dockerignore
-
-*.kubeconfig
-
-*.tfstate
-*.tfstate.*
-.terraform/
-.terraform.lock.hcl
-
-*.model
-*.pkl
-*.h5
-*.onnx
-models/
-checkpoints/
-
-*.phi
-*.pii
-patient-data/
-test-data/
-synthetic-data/
