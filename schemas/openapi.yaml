@@ -1,113 +1,703 @@
-openapi: "3.0.3"
+openapi: '3.0.3'
 info:
-  title: "medinovai-infrastructure API"
+  title: Infrastructure Management API
   description: |
-    Platform infrastructure service — FDA Class I | IEC 62304 Class A
+    API for Infrastructure Management (medinovai-infrastructure).
+    Tier: T2 — FDA-CLASS-I, platform service
 
-    **Standards:**
-    - All endpoints require JWT Bearer authentication
-    - Errors return standard MedinovAI error envelope
-    - Rate limiting headers included on every response
-    - Audit trail logged for all data mutations
-  version: "1.0.0"
+    ## Authentication
+    All endpoints require Bearer token (JWT) from MedinovAI Security Service.
+
+    ## Multi-Tenant Isolation
+    Every request MUST include `org_id` header for tenant isolation.
+    Cross-tenant access is blocked at the API gateway and enforced in SpiceDB.
+
+    ## Audit Trail
+    All mutations are logged to the immutable audit trail per FDA 21 CFR Part 11.
+  version: '1.0.0'
   contact:
-    name: "MedinovAI Platform Team"
-    email: "platform@medinovai.com"
+    name: MedinovAI Platform Team
+    email: platform@medinovai.com
   license:
-    name: "Proprietary"
+    name: Proprietary
+    url: https://medinovai.com/terms
 
 servers:
-  - url: "https://api.medinovai.health/v1"
-    description: "Production"
-  - url: "https://api.staging.medinovai.health/v1"
-    description: "Staging"
-
-security:
-  - BearerAuth: []
+  - url: https://infrastructure.staging.medinovai.com/api
+    description: Staging
+  - url: https://infrastructure.medinovai.com/api
+    description: Production
 
 paths:
-  /health:
+  /api/v1/resources:
     get:
-      operationId: "getHealth"
-      summary: "Service health check"
-      security: []
-      tags: ["System"]
+      summary: List resources
+      operationId: listResources
+      tags: [Infrastructure Management]
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+        - name: org_id
+          in: header
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Tenant organization ID (multi-tenant isolation)
       responses:
-        "200":
-          description: "Service is healthy"
+        '200':
+          description: Paginated list of resources
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/HealthResponse"
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Resource'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+        - bearerAuth: []
+    post:
+      summary: Create resource
+      operationId: createResource
+      tags: [Infrastructure Management]
+      parameters:
+        - name: org_id
+          in: header
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResourceCreate'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Resource'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+      security:
+        - bearerAuth: []
+  /api/v1/resources/{id}:
+    get:
+      summary: Get resource by ID
+      operationId: getResource
+      tags: [Infrastructure Management]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: org_id
+          in: header
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Resource details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Resource'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      security:
+        - bearerAuth: []
 
-  # TODO: Add service-specific endpoints here
-  # Follow pattern: /api/v1/{resource} with standard CRUD operations
+  /api/v1/clusters:
+    get:
+      summary: List clusters
+      operationId: listClusters
+      tags: [Infrastructure Management]
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+        - name: org_id
+          in: header
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Tenant organization ID (multi-tenant isolation)
+      responses:
+        '200':
+          description: Paginated list of clusters
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Cluster'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+        - bearerAuth: []
+    post:
+      summary: Create cluster
+      operationId: createCluster
+      tags: [Infrastructure Management]
+      parameters:
+        - name: org_id
+          in: header
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClusterCreate'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cluster'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+      security:
+        - bearerAuth: []
+  /api/v1/clusters/{id}:
+    get:
+      summary: Get cluster by ID
+      operationId: getCluster
+      tags: [Infrastructure Management]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: org_id
+          in: header
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Cluster details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cluster'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      security:
+        - bearerAuth: []
+
+  /api/v1/monitors:
+    get:
+      summary: List monitors
+      operationId: listMonitors
+      tags: [Infrastructure Management]
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+        - name: org_id
+          in: header
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Tenant organization ID (multi-tenant isolation)
+      responses:
+        '200':
+          description: Paginated list of monitors
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Monitor'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+        - bearerAuth: []
+    post:
+      summary: Create monitor
+      operationId: createMonitor
+      tags: [Infrastructure Management]
+      parameters:
+        - name: org_id
+          in: header
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MonitorCreate'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Monitor'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+      security:
+        - bearerAuth: []
+  /api/v1/monitors/{id}:
+    get:
+      summary: Get monitor by ID
+      operationId: getMonitor
+      tags: [Infrastructure Management]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: org_id
+          in: header
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Monitor details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Monitor'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      security:
+        - bearerAuth: []
+
+  /api/v1/alerts:
+    get:
+      summary: List alerts
+      operationId: listAlerts
+      tags: [Infrastructure Management]
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+        - name: org_id
+          in: header
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Tenant organization ID (multi-tenant isolation)
+      responses:
+        '200':
+          description: Paginated list of alerts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Alert'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+        - bearerAuth: []
+    post:
+      summary: Create alert
+      operationId: createAlert
+      tags: [Infrastructure Management]
+      parameters:
+        - name: org_id
+          in: header
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlertCreate'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Alert'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+      security:
+        - bearerAuth: []
+  /api/v1/alerts/{id}:
+    get:
+      summary: Get alert by ID
+      operationId: getAlert
+      tags: [Infrastructure Management]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: org_id
+          in: header
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Alert details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Alert'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      security:
+        - bearerAuth: []
+
+  /health:
+    get:
+      summary: Health check
+      operationId: healthCheck
+      tags: [System]
+      responses:
+        '200':
+          description: Service healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+      security: []
+
+  /health/ready:
+    get:
+      summary: Readiness check (includes dependency status)
+      operationId: readinessCheck
+      tags: [System]
+      responses:
+        '200':
+          description: Service ready
+        '503':
+          description: Service not ready (dependency down)
+      security: []
 
 components:
   securitySchemes:
-    BearerAuth:
+    bearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
+      description: JWT from MedinovAI Security Service (MSS)
 
   schemas:
+    Resource:
+      type: object
+      required: [id, created_at, org_id]
+      properties:
+        id:
+          type: string
+          format: uuid
+        org_id:
+          type: string
+          format: uuid
+          description: Owning organization (tenant isolation)
+        name:
+          type: string
+          maxLength: 255
+        status:
+          type: string
+          enum: [draft, active, archived]
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        created_by:
+          type: string
+          format: uuid
+    ResourceCreate:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          maxLength: 255
+        metadata:
+          type: object
+          additionalProperties: true
+
+    Cluster:
+      type: object
+      required: [id, created_at, org_id]
+      properties:
+        id:
+          type: string
+          format: uuid
+        org_id:
+          type: string
+          format: uuid
+          description: Owning organization (tenant isolation)
+        name:
+          type: string
+          maxLength: 255
+        status:
+          type: string
+          enum: [draft, active, archived]
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        created_by:
+          type: string
+          format: uuid
+    ClusterCreate:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          maxLength: 255
+        metadata:
+          type: object
+          additionalProperties: true
+
+    Monitor:
+      type: object
+      required: [id, created_at, org_id]
+      properties:
+        id:
+          type: string
+          format: uuid
+        org_id:
+          type: string
+          format: uuid
+          description: Owning organization (tenant isolation)
+        name:
+          type: string
+          maxLength: 255
+        status:
+          type: string
+          enum: [draft, active, archived]
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        created_by:
+          type: string
+          format: uuid
+    MonitorCreate:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          maxLength: 255
+        metadata:
+          type: object
+          additionalProperties: true
+
+    Alert:
+      type: object
+      required: [id, created_at, org_id]
+      properties:
+        id:
+          type: string
+          format: uuid
+        org_id:
+          type: string
+          format: uuid
+          description: Owning organization (tenant isolation)
+        name:
+          type: string
+          maxLength: 255
+        status:
+          type: string
+          enum: [draft, active, archived]
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        created_by:
+          type: string
+          format: uuid
+    AlertCreate:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          maxLength: 255
+        metadata:
+          type: object
+          additionalProperties: true
+
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+        page_size:
+          type: integer
+        total_count:
+          type: integer
+        total_pages:
+          type: integer
+
     HealthResponse:
       type: object
-      required: [status, version, uptime]
       properties:
         status:
           type: string
           enum: [healthy, degraded, unhealthy]
+        service:
+          type: string
         version:
           type: string
-          example: "1.0.0"
-        uptime:
-          type: number
-          description: "Uptime in seconds"
-        checks:
-          type: array
-          items:
-            type: object
-            properties:
-              name:
-                type: string
-              status:
-                type: string
-
-    ErrorEnvelope:
-      type: object
-      required: [error]
-      properties:
-        error:
+        timestamp:
+          type: string
+          format: date-time
+        dependencies:
           type: object
-          required: [code, message, traceId]
-          properties:
-            code:
-              type: string
-              example: "VALIDATION_ERROR"
-            message:
-              type: string
-            details:
-              type: object
-            traceId:
-              type: string
-              format: uuid
+          additionalProperties:
+            type: string
 
-    # Standard pagination
-    PaginatedResponse:
+    ErrorResponse:
       type: object
+      required: [error_code, message]
       properties:
-        data:
-          type: array
-          items: {}
-        pagination:
+        error_code:
+          type: string
+          description: Structured error code (E_SAFE_DEFAULT format)
+        message:
+          type: string
+        details:
           type: object
-          properties:
-            total:
-              type: integer
-            limit:
-              type: integer
-            offset:
-              type: integer
-            hasMore:
-              type: boolean
+        correlation_id:
+          type: string
+          format: uuid
+
+  responses:
+    Unauthorized:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Forbidden:
+      description: Insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    ValidationError:
+      description: Request validation failed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+security:
+  - bearerAuth: []
