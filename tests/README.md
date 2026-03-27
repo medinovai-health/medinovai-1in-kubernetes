@@ -1,29 +1,66 @@
-'''
-# Testing Strategy
+# Tests — medinovai-real-time-stream-bus
 
-The testing strategy for the `medinovai-real-time-stream-bus` service is divided into three main categories:
+## Overview
 
-1.  **Unit Tests:** These tests focus on verifying the functionality of individual components, such as utility functions and message handlers, in isolation.
-2.  **Integration Tests:** These tests ensure that the service correctly interacts with external systems, including Redis for pub/sub functionality and the `medinovai-auth-service` for authentication.
-3.  **End-to-End (E2E) Tests:** These tests simulate real-world scenarios by testing the entire data flow, from a client publishing a message to another client receiving it through a WebSocket connection.
+This directory contains the test suite for `medinovai-real-time-stream-bus`.
 
-## How to Run Tests
-
-To run the tests, use the following command:
-
-```bash
-npm test
-```
-
-This will execute all unit, integration, and E2E tests.
+**Required minimum coverage:** 85%
+**Standards:** [MedinovAI Testing Standards](https://github.com/medinovai-health/medinovai-Developer/tree/main/medinovai-ai-standards)
 
 ## Coverage Requirements
 
-All code must have a minimum of **80%** test coverage. Pull requests that do not meet this requirement will not be merged.
+This repository is **Tier 2 (Platform / Infrastructure)** and requires:
+- Minimum **85% code coverage**
+- Integration tests for all inter-service APIs
+- Security tests for all authentication and authorization paths
 
-## Mocking Guidelines
+## Structure
 
-- **Unit Tests:** All external dependencies should be mocked to ensure that the tests are fast and reliable.
-- **Integration Tests:** Real instances of services like Redis can be used, but the `medinovai-auth-service` should be mocked to avoid dependencies on external systems during testing.
-- **E2E Tests:** These tests should run against a real instance of the service, but may use a mock of the `medinovai-auth-service` for simplicity.
-'''
+```
+tests/
+├── unit/           # Unit tests — individual functions and classes
+├── integration/    # Integration tests — service boundaries and APIs
+├── e2e/            # End-to-end tests — full workflow scenarios
+└── fixtures/       # Test fixtures and mock data (never real PHI)
+```
+
+## Running Tests
+
+```bash
+# Python
+pytest tests/ --cov=. --cov-report=term-missing -v
+
+# .NET
+dotnet test --verbosity normal /p:CollectCoverage=true
+
+# Node.js
+npm test -- --coverage
+
+# All (via CI)
+# See .github/workflows/ci.yml
+```
+
+## Test Naming Convention
+
+```
+test_<function_name>_<scenario>_<expected_outcome>
+
+Examples:
+  test_create_patient_valid_data_returns_201
+  test_create_patient_missing_required_field_raises_validation_error
+  test_audit_trail_phi_access_writes_immutable_log
+```
+
+## Adding Tests
+
+1. Place unit tests in `tests/unit/`
+2. Use `mos_` prefix for local variables per MedinovAI coding standards
+3. Mock all external services — no real API calls in unit tests
+4. Never use real PHI/PII in test data — use `tests/fixtures/` with synthetic data
+5. Ensure all tests pass before raising a PR
+
+## Compliance Notes
+
+- Test data must never contain real PHI/PII (HIPAA §164.514)
+- Test coverage reports are preserved as CI artifacts for audit evidence
+- All safety-critical paths must have explicit negative test cases
