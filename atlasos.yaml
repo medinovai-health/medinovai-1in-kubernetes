@@ -1,0 +1,71 @@
+# atlasos.yaml — AutonomyOS Integration Config
+# Auto-generated from medinovai-ai-standards/ARCHITECTURE.md
+# Review and customize canonical objects, events, and agent permissions.
+apiVersion: autonomyos/v1
+kind: ModuleBinding
+
+module:
+  name: infrastructure
+  repo: medinovai-infrastructure
+  version: "1.0.0"
+  tier: 2
+  type: platform
+
+# Declare canonical objects this module produces and consumes.
+# See medinovai-ai-standards/ARCHITECTURE.md for the full canonical object catalog.
+canonicalObjects:
+  produces:
+    # - Task
+    # - Evidence
+    # Add objects this module creates/owns
+  consumes:
+    # - Program
+    # - Contract
+    # Add objects this module reads/subscribes to
+
+# ActiveMQ events
+events:
+  publishes:
+    # - TaskStateChanged
+    # - EvidenceAttached
+    # Add events this module publishes
+  subscribes:
+    # - ProgramCompiled
+    # - ApprovalDecided
+    # Add events this module subscribes to
+
+# REST API surface
+apis:
+  exposes:
+    - path: /health
+      method: GET
+      auth: none
+      description: Health check endpoint
+    # - path: /api/v1/<resource>
+    #   method: GET
+    #   auth: jwt
+    #   rateLimit: 100/min
+
+# Agent permissions — principle of least privilege
+agents:
+  permissions:
+    - read:own_data
+    # - write:tasks
+    # - propose:approvals
+  approvalTier: 1
+  # Tier 1 = autonomous (low-risk actions)
+  # Tier 2 = human override required
+  # Tier 3 = always human approval
+
+# Registry integration
+registry:
+  heartbeatEnabled: true
+  heartbeatIntervalSeconds: 30
+  serviceCategory: platform
+
+# Compliance tags
+compliance:
+  hipaa: false
+  gdpr: true
+  fdaClass: CLASS_I
+  auditTrail: standard
