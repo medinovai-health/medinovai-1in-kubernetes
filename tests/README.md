@@ -1,53 +1,66 @@
-_This document is a placeholder and should be updated with the actual testing strategy for the services deployed by this infrastructure._
+# Tests — medinovai-infrastructure
 
-# Testing Strategy
+## Overview
 
-Our testing strategy for the MedinovAI LIS infrastructure is multi-layered to ensure the reliability, security, and performance of the platform.
+This directory contains the test suite for `medinovai-infrastructure`.
 
-## Unit Tests
+**Required minimum coverage:** 85%
+**Standards:** [MedinovAI Testing Standards](https://github.com/medinovai-health/medinovai-Developer/tree/main/medinovai-ai-standards)
 
-- **Scope:** Individual components and functions.
-- **Framework:** Jest
-- **Location:** Alongside the source code.
+## Coverage Requirements
 
-## Integration Tests
+This repository is **Tier 2 (Platform / Infrastructure)** and requires:
+- Minimum **85% code coverage**
+- Integration tests for all inter-service APIs
+- Security tests for all authentication and authorization paths
 
-- **Scope:** Interactions between different components and services.
-- **Framework:** Pytest
-- **Location:** `tests/integration`
+## Structure
 
-## End-to-End (E2E) Tests
-
-- **Scope:** User workflows and critical paths.
-- **Framework:** Cypress
-- **Location:** `tests/e2e`
-
-# How to Run Tests
-
-## Unit Tests
-
-```bash
-npm test
+```
+tests/
+├── unit/           # Unit tests — individual functions and classes
+├── integration/    # Integration tests — service boundaries and APIs
+├── e2e/            # End-to-end tests — full workflow scenarios
+└── fixtures/       # Test fixtures and mock data (never real PHI)
 ```
 
-## Integration Tests
+## Running Tests
 
 ```bash
-pytest tests/integration
+# Python
+pytest tests/ --cov=. --cov-report=term-missing -v
+
+# .NET
+dotnet test --verbosity normal /p:CollectCoverage=true
+
+# Node.js
+npm test -- --coverage
+
+# All (via CI)
+# See .github/workflows/ci.yml
 ```
 
-## E2E Tests
+## Test Naming Convention
 
-```bash
-npm run cy:run
+```
+test_<function_name>_<scenario>_<expected_outcome>
+
+Examples:
+  test_create_patient_valid_data_returns_201
+  test_create_patient_missing_required_field_raises_validation_error
+  test_audit_trail_phi_access_writes_immutable_log
 ```
 
-# Code Coverage
+## Adding Tests
 
-We have a minimum code coverage requirement of **80%**. Pull requests that do not meet this requirement will not be merged.
+1. Place unit tests in `tests/unit/`
+2. Use `mos_` prefix for local variables per MedinovAI coding standards
+3. Mock all external services — no real API calls in unit tests
+4. Never use real PHI/PII in test data — use `tests/fixtures/` with synthetic data
+5. Ensure all tests pass before raising a PR
 
-# Mocking Guidelines
+## Compliance Notes
 
-- **Unit Tests:** Use Jest's built-in mocking capabilities to isolate components.
-- **Integration Tests:** Use `unittest.mock` to mock external services and dependencies.
-- **E2E Tests:** Avoid mocking as much as possible to test the system in a production-like environment.
+- Test data must never contain real PHI/PII (HIPAA §164.514)
+- Test coverage reports are preserved as CI artifacts for audit evidence
+- All safety-critical paths must have explicit negative test cases
