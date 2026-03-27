@@ -1,19 +1,38 @@
-'''# Security Policy
+# Security Policy
 
-At MedinovAI, we take security very seriously. We are committed to protecting our users' data and providing a secure platform.
+## Supported Versions
+
+| Version | Supported |
+|---------|-----------|
+| 2.x.x   | ✅ Yes |
+| 1.x.x   | ❌ No  |
 
 ## Reporting a Vulnerability
 
-If you discover a security vulnerability, please report it to us by emailing [security@medinovai.com](mailto:security@medinovai.com). We will acknowledge your email within 48 hours and will work with you to resolve the issue as quickly as possible.
+**Do NOT open a public GitHub issue for security vulnerabilities.**
 
-We request that you do not publicly disclose the issue until it has been addressed by our team.
+Report security issues to: **security@medinovai.com**
 
-## Compliance Standards
+Include in your report:
+- Description of the vulnerability
+- Steps to reproduce
+- Potential impact
+- Suggested fix (if available)
 
-We adhere to the following security and privacy standards:
+We will acknowledge receipt within **24 hours** and provide a detailed response within **72 hours**.
 
-- **HIPAA:** The Health Insurance Portability and Accountability Act. We ensure that all patient data is handled in a HIPAA-compliant manner.
-- **OWASP:** The Open Web Application Security Project. We follow the OWASP Top 10 recommendations to protect against common web application security risks.
-- **SOC 2:** Service Organization Control 2. We are compliant with SOC 2 Type II, which demonstrates our commitment to data security, availability, processing integrity, confidentiality, and privacy.
-- **GDPR:** The General Data Protection Regulation. We are committed to protecting the data of our users in the European Union.
-'''
+## Security Standards
+
+This repository follows the MedinovAI Security & ZeroTrust framework:
+- HIPAA Security Rule (45 CFR Part 164)
+- GDPR Article 32 (security of processing)
+- NIST Cybersecurity Framework
+- OWASP Top 10 mitigations
+
+See `medinovai-ai-standards/SECURITY_AND_ZEROTRUST.md` for full security standards.
+
+## Disclosure Policy
+
+- We follow responsible disclosure principles
+- Security fixes are released within 90 days of report
+- Credit will be given to reporters (unless anonymity requested)
