@@ -1,32 +1,59 @@
-# Testing Strategy
+# Tests — medinovai-canary-rollout-orchestrator
 
-This document outlines the testing strategy for the `medinovai-canary-rollout-orchestrator` service.
+## Overview
 
-## Testing Levels
+This directory contains the test suite for `medinovai-canary-rollout-orchestrator`.
 
-Our testing strategy includes three levels of testing:
+**Required minimum coverage:** 70%
+**Standards:** [MedinovAI Testing Standards](https://github.com/medinovai-health/medinovai-Developer/tree/main/medinovai-ai-standards)
 
-1.  **Unit Tests:** These tests focus on individual components or functions in isolation. They are written using a testing framework like Jest or Mocha and use mocks for external dependencies.
+## Structure
 
-2.  **Integration Tests:** These tests verify the interaction between different components of the service, such as the API endpoints and the database. They may involve running a local instance of the service and its dependencies (e.g., Redis).
-
-3.  **End-to-End (E2E) Tests:** These tests simulate real-world user scenarios and test the entire system, including the UI, API, and dependent services. They are run against a staging environment that closely resembles production.
-
-## How to Run Tests
-
-To run the tests, use the following command:
-
-```bash
-make test
+```
+tests/
+├── unit/           # Unit tests — individual functions and classes
+├── integration/    # Integration tests — service boundaries and APIs
+├── e2e/            # End-to-end tests — full workflow scenarios
+└── fixtures/       # Test fixtures and mock data (never real PHI)
 ```
 
-This will execute all unit and integration tests.
+## Running Tests
 
-## Code Coverage
+```bash
+# Python
+pytest tests/ --cov=. --cov-report=term-missing -v
 
-We aim for a minimum of **80% code coverage** for all new code. Pull requests that do not meet this requirement will not be merged.
+# .NET
+dotnet test --verbosity normal /p:CollectCoverage=true
 
-## Mocking Guidelines
+# Node.js
+npm test -- --coverage
 
--   **Unit Tests:** All external dependencies, including databases, external APIs, and other MedinovAI services, must be mocked.
--   **Integration Tests:** Use a real database (e.g., a local Redis instance) but mock external services that are not part of the integration test scope.
+# All (via CI)
+# See .github/workflows/ci.yml
+```
+
+## Test Naming Convention
+
+```
+test_<function_name>_<scenario>_<expected_outcome>
+
+Examples:
+  test_create_patient_valid_data_returns_201
+  test_create_patient_missing_required_field_raises_validation_error
+  test_audit_trail_phi_access_writes_immutable_log
+```
+
+## Adding Tests
+
+1. Place unit tests in `tests/unit/`
+2. Use `mos_` prefix for local variables per MedinovAI coding standards
+3. Mock all external services — no real API calls in unit tests
+4. Never use real PHI/PII in test data — use `tests/fixtures/` with synthetic data
+5. Ensure all tests pass before raising a PR
+
+## Compliance Notes
+
+- Test data must never contain real PHI/PII (HIPAA §164.514)
+- Test coverage reports are preserved as CI artifacts for audit evidence
+- All safety-critical paths must have explicit negative test cases
