@@ -1,17 +1,34 @@
-## BMAD Task Reference
+## Summary
+<!-- What does this PR do? Why is it needed? -->
 
-- **Task ID:**
-- **Task Title:**
+## Type of Change
+- [ ] Bug fix
+- [ ] New feature
+- [ ] Refactoring
+- [ ] Documentation
+- [ ] Infrastructure / CI/CD
+- [ ] Security fix
+- [ ] Compliance / regulatory
 
-## Type of change
+## Testing
+- [ ] Unit tests added/updated
+- [ ] Integration tests added/updated
+- [ ] Manual testing completed
+- [ ] Test coverage meets tier minimum (Tier 1: 95% | Tier 2: 85% | Tier 3: 70%)
 
-- [ ] Bug fix (non-breaking change which fixes an issue)
-- [ ] New feature (non-breaking change which adds functionality)
-- [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
-- [ ] This change requires a documentation update
+## MedinovAI Standards Compliance
+- [ ] Follows coding conventions (`E_` constants, `mos_` variables, 40-line limit)
+- [ ] Audit trail implemented for data mutations
+- [ ] Observability: logs added with appropriate level (L0–L5)
+- [ ] Security: no hardcoded credentials, inputs validated
+- [ ] API changes: OpenAPI spec updated
+- [ ] CLAUDE.md updated if repo context changed
 
-## HIPAA/GDPR Compliance Checklist
+## Deployment Notes
+<!-- Any migration scripts, feature flags, or deployment considerations? -->
 
-- [ ] This change does not impact HIPAA/GDPR compliance.
-- [ ] This change has been reviewed for HIPAA/GDPR compliance.
-- [ ] This change requires a HIPAA/GDPR compliance review.
+## Screenshots (if UI change)
+<!-- Add before/after screenshots -->
+
+---
+🤖 See `medinovai-ai-standards/ALIGNMENT_CHECKLIST.md` for full standards reference.
