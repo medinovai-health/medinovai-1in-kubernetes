@@ -1,42 +1,89 @@
-'''version: '3.8'
+# medinovai-real-time-stream-bus — Kafka-based event backbone
+# Kafka broker (KRaft, no Zookeeper), Schema Registry, REST Proxy
+# Backup: ~/medinovai-backups/medinovai-real-time-stream-bus/
+
+version: "3.8"
 
 services:
-  medinovai-real-time-stream-bus:
+  # Kafka broker (KRaft mode — no Zookeeper)
+  kafka:
+    image: confluentinc/cp-kafka:7.6.0
+    hostname: kafka
+    container_name: medinovai-kafka
+    environment:
+      KAFKA_NODE_ID: "1"
+      KAFKA_PROCESS_ROLES: "broker,controller"
+      KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka:9093"
+      KAFKA_LISTENERS: "PLAINTEXT://:9092,CONTROLLER://:9093"
+      KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://localhost:9092"
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT"
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    ports:
+      - "9092:9092"
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+    networks:
+      - medinovai-stream-bus
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-broker-api-versions --bootstrap-server localhost:9092 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # Schema Registry for event validation
+  schema-registry:
+    image: confluentinc/cp-schema-registry:7.6.0
+    hostname: schema-registry
+    container_name: medinovai-schema-registry
+    depends_on:
+      kafka:
+        condition: service_healthy
+    environment:
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: "kafka:9092"
+      SCHEMA_REGISTRY_LISTENERS: "http://0.0.0.0:8081"
+    ports:
+      - "8081:8081"
+    networks:
+      - medinovai-stream-bus
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # REST proxy — FastAPI service for services that can't use Kafka directly
+  rest-proxy:
     build:
       context: .
       dockerfile: Dockerfile
-    image: myonsite-healthcare/medinovai-real-time-stream-bus:latest
-    container_name: medinovai-real-time-stream-bus
-    restart: unless-stopped
-    env_file:
-      - .env
-    networks:
-      - medinovai-network
+    image: medinovai-real-time-stream-bus:latest
+    container_name: medinovai-stream-bus-rest-proxy
+    depends_on:
+      kafka:
+        condition: service_healthy
+      schema-registry:
+        condition: service_healthy
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
+      SCHEMA_REGISTRY_URL: "http://schema-registry:8081"
+      PORT: "3140"
+      SERVICE_NAME: "medinovai-real-time-stream-bus"
     ports:
-      - "3000:3000"
+      - "3140:3140"
+    networks:
+      - medinovai-stream-bus
     healthcheck:
-      test: ["CMD", "node", "dist/healthcheck.js"]
-      interval: 30s
-      timeout: 10s
+      test: ["CMD", "curl", "-f", "http://localhost:3140/health"]
+      interval: 15s
+      timeout: 5s
       retries: 3
-      start_period: 5s
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "5"
-        tag: "{{.ImageName}}|{{.Name}}|{{.ImageFullID}}|{{.ContainerID}}"
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 512M
-        reservations:
-          cpus: '0.25'
-          memory: 256M
+      start_period: 10s
+
+volumes:
+  kafka-data:
 
 networks:
-  medinovai-network:
+  medinovai-stream-bus:
     driver: bridge
-    name: medinovai-network
-'''
