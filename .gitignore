@@ -1,27 +1,74 @@
-# Dependencies
-/node_modules
+# MedinovAI Standard .gitignore
+# Generated from medinovai-ai-standards/REPO_BOOTSTRAP.md
 
-# Python
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-
-# Environment variables
+# Secrets & credentials (NEVER commit these)
 .env
+.env.*
+*.pem
+*.key
+*.pfx
+*.p12
+secrets/
+credentials/
+config/local.*
+
+# IDE & Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
 
 # Build artifacts
 dist/
 build/
+out/
+*.log
+*.tmp
 
-# Test coverage
+# Test artifacts
 coverage/
 .coverage
+htmlcov/
+*.coverage
+test-results/
+junit-*.xml
 
-# IDE files
-.idea/
-.vscode/
+# Dependency directories
+node_modules/
+vendor/
+.venv/
+venv/
+env/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.eggs/
 
 # OS files
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
+
+# Python specific
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.nox/
+*.egg
+dist/
+build/
