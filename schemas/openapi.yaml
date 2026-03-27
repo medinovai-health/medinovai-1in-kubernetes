@@ -1,113 +1,703 @@
-openapi: "3.0.3"
+openapi: '3.0.3'
 info:
-  title: "medinovai-deploy API"
+  title: Deployment Service API
   description: |
-    Platform infrastructure service — FDA Class I | IEC 62304 Class A
+    API for Deployment Service (medinovai-deploy).
+    Tier: T2 — FDA-CLASS-I, platform service
 
-    **Standards:**
-    - All endpoints require JWT Bearer authentication
-    - Errors return standard MedinovAI error envelope
-    - Rate limiting headers included on every response
-    - Audit trail logged for all data mutations
-  version: "1.0.0"
+    ## Authentication
+    All endpoints require Bearer token (JWT) from MedinovAI Security Service.
+
+    ## Multi-Tenant Isolation
+    Every request MUST include `org_id` header for tenant isolation.
+    Cross-tenant access is blocked at the API gateway and enforced in SpiceDB.
+
+    ## Audit Trail
+    All mutations are logged to the immutable audit trail per FDA 21 CFR Part 11.
+  version: '1.0.0'
   contact:
-    name: "MedinovAI Platform Team"
-    email: "platform@medinovai.com"
+    name: MedinovAI Platform Team
+    email: platform@medinovai.com
   license:
-    name: "Proprietary"
+    name: Proprietary
+    url: https://medinovai.com/terms
 
 servers:
-  - url: "https://api.medinovai.health/v1"
-    description: "Production"
-  - url: "https://api.staging.medinovai.health/v1"
-    description: "Staging"
-
-security:
-  - BearerAuth: []
+  - url: https://deploy.staging.medinovai.com/api
+    description: Staging
+  - url: https://deploy.medinovai.com/api
+    description: Production
 
 paths:
-  /health:
+  /api/v1/deployments:
     get:
-      operationId: "getHealth"
-      summary: "Service health check"
-      security: []
-      tags: ["System"]
+      summary: List deployments
+      operationId: listDeployments
+      tags: [Deployment Service]
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+        - name: org_id
+          in: header
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Tenant organization ID (multi-tenant isolation)
       responses:
-        "200":
-          description: "Service is healthy"
+        '200':
+          description: Paginated list of deployments
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/HealthResponse"
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Deployment'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+        - bearerAuth: []
+    post:
+      summary: Create deployment
+      operationId: createDeployment
+      tags: [Deployment Service]
+      parameters:
+        - name: org_id
+          in: header
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeploymentCreate'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Deployment'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+      security:
+        - bearerAuth: []
+  /api/v1/deployments/{id}:
+    get:
+      summary: Get deployment by ID
+      operationId: getDeployment
+      tags: [Deployment Service]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: org_id
+          in: header
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Deployment details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Deployment'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      security:
+        - bearerAuth: []
 
-  # TODO: Add service-specific endpoints here
-  # Follow pattern: /api/v1/{resource} with standard CRUD operations
+  /api/v1/releases:
+    get:
+      summary: List releases
+      operationId: listReleases
+      tags: [Deployment Service]
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+        - name: org_id
+          in: header
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Tenant organization ID (multi-tenant isolation)
+      responses:
+        '200':
+          description: Paginated list of releases
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Release'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+        - bearerAuth: []
+    post:
+      summary: Create release
+      operationId: createRelease
+      tags: [Deployment Service]
+      parameters:
+        - name: org_id
+          in: header
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReleaseCreate'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Release'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+      security:
+        - bearerAuth: []
+  /api/v1/releases/{id}:
+    get:
+      summary: Get release by ID
+      operationId: getRelease
+      tags: [Deployment Service]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: org_id
+          in: header
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Release details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Release'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      security:
+        - bearerAuth: []
+
+  /api/v1/rollbacks:
+    get:
+      summary: List rollbacks
+      operationId: listRollbacks
+      tags: [Deployment Service]
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+        - name: org_id
+          in: header
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Tenant organization ID (multi-tenant isolation)
+      responses:
+        '200':
+          description: Paginated list of rollbacks
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Rollback'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+        - bearerAuth: []
+    post:
+      summary: Create rollback
+      operationId: createRollback
+      tags: [Deployment Service]
+      parameters:
+        - name: org_id
+          in: header
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RollbackCreate'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Rollback'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+      security:
+        - bearerAuth: []
+  /api/v1/rollbacks/{id}:
+    get:
+      summary: Get rollback by ID
+      operationId: getRollback
+      tags: [Deployment Service]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: org_id
+          in: header
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Rollback details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Rollback'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      security:
+        - bearerAuth: []
+
+  /api/v1/configs:
+    get:
+      summary: List configs
+      operationId: listConfigs
+      tags: [Deployment Service]
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+        - name: org_id
+          in: header
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Tenant organization ID (multi-tenant isolation)
+      responses:
+        '200':
+          description: Paginated list of configs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Config'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+        - bearerAuth: []
+    post:
+      summary: Create config
+      operationId: createConfig
+      tags: [Deployment Service]
+      parameters:
+        - name: org_id
+          in: header
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfigCreate'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Config'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+      security:
+        - bearerAuth: []
+  /api/v1/configs/{id}:
+    get:
+      summary: Get config by ID
+      operationId: getConfig
+      tags: [Deployment Service]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: org_id
+          in: header
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Config details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Config'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      security:
+        - bearerAuth: []
+
+  /health:
+    get:
+      summary: Health check
+      operationId: healthCheck
+      tags: [System]
+      responses:
+        '200':
+          description: Service healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+      security: []
+
+  /health/ready:
+    get:
+      summary: Readiness check (includes dependency status)
+      operationId: readinessCheck
+      tags: [System]
+      responses:
+        '200':
+          description: Service ready
+        '503':
+          description: Service not ready (dependency down)
+      security: []
 
 components:
   securitySchemes:
-    BearerAuth:
+    bearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
+      description: JWT from MedinovAI Security Service (MSS)
 
   schemas:
+    Deployment:
+      type: object
+      required: [id, created_at, org_id]
+      properties:
+        id:
+          type: string
+          format: uuid
+        org_id:
+          type: string
+          format: uuid
+          description: Owning organization (tenant isolation)
+        name:
+          type: string
+          maxLength: 255
+        status:
+          type: string
+          enum: [draft, active, archived]
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        created_by:
+          type: string
+          format: uuid
+    DeploymentCreate:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          maxLength: 255
+        metadata:
+          type: object
+          additionalProperties: true
+
+    Release:
+      type: object
+      required: [id, created_at, org_id]
+      properties:
+        id:
+          type: string
+          format: uuid
+        org_id:
+          type: string
+          format: uuid
+          description: Owning organization (tenant isolation)
+        name:
+          type: string
+          maxLength: 255
+        status:
+          type: string
+          enum: [draft, active, archived]
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        created_by:
+          type: string
+          format: uuid
+    ReleaseCreate:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          maxLength: 255
+        metadata:
+          type: object
+          additionalProperties: true
+
+    Rollback:
+      type: object
+      required: [id, created_at, org_id]
+      properties:
+        id:
+          type: string
+          format: uuid
+        org_id:
+          type: string
+          format: uuid
+          description: Owning organization (tenant isolation)
+        name:
+          type: string
+          maxLength: 255
+        status:
+          type: string
+          enum: [draft, active, archived]
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        created_by:
+          type: string
+          format: uuid
+    RollbackCreate:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          maxLength: 255
+        metadata:
+          type: object
+          additionalProperties: true
+
+    Config:
+      type: object
+      required: [id, created_at, org_id]
+      properties:
+        id:
+          type: string
+          format: uuid
+        org_id:
+          type: string
+          format: uuid
+          description: Owning organization (tenant isolation)
+        name:
+          type: string
+          maxLength: 255
+        status:
+          type: string
+          enum: [draft, active, archived]
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        created_by:
+          type: string
+          format: uuid
+    ConfigCreate:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          maxLength: 255
+        metadata:
+          type: object
+          additionalProperties: true
+
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+        page_size:
+          type: integer
+        total_count:
+          type: integer
+        total_pages:
+          type: integer
+
     HealthResponse:
       type: object
-      required: [status, version, uptime]
       properties:
         status:
           type: string
           enum: [healthy, degraded, unhealthy]
+        service:
+          type: string
         version:
           type: string
-          example: "1.0.0"
-        uptime:
-          type: number
-          description: "Uptime in seconds"
-        checks:
-          type: array
-          items:
-            type: object
-            properties:
-              name:
-                type: string
-              status:
-                type: string
-
-    ErrorEnvelope:
-      type: object
-      required: [error]
-      properties:
-        error:
+        timestamp:
+          type: string
+          format: date-time
+        dependencies:
           type: object
-          required: [code, message, traceId]
-          properties:
-            code:
-              type: string
-              example: "VALIDATION_ERROR"
-            message:
-              type: string
-            details:
-              type: object
-            traceId:
-              type: string
-              format: uuid
+          additionalProperties:
+            type: string
 
-    # Standard pagination
-    PaginatedResponse:
+    ErrorResponse:
       type: object
+      required: [error_code, message]
       properties:
-        data:
-          type: array
-          items: {}
-        pagination:
+        error_code:
+          type: string
+          description: Structured error code (E_SAFE_DEFAULT format)
+        message:
+          type: string
+        details:
           type: object
-          properties:
-            total:
-              type: integer
-            limit:
-              type: integer
-            offset:
-              type: integer
-            hasMore:
-              type: boolean
+        correlation_id:
+          type: string
+          format: uuid
+
+  responses:
+    Unauthorized:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Forbidden:
+      description: Insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    ValidationError:
+      description: Request validation failed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+security:
+  - bearerAuth: []
