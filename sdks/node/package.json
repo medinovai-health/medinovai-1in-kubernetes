@@ -1,0 +1,23 @@
+{
+  "name": "@medinovai/stream-bus",
+  "version": "1.0.0",
+  "description": "MedinovAI Stream Bus SDK — publish and subscribe to events",
+  "main": "src/index.js",
+  "types": "src/index.d.ts",
+  "exports": {
+    ".": {
+      "require": "./src/index.js",
+      "import": "./src/index.js",
+      "types": "./src/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": ["medinovai", "stream-bus", "kafka", "events"],
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.3.0"
+  }
+}

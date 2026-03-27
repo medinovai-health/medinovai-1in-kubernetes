@@ -59,3 +59,14 @@ These actions ALWAYS require human approval:
 2. **Orient**: Classify as `transient` (timeout, 502/503, connection reset), `structural` (401/403, schema mismatch, config missing), or `logic` (validation failure, business rule violation).
 3. **Decide**: Transient = retry with backoff + check if circuit breaker should open. Structural = stop, log, escalate. Logic = analyze, fix the logic, test.
 4. **Act**: Execute. Log classification and outcome. Update service health status if degraded.
+
+## Session Protocol
+
+Agents working in this repo must follow the additive session protocol defined in `.cursor/rules/agent-session-protocol.mdc`.
+
+- Use `progress.md` as the durable session log for completed work, active reasoning, and next steps.
+- Use `features.json` as the feature queue and update only the `passes` field for the feature completed in a session.
+- Use `init.sh` as the standard startup entrypoint for dependency install, dev-server boot, and pre-work validation when execution is authorized.
+- Rebuild context from `pwd`, git history, `progress.md`, and `features.json` before selecting work in later sessions.
+- Work on one feature at a time, preserve existing tests, and prefer browser-based end-to-end verification when available.
+- Stop after a clean handoff state instead of autonomously chaining into the next feature.

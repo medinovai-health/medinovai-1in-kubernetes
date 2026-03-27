@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "iam_user_created",
+  "description": "Emitted when a new IAM user is created",
+  "type": "object",
+  "required": ["event_type", "timestamp", "source", "tenant_id"],
+  "properties": {
+    "event_type": { "const": "iam_user_created" },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "source": { "type": "string" },
+    "tenant_id": { "type": "string" },
+    "correlation_id": { "type": "string" },
+    "payload": {
+      "type": "object",
+      "properties": {
+        "user_id": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "display_name": { "type": "string" },
+        "created_by": { "type": "string" }
+      }
+    }
+  },
+  "additionalProperties": true
+}
