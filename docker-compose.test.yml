@@ -1,0 +1,34 @@
+# Docker Compose — Test Environment
+# medinovai-infrastructure | Infrastructure Management | Tier 2
+#
+# Run: docker compose -f docker-compose.test.yml up --build --abort-on-container-exit
+
+version: "3.8"
+
+services:
+  test-runner:
+    image: python:3.11-slim
+    working_dir: /app
+    volumes:
+      - .:/app:ro
+      - test-results:/app/test-results
+    environment:
+      - MEDINOVAI_ENV=test
+      - MEDINOVAI_SERVICE=medinovai-infrastructure
+      - MEDINOVAI_TIER=2
+      - LOG_LEVEL=DEBUG
+      # HIPAA: Never put real credentials in compose files
+      - DATABASE_URL=sqlite:///tmp/test.db
+    command: >
+      sh -c "
+        pip install -r requirements.txt 2>/dev/null; pip install pytest coverage &&
+        pytest tests/ -v --tb=short --junitxml=/app/test-results/results.xml
+      "
+    healthcheck:
+      test: ["CMD", "echo", "ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  test-results:
