@@ -1,0 +1,452 @@
+# AutonomyOS Domain Event Catalog
+# Infrastructure Management (medinovai-infrastructure) — Tier 2
+#
+# Event-driven architecture for the MedinovAI AutonomyOS platform.
+# All events are published to ActiveMQ topics and consumed by registered subscribers.
+# Events follow CloudEvents v1.0 specification.
+
+module: infrastructure
+version: "1.0.0"
+domain: Infrastructure Management
+tier: 2
+
+event_defaults:
+  content_type: application/json
+  encoding: utf-8
+  broker: activemq
+  dead_letter_topic: "medinovai.infrastructure.dlq"
+  retry_policy:
+    max_retries: 3
+    backoff: exponential
+    initial_delay_ms: 1000
+
+events:
+  infrastructure.resource.created:
+    description: "Resource was created"
+    schema:
+      type: object
+      required: [event_id, timestamp, org_id, actor_id, resource_id]
+      properties:
+        event_id:
+          type: string
+          format: uuid
+        timestamp:
+          type: string
+          format: date-time
+        org_id:
+          type: string
+          format: uuid
+          description: Tenant organization
+        actor_id:
+          type: string
+          format: uuid
+          description: User who triggered the event
+        resource_id:
+          type: string
+          format: uuid
+        action:
+          type: string
+          enum: [created]
+        correlation_id:
+          type: string
+          format: uuid
+    topic: "medinovai.infrastructure.resource.created"
+    retention: 30d
+    consumers:
+      - audit-trail
+      - analytics-pipeline
+
+  infrastructure.resource.updated:
+    description: "Resource was updated"
+    schema:
+      type: object
+      required: [event_id, timestamp, org_id, actor_id, resource_id]
+      properties:
+        event_id:
+          type: string
+          format: uuid
+        timestamp:
+          type: string
+          format: date-time
+        org_id:
+          type: string
+          format: uuid
+          description: Tenant organization
+        actor_id:
+          type: string
+          format: uuid
+          description: User who triggered the event
+        resource_id:
+          type: string
+          format: uuid
+        action:
+          type: string
+          enum: [updated]
+        correlation_id:
+          type: string
+          format: uuid
+    topic: "medinovai.infrastructure.resource.updated"
+    retention: 30d
+    consumers:
+      - audit-trail
+      - analytics-pipeline
+
+  infrastructure.resource.deleted:
+    description: "Resource was deleted"
+    schema:
+      type: object
+      required: [event_id, timestamp, org_id, actor_id, resource_id]
+      properties:
+        event_id:
+          type: string
+          format: uuid
+        timestamp:
+          type: string
+          format: date-time
+        org_id:
+          type: string
+          format: uuid
+          description: Tenant organization
+        actor_id:
+          type: string
+          format: uuid
+          description: User who triggered the event
+        resource_id:
+          type: string
+          format: uuid
+        action:
+          type: string
+          enum: [deleted]
+        correlation_id:
+          type: string
+          format: uuid
+    topic: "medinovai.infrastructure.resource.deleted"
+    retention: 30d
+    consumers:
+      - audit-trail
+      - analytics-pipeline
+
+  infrastructure.cluster.created:
+    description: "Cluster was created"
+    schema:
+      type: object
+      required: [event_id, timestamp, org_id, actor_id, cluster_id]
+      properties:
+        event_id:
+          type: string
+          format: uuid
+        timestamp:
+          type: string
+          format: date-time
+        org_id:
+          type: string
+          format: uuid
+          description: Tenant organization
+        actor_id:
+          type: string
+          format: uuid
+          description: User who triggered the event
+        cluster_id:
+          type: string
+          format: uuid
+        action:
+          type: string
+          enum: [created]
+        correlation_id:
+          type: string
+          format: uuid
+    topic: "medinovai.infrastructure.cluster.created"
+    retention: 30d
+    consumers:
+      - audit-trail
+      - analytics-pipeline
+
+  infrastructure.cluster.updated:
+    description: "Cluster was updated"
+    schema:
+      type: object
+      required: [event_id, timestamp, org_id, actor_id, cluster_id]
+      properties:
+        event_id:
+          type: string
+          format: uuid
+        timestamp:
+          type: string
+          format: date-time
+        org_id:
+          type: string
+          format: uuid
+          description: Tenant organization
+        actor_id:
+          type: string
+          format: uuid
+          description: User who triggered the event
+        cluster_id:
+          type: string
+          format: uuid
+        action:
+          type: string
+          enum: [updated]
+        correlation_id:
+          type: string
+          format: uuid
+    topic: "medinovai.infrastructure.cluster.updated"
+    retention: 30d
+    consumers:
+      - audit-trail
+      - analytics-pipeline
+
+  infrastructure.cluster.deleted:
+    description: "Cluster was deleted"
+    schema:
+      type: object
+      required: [event_id, timestamp, org_id, actor_id, cluster_id]
+      properties:
+        event_id:
+          type: string
+          format: uuid
+        timestamp:
+          type: string
+          format: date-time
+        org_id:
+          type: string
+          format: uuid
+          description: Tenant organization
+        actor_id:
+          type: string
+          format: uuid
+          description: User who triggered the event
+        cluster_id:
+          type: string
+          format: uuid
+        action:
+          type: string
+          enum: [deleted]
+        correlation_id:
+          type: string
+          format: uuid
+    topic: "medinovai.infrastructure.cluster.deleted"
+    retention: 30d
+    consumers:
+      - audit-trail
+      - analytics-pipeline
+
+  infrastructure.monitor.created:
+    description: "Monitor was created"
+    schema:
+      type: object
+      required: [event_id, timestamp, org_id, actor_id, monitor_id]
+      properties:
+        event_id:
+          type: string
+          format: uuid
+        timestamp:
+          type: string
+          format: date-time
+        org_id:
+          type: string
+          format: uuid
+          description: Tenant organization
+        actor_id:
+          type: string
+          format: uuid
+          description: User who triggered the event
+        monitor_id:
+          type: string
+          format: uuid
+        action:
+          type: string
+          enum: [created]
+        correlation_id:
+          type: string
+          format: uuid
+    topic: "medinovai.infrastructure.monitor.created"
+    retention: 30d
+    consumers:
+      - audit-trail
+      - analytics-pipeline
+
+  infrastructure.monitor.updated:
+    description: "Monitor was updated"
+    schema:
+      type: object
+      required: [event_id, timestamp, org_id, actor_id, monitor_id]
+      properties:
+        event_id:
+          type: string
+          format: uuid
+        timestamp:
+          type: string
+          format: date-time
+        org_id:
+          type: string
+          format: uuid
+          description: Tenant organization
+        actor_id:
+          type: string
+          format: uuid
+          description: User who triggered the event
+        monitor_id:
+          type: string
+          format: uuid
+        action:
+          type: string
+          enum: [updated]
+        correlation_id:
+          type: string
+          format: uuid
+    topic: "medinovai.infrastructure.monitor.updated"
+    retention: 30d
+    consumers:
+      - audit-trail
+      - analytics-pipeline
+
+  infrastructure.monitor.deleted:
+    description: "Monitor was deleted"
+    schema:
+      type: object
+      required: [event_id, timestamp, org_id, actor_id, monitor_id]
+      properties:
+        event_id:
+          type: string
+          format: uuid
+        timestamp:
+          type: string
+          format: date-time
+        org_id:
+          type: string
+          format: uuid
+          description: Tenant organization
+        actor_id:
+          type: string
+          format: uuid
+          description: User who triggered the event
+        monitor_id:
+          type: string
+          format: uuid
+        action:
+          type: string
+          enum: [deleted]
+        correlation_id:
+          type: string
+          format: uuid
+    topic: "medinovai.infrastructure.monitor.deleted"
+    retention: 30d
+    consumers:
+      - audit-trail
+      - analytics-pipeline
+
+  infrastructure.alert.created:
+    description: "Alert was created"
+    schema:
+      type: object
+      required: [event_id, timestamp, org_id, actor_id, alert_id]
+      properties:
+        event_id:
+          type: string
+          format: uuid
+        timestamp:
+          type: string
+          format: date-time
+        org_id:
+          type: string
+          format: uuid
+          description: Tenant organization
+        actor_id:
+          type: string
+          format: uuid
+          description: User who triggered the event
+        alert_id:
+          type: string
+          format: uuid
+        action:
+          type: string
+          enum: [created]
+        correlation_id:
+          type: string
+          format: uuid
+    topic: "medinovai.infrastructure.alert.created"
+    retention: 30d
+    consumers:
+      - audit-trail
+      - analytics-pipeline
+
+  infrastructure.alert.updated:
+    description: "Alert was updated"
+    schema:
+      type: object
+      required: [event_id, timestamp, org_id, actor_id, alert_id]
+      properties:
+        event_id:
+          type: string
+          format: uuid
+        timestamp:
+          type: string
+          format: date-time
+        org_id:
+          type: string
+          format: uuid
+          description: Tenant organization
+        actor_id:
+          type: string
+          format: uuid
+          description: User who triggered the event
+        alert_id:
+          type: string
+          format: uuid
+        action:
+          type: string
+          enum: [updated]
+        correlation_id:
+          type: string
+          format: uuid
+    topic: "medinovai.infrastructure.alert.updated"
+    retention: 30d
+    consumers:
+      - audit-trail
+      - analytics-pipeline
+
+  infrastructure.alert.deleted:
+    description: "Alert was deleted"
+    schema:
+      type: object
+      required: [event_id, timestamp, org_id, actor_id, alert_id]
+      properties:
+        event_id:
+          type: string
+          format: uuid
+        timestamp:
+          type: string
+          format: date-time
+        org_id:
+          type: string
+          format: uuid
+          description: Tenant organization
+        actor_id:
+          type: string
+          format: uuid
+          description: User who triggered the event
+        alert_id:
+          type: string
+          format: uuid
+        action:
+          type: string
+          enum: [deleted]
+        correlation_id:
+          type: string
+          format: uuid
+    topic: "medinovai.infrastructure.alert.deleted"
+    retention: 30d
+    consumers:
+      - audit-trail
+      - analytics-pipeline
+
+
+subscriptions:
+  # Events this module consumes from other modules
+  - topic: "medinovai.security.auth.*"
+    handler: src/handlers/auth_events
+    description: "Auth events for session tracking"
+  - topic: "medinovai.notification.delivery.*"
+    handler: src/handlers/notification_events
+    description: "Delivery confirmations for notification tracking"
