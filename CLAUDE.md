@@ -1,29 +1,57 @@
-# Claude AI Instructions — medinovai-deploy
-## Import Central Standards
-@import .ai-standards/CLAUDE.md
-## Repository-Specific Context
-- **Repository:** medinovai-deploy
-- **Role:** Deploy medinovai entire system
-- **Tier:** Tier 2 (Platform / Infrastructure)
-- **Compliance Level:** FDA-CLASS-II
-- **Primary Language:** Shell
-## Repository Purpose
-Deploy medinovai entire system. Part of the MedinovAI platform under medinovai-health.
-## When Working on This Repository
-1. Read central standards first — medinovai-ai-standards/CLAUDE.md
-2. Follow coding conventions — E_ prefix constants, mos_ prefix variables, 40-line limit
-3. Infrastructure changes require rollback plans — scripts must be idempotent
-4. Security by default — zero-trust principles, RBAC on all endpoints
-5. Test coverage minimum: 85%
-6. Document thoroughly — every API, configuration, and deployment procedure
-## Related Standards
-| Document | Location |
-|----------|----------|
-| Master AI Instructions | medinovai-ai-standards/CLAUDE.md |
-| Coding Standards | medinovai-ai-standards/CODING_STANDARDS.md |
-| Compliance Matrix | medinovai-ai-standards/COMPLIANCE_MATRIX.md |
-| Security & ZeroTrust | medinovai-ai-standards/SECURITY_AND_ZEROTRUST.md |
-| Observability | medinovai-ai-standards/OBSERVABILITY.md |
-| Agent Harness | medinovai-ai-standards/AGENT_HARNESS.md |
-| Architecture | medinovai-ai-standards/ARCHITECTURE.md |
-| Repo Bootstrap | medinovai-ai-standards/REPO_BOOTSTRAP.md |
+# medinovai-Deploy — AI Development Rules
+
+## Repo Identity
+| Field | Value |
+|-------|-------|
+| Repo | medinovai-Deploy |
+| Tier | 0 |
+| Grade | D |
+| Domain | platform |
+| Language | shell |
+| Risk Class | low |
+| Platform Standard | v2.0 |
+
+## Platform Standards (MANDATORY)
+- All development follows Spec-Driven Development (SDD): SPECIFY → VALIDATE → BMAD → TESTS → IMPLEMENT → VALIDATE → DEPLOY
+- Never write implementation code without a specification
+- Never write code before tests (TDD: RED → GREEN → REFACTOR)
+- Use platform shared services — never reimplement auth, secrets, audit, or telemetry locally
+
+## Coding Standards
+- Python 3.10+ with type hints on ALL functions
+- PEP 8 style, 120 char line length
+- Google-style docstrings
+- Async/await for all I/O operations
+- Pydantic models for request/response validation
+- structlog for ALL logging (ZTA format)
+
+## Naming Conventions
+- Constants: `E_` prefix in UPPER_CASE (e.g., `E_MODULE_ID`)
+- Variables: `mos_` prefix in lowerCamelCase (e.g., `mos_patientData`)
+- Code blocks: Maximum 40 lines for readability
+- Encoding: UTF-8 everywhere
+
+## Logging Standard (ZTA Format)
+ALL logging MUST use structured JSON format (ZTA standard):
+```json
+{"timestamp": "ISO8601", "level": "INFO", "service_id": "medinovai-Deploy",
+  "correlation_id": "uuid", "tenant_id": "string", "actor_id": "string",
+  "event": "string", "category": "audit|business|debug", "phi_safe": true}
+```
+- NEVER use print() or plain logging.info()
+- NEVER log raw PHI/PII values (use IDs only)
+- Audit events: category="audit", always Level 3 metadata
+- Debug events: only emitted when debug mode active
+
+## Code Navigation — jCodeMunch
+```
+list_repos                                             → check indexed repos
+search_symbols: { "repo": "medinovai-Deploy", "query": "..." } → find functions/classes
+get_symbol:     { "repo": "medinovai-Deploy", "symbol_id": "..." } → get source
+get_context_bundle: { "repo": "medinovai-Deploy", "symbol_id": "..." } → symbol + imports
+```
+
+## Platform References
+- Unified Standard: medinovai-Developer/docs/platform-audit/UNIFIED_ALIGNMENT_STANDARD_v2.0.md
+- System Docs: medinovai-Developer/docs/platform-audit/SYSTEM_TECHNICAL_DOCUMENTATION.md
+- Alignment Plan: medinovai-Developer/docs/platform-audit/MASTER_ALIGNMENT_PLAN.md
