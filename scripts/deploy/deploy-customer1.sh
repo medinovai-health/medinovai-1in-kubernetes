@@ -11,7 +11,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"  # Go up 2 levels: scripts/deploy -> scripts -> repo root
 DEPLOY_DIR="$REPO_ROOT/deploy"
 REPOS_PATH="${REPOS_PATH:-$HOME/medinovai-all-repos}"
 GITHUB_ORG="${MEDINOVAI_GITHUB_ORG:-medinovai-health}"
