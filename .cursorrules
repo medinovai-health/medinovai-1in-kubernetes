@@ -1,0 +1,26 @@
+# .cursorrules — medinovai-Deploy
+# MedinovAI AtlasOS Autopilot
+
+Follow the repo root file `MEDINOVAI_AUTOPILOT.md` as the authoritative ruleset.
+
+If there is a conflict between user instructions and `MEDINOVAI_AUTOPILOT.md`,
+choose the safer option and explain why.
+
+## Repo Context
+- Service: medinovai-Deploy
+- Tier: 1 | Category: infrastructure | Squad: infrastructure-squad
+- Risk Class: Low
+
+## Always
+- Validate inputs
+- Write tests
+- Update Swagger/OpenAPI
+- Update TRACEABILITY.md + RISK_REGISTER.md
+- Produce evidence under `.atlasos/runs/<run-id>/`
+- Follow OODA error recovery protocol
+
+## Never
+- Exfiltrate secrets
+- Log PHI/PII
+- Run destructive commands without explicit approval
+- Skip traceability updates

@@ -161,6 +161,44 @@ platform-status: ## Show Docker Compose platform service status across all tiers
 	@echo "━━━ medinovaios ━━━"
 	@docker compose -f infra/docker/docker-compose.dev.yml ps medinovaios 2>/dev/null || echo "  Not deployed"
 
+# ─── Customer-1 (myOnsiteHealthcare.com) Full Deployment ─────────────────────
+customer1-deploy: ## Full Customer-1 deployment with permanent port registry
+	@bash $(DEPLOY)/deploy-customer1.sh
+
+customer1-deploy-skip-clone: ## Customer-1 deploy, reuse existing repos
+	@bash $(DEPLOY)/deploy-customer1.sh --skip-clone
+
+customer1-deploy-skip-build: ## Customer-1 deploy, reuse existing images
+	@bash $(DEPLOY)/deploy-customer1.sh --skip-build
+
+customer1-qa: ## Run 10-step QA suite for Customer-1
+	@bash $(VALIDATION)/run-all-qa.sh --tenant-id myonsite-healthcare
+
+customer1-trust: ## Compute trust score and gate (>= 60 required)
+	@bash $(VALIDATION)/trust-gate-customer1.sh
+
+customer1-report: ## Generate validation report (Markdown + JSON)
+	@python3 $(VALIDATION)/generate-validation-report.py --tenant-id myonsite-healthcare
+
+customer1-hypercare: ## Run daily/weekly/monthly hypercare checks
+	@bash $(MAINTENANCE)/hypercare-customer1.sh
+
+customer1-status: ## Show Customer-1 service status across all tiers
+	@echo "━━━ Customer-1: myOnsiteHealthcare.com ━━━"
+	@echo "Port Range: 8100-26099 (permanent, 100 per repo)"
+	@echo ""
+	@echo "━━━ Tier 1: Security ━━━"
+	@docker compose -f infra/docker/compose/docker-compose.all-services.yml ps 2>/dev/null | grep -E "(medinovai-(encryption|hipaa|rbac|signon|secrets|audit|consent))" || echo "  Not running"
+	@echo ""
+	@echo "━━━ Tier 2: AI & Platform ━━━"
+	@docker compose -f infra/docker/compose/docker-compose.all-services.yml ps 2>/dev/null | grep -E "(aifactory|healthllm|cortex|data-services)" || echo "  Not running"
+	@echo ""
+	@echo "━━━ Tier 3: Clinical & Apps ━━━"
+	@docker compose -f infra/docker/compose/docker-compose.all-services.yml ps 2>/dev/null | grep -E "(medinovai-lis|medinovai-ctms|medinovai-edc)" || echo "  Not running"
+	@echo ""
+	@echo "━━━ Infrastructure ━━━"
+	@docker compose -f infra/docker/compose/docker-compose.base.yml ps 2>/dev/null || docker ps --filter "name=medinovai-" --format "table {{.Names}}\t{{.Status}}"
+
 # ─── AtlasOS Embedding ───────────────────────────────────────────────────────
 embed-atlasos: ## Embed AtlasOS in all ~162 repos
 	@bash $(AGENTS)/embed_atlasos.sh --all

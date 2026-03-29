@@ -1,0 +1,189 @@
+{
+  "id": "medinovai",
+  "realm": "medinovai",
+  "displayName": "MedinovAI — myOnsiteHealthcare",
+  "displayNameHtml": "<b>MedinovAI</b> — myOnsiteHealthcare",
+  "enabled": true,
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": true,
+  "permanentLockout": false,
+  "maxFailureWaitSeconds": 900,
+  "minimumQuickLoginWaitSeconds": 60,
+  "waitIncrementSeconds": 60,
+  "quickLoginCheckMilliSeconds": 1000,
+  "maxDeltaTimeSeconds": 43200,
+  "failureFactor": 5,
+  "defaultSignatureAlgorithm": "RS256",
+  "accessTokenLifespan": 300,
+  "accessTokenLifespanForImplicitFlow": 900,
+  "ssoSessionIdleTimeout": 1800,
+  "ssoSessionMaxLifespan": 36000,
+  "offlineSessionIdleTimeout": 2592000,
+  "offlineSessionMaxLifespanEnabled": false,
+  "accessCodeLifespan": 60,
+  "accessCodeLifespanUserAction": 300,
+  "accessCodeLifespanLogin": 1800,
+  "actionTokenGeneratedByAdminLifespan": 43200,
+  "actionTokenGeneratedByUserLifespan": 300,
+  "roles": {
+    "realm": [
+      { "name": "admin", "description": "Platform administrator — full access" },
+      { "name": "clinician", "description": "Clinician — patient care workflows" },
+      { "name": "lab_tech", "description": "Lab technician — specimen and result workflows" },
+      { "name": "researcher", "description": "Researcher — cohort, analytics, workspace access" },
+      { "name": "read_only", "description": "Read-only viewer — dashboards and reports" }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "medinovai-os-portal",
+      "name": "MedinovAI OS Portal",
+      "description": "Public SPA client for the unified OS portal",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "implicitFlowEnabled": false,
+      "protocol": "openid-connect",
+      "rootUrl": "http://localhost:3000",
+      "baseUrl": "/",
+      "redirectUris": [
+        "http://localhost:3000/*",
+        "http://localhost:8180/*"
+      ],
+      "webOrigins": [
+        "http://localhost:3000",
+        "http://localhost:8180"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      },
+      "defaultClientScopes": ["openid", "profile", "email", "roles"]
+    },
+    {
+      "clientId": "medinovai-service-account",
+      "name": "MedinovAI Service Account",
+      "description": "Confidential client for inter-service authentication",
+      "enabled": true,
+      "publicClient": false,
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "protocol": "openid-connect",
+      "secret": "medinovai-svc-secret-change-in-prod",
+      "defaultClientScopes": ["openid", "profile", "email"]
+    },
+    {
+      "clientId": "medinovai-lis",
+      "name": "MedinovAI LIS",
+      "description": "Laboratory Information System client",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "protocol": "openid-connect",
+      "rootUrl": "http://localhost:8010",
+      "redirectUris": ["http://localhost:8010/*"],
+      "webOrigins": ["http://localhost:8010"],
+      "attributes": { "pkce.code.challenge.method": "S256" },
+      "defaultClientScopes": ["openid", "profile", "email", "roles"]
+    },
+    {
+      "clientId": "medinovai-data-services",
+      "name": "MedinovAI Data Services",
+      "description": "FHIR/OMOP data platform client",
+      "enabled": true,
+      "publicClient": false,
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "protocol": "openid-connect",
+      "secret": "data-svc-secret-change-in-prod",
+      "defaultClientScopes": ["openid", "profile", "email"]
+    }
+  ],
+  "users": [
+    {
+      "username": "admin@myonsitehealthcare.com",
+      "email": "admin@myonsitehealthcare.com",
+      "firstName": "Admin",
+      "lastName": "myOnsite",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "ChangeMe!2026",
+          "temporary": true
+        }
+      ],
+      "realmRoles": ["admin"],
+      "requiredActions": ["UPDATE_PASSWORD"]
+    },
+    {
+      "username": "demo-clinician@myonsitehealthcare.com",
+      "email": "demo-clinician@myonsitehealthcare.com",
+      "firstName": "Demo",
+      "lastName": "Clinician",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "DemoClinician!2026",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["clinician"]
+    },
+    {
+      "username": "demo-labtech@myonsitehealthcare.com",
+      "email": "demo-labtech@myonsitehealthcare.com",
+      "firstName": "Demo",
+      "lastName": "LabTech",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "DemoLabTech!2026",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["lab_tech"]
+    },
+    {
+      "username": "demo-researcher@myonsitehealthcare.com",
+      "email": "demo-researcher@myonsitehealthcare.com",
+      "firstName": "Demo",
+      "lastName": "Researcher",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "DemoResearcher!2026",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["researcher"]
+    }
+  ],
+  "browserFlow": "browser",
+  "registrationFlow": "registration",
+  "directGrantFlow": "direct grant",
+  "resetCredentialsFlow": "reset credentials",
+  "clientAuthenticationFlow": "clients",
+  "attributes": {
+    "frontendUrl": "http://localhost:8180",
+    "allowedEmailDomains": "myonsitehealthcare.com"
+  },
+  "smtpServer": {},
+  "internationalizationEnabled": false,
+  "supportedLocales": ["en"],
+  "defaultLocale": "en"
+}

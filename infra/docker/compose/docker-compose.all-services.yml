@@ -1,0 +1,6705 @@
+version: '3.8'
+services:
+  medinovai-deploy:
+    image: medinovai-deploy:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-Deploy
+      dockerfile: Dockerfile
+    container_name: medinovai-deploy
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-deploy
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 8400:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-infrastructure:
+    image: medinovai-infrastructure:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-infrastructure
+      dockerfile: Dockerfile
+    container_name: medinovai-infrastructure
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-infrastructure
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 8500:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-real-time-stream-bus:
+    image: medinovai-real-time-stream-bus:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-real-time-stream-bus
+      dockerfile: Dockerfile
+    container_name: medinovai-real-time-stream-bus
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-real-time-stream-bus
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 8600:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  .github:
+    image: .github:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/.github
+      dockerfile: Dockerfile
+    container_name: .github
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: .github
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 8700:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-registry:
+    image: medinovai-registry:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-registry
+      dockerfile: Dockerfile
+    container_name: medinovai-registry
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-registry
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 8800:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  trust:
+    image: trust:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/Trust
+      dockerfile: Dockerfile
+    container_name: trust
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: trust
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 8900:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-audit-trail-explorer:
+    image: medinovai-audit-trail-explorer:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-audit-trail-explorer
+      dockerfile: Dockerfile
+    container_name: medinovai-audit-trail-explorer
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-audit-trail-explorer
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 9000:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-consent-preference-api:
+    image: medinovai-consent-preference-api:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-consent-preference-api
+      dockerfile: Dockerfile
+    container_name: medinovai-consent-preference-api
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-consent-preference-api
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 9100:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-encryption-vault:
+    image: medinovai-encryption-vault:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-encryption-vault
+      dockerfile: Dockerfile
+    container_name: medinovai-encryption-vault
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-encryption-vault
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 9200:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-hipaa-gdpr-guard:
+    image: medinovai-hipaa-gdpr-guard:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-hipaa-gdpr-guard
+      dockerfile: Dockerfile
+    container_name: medinovai-hipaa-gdpr-guard
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-hipaa-gdpr-guard
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 9300:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-role-based-permissions:
+    image: medinovai-role-based-permissions:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-role-based-permissions
+      dockerfile: Dockerfile
+    container_name: medinovai-role-based-permissions
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-role-based-permissions
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 9400:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-secrets-manager-bridge:
+    image: medinovai-secrets-manager-bridge:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-secrets-manager-bridge
+      dockerfile: Dockerfile
+    container_name: medinovai-secrets-manager-bridge
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-secrets-manager-bridge
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 9500:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-universal-sign-on:
+    image: medinovai-universal-sign-on:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-universal-sign-on
+      dockerfile: Dockerfile
+    container_name: medinovai-universal-sign-on
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-universal-sign-on
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 9600:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  zerotrustaudit:
+    image: zerotrustaudit:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/zerotrustaudit
+      dockerfile: Dockerfile
+    container_name: zerotrustaudit
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: zerotrustaudit
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 9700:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-agent-sdk:
+    image: medinovai-agent-sdk:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-agent-sdk
+      dockerfile: Dockerfile
+    container_name: medinovai-agent-sdk
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-agent-sdk
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 9800:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  agentic-framework:
+    image: agentic-framework:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/agentic-framework
+      dockerfile: Dockerfile
+    container_name: agentic-framework
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: agentic-framework
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 9900:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-cortex:
+    image: medinovai-cortex:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-Cortex
+      dockerfile: Dockerfile
+    container_name: medinovai-cortex
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-cortex
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 10000:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-aifactory:
+    image: medinovai-aifactory:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-aifactory
+      dockerfile: Dockerfile
+    container_name: medinovai-aifactory
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-aifactory
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 10100:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-healthllm:
+    image: medinovai-healthllm:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-healthLLM
+      dockerfile: Dockerfile
+    container_name: medinovai-healthllm
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-healthllm
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 10200:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-model-service-orchestrator:
+    image: medinovai-model-service-orchestrator:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/MedinovAI-Model-Service-Orchestrator
+      dockerfile: Dockerfile
+    container_name: medinovai-model-service-orchestrator
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-model-service-orchestrator
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 10300:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-search:
+    image: medinovai-search:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-search
+      dockerfile: Dockerfile
+    container_name: medinovai-search
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-search
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 10400:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-data-services:
+    image: medinovai-data-services:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-data-services
+      dockerfile: Dockerfile
+    container_name: medinovai-data-services
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-data-services
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 10500:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-edge-cache-cdn:
+    image: medinovai-edge-cache-cdn:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-edge-cache-cdn
+      dockerfile: Dockerfile
+    container_name: medinovai-edge-cache-cdn
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-edge-cache-cdn
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 10600:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  gitlabfederation:
+    image: gitlabfederation:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/GitlabFederation
+      dockerfile: Dockerfile
+    container_name: gitlabfederation
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: gitlabfederation
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 10700:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-observability-fabric:
+    image: medinovai-observability-fabric:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-observability-fabric
+      dockerfile: Dockerfile
+    container_name: medinovai-observability-fabric
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-observability-fabric
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 10800:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-test-infrastructure:
+    image: medinovai-test-infrastructure:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-test-infrastructure
+      dockerfile: Dockerfile
+    container_name: medinovai-test-infrastructure
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-test-infrastructure
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 10900:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-api:
+    image: medinovai-api:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-api
+      dockerfile: Dockerfile
+    container_name: medinovai-api
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-api
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 11000:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  architecture-catalog:
+    image: architecture-catalog:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/architecture-catalog
+      dockerfile: Dockerfile
+    container_name: architecture-catalog
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: architecture-catalog
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 11100:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-atlas-os:
+    image: medinovai-atlas-os:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-atlas-os
+      dockerfile: Dockerfile
+    container_name: medinovai-atlas-os
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-atlas-os
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 11200:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-constitution:
+    image: medinovai-constitution:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-constitution
+      dockerfile: Dockerfile
+    container_name: medinovai-constitution
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-constitution
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 11300:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-feature-flag-console:
+    image: medinovai-feature-flag-console:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-feature-flag-console
+      dockerfile: Dockerfile
+    container_name: medinovai-feature-flag-console
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-feature-flag-console
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 11400:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-file-storage:
+    image: medinovai-file-storage:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-file-storage
+      dockerfile: Dockerfile
+    container_name: medinovai-file-storage
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-file-storage
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 11500:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-notifications:
+    image: medinovai-notifications:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-notifications
+      dockerfile: Dockerfile
+    container_name: medinovai-notifications
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-notifications
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 11600:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-saes:
+    image: medinovai-saes:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-saes
+      dockerfile: Dockerfile
+    container_name: medinovai-saes
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-saes
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 11700:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-validation:
+    image: medinovai-validation:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-validation
+      dockerfile: Dockerfile
+    container_name: medinovai-validation
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-validation
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 11800:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-workflow-engine:
+    image: medinovai-workflow-engine:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-workflow-engine
+      dockerfile: Dockerfile
+    container_name: medinovai-workflow-engine
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-workflow-engine
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 11900:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-epg:
+    image: medinovai-epg:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-epg
+      dockerfile: Dockerfile
+    container_name: medinovai-epg
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-epg
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 12000:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  atlasos-memory:
+    image: atlasos-memory:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/atlasos-memory
+      dockerfile: Dockerfile
+    container_name: atlasos-memory
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: atlasos-memory
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 12100:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  atlasos-skills:
+    image: atlasos-skills:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/atlasos-skills
+      dockerfile: Dockerfile
+    container_name: atlasos-skills
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: atlasos-skills
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 12200:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  coceo:
+    image: coceo:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/coceo
+      dockerfile: Dockerfile
+    container_name: coceo
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: coceo
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 12300:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  cognaium:
+    image: cognaium:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/cognaium
+      dockerfile: Dockerfile
+    container_name: cognaium
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: cognaium
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 12400:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  connector-framework:
+    image: connector-framework:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/connector-framework
+      dockerfile: Dockerfile
+    container_name: connector-framework
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: connector-framework
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 12500:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  cortex:
+    image: cortex:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/cortex
+      dockerfile: Dockerfile
+    container_name: cortex
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: cortex
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 12600:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  dataset-catalog:
+    image: dataset-catalog:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/dataset-catalog
+      dockerfile: Dockerfile
+    container_name: dataset-catalog
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: dataset-catalog
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 12700:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  dq-gates:
+    image: dq-gates:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/dq-gates
+      dockerfile: Dockerfile
+    container_name: dq-gates
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: dq-gates
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 12800:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  evidence-store:
+    image: evidence-store:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/evidence-store
+      dockerfile: Dockerfile
+    container_name: evidence-store
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: evidence-store
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 12900:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  governance:
+    image: governance:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/governance
+      dockerfile: Dockerfile
+    container_name: governance
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: governance
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 13000:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  integration-platform:
+    image: integration-platform:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/integration-platform
+      dockerfile: Dockerfile
+    container_name: integration-platform
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: integration-platform
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 13100:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  marketing:
+    image: marketing:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/marketing
+      dockerfile: Dockerfile
+    container_name: marketing
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: marketing
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 13200:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-anomaly-detector:
+    image: medinovai-anomaly-detector:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-anomaly-detector
+      dockerfile: Dockerfile
+    container_name: medinovai-anomaly-detector
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-anomaly-detector
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 13300:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  ceoassistant:
+    image: ceoassistant:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/CEOassistant
+      dockerfile: Dockerfile
+    container_name: ceoassistant
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: ceoassistant
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 13400:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-chatbot:
+    image: medinovai-chatbot:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-chatbot
+      dockerfile: Dockerfile
+    container_name: medinovai-chatbot
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-chatbot
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 13500:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  chatbotv2:
+    image: chatbotv2:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/ChatbotV2
+      dockerfile: Dockerfile
+    container_name: chatbotv2
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: chatbotv2
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 13600:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  ai-coach:
+    image: ai-coach:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/AI-Coach
+      dockerfile: Dockerfile
+    container_name: ai-coach
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: ai-coach
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 13700:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  aicomputenetwork:
+    image: aicomputenetwork:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/AIComputeNetwork
+      dockerfile: Dockerfile
+    container_name: aicomputenetwork
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: aicomputenetwork
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 13800:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  documentgenie:
+    image: documentgenie:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/DocumentGenie
+      dockerfile: Dockerfile
+    container_name: documentgenie
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: documentgenie
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 13900:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-doc-summarizer:
+    image: medinovai-doc-summarizer:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-doc-summarizer
+      dockerfile: Dockerfile
+    container_name: medinovai-doc-summarizer
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-doc-summarizer
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 14000:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  docugenie:
+    image: docugenie:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/DocuGenie
+      dockerfile: Dockerfile
+    container_name: docugenie
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: docugenie
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 14100:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  docugeniepro:
+    image: docugeniepro:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/DocuGeniePro
+      dockerfile: Dockerfile
+    container_name: docugeniepro
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: docugeniepro
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 14200:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-knowledge-graph:
+    image: medinovai-knowledge-graph:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-knowledge-graph
+      dockerfile: Dockerfile
+    container_name: medinovai-knowledge-graph
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-knowledge-graph
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 14300:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-model-orchestrator:
+    image: medinovai-model-orchestrator:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-model-orchestrator
+      dockerfile: Dockerfile
+    container_name: medinovai-model-orchestrator
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-model-orchestrator
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 14400:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  mos-chatbot:
+    image: mos-chatbot:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/mos-chatbot
+      dockerfile: Dockerfile
+    container_name: mos-chatbot
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: mos-chatbot
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 14500:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-natural-language-query:
+    image: medinovai-natural-language-query:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-natural-language-query
+      dockerfile: Dockerfile
+    container_name: medinovai-natural-language-query
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-natural-language-query
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 14600:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-image-to-text-ocr:
+    image: medinovai-image-to-text-ocr:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-image-to-text-ocr
+      dockerfile: Dockerfile
+    container_name: medinovai-image-to-text-ocr
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-image-to-text-ocr
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 14700:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-pathology-ai:
+    image: medinovai-pathology-ai:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-pathology-ai
+      dockerfile: Dockerfile
+    container_name: medinovai-pathology-ai
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-pathology-ai
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 14800:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-prompt-vault:
+    image: medinovai-prompt-vault:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-prompt-vault
+      dockerfile: Dockerfile
+    container_name: medinovai-prompt-vault
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-prompt-vault
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 14900:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-qa-agent-builder:
+    image: medinovai-qa-agent-builder:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-qa-agent-builder
+      dockerfile: Dockerfile
+    container_name: medinovai-qa-agent-builder
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-qa-agent-builder
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 15000:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-ai-scribe:
+    image: medinovai-ai-scribe:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-ai-scribe
+      dockerfile: Dockerfile
+    container_name: medinovai-ai-scribe
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-ai-scribe
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 15100:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-sentiment-monitor:
+    image: medinovai-sentiment-monitor:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-sentiment-monitor
+      dockerfile: Dockerfile
+    container_name: medinovai-sentiment-monitor
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-sentiment-monitor
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 15200:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-text-to-speech-narrator:
+    image: medinovai-text-to-speech-narrator:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-text-to-speech-narrator
+      dockerfile: Dockerfile
+    container_name: medinovai-text-to-speech-narrator
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-text-to-speech-narrator
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 15300:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-voice-command-layer:
+    image: medinovai-voice-command-layer:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-voice-command-layer
+      dockerfile: Dockerfile
+    container_name: medinovai-voice-command-layer
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-voice-command-layer
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 15400:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-care-team-chat:
+    image: medinovai-care-team-chat:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-care-team-chat
+      dockerfile: Dockerfile
+    container_name: medinovai-care-team-chat
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-care-team-chat
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 15500:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-clinical-decision-support:
+    image: medinovai-clinical-decision-support:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-clinical-decision-support
+      dockerfile: Dockerfile
+    container_name: medinovai-clinical-decision-support
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-clinical-decision-support
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 15600:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  credentialing:
+    image: credentialing:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/Credentialing
+      dockerfile: Dockerfile
+    container_name: credentialing
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: credentialing
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 15700:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-ctms:
+    image: medinovai-ctms:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-ctms
+      dockerfile: Dockerfile
+    container_name: medinovai-ctms
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-ctms
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 15800:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  ctms-simulation:
+    image: ctms-simulation:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/CTMS-Simulation
+      dockerfile: Dockerfile
+    container_name: ctms-simulation
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: ctms-simulation
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 15900:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-cds:
+    image: medinovai-cds:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-cds
+      dockerfile: Dockerfile
+    container_name: medinovai-cds
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-cds
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 16000:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-document-management:
+    image: medinovai-document-management:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-document-management
+      dockerfile: Dockerfile
+    container_name: medinovai-document-management
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-document-management
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 16100:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-drug-interaction-checker:
+    image: medinovai-drug-interaction-checker:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-drug-interaction-checker
+      dockerfile: Dockerfile
+    container_name: medinovai-drug-interaction-checker
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-drug-interaction-checker
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 16200:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-edc:
+    image: medinovai-edc:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-edc
+      dockerfile: Dockerfile
+    container_name: medinovai-edc
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-edc
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 16300:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-e-prescribe-gateway:
+    image: medinovai-e-prescribe-gateway:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-e-prescribe-gateway
+      dockerfile: Dockerfile
+    container_name: medinovai-e-prescribe-gateway
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-e-prescribe-gateway
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 16400:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-esign:
+    image: medinovai-esign:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-esign
+      dockerfile: Dockerfile
+    container_name: medinovai-esign
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-esign
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 16500:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-etmf:
+    image: medinovai-etmf:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-etmf
+      dockerfile: Dockerfile
+    container_name: medinovai-etmf
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-etmf
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 16600:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-mobile-field-services:
+    image: medinovai-mobile-field-services:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-mobile-field-services
+      dockerfile: Dockerfile
+    container_name: medinovai-mobile-field-services
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-mobile-field-services
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 16700:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-genomics-interpreter:
+    image: medinovai-genomics-interpreter:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-genomics-interpreter
+      dockerfile: Dockerfile
+    container_name: medinovai-genomics-interpreter
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-genomics-interpreter
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 16800:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-guideline-updater:
+    image: medinovai-guideline-updater:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-guideline-updater
+      dockerfile: Dockerfile
+    container_name: medinovai-guideline-updater
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-guideline-updater
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 16900:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-health-timeline:
+    image: medinovai-health-timeline:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-health-timeline
+      dockerfile: Dockerfile
+    container_name: medinovai-health-timeline
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-health-timeline
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 17000:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-imaging-viewer:
+    image: medinovai-imaging-viewer:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-imaging-viewer
+      dockerfile: Dockerfile
+    container_name: medinovai-imaging-viewer
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-imaging-viewer
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 17100:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-inventorymanagement:
+    image: medinovai-inventorymanagement:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-inventorymanagement
+      dockerfile: Dockerfile
+    container_name: medinovai-inventorymanagement
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-inventorymanagement
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 17200:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-lab-order-router:
+    image: medinovai-lab-order-router:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-lab-order-router
+      dockerfile: Dockerfile
+    container_name: medinovai-lab-order-router
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-lab-order-router
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 17300:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-lis:
+    image: medinovai-lis:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-lis
+      dockerfile: Dockerfile
+    container_name: medinovai-lis
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-lis
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 17400:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-lis-platform:
+    image: medinovai-lis-platform:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-lis-platform
+      dockerfile: Dockerfile
+    container_name: medinovai-lis-platform
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-lis-platform
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 17500:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  lis-2.0:
+    image: lis-2.0:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/LIS-2.0
+      dockerfile: Dockerfile
+    container_name: lis-2.0
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: lis-2.0
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 17600:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-livekit:
+    image: medinovai-livekit:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-livekit
+      dockerfile: Dockerfile
+    container_name: medinovai-livekit
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-livekit
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 17700:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-medication-tracker:
+    image: medinovai-medication-tracker:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-medication-tracker
+      dockerfile: Dockerfile
+    container_name: medinovai-medication-tracker
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-medication-tracker
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 17800:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-patientmatching:
+    image: medinovai-patientmatching:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-patientmatching
+      dockerfile: Dockerfile
+    container_name: medinovai-patientmatching
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-patientmatching
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 17900:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-patient-onboarding:
+    image: medinovai-patient-onboarding:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-patient-onboarding
+      dockerfile: Dockerfile
+    container_name: medinovai-patient-onboarding
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-patient-onboarding
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 18000:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-risk-management:
+    image: medinovai-risk-management:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-risk-management
+      dockerfile: Dockerfile
+    container_name: medinovai-risk-management
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-risk-management
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 18100:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-smart-scheduler:
+    image: medinovai-smart-scheduler:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-smart-scheduler
+      dockerfile: Dockerfile
+    container_name: medinovai-smart-scheduler
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-smart-scheduler
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 18200:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-telehealth-hub:
+    image: medinovai-telehealth-hub:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-telehealth-hub
+      dockerfile: Dockerfile
+    container_name: medinovai-telehealth-hub
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-telehealth-hub
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 18300:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-virtual-triage:
+    image: medinovai-virtual-triage:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-virtual-triage
+      dockerfile: Dockerfile
+    container_name: medinovai-virtual-triage
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-virtual-triage
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 18400:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-remote-vitals-ingest:
+    image: medinovai-remote-vitals-ingest:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-remote-vitals-ingest
+      dockerfile: Dockerfile
+    container_name: medinovai-remote-vitals-ingest
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-remote-vitals-ingest
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 18500:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-wait-list-balancer:
+    image: medinovai-wait-list-balancer:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-wait-list-balancer
+      dockerfile: Dockerfile
+    container_name: medinovai-wait-list-balancer
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-wait-list-balancer
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 18600:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-analytics:
+    image: medinovai-analytics:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-analytics
+      dockerfile: Dockerfile
+    container_name: medinovai-analytics
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-analytics
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 18700:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  data-generator:
+    image: data-generator:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/data-generator
+      dockerfile: Dockerfile
+    container_name: data-generator
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: data-generator
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 18800:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-data-officer:
+    image: medinovai-data-officer:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-data-officer
+      dockerfile: Dockerfile
+    container_name: medinovai-data-officer
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-data-officer
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 18900:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  insights:
+    image: insights:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/Insights
+      dockerfile: Dockerfile
+    container_name: insights
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: insights
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 19000:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-data-lake-loader:
+    image: medinovai-data-lake-loader:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-data-lake-loader
+      dockerfile: Dockerfile
+    container_name: medinovai-data-lake-loader
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-data-lake-loader
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 19100:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  finexus:
+    image: finexus:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/Finexus
+      dockerfile: Dockerfile
+    container_name: finexus
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: finexus
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 19200:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  ats:
+    image: ats:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/ATS
+      dockerfile: Dockerfile
+    container_name: ats
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: ats
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 19300:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  education:
+    image: education:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/Education
+      dockerfile: Dockerfile
+    container_name: education
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: education
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 19400:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  employee-portal:
+    image: employee-portal:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/Employee-Portal
+      dockerfile: Dockerfile
+    container_name: employee-portal
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: employee-portal
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 19500:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  ai-skill-assessment:
+    image: ai-skill-assessment:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/ai_skill_assessment
+      dockerfile: Dockerfile
+    container_name: ai-skill-assessment
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: ai-skill-assessment
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 19600:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  upskill:
+    image: upskill:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/Upskill
+      dockerfile: Dockerfile
+    container_name: upskill
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: upskill
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 19700:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  cdr:
+    image: cdr:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/CDR
+      dockerfile: Dockerfile
+    container_name: cdr
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: cdr
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 19800:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-etl-designer:
+    image: medinovai-etl-designer:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-etl-designer
+      dockerfile: Dockerfile
+    container_name: medinovai-etl-designer
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-etl-designer
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 19900:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-mirth-scripts:
+    image: medinovai-mirth-scripts:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-mirth-scripts
+      dockerfile: Dockerfile
+    container_name: medinovai-mirth-scripts
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-mirth-scripts
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 20000:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-contract-management:
+    image: medinovai-contract-management:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-contract-management
+      dockerfile: Dockerfile
+    container_name: medinovai-contract-management
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-contract-management
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 20100:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  myonsite-ops-monitoring:
+    image: myonsite-ops-monitoring:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/myonsite-ops-monitoring
+      dockerfile: Dockerfile
+    container_name: myonsite-ops-monitoring
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: myonsite-ops-monitoring
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 20200:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  myonsite-ops:
+    image: myonsite-ops:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/myonsite-ops
+      dockerfile: Dockerfile
+    container_name: myonsite-ops
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: myonsite-ops
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 20300:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  operationsanalytics:
+    image: operationsanalytics:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/OperationsAnalytics
+      dockerfile: Dockerfile
+    container_name: operationsanalytics
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: operationsanalytics
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 20400:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  processautomations:
+    image: processautomations:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/ProcessAutomations
+      dockerfile: Dockerfile
+    container_name: processautomations
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: processautomations
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 20500:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  procurementpro:
+    image: procurementpro:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/ProcurementPro
+      dockerfile: Dockerfile
+    container_name: procurementpro
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: procurementpro
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 20600:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  qualitymanagementsystem:
+    image: qualitymanagementsystem:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/QualityManagementSystem
+      dockerfile: Dockerfile
+    container_name: qualitymanagementsystem
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: qualitymanagementsystem
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 20700:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-accessibility-checker:
+    image: medinovai-accessibility-checker:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-accessibility-checker
+      dockerfile: Dockerfile
+    container_name: medinovai-accessibility-checker
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-accessibility-checker
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 20800:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-email-service:
+    image: medinovai-email-service:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-email-service
+      dockerfile: Dockerfile
+    container_name: medinovai-email-service
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-email-service
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 20900:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-governance-templates:
+    image: medinovai-governance-templates:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-governance-templates
+      dockerfile: Dockerfile
+    container_name: medinovai-governance-templates
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-governance-templates
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 21000:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-mail:
+    image: medinovai-mail:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-mail
+      dockerfile: Dockerfile
+    container_name: medinovai-mail
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-mail
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 21100:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-media-hub:
+    image: medinovai-media-hub:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-media-hub
+      dockerfile: Dockerfile
+    container_name: medinovai-media-hub
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-media-hub
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 21200:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-notification-center:
+    image: medinovai-notification-center:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-notification-center
+      dockerfile: Dockerfile
+    container_name: medinovai-notification-center
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-notification-center
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 21300:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-policy-diff-watcher:
+    image: medinovai-policy-diff-watcher:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-policy-diff-watcher
+      dockerfile: Dockerfile
+    container_name: medinovai-policy-diff-watcher
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-policy-diff-watcher
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 21400:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-prism:
+    image: medinovai-prism:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-prism
+      dockerfile: Dockerfile
+    container_name: medinovai-prism
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-prism
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 21500:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-projects:
+    image: medinovai-projects:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-projects
+      dockerfile: Dockerfile
+    container_name: medinovai-projects
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-projects
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 21600:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-quality-certification:
+    image: medinovai-quality-certification:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-quality-certification
+      dockerfile: Dockerfile
+    container_name: medinovai-quality-certification
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-quality-certification
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 21700:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-sme:
+    image: medinovai-sme:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-sme
+      dockerfile: Dockerfile
+    container_name: medinovai-sme
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-sme
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 21800:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-task-kanban:
+    image: medinovai-task-kanban:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-task-kanban
+      dockerfile: Dockerfile
+    container_name: medinovai-task-kanban
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-task-kanban
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 21900:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-content-translator:
+    image: medinovai-content-translator:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-content-translator
+      dockerfile: Dockerfile
+    container_name: medinovai-content-translator
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-content-translator
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 22000:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-white-label-skinner:
+    image: medinovai-white-label-skinner:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-white-label-skinner
+      dockerfile: Dockerfile
+    container_name: medinovai-white-label-skinner
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-white-label-skinner
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 22100:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-workflow:
+    image: medinovai-workflow:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-workflow
+      dockerfile: Dockerfile
+    container_name: medinovai-workflow
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-workflow
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 22200:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-econsent:
+    image: medinovai-econsent:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-eConsent
+      dockerfile: Dockerfile
+    container_name: medinovai-econsent
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-econsent
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 22300:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-eisf:
+    image: medinovai-eisf:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-eISF
+      dockerfile: Dockerfile
+    container_name: medinovai-eisf
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-eisf
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 22400:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-epro:
+    image: medinovai-epro:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-ePRO
+      dockerfile: Dockerfile
+    container_name: medinovai-epro
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-epro
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 22500:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-esource:
+    image: medinovai-esource:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-eSource
+      dockerfile: Dockerfile
+    container_name: medinovai-esource
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-esource
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 22600:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-iwrs:
+    image: medinovai-iwrs:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-iwrs
+      dockerfile: Dockerfile
+    container_name: medinovai-iwrs
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-iwrs
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 22700:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-pharmacovigilance:
+    image: medinovai-pharmacovigilance:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-pharmacovigilance
+      dockerfile: Dockerfile
+    container_name: medinovai-pharmacovigilance
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-pharmacovigilance
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 22800:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  protocoldesign:
+    image: protocoldesign:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/ProtocolDesign
+      dockerfile: Dockerfile
+    container_name: protocoldesign
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: protocoldesign
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 22900:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-regulatory-submissions:
+    image: medinovai-regulatory-submissions:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-regulatory-submissions
+      dockerfile: Dockerfile
+    container_name: medinovai-regulatory-submissions
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-regulatory-submissions
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 23000:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-research-fabric:
+    image: medinovai-research-fabric:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-research-fabric
+      dockerfile: Dockerfile
+    container_name: medinovai-research-fabric
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-research-fabric
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 23100:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-research-suite:
+    image: medinovai-research-suite:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-research-suite
+      dockerfile: Dockerfile
+    container_name: medinovai-research-suite
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-research-suite
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 23200:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-rbm:
+    image: medinovai-rbm:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-rbm
+      dockerfile: Dockerfile
+    container_name: medinovai-rbm
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-rbm
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 23300:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-site-feasibility:
+    image: medinovai-site-feasibility:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-site-feasibility
+      dockerfile: Dockerfile
+    container_name: medinovai-site-feasibility
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-site-feasibility
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 23400:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  crm:
+    image: crm:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/CRM
+      dockerfile: Dockerfile
+    container_name: crm
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: crm
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 23500:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  customerservice:
+    image: customerservice:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/CustomerService
+      dockerfile: Dockerfile
+    container_name: customerservice
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: customerservice
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 23600:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  expansionplaybook:
+    image: expansionplaybook:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/ExpansionPlaybook
+      dockerfile: Dockerfile
+    container_name: expansionplaybook
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: expansionplaybook
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 23700:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  marketinghackathon:
+    image: marketinghackathon:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/marketinghackathon
+      dockerfile: Dockerfile
+    container_name: marketinghackathon
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: marketinghackathon
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 23800:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  marketingskills:
+    image: marketingskills:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/marketingskills
+      dockerfile: Dockerfile
+    container_name: marketingskills
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: marketingskills
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 23900:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-sales:
+    image: medinovai-sales:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-sales
+      dockerfile: Dockerfile
+    container_name: medinovai-sales
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-sales
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 24000:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  salesrag:
+    image: salesrag:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/SalesRAG
+      dockerfile: Dockerfile
+    container_name: salesrag
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: salesrag
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 24100:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  omop-foundation:
+    image: omop-foundation:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/omop-foundation
+      dockerfile: Dockerfile
+    container_name: omop-foundation
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: omop-foundation
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 24200:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  training-reference:
+    image: training-reference:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/training-reference
+      dockerfile: Dockerfile
+    container_name: training-reference
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: training-reference
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 24300:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  workspace-operator:
+    image: workspace-operator:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/workspace-operator
+      dockerfile: Dockerfile
+    container_name: workspace-operator
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: workspace-operator
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 24400:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-cohort-studio:
+    image: medinovai-cohort-studio:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-cohort-studio
+      dockerfile: Dockerfile
+    container_name: medinovai-cohort-studio
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-cohort-studio
+      PORT: '3000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 24500:3000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - curl -f http://localhost:3000/health || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-ui-components:
+    image: medinovai-ui-components:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-ui-components
+      dockerfile: Dockerfile
+    container_name: medinovai-ui-components
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-ui-components
+      PORT: '3000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 24600:3000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - curl -f http://localhost:3000/health || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-developer-portal:
+    image: medinovai-developer-portal:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-developer-portal
+      dockerfile: Dockerfile
+    container_name: medinovai-developer-portal
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-developer-portal
+      PORT: '3000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 24700:3000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - curl -f http://localhost:3000/health || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-help:
+    image: medinovai-help:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-help
+      dockerfile: Dockerfile
+    container_name: medinovai-help
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-help
+      PORT: '3000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 24800:3000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - curl -f http://localhost:3000/health || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-lis-ui:
+    image: medinovai-lis-ui:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-lis-ui
+      dockerfile: Dockerfile
+    container_name: medinovai-lis-ui
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-lis-ui
+      PORT: '3000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 24900:3000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - curl -f http://localhost:3000/health || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-multimodal-ui-shell:
+    image: medinovai-multimodal-ui-shell:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-multimodal-ui-shell
+      dockerfile: Dockerfile
+    container_name: medinovai-multimodal-ui-shell
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-multimodal-ui-shell
+      PORT: '3000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 25000:3000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - curl -f http://localhost:3000/health || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-patient-portal:
+    image: medinovai-patient-portal:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-patient-portal
+      dockerfile: Dockerfile
+    container_name: medinovai-patient-portal
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-patient-portal
+      PORT: '3000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 25100:3000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - curl -f http://localhost:3000/health || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-uiux:
+    image: medinovai-uiux:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-Uiux
+      dockerfile: Dockerfile
+    container_name: medinovai-uiux
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-uiux
+      PORT: '3000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 25200:3000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - curl -f http://localhost:3000/health || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-web-core:
+    image: medinovai-web-core:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-web-core
+      dockerfile: Dockerfile
+    container_name: medinovai-web-core
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-web-core
+      PORT: '3000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 25300:3000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - curl -f http://localhost:3000/health || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-workspace-hub:
+    image: medinovai-workspace-hub:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-workspace-hub
+      dockerfile: Dockerfile
+    container_name: medinovai-workspace-hub
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-workspace-hub
+      PORT: '3000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 25400:3000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - curl -f http://localhost:3000/health || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-health-concierge-android:
+    image: medinovai-health-concierge-android:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-health-concierge-android
+      dockerfile: Dockerfile
+    container_name: medinovai-health-concierge-android
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-health-concierge-android
+      PORT: '3000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 25500:3000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - curl -f http://localhost:3000/health || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  medinovai-health-concierge-ios:
+    image: medinovai-health-concierge-ios:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/medinovai-health-concierge-ios
+      dockerfile: Dockerfile
+    container_name: medinovai-health-concierge-ios
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: medinovai-health-concierge-ios
+      PORT: '3000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 25600:3000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - curl -f http://localhost:3000/health || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  mywork-android:
+    image: mywork-android:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/mywork-android
+      dockerfile: Dockerfile
+    container_name: mywork-android
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: mywork-android
+      PORT: '3000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 25700:3000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - curl -f http://localhost:3000/health || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  myonsite-mobile-app:
+    image: myonsite-mobile-app:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/myonsite-mobile-app
+      dockerfile: Dockerfile
+    container_name: myonsite-mobile-app
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: myonsite-mobile-app
+      PORT: '3000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 25800:3000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - curl -f http://localhost:3000/health || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  clawdbot-ui-fixes:
+    image: clawdbot-ui-fixes:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/clawdbot-ui-fixes
+      dockerfile: Dockerfile
+    container_name: clawdbot-ui-fixes
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: clawdbot-ui-fixes
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 25900:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  haritaoza.com:
+    image: haritaoza.com:latest
+    build:
+      context: ${REPOS_PATH:-../../../../medinovai-all-repos}/HaritaOza.com
+      dockerfile: Dockerfile
+    container_name: haritaoza.com
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: haritaoza.com
+      PORT: '8000'
+      REGISTRY_URL: http://medinovai-registry:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinovai
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: '1'
+    ports:
+    - 26000:8000
+    networks:
+    - medinovai-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+networks:
+  medinovai-net:
+    name: medinovai-os-compose
+    driver: bridge
+    external: false
