@@ -1,0 +1,18 @@
+# MedinovAI Centralized Architecture Integration
+FROM node:18-alpine
+
+WORKDIR /app
+
+COPY package*.json ./
+
+RUN npm ci --only=production
+
+COPY . .
+
+ENV MEDINOVAI_DATA_SERVICE_URL=https://api.medinovai.com/v1
+ENV MEDINOVAI_AUTH_SERVICE_URL=https://auth.medinovai.com
+ENV MEDINOVAI_UI_SERVICE_URL=https://ui.medinovai.com
+
+EXPOSE 3000
+
+CMD ["npm", "start"]
