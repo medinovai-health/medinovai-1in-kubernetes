@@ -38,9 +38,18 @@ ALL logging MUST use structured JSON format (ZTA standard):
 - NEVER use print() or plain logging.info()
 - NEVER log raw PHI/PII values (use IDs only)
 
-## Port Authority
-- ALL ports from medinovai-health/Deploy/config/port-registry.json
-- NO hardcoded ports — load from registry
+## Dedicated Port Assignment
+| Field | Value |
+|-------|-------|
+| Base Port | 8500 |
+| Port Range | 8500-8599 |
+| Internal Container Port | 8000 |
+| Primary Service | localhost:8500 |
+| Metrics | localhost:8501 |
+| Debug | localhost:8502 |
+
+**Authority:** `medinovai-health/Deploy/config/port-registry.json`
+**Rule:** NEVER use any port outside this range. NEVER hardcode ports.
 
 ## Platform References
 - Unified Standard: medinovai-Developer/docs/platform-audit/UNIFIED_ALIGNMENT_STANDARD_v2.0.md

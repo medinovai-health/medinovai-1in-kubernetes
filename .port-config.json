@@ -1,0 +1,17 @@
+{
+  "_comment": "Port assignments from medinovai-health/Deploy/config/port-registry.json \u2014 DO NOT EDIT MANUALLY",
+  "repo_id": "medinovai-1in-kubernetes",
+  "repo_name": "medinovai-infrastructure",
+  "base_port": 8500,
+  "port_range": "8500-8599",
+  "internal_port": 8000,
+  "ports": {
+    "primary": 8500,
+    "health": 8500,
+    "metrics": 8501,
+    "debug": 8502,
+    "grpc": 8503,
+    "websocket": 8504
+  },
+  "port_authority": "medinovai-health/Deploy/config/port-registry.json"
+}
