@@ -1,5 +1,5 @@
 # Use a slim, secure base image
-FROM node:20-alpine AS builder
+FROM node:25-alpine AS builder
 # Set working directory
 WORKDIR /usr/src/app
 # Copy package files and install dependencies
@@ -8,7 +8,7 @@ RUN npm install --production
 # Copy application source
 COPY . .
 # --- Second Stage: Final image ---
-FROM node:20-alpine
+FROM node:25-alpine
 # Set working directory
 WORKDIR /usr/src/app
 # Copy dependencies and built artifacts from builder stage
