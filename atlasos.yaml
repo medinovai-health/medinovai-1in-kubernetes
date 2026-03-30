@@ -1,0 +1,55 @@
+# atlasos.yaml - Repo Autonomy Contract
+# Repository: medinovai-infrastructure
+# Generated: 2026-03-30
+
+repo:
+    name: "medinovai-infrastructure"
+    owner: "MedinovAI"
+    domain: "Infrastructure"
+    risk_class: "Low"
+    primary_languages: ["Python"]
+    microservices: true
+
+build:
+    commands:
+        - "terraform init && terraform validate"
+    test_commands:
+        unit:
+            - "terraform plan"
+        integration:
+            - "terratest"
+
+quality_gates:
+    require_swagger: true
+    require_dto_dal: true
+    require_activemq: true
+    require_traceability_update: true
+    require_risk_update_on_security_change: true
+
+tools:
+    allowlist:
+        - "git"
+        - "python"
+        - "pytest"
+        - "ruff"
+        - "npm"
+        - "dotnet"
+    blocklist:
+        - "rm -rf"
+        - "sudo"
+        - "curl | sh"
+
+approvals:
+    required_approver: "Mayank Trivedi"
+    trackers:
+        jira: true
+        vtiger: true
+
+evidence:
+    output_dir: ".atlasos/runs"
+    redact_patterns:
+        - "(?i)api[_-]?key"
+        - "(?i)authorization:"
+        - "(?i)patient"
+        - "(?i)ssn"
+        - "(?i)dob"

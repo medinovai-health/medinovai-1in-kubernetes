@@ -1,27 +1,28 @@
-# Dependencies
-/node_modules
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Env
+.env
+.env.local
+*.pem
 
 # Python
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
-
-# Environment variables
-.env
-
-# Build artifacts
+*.py[cod]
+*.egg-info/
 dist/
 build/
-
-# Test coverage
-coverage/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
 .coverage
-
-# IDE files
-.idea/
-.vscode/
-
-# OS files
-.DS_Store
-Thumbs.db
