@@ -21,7 +21,7 @@
 #   ATLAS_UI_SRC         — optional: path to pre-copied UI source inside the image
 # ─────────────────────────────────────────────────────────────────────────────
 
-FROM node:22-alpine
+FROM node:25-alpine
 
 # System deps: bash (scripts require bash), curl (health probes / install),
 # jq (JSON parsing in scripts), python3 (manifest parsing in deploy_service.sh)

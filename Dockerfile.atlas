@@ -15,7 +15,7 @@
 # (compose mounts the UI source as a volume — no build needed)
 # ─────────────────────────────────────────────────────────────────────────────
 
-FROM node:22-alpine
+FROM node:25-alpine
 
 RUN apk add --no-cache wget
 
