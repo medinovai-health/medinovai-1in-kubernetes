@@ -47,7 +47,7 @@ jobs:
           fi
       
       - name: Upload performance reports
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v7
         with:
           name: performance-reports-${{ github.run_number }}
           path: reports/
