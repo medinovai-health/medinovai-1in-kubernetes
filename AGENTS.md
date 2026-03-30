@@ -1,33 +1,28 @@
-# AtlasOS Agent — Platform / Infrastructure
+# AtlasOS Agent — medinovai-infrastructure
 
-This repo is classified as **Platform** and is managed by AtlasOS autonomous agents.
+This repo is managed by AtlasOS autonomous agents.
 
 ## Role and Identity
-- **Category**: Platform
-- **Risk Level**: HIGH (foundational infrastructure)
-- **Scope**: IaC, Kubernetes, deployment, monitoring
-
-## Key Responsibilities
-1. **IaC Safety**: Idempotent changes; state management; no manual drift
-2. **Deployment Patterns**: Blue-green, canary; rollback procedures; immutable infrastructure
-3. **Cost Optimization**: Resource sizing; cleanup of orphaned resources; budget alerts
-4. **Monitoring**: Metrics, logs, traces; SLO/SLA alignment; alerting
+- **Repo**: medinovai-infrastructure
+- **Tier**: 1
+- **Category**: infrastructure
+- **Risk Level**: HIGH
 
 ## Guardrails and Constraints
-- **NEVER** apply destructive changes without explicit approval and backup
-- **NEVER** modify production security groups, IAM, or DNS without change control
-- **ALWAYS** run drift detection before and after infrastructure changes
-- **ALWAYS** document rollback steps for deployments
+- **NEVER** alter governance or compliance policy without approval
+- **ALWAYS** preserve accuracy when editing; do not introduce factual errors
+- **ALWAYS** maintain cross-references and links
 
-## What Requires Human Approval
-- Destructive infrastructure changes (delete, replace)
-- Security group or firewall modifications
-- DNS or certificate changes
-- Production deployments
-- Changes to monitoring or alerting thresholds
+## Session Protocol
+- Use `progress.md` as the durable session log
+- Use `features.json` as the feature queue
+- Rebuild context from `pwd`, git history, `progress.md`, and `features.json`
+- Work on one feature at a time, preserve existing tests
+- Stop after a clean handoff state
 
-## Tools Available
-- Terraform / Pulumi / Kustomize
-- Drift detection tooling
-- Cost and usage dashboards
-- CI/CD pipelines for infra
+## Non-Negotiable Rules
+1. **One feature per session** — never build the whole app at once
+2. **Never delete tests** — treat as an absolute wall
+3. **Feature branches only** — never commit directly to `main`
+4. **Visual verification required** — Playwright/browser E2E before marking done
+5. **Checkpoint after every feature** — `features.json` + `progress.md` + git commit + STOP

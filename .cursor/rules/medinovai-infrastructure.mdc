@@ -1,0 +1,27 @@
+# medinovai-infrastructure — Repo-Specific Cursor Rule
+
+## Repo Identity
+
+| Field | Value |
+|-------|-------|
+| Service name | medinovai-infrastructure |
+| Tier | 1 |
+| Category | infrastructure |
+| Squad | infrastructure-squad |
+| Language | HCL |
+| Risk class | Low |
+| Domain | Infrastructure |
+
+## Hard Constraints
+- Dependency rule: Tier 1 may only depend on Tier < 1
+- No cross-tenant data access
+- Audit trail required for all data modifications
+- API response time < 200ms P95
+- Health endpoint: GET /health
+
+## AtlasOS Integration
+- Agent config: config/atlasos/agents/medinovai-infrastructure-agent.yaml
+- Heartbeat: config/atlasos/heartbeat/checks.yaml
+- Evidence: .atlasos/runs/
+- OODA loop: enabled
+- UEAA: enabled
