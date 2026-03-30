@@ -4,11 +4,11 @@
 | Field | Value |
 |-------|-------|
 | Repo | medinovai-Deploy |
-| Tier | 0 |
-| Grade | D |
-| Domain | platform |
-| Language | shell |
-| Risk Class | low |
+| Repo ID | medinovai-1in-deploy |
+| Tier | 1 |
+| Domain | infrastructure |
+| Language | Shell |
+| Risk Class | high |
 | Platform Standard | v2.0 |
 
 ## Platform Standards (MANDATORY)
@@ -18,12 +18,9 @@
 - Use platform shared services — never reimplement auth, secrets, audit, or telemetry locally
 
 ## Coding Standards
-- Python 3.10+ with type hints on ALL functions
-- PEP 8 style, 120 char line length
-- Google-style docstrings
+- Platform standard coding conventions, structlog/structured logging
 - Async/await for all I/O operations
-- Pydantic models for request/response validation
-- structlog for ALL logging (ZTA format)
+- Pydantic/Zod models for request/response validation
 
 ## Naming Conventions
 - Constants: `E_` prefix in UPPER_CASE (e.g., `E_MODULE_ID`)
@@ -40,18 +37,20 @@ ALL logging MUST use structured JSON format (ZTA standard):
 ```
 - NEVER use print() or plain logging.info()
 - NEVER log raw PHI/PII values (use IDs only)
-- Audit events: category="audit", always Level 3 metadata
-- Debug events: only emitted when debug mode active
 
-## Code Navigation — jCodeMunch
-```
-list_repos                                             → check indexed repos
-search_symbols: { "repo": "medinovai-Deploy", "query": "..." } → find functions/classes
-get_symbol:     { "repo": "medinovai-Deploy", "symbol_id": "..." } → get source
-get_context_bundle: { "repo": "medinovai-Deploy", "symbol_id": "..." } → symbol + imports
-```
+## Dedicated Port Assignment
+| Field | Value |
+|-------|-------|
+| Base Port | 8400 |
+| Port Range | 8400-8499 |
+| Internal Container Port | 8000 |
+| Primary Service | localhost:8400 |
+| Metrics | localhost:8401 |
+| Debug | localhost:8402 |
+
+**Authority:** `medinovai-health/Deploy/config/port-registry.json`
+**Rule:** NEVER use any port outside this range. NEVER hardcode ports.
 
 ## Platform References
 - Unified Standard: medinovai-Developer/docs/platform-audit/UNIFIED_ALIGNMENT_STANDARD_v2.0.md
 - System Docs: medinovai-Developer/docs/platform-audit/SYSTEM_TECHNICAL_DOCUMENTATION.md
-- Alignment Plan: medinovai-Developer/docs/platform-audit/MASTER_ALIGNMENT_PLAN.md

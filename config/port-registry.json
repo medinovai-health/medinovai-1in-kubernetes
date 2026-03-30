@@ -2164,6 +2164,642 @@
       "category": "meta",
       "status": "personal",
       "existing_port": null
+    },
+    "extra-autograntpro-devin": {
+      "old_name": "AUtoGrantPro-Devin",
+      "base_port": 26100,
+      "port_range": "26100-26199",
+      "tier": 99
+    },
+    "extra-atlasos": {
+      "old_name": "AtlasOS",
+      "base_port": 26200,
+      "port_range": "26200-26299",
+      "tier": 99
+    },
+    "extra-autobidpro": {
+      "old_name": "AutoBidPro",
+      "base_port": 26300,
+      "port_range": "26300-26399",
+      "tier": 99
+    },
+    "extra-autobizdev": {
+      "old_name": "AutoBizDev",
+      "base_port": 26400,
+      "port_range": "26400-26499",
+      "tier": 99
+    },
+    "extra-autograntpro": {
+      "old_name": "AutoGrantPro",
+      "base_port": 26500,
+      "port_range": "26500-26599",
+      "tier": 99
+    },
+    "extra-autograntpro-cursor": {
+      "old_name": "AutoGrantPro-Cursor",
+      "base_port": 26600,
+      "port_range": "26600-26699",
+      "tier": 99
+    },
+    "extra-autograntpro-manus": {
+      "old_name": "AutoGrantPro-Manus",
+      "base_port": 26700,
+      "port_range": "26700-26799",
+      "tier": 99
+    },
+    "extra-autograntprocursorstudio": {
+      "old_name": "AutoGrantProCursorStudio",
+      "base_port": 26800,
+      "port_range": "26800-26899",
+      "tier": 99
+    },
+    "extra-automarketingpro": {
+      "old_name": "AutoMarketingPro",
+      "base_port": 26900,
+      "port_range": "26900-26999",
+      "tier": 99
+    },
+    "extra-autosalespro": {
+      "old_name": "AutoSalesPro",
+      "base_port": 27000,
+      "port_range": "27000-27099",
+      "tier": 99
+    },
+    "extra-autonomousqms": {
+      "old_name": "AutonomousQMS",
+      "base_port": 27100,
+      "port_range": "27100-27199",
+      "tier": 99
+    },
+    "extra-compliancemanus": {
+      "old_name": "ComplianceManus",
+      "base_port": 27200,
+      "port_range": "27200-27299",
+      "tier": 99
+    },
+    "extra-inventory-management-system": {
+      "old_name": "Inventory-Management-System",
+      "base_port": 27300,
+      "port_range": "27300-27399",
+      "tier": 99
+    },
+    "extra-learn": {
+      "old_name": "Learn",
+      "base_port": 27400,
+      "port_range": "27400-27499",
+      "tier": 99
+    },
+    "extra-local_llms": {
+      "old_name": "Local_LLMs",
+      "base_port": 27500,
+      "port_range": "27500-27599",
+      "tier": 99
+    },
+    "extra-medinovai---medical-fax-processing": {
+      "old_name": "MedinovAI---Medical-Fax-Processing",
+      "base_port": 27600,
+      "port_range": "27600-27699",
+      "tier": 99
+    },
+    "extra-medinovai-ai-standards": {
+      "old_name": "MedinovAI-AI-Standards",
+      "base_port": 27700,
+      "port_range": "27700-27799",
+      "tier": 99
+    },
+    "extra-northstar": {
+      "old_name": "Northstar",
+      "base_port": 27800,
+      "port_range": "27800-27899",
+      "tier": 99
+    },
+    "extra-nutrisense": {
+      "old_name": "NutriSense",
+      "base_port": 27900,
+      "port_range": "27900-27999",
+      "tier": 99
+    },
+    "extra-personalassistant": {
+      "old_name": "PersonalAssistant",
+      "base_port": 28000,
+      "port_range": "28000-28099",
+      "tier": 99
+    },
+    "extra-photoai": {
+      "old_name": "PhotoAI",
+      "base_port": 28100,
+      "port_range": "28100-28199",
+      "tier": 99
+    },
+    "extra-qms": {
+      "old_name": "QMS",
+      "base_port": 28200,
+      "port_range": "28200-28299",
+      "tier": 99
+    },
+    "extra-qualitymanagementsystemv0": {
+      "old_name": "QualityManagementSystemV0",
+      "base_port": 28300,
+      "port_range": "28300-28399",
+      "tier": 99
+    },
+    "extra-skillhub": {
+      "old_name": "Skillhub",
+      "base_port": 28400,
+      "port_range": "28400-28499",
+      "tier": 99
+    },
+    "extra-travelai": {
+      "old_name": "TravelAI",
+      "base_port": 28500,
+      "port_range": "28500-28599",
+      "tier": 99
+    },
+    "extra-workforceos": {
+      "old_name": "WorkforceOS",
+      "base_port": 28600,
+      "port_range": "28600-28699",
+      "tier": 99
+    },
+    "extra-__docker-maintenance": {
+      "old_name": "__Docker-Maintenance",
+      "base_port": 28700,
+      "port_range": "28700-28799",
+      "tier": 99
+    },
+    "extra-ai-chatbot": {
+      "old_name": "ai-chatbot",
+      "base_port": 28800,
+      "port_range": "28800-28899",
+      "tier": 99
+    },
+    "extra-ai-chatbot-mjt": {
+      "old_name": "ai-chatbot-mjt",
+      "base_port": 28900,
+      "port_range": "28900-28999",
+      "tier": 99
+    },
+    "extra-ajay-lis": {
+      "old_name": "ajay-lis",
+      "base_port": 29000,
+      "port_range": "29000-29099",
+      "tier": 99
+    },
+    "extra-atlas-command": {
+      "old_name": "atlas-command",
+      "base_port": 29100,
+      "port_range": "29100-29199",
+      "tier": 99
+    },
+    "extra-bug-free-computing-machine": {
+      "old_name": "bug-free-computing-machine",
+      "base_port": 29200,
+      "port_range": "29200-29299",
+      "tier": 99
+    },
+    "extra-cogniai-us": {
+      "old_name": "cogniai.us",
+      "base_port": 29300,
+      "port_range": "29300-29399",
+      "tier": 99
+    },
+    "extra-cognitive-firewall": {
+      "old_name": "cognitive-firewall",
+      "base_port": 29400,
+      "port_range": "29400-29499",
+      "tier": 99
+    },
+    "extra-cursor-config": {
+      "old_name": "cursor-config",
+      "base_port": 29500,
+      "port_range": "29500-29599",
+      "tier": 99
+    },
+    "extra-deployment": {
+      "old_name": "deployment",
+      "base_port": 29600,
+      "port_range": "29600-29699",
+      "tier": 99
+    },
+    "extra-descartesbio-in": {
+      "old_name": "descartesbio.in",
+      "base_port": 29700,
+      "port_range": "29700-29799",
+      "tier": 99
+    },
+    "extra-hello-world-claude": {
+      "old_name": "hello-world-claude",
+      "base_port": 29800,
+      "port_range": "29800-29899",
+      "tier": 99
+    },
+    "extra-hello-world-codex": {
+      "old_name": "hello-world-codex",
+      "base_port": 29900,
+      "port_range": "29900-29999",
+      "tier": 99
+    },
+    "extra-hello-world-cursor": {
+      "old_name": "hello-world-cursor",
+      "base_port": 30000,
+      "port_range": "30000-30099",
+      "tier": 99
+    },
+    "extra-hello-world-devin": {
+      "old_name": "hello-world-devin",
+      "base_port": 30100,
+      "port_range": "30100-30199",
+      "tier": 99
+    },
+    "extra-lis-1-0-mvc": {
+      "old_name": "lis-1.0-mvc",
+      "base_port": 30200,
+      "port_range": "30200-30299",
+      "tier": 99
+    },
+    "extra-lis-1-0-silverlight": {
+      "old_name": "lis-1.0-silverlight",
+      "base_port": 30300,
+      "port_range": "30300-30399",
+      "tier": 99
+    },
+    "extra-lis-iss": {
+      "old_name": "lis-iss",
+      "base_port": 30400,
+      "port_range": "30400-30499",
+      "tier": 99
+    },
+    "extra-localmodels": {
+      "old_name": "localmodels",
+      "base_port": 30500,
+      "port_range": "30500-30599",
+      "tier": 99
+    },
+    "extra-manus-consolidation-platform": {
+      "old_name": "manus-consolidation-platform",
+      "base_port": 30600,
+      "port_range": "30600-30699",
+      "tier": 99
+    },
+    "extra-mayanktrivedi": {
+      "old_name": "mayanktrivedi",
+      "base_port": 30700,
+      "port_range": "30700-30799",
+      "tier": 99
+    },
+    "extra-mayanktrivedi-1": {
+      "old_name": "mayanktrivedi-1",
+      "base_port": 30800,
+      "port_range": "30800-30899",
+      "tier": 99
+    },
+    "extra-mayanktrivedi-2": {
+      "old_name": "mayanktrivedi-2",
+      "base_port": 30900,
+      "port_range": "30900-30999",
+      "tier": 99
+    },
+    "extra-medinovai-sitefeasibility": {
+      "old_name": "medinovAI-SiteFeasibility",
+      "base_port": 31000,
+      "port_range": "31000-31099",
+      "tier": 99
+    },
+    "extra-medinovai-media": {
+      "old_name": "medinovAI-media",
+      "base_port": 31100,
+      "port_range": "31100-31199",
+      "tier": 99
+    },
+    "extra-medinovaiusb": {
+      "old_name": "medinovAIUSB",
+      "base_port": 31200,
+      "port_range": "31200-31299",
+      "tier": 99
+    },
+    "extra-medinovaiworkflow": {
+      "old_name": "medinovAIWorkFlow",
+      "base_port": 31300,
+      "port_range": "31300-31399",
+      "tier": 99
+    },
+    "extra-medinovaigent": {
+      "old_name": "medinovAIgent",
+      "base_port": 31400,
+      "port_range": "31400-31499",
+      "tier": 99
+    },
+    "extra-medinovai-0br-developer": {
+      "old_name": "medinovai-0br-developer",
+      "base_port": 31500,
+      "port_range": "31500-31599",
+      "tier": 99
+    },
+    "extra-medinovai-atlasos": {
+      "old_name": "medinovai-AtlasOS",
+      "base_port": 31600,
+      "port_range": "31600-31699",
+      "tier": 99
+    },
+    "extra-medinovai-dataofficer": {
+      "old_name": "medinovai-DataOfficer",
+      "base_port": 31700,
+      "port_range": "31700-31799",
+      "tier": 99
+    },
+    "extra-medinovai-researchsuite": {
+      "old_name": "medinovai-ResearchSuite",
+      "base_port": 31800,
+      "port_range": "31800-31899",
+      "tier": 99
+    },
+    "extra-medinovai-approval-workflow": {
+      "old_name": "medinovai-approval-workflow",
+      "base_port": 31900,
+      "port_range": "31900-31999",
+      "tier": 99
+    },
+    "extra-medinovai-auto-seeder": {
+      "old_name": "medinovai-auto-seeder",
+      "base_port": 32000,
+      "port_range": "32000-32099",
+      "tier": 99
+    },
+    "extra-medinovai-billing": {
+      "old_name": "medinovai-billing",
+      "base_port": 32100,
+      "port_range": "32100-32199",
+      "tier": 99
+    },
+    "extra-medinovai-canary-rollout-orchestrator": {
+      "old_name": "medinovai-canary-rollout-orchestrator",
+      "base_port": 32200,
+      "port_range": "32200-32299",
+      "tier": 99
+    },
+    "extra-medinovai-clinical-platform": {
+      "old_name": "medinovai-clinical-platform",
+      "base_port": 32300,
+      "port_range": "32300-32399",
+      "tier": 99
+    },
+    "extra-medinovai-competitor-detect": {
+      "old_name": "medinovai-competitor-detect",
+      "base_port": 32400,
+      "port_range": "32400-32499",
+      "tier": 99
+    },
+    "extra-medinovai-config-python": {
+      "old_name": "medinovai-config-python",
+      "base_port": 32500,
+      "port_range": "32500-32599",
+      "tier": 99
+    },
+    "extra-medinovai-core-python": {
+      "old_name": "medinovai-core-python",
+      "base_port": 32600,
+      "port_range": "32600-32699",
+      "tier": 99
+    },
+    "extra-medinovai-dev-standards": {
+      "old_name": "medinovai-dev-standards",
+      "base_port": 32700,
+      "port_range": "32700-32799",
+      "tier": 99
+    },
+    "extra-medinovai-devops-telemetry": {
+      "old_name": "medinovai-devops-telemetry",
+      "base_port": 32800,
+      "port_range": "32800-32899",
+      "tier": 99
+    },
+    "extra-medinovai-email-validator": {
+      "old_name": "medinovai-email-validator",
+      "base_port": 32900,
+      "port_range": "32900-32999",
+      "tier": 99
+    },
+    "extra-medinovai-failure-learning": {
+      "old_name": "medinovai-failure-learning",
+      "base_port": 33000,
+      "port_range": "33000-33099",
+      "tier": 99
+    },
+    "extra-medinovai-imaging": {
+      "old_name": "medinovai-imaging",
+      "base_port": 33100,
+      "port_range": "33100-33199",
+      "tier": 99
+    },
+    "extra-medinovai-lis-modern": {
+      "old_name": "medinovai-lis.modern",
+      "base_port": 33200,
+      "port_range": "33200-33299",
+      "tier": 99
+    },
+    "extra-medinovai-pharmacy": {
+      "old_name": "medinovai-pharmacy",
+      "base_port": 33300,
+      "port_range": "33300-33399",
+      "tier": 99
+    },
+    "extra-medinovai-platform-tools": {
+      "old_name": "medinovai-platform-tools",
+      "base_port": 33400,
+      "port_range": "33400-33499",
+      "tier": 99
+    },
+    "extra-medinovai-provider-credentialing": {
+      "old_name": "medinovai-provider-credentialing",
+      "base_port": 33500,
+      "port_range": "33500-33599",
+      "tier": 99
+    },
+    "extra-medinovai-reseach-fabric": {
+      "old_name": "medinovai-reseach-fabric",
+      "base_port": 33600,
+      "port_range": "33600-33699",
+      "tier": 99
+    },
+    "extra-medinovai-research-costs": {
+      "old_name": "medinovai-research-costs",
+      "base_port": 33700,
+      "port_range": "33700-33799",
+      "tier": 99
+    },
+    "extra-medinovai-research-engine": {
+      "old_name": "medinovai-research-engine",
+      "base_port": 33800,
+      "port_range": "33800-33899",
+      "tier": 99
+    },
+    "extra-medinovai-security-python": {
+      "old_name": "medinovai-security-python",
+      "base_port": 33900,
+      "port_range": "33900-33999",
+      "tier": 99
+    },
+    "extra-medinovai-source-adapters": {
+      "old_name": "medinovai-source-adapters",
+      "base_port": 34000,
+      "port_range": "34000-34099",
+      "tier": 99
+    },
+    "extra-medinovai-standards": {
+      "old_name": "medinovai-standards",
+      "base_port": 34100,
+      "port_range": "34100-34199",
+      "tier": 99
+    },
+    "extra-medinovai-telehealth": {
+      "old_name": "medinovai-telehealth",
+      "base_port": 34200,
+      "port_range": "34200-34299",
+      "tier": 99
+    },
+    "extra-medinovai-telemetry-python": {
+      "old_name": "medinovai-telemetry-python",
+      "base_port": 34300,
+      "port_range": "34300-34399",
+      "tier": 99
+    },
+    "extra-medinovai-tenant-onboarding": {
+      "old_name": "medinovai-tenant-onboarding",
+      "base_port": 34400,
+      "port_range": "34400-34499",
+      "tier": 99
+    },
+    "extra-medinovaios": {
+      "old_name": "medinovaios",
+      "base_port": 34500,
+      "port_range": "34500-34599",
+      "tier": 99
+    },
+    "extra-mediovai": {
+      "old_name": "mediovai",
+      "base_port": 34600,
+      "port_range": "34600-34699",
+      "tier": 99
+    },
+    "extra-mirth-scripts": {
+      "old_name": "mirth-scripts",
+      "base_port": 34700,
+      "port_range": "34700-34799",
+      "tier": 99
+    },
+    "extra-myhealthconcierge-android": {
+      "old_name": "myHealthConcierge-android",
+      "base_port": 34800,
+      "port_range": "34800-34899",
+      "tier": 99
+    },
+    "extra-myhealthconcierge-ios": {
+      "old_name": "myHealthConcierge-ios",
+      "base_port": 34900,
+      "port_range": "34900-34999",
+      "tier": 99
+    },
+    "extra-myonsite-golive": {
+      "old_name": "myOnsite-GoLive",
+      "base_port": 35000,
+      "port_range": "35000-35099",
+      "tier": 99
+    },
+    "extra-myonsiteops": {
+      "old_name": "myOnsiteOPS",
+      "base_port": 35100,
+      "port_range": "35100-35199",
+      "tier": 99
+    },
+    "extra-myonsiteoperationsmonitoringv1": {
+      "old_name": "myOnsiteOperationsMonitoringV1",
+      "base_port": 35200,
+      "port_range": "35200-35299",
+      "tier": 99
+    },
+    "extra-myonsite-all-code-base": {
+      "old_name": "myonsite-all-code-base",
+      "base_port": 35300,
+      "port_range": "35300-35399",
+      "tier": 99
+    },
+    "extra-myonsite-mywork-android": {
+      "old_name": "myonsite-myWork-Android",
+      "base_port": 35400,
+      "port_range": "35400-35499",
+      "tier": 99
+    },
+    "extra-myonsite_mobile_app": {
+      "old_name": "myonsite_mobile_app",
+      "base_port": 35500,
+      "port_range": "35500-35599",
+      "tier": 99
+    },
+    "extra-mywork": {
+      "old_name": "mywork",
+      "base_port": 35600,
+      "port_range": "35600-35699",
+      "tier": 99
+    },
+    "extra-mywork-by-myonsite-v2": {
+      "old_name": "mywork-by-myonsite-V2",
+      "base_port": 35700,
+      "port_range": "35700-35799",
+      "tier": 99
+    },
+    "extra-mywork-windsurf": {
+      "old_name": "mywork-windsurf",
+      "base_port": 35800,
+      "port_range": "35800-35899",
+      "tier": 99
+    },
+    "extra-neocognition": {
+      "old_name": "neocognition",
+      "base_port": 35900,
+      "port_range": "35900-35999",
+      "tier": 99
+    },
+    "extra-open-swe": {
+      "old_name": "open-swe",
+      "base_port": 36000,
+      "port_range": "36000-36099",
+      "tier": 99
+    },
+    "extra-orchids-mayank-trivedi-staging": {
+      "old_name": "orchids-mayank-trivedi-staging",
+      "base_port": 36100,
+      "port_range": "36100-36199",
+      "tier": 99
+    },
+    "extra-project-execution-task-management": {
+      "old_name": "project-execution-task-management",
+      "base_port": 36200,
+      "port_range": "36200-36299",
+      "tier": 99
+    },
+    "extra-skill-hub": {
+      "old_name": "skill-hub",
+      "base_port": 36300,
+      "port_range": "36300-36399",
+      "tier": 99
+    },
+    "extra-subscription": {
+      "old_name": "subscription",
+      "base_port": 36400,
+      "port_range": "36400-36499",
+      "tier": 99
+    },
+    "extra-vercel-clone": {
+      "old_name": "vercel-clone",
+      "base_port": 36500,
+      "port_range": "36500-36599",
+      "tier": 99
+    },
+    "extra-zerotouchmarketing": {
+      "old_name": "zeroTouchMarketing",
+      "base_port": 36600,
+      "port_range": "36600-36699",
+      "tier": 99
     }
   },
   "reserved_ranges": {
@@ -2176,5 +2812,10 @@
     "portal": {
       "medinovai-os-portal": 3000
     }
+  },
+  "metadata": {
+    "total_assignments": 286,
+    "port_range_start": 8100,
+    "port_range_end": 36699
   }
 }

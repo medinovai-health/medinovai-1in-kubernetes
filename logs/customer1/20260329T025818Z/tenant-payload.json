@@ -1,0 +1,13 @@
+{
+    "name": "myOnsiteHealthcare",
+    "slug": "myonsite-healthcare",
+    "tier": "gold",
+    "admin_email": "admin@myonsitehealthcare.com",
+    "compliance_profile": "hipaa",
+    "feature_flags": {
+      "aiInference": true,
+      "clinicalTrials": true,
+      "advancedAnalytics": true,
+      "labOrders": true
+    }
+  }
