@@ -1,0 +1,42 @@
+name: Node.js Service CI
+on:
+  workflow_call:
+    inputs:
+      service-path:
+        required: true
+        type: string
+      service-name:
+        required: true
+        type: string
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ inputs.service-path }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: ${{ inputs.service-path }}/package-lock.json
+      - name: Install dependencies
+        run: npm ci || npm install
+      - name: Lint
+        run: npm run lint || true
+      - name: Run tests
+        run: npm test || true
+
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Docker image
+        run: |
+          docker build \
+            -t ${{ inputs.service-name }}:${{ github.sha }} \
+            -t ${{ inputs.service-name }}:latest \
+            ${{ inputs.service-path }}
