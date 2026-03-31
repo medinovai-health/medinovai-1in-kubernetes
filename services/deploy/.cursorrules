@@ -1,0 +1,34 @@
+# MedinovAI Platform Standards — Cursor IDE Rules
+
+## MANDATORY: Spec-Driven Development (SDD)
+1. SPECIFY → 2. VALIDATE → 3. BMAD → 4. TESTS (TDD) → 5. IMPLEMENT → 6. VALIDATE → 7. DEPLOY
+
+## Non-Negotiables
+- No PHI in logs, prompts, embeddings, fixtures, or comments
+- No cross-tenant access — every request path stays tenant-scoped
+- Every state-changing workflow requires an audit trail
+- All logging uses structured JSON (ZTA structlog format)
+- All variables: `mos_` prefix. All constants: `E_` prefix
+- Code blocks: max 40 lines. UTF-8 encoding. Type hints everywhere
+
+## Security
+- Use MSS (medinovai-security-service) via SecurityClient SDK — NEVER local auth
+- JWT validation on ALL protected routes
+- Dynamic authorization via SpiceDB (ReBAC) — NEVER hardcode roles
+- Encrypt PHI at rest (encryption-vault) and in transit (TLS 1.3)
+- All secrets via secrets-manager-bridge — NEVER in .env or code
+
+## Port Authority
+- ALL ports assigned by medinovai-health/Deploy/config/port-registry.json
+- NO hardcoded ports allowed — load from registry
+- Internal container port: 8000 (Python) or 3000 (Node.js)
+
+## Testing
+- TDD: write tests FIRST (RED), then implement (GREEN), then refactor
+- E2E via Playwright, unit via pytest/vitest, integration via API tests
+- Feature = "done" only after browser/E2E visual verification
+
+## Agent Session Protocol
+- ONE feature per session — never one-shot a full app
+- Feature branches only — never commit to main directly
+- Checkpoint after every feature: features.json + progress.md + git commit + STOP

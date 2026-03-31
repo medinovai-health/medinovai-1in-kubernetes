@@ -1,0 +1,109 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: atlasos-dashboards
+  namespace: medinovai-monitoring
+  labels:
+    grafana_dashboard: "1"
+data:
+  dashboards.yaml: |
+    apiVersion: 1
+    providers:
+      - name: 'atlasos'
+        orgId: 1
+        folder: 'AtlasOS'
+        type: file
+        disableDeletion: false
+        updateIntervalSeconds: 60
+        options:
+          path: /etc/grafana/provisioning/dashboards
+          foldersFromFilesStructure: false
+
+  atlasos-overview.json: |
+    {
+      "dashboard": {
+        "title": "AtlasOS Platform Overview",
+        "uid": "atlasos-overview",
+        "panels": [
+          {
+            "title": "Agent Heartbeat Status",
+            "type": "stat",
+            "gridPos": {"h": 4, "w": 6, "x": 0, "y": 0},
+            "targets": [
+              {
+                "expr": "count(up{job=~\"atlasos.*\"} == 1)",
+                "legendFormat": "Healthy Agents"
+              }
+            ]
+          },
+          {
+            "title": "Cluster Nodes",
+            "type": "stat",
+            "gridPos": {"h": 4, "w": 6, "x": 6, "y": 0},
+            "targets": [
+              {
+                "expr": "count(kube_node_info)",
+                "legendFormat": "Total Nodes"
+              }
+            ]
+          },
+          {
+            "title": "GPU Utilization",
+            "type": "gauge",
+            "gridPos": {"h": 4, "w": 6, "x": 12, "y": 0},
+            "targets": [
+              {
+                "expr": "avg(DCGM_FI_DEV_GPU_UTIL)",
+                "legendFormat": "Avg GPU %"
+              }
+            ]
+          },
+          {
+            "title": "GPU Temperature",
+            "type": "gauge",
+            "gridPos": {"h": 4, "w": 6, "x": 18, "y": 0},
+            "targets": [
+              {
+                "expr": "max(DCGM_FI_DEV_GPU_TEMP)",
+                "legendFormat": "Max GPU Temp"
+              }
+            ]
+          },
+          {
+            "title": "Vault Status",
+            "type": "stat",
+            "gridPos": {"h": 4, "w": 6, "x": 0, "y": 4},
+            "targets": [
+              {
+                "expr": "vault_core_unsealed",
+                "legendFormat": "Unsealed"
+              }
+            ]
+          },
+          {
+            "title": "Pod Status by Namespace",
+            "type": "table",
+            "gridPos": {"h": 8, "w": 12, "x": 6, "y": 4},
+            "targets": [
+              {
+                "expr": "count by (namespace, phase) (kube_pod_status_phase)",
+                "format": "table",
+                "instant": true
+              }
+            ]
+          },
+          {
+            "title": "AtlasOS Service Health",
+            "type": "table",
+            "gridPos": {"h": 8, "w": 6, "x": 18, "y": 4},
+            "targets": [
+              {
+                "expr": "up{job=~\"atlasos.*\"}",
+                "format": "table",
+                "instant": true
+              }
+            ]
+          }
+        ]
+      }
+    }

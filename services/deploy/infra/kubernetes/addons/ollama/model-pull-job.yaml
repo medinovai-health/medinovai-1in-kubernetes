@@ -1,0 +1,66 @@
+# One-shot Job: pulls default models into Ollama after first deploy.
+# Run manually: kubectl apply -f infra/kubernetes/addons/ollama/model-pull-job.yaml
+# Or:           make ollama-pull-default-k8s
+# Job is idempotent — safe to re-apply (old Job is replaced).
+#
+# Default models pulled (in order):
+#   1. qwen2.5:1.5b      ~1 GB   — fast general chat, lightweight
+#   2. nomic-embed-text  ~274 MB — REQUIRED for RAG / vector search (embeddings)
+#   3. gemma3:latest     ~2.3 GB — better reasoning, used by Atlas agents
+#
+# Optional heavy models (pull manually after bootstrap):
+#   ollama pull devstral-small-2   # 13.5 GB — code generation (needs GPU)
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ollama-pull-default
+  namespace: medinovai-ai-local
+  labels:
+    app: ollama
+    job-type: model-pull
+spec:
+  ttlSecondsAfterFinished: 300
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: pull
+          image: curlimages/curl:latest
+          command:
+            - sh
+            - -c
+            - |
+              pull_model() {
+                local model="$1"
+                local label="$2"
+                echo "Pulling ${label} (${model})..."
+                curl -sf -X POST http://ollama:11434/api/pull \
+                  -H 'Content-Type: application/json' \
+                  -d "{\"name\":\"${model}\",\"stream\":false}" \
+                  && echo "  ✓ ${label} ready." \
+                  || { echo "  ✗ Pull failed for ${model}"; exit 1; }
+              }
+
+              echo "Waiting for Ollama to be ready..."
+              until curl -sf http://ollama:11434/api/tags; do
+                echo "  not ready yet, waiting 5s..."
+                sleep 5
+              done
+              echo "Ollama ready. Pulling default models..."
+
+              pull_model "qwen2.5:1.5b"     "qwen2.5:1.5b (~1 GB, fast chat)"
+              pull_model "nomic-embed-text"  "nomic-embed-text (~274 MB, embeddings/RAG)"
+              pull_model "gemma3:latest"     "gemma3 (~2.3 GB, general reasoning)"
+
+              echo ""
+              echo "All default models ready."
+              echo "Optional: kubectl exec -n medinovai-ai-local deploy/ollama -- ollama pull devstral-small-2"
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi

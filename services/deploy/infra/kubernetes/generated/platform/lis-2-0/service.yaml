@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: lis-2-0
+  namespace: platform
+  labels:
+    app: lis-2-0
+    atlasos.io/managed: "true"
+spec:
+  selector:
+    app: lis-2-0
+  ports:
+  - port: 3000
+    targetPort: 3000
+    protocol: TCP
+    name: http
+  type: ClusterIP

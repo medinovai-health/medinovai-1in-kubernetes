@@ -1,0 +1,99 @@
+# Port Authority Enforcement — Deploy Repo ONLY
+
+> **ABSOLUTE RULE**: All port assignments across ALL MedinovAI repos MUST come exclusively from `medinovai-health/Deploy/config/port-registry.json`. No exceptions. No hardcoded ports. No improvisation.
+
+## The Law
+
+1. **NO port may be used unless it appears in the Deploy registry**
+2. **Each repo has a permanent 100-port block (8100-26099)**
+3. **The Deploy repo is the single source of truth for all port assignments**
+4. **Any hardcoded port outside the registry is a CRITICAL violation**
+
+## Port Registry Location
+
+```
+medinovai-health/Deploy/config/port-registry.json
+```
+
+## Permanent Port Blocks (by Tier)
+
+| Tier | Repos | Port Range |
+|------|-------|------------|
+| Tier 0 (brain/core) | 3 | 8100-8399 |
+| Tier 1 (security) | 14 | 8400-9699 |
+| Tier 2 (AI/platform) | 23 | 9800-12199 |
+| Tier 3 (clinical/apps) | 124 | 12200-24799 |
+| Tier 4 (frontend/mobile) | 14 | 24800-26199 |
+
+## How to Get a Port
+
+### For AI Agents / Developers:
+
+```python
+import json
+
+# Load registry
+with open('~/medinovai-all-repos/medinovai-Deploy/config/port-registry.json') as f:
+    registry = json.load(f)
+
+# Get port for a repo
+repo_id = 'medinovai-1sc-encryption-vault'
+port = registry['assignments'][repo_id]['base_port']  # 9200
+```
+
+### For TypeScript/JavaScript:
+
+```typescript
+// Import from Deploy repo's port-registry.ts
+import { getRepoPort } from '../medinovai-Deploy/services/medinovaios/src/port-registry';
+
+const port = getRepoPort('medinovai-encryption-vault');  // 9200
+```
+
+### For Bash Scripts:
+
+```bash
+PORT=$(python3 -c "import json; r=json.load(open('$DEPLOY/config/port-registry.json')); print(r['assignments']['medinovai-1sc-encryption-vault']['base_port'])")
+```
+
+## Forbidden Patterns (NEVER DO)
+
+- ❌ Hardcoded port numbers in docker-compose.yml (e.g., `"8001:8000"`)
+- ❌ Hardcoded ports in HTML/JS (e.g., `port: 8001`)
+- ❌ Hardcoded ports in scripts (e.g., `localhost:8060`)
+- ❌ Assuming ports are sequential or follow a pattern
+- ❌ Using ports 8000-8099 (reserved for internal containers only)
+- ❌ Using any port not explicitly assigned in the registry
+
+## Required Patterns (ALWAYS DO)
+
+- ✅ Load ports from `medinovai-health/Deploy/config/port-registry.json`
+- ✅ Use the `base_port` from registry (host port)
+- ✅ Internal container port is always 8000 (Python) or 3000 (Node)
+- ✅ Reference port by repo ID or old_name from registry
+- ✅ Add `port_authority: medinovai-health/Deploy` comment in configs
+
+## Violation Consequences
+
+Any PR with hardcoded ports will be **REJECTED** automatically.
+
+## Checking Compliance
+
+```bash
+# Search for hardcoded ports (should return nothing)
+grep -rn "port.*8[0-9][0-9][0-9]" deploy/ --include="*.yml" --include="*.yaml" | grep -v "port-registry"
+
+# Verify all ports come from registry
+python3 scripts/validate-port-compliance.py
+```
+
+## Registry Update Process
+
+1. Edit `medinovai-health/Deploy/config/port-registry.json`
+2. Run `make regenerate-port-assignments` in Deploy repo
+3. Propagate changes via `make sync-ports-to-all-repos`
+4. Update all compose files and scripts
+
+## Emergency Contact
+
+Port authority issues: `platform-squad@medinovai.com`

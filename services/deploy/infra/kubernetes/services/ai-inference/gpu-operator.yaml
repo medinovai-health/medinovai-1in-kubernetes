@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gpu-operator-config
+  namespace: medinovai-ai
+  labels:
+    app.kubernetes.io/name: gpu-operator-config
+    app.kubernetes.io/part-of: ai-inference
+    app.kubernetes.io/managed-by: medinovai-deploy
+data:
+  install-helm-command: |
+    helm repo add nvidia https://helm.ngc.nvidia.com/nvidia
+    helm install gpu-operator nvidia/gpu-operator -n gpu-operator --create-namespace

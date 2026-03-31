@@ -1,0 +1,42 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: medinovai-security-service
+  namespace: argocd
+  annotations:
+    # sync-wave -5 ensures Keycloak deploys BEFORE any products that depend on it.
+    # All product apps use the default wave (0), so Keycloak is always first.
+    argocd.argoproj.io/sync-wave: "-5"
+  labels:
+    app.kubernetes.io/part-of: medinovai
+    medinovai/tier: security
+spec:
+  project: default
+  source:
+    repoURL: git@github.com:myonsite-healthcare/MedinovAI-security-service.git
+    targetRevision: main
+    path: kubernetes
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: medinovai-security
+  syncPolicy:
+    automated:
+      prune: false      # Never auto-delete Keycloak resources — only manual prune
+      selfHeal: true    # Auto-correct drift (e.g. someone manually edits a resource)
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+      - RespectIgnoreDifferences=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 10s
+        maxDuration: 5m
+        factor: 2
+  # Ignore secrets — managed externally (Vault/ESO), not committed to Git
+  ignoreDifferences:
+    - group: ""
+      kind: Secret
+      name: keycloak-secret
+      jsonPointers:
+        - /data

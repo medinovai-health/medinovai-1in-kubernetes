@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mirth-scripts
+  namespace: platform
+  labels:
+    app: mirth-scripts
+    atlasos.io/managed: "true"
+spec:
+  selector:
+    app: mirth-scripts
+  ports:
+  - port: 3000
+    targetPort: 3000
+    protocol: TCP
+    name: http
+  type: ClusterIP

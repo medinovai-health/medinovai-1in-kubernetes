@@ -1,0 +1,39 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: atlasos-node-agent
+  labels:
+    app.kubernetes.io/name: atlasos-node-agent
+    app.kubernetes.io/part-of: atlasos
+rules:
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["nodes/status"]
+    verbs: ["get"]
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["pods/eviction"]
+    verbs: ["create"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["create", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: atlasos-node-agent
+  labels:
+    app.kubernetes.io/name: atlasos-node-agent
+    app.kubernetes.io/part-of: atlasos
+subjects:
+  - kind: ServiceAccount
+    name: atlasos-node-agent
+    namespace: atlasos-infra
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: atlasos-node-agent

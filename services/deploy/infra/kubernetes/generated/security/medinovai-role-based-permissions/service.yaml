@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: medinovai-role-based-permissions
+  namespace: security
+  labels:
+    app: medinovai-role-based-permissions
+    atlasos.io/managed: "true"
+spec:
+  selector:
+    app: medinovai-role-based-permissions
+  ports:
+  - port: 5000
+    targetPort: 5000
+    protocol: TCP
+    name: http
+  type: ClusterIP

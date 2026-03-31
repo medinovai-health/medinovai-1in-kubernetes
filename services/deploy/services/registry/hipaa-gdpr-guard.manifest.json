@@ -1,0 +1,40 @@
+{
+  "service": "hipaa-gdpr-guard",
+  "version": "0.1.0",
+  "repo": "myonsite-healthcare/medinovai-hipaa-gdpr-guard",
+  "type": "python-service",
+  "tier": "critical",
+  "description": "HIPAA and GDPR compliance guardrails and enforcement",
+  "dependencies": {
+    "services": ["security-service", "role-based-permissions"],
+    "databases": ["postgres-primary", "redis-cache"],
+    "external": []
+  },
+  "health": {
+    "endpoint": "/health",
+    "readiness": "/ready",
+    "startup_timeout_seconds": 30
+  },
+  "deploy": {
+    "strategy": "canary",
+    "canary_percentage": 5,
+    "canary_duration_minutes": 15,
+    "rollback_on_error_rate": 0.005
+  },
+  "resources": {
+    "cpu": { "request": "500m", "limit": "2000m" },
+    "memory": { "request": "512Mi", "limit": "2Gi" },
+    "gpu": false
+  },
+  "scaling": {
+    "min_replicas": 2,
+    "max_replicas": 10,
+    "target_cpu_percent": 60
+  },
+  "governance": {
+    "risk_class": "critical",
+    "requires_approval": true,
+    "pii_handling": true,
+    "audit_logging": true
+  }
+}

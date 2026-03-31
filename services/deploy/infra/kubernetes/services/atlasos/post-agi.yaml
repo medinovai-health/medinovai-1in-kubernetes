@@ -1,0 +1,545 @@
+# Post-AGI Capability services
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: self-learning
+  namespace: atlasos
+  labels:
+    app.kubernetes.io/name: self-learning
+    app.kubernetes.io/part-of: atlasos
+spec:
+  ports:
+    - port: 8240
+      targetPort: 8240
+  selector:
+    app: self-learning
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: self-learning
+  namespace: atlasos
+  labels:
+    app: self-learning
+    app.kubernetes.io/name: self-learning
+    app.kubernetes.io/part-of: atlasos
+    app.kubernetes.io/version: "4.0.0"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: self-learning
+  template:
+    metadata:
+      labels:
+        app: self-learning
+        atlasos.medinovai.com/sidecar: "enabled"
+    spec:
+      serviceAccountName: atlasos-sa
+      containers:
+        - name: self-learning
+          image: atlasos/self-learning:4.0.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8240
+          envFrom:
+            - secretRef:
+                name: atlasos-integration-secrets
+            - secretRef:
+                name: atlasos-infra-secrets
+          resources:
+            requests:
+              memory: 128Mi
+              cpu: 50m
+            limits:
+              memory: 256Mi
+              cpu: 250m
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8240
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8240
+            initialDelaySeconds: 30
+            periodSeconds: 30
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gamification
+  namespace: atlasos
+  labels:
+    app.kubernetes.io/name: gamification
+    app.kubernetes.io/part-of: atlasos
+spec:
+  ports:
+    - port: 8247
+      targetPort: 8247
+  selector:
+    app: gamification
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gamification
+  namespace: atlasos
+  labels:
+    app: gamification
+    app.kubernetes.io/name: gamification
+    app.kubernetes.io/part-of: atlasos
+    app.kubernetes.io/version: "4.0.0"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gamification
+  template:
+    metadata:
+      labels:
+        app: gamification
+        atlasos.medinovai.com/sidecar: "enabled"
+    spec:
+      serviceAccountName: atlasos-sa
+      containers:
+        - name: gamification
+          image: atlasos/gamification:4.0.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8247
+          envFrom:
+            - secretRef:
+                name: atlasos-integration-secrets
+            - secretRef:
+                name: atlasos-infra-secrets
+          resources:
+            requests:
+              memory: 128Mi
+              cpu: 50m
+            limits:
+              memory: 256Mi
+              cpu: 250m
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8247
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8247
+            initialDelaySeconds: 30
+            periodSeconds: 30
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: digital-twins
+  namespace: atlasos
+  labels:
+    app.kubernetes.io/name: digital-twins
+    app.kubernetes.io/part-of: atlasos
+spec:
+  ports:
+    - port: 8242
+      targetPort: 8242
+  selector:
+    app: digital-twins
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: digital-twins
+  namespace: atlasos
+  labels:
+    app: digital-twins
+    app.kubernetes.io/name: digital-twins
+    app.kubernetes.io/part-of: atlasos
+    app.kubernetes.io/version: "4.0.0"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: digital-twins
+  template:
+    metadata:
+      labels:
+        app: digital-twins
+        atlasos.medinovai.com/sidecar: "enabled"
+    spec:
+      serviceAccountName: atlasos-sa
+      containers:
+        - name: digital-twins
+          image: atlasos/digital-twins:4.0.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8242
+          envFrom:
+            - secretRef:
+                name: atlasos-integration-secrets
+            - secretRef:
+                name: atlasos-infra-secrets
+          resources:
+            requests:
+              memory: 128Mi
+              cpu: 50m
+            limits:
+              memory: 256Mi
+              cpu: 250m
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8242
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8242
+            initialDelaySeconds: 30
+            periodSeconds: 30
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cognitive-arch
+  namespace: atlasos
+  labels:
+    app.kubernetes.io/name: cognitive-arch
+    app.kubernetes.io/part-of: atlasos
+spec:
+  ports:
+    - port: 8244
+      targetPort: 8244
+  selector:
+    app: cognitive-arch
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cognitive-arch
+  namespace: atlasos
+  labels:
+    app: cognitive-arch
+    app.kubernetes.io/name: cognitive-arch
+    app.kubernetes.io/part-of: atlasos
+    app.kubernetes.io/version: "4.0.0"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cognitive-arch
+  template:
+    metadata:
+      labels:
+        app: cognitive-arch
+        atlasos.medinovai.com/sidecar: "enabled"
+    spec:
+      serviceAccountName: atlasos-sa
+      containers:
+        - name: cognitive-arch
+          image: atlasos/cognitive-arch:4.0.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8244
+          envFrom:
+            - secretRef:
+                name: atlasos-integration-secrets
+            - secretRef:
+                name: atlasos-infra-secrets
+          resources:
+            requests:
+              memory: 128Mi
+              cpu: 50m
+            limits:
+              memory: 256Mi
+              cpu: 250m
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8244
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8244
+            initialDelaySeconds: 30
+            periodSeconds: 30
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: predictive-analytics
+  namespace: atlasos
+  labels:
+    app.kubernetes.io/name: predictive-analytics
+    app.kubernetes.io/part-of: atlasos
+spec:
+  ports:
+    - port: 8245
+      targetPort: 8245
+  selector:
+    app: predictive-analytics
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: predictive-analytics
+  namespace: atlasos
+  labels:
+    app: predictive-analytics
+    app.kubernetes.io/name: predictive-analytics
+    app.kubernetes.io/part-of: atlasos
+    app.kubernetes.io/version: "4.0.0"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: predictive-analytics
+  template:
+    metadata:
+      labels:
+        app: predictive-analytics
+        atlasos.medinovai.com/sidecar: "enabled"
+    spec:
+      serviceAccountName: atlasos-sa
+      containers:
+        - name: predictive-analytics
+          image: atlasos/predictive-analytics:4.0.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8245
+          envFrom:
+            - secretRef:
+                name: atlasos-integration-secrets
+            - secretRef:
+                name: atlasos-infra-secrets
+          resources:
+            requests:
+              memory: 128Mi
+              cpu: 50m
+            limits:
+              memory: 256Mi
+              cpu: 250m
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8245
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8245
+            initialDelaySeconds: 30
+            periodSeconds: 30
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: federated-intelligence
+  namespace: atlasos
+  labels:
+    app.kubernetes.io/name: federated-intelligence
+    app.kubernetes.io/part-of: atlasos
+spec:
+  ports:
+    - port: 8243
+      targetPort: 8243
+  selector:
+    app: federated-intelligence
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: federated-intelligence
+  namespace: atlasos
+  labels:
+    app: federated-intelligence
+    app.kubernetes.io/name: federated-intelligence
+    app.kubernetes.io/part-of: atlasos
+    app.kubernetes.io/version: "4.0.0"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: federated-intelligence
+  template:
+    metadata:
+      labels:
+        app: federated-intelligence
+        atlasos.medinovai.com/sidecar: "enabled"
+    spec:
+      serviceAccountName: atlasos-sa
+      containers:
+        - name: federated-intelligence
+          image: atlasos/federated-intelligence:4.0.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8243
+          envFrom:
+            - secretRef:
+                name: atlasos-integration-secrets
+            - secretRef:
+                name: atlasos-infra-secrets
+          resources:
+            requests:
+              memory: 128Mi
+              cpu: 50m
+            limits:
+              memory: 256Mi
+              cpu: 250m
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8243
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8243
+            initialDelaySeconds: 30
+            periodSeconds: 30
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: autonomous-ops
+  namespace: atlasos
+  labels:
+    app.kubernetes.io/name: autonomous-ops
+    app.kubernetes.io/part-of: atlasos
+spec:
+  ports:
+    - port: 8246
+      targetPort: 8246
+  selector:
+    app: autonomous-ops
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: autonomous-ops
+  namespace: atlasos
+  labels:
+    app: autonomous-ops
+    app.kubernetes.io/name: autonomous-ops
+    app.kubernetes.io/part-of: atlasos
+    app.kubernetes.io/version: "4.0.0"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: autonomous-ops
+  template:
+    metadata:
+      labels:
+        app: autonomous-ops
+        atlasos.medinovai.com/sidecar: "enabled"
+    spec:
+      serviceAccountName: atlasos-sa
+      containers:
+        - name: autonomous-ops
+          image: atlasos/autonomous-ops:4.0.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8246
+          envFrom:
+            - secretRef:
+                name: atlasos-integration-secrets
+            - secretRef:
+                name: atlasos-infra-secrets
+          resources:
+            requests:
+              memory: 128Mi
+              cpu: 50m
+            limits:
+              memory: 256Mi
+              cpu: 250m
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8246
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8246
+            initialDelaySeconds: 30
+            periodSeconds: 30
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: skill-calibration
+  namespace: atlasos
+  labels:
+    app.kubernetes.io/name: skill-calibration
+    app.kubernetes.io/part-of: atlasos
+spec:
+  ports:
+    - port: 8270
+      targetPort: 8270
+  selector:
+    app: skill-calibration
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: skill-calibration
+  namespace: atlasos
+  labels:
+    app: skill-calibration
+    app.kubernetes.io/name: skill-calibration
+    app.kubernetes.io/part-of: atlasos
+    app.kubernetes.io/version: "4.0.0"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: skill-calibration
+  template:
+    metadata:
+      labels:
+        app: skill-calibration
+        atlasos.medinovai.com/sidecar: "enabled"
+    spec:
+      serviceAccountName: atlasos-sa
+      containers:
+        - name: skill-calibration
+          image: atlasos/skill-calibration:4.0.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8270
+          envFrom:
+            - secretRef:
+                name: atlasos-integration-secrets
+            - secretRef:
+                name: atlasos-infra-secrets
+          resources:
+            requests:
+              memory: 128Mi
+              cpu: 50m
+            limits:
+              memory: 256Mi
+              cpu: 250m
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8270
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8270
+            initialDelaySeconds: 30
+            periodSeconds: 30

@@ -1,0 +1,5 @@
+# AI/ML Conventions
+- Model registry: register all models with risk class and lineage (GOV-01)
+- Bias testing required before deploy (GOV-03)
+- Explainability fields proportional to risk (GOV-05)
+- GOV compliance: GOV-01 through GOV-10 at development time

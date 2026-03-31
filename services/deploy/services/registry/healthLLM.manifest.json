@@ -1,0 +1,44 @@
+{
+  "service": "healthLLM",
+  "version": "0.1.0",
+  "repo": "medinovai/medinovai-healthLLM",
+  "type": "ml-service",
+  "tier": "critical",
+  "description": "Health LLM service for medical language model inference and generation",
+  "dependencies": {
+    "services": ["security", "aifactory"],
+    "databases": ["postgres-primary", "redis-cache"],
+    "external": []
+  },
+  "health": {
+    "endpoint": "/health",
+    "readiness": "/ready",
+    "startup_timeout_seconds": 30
+  },
+  "deploy": {
+    "strategy": "canary",
+    "canary_percentage": 10,
+    "canary_duration_minutes": 10,
+    "rollback_on_error_rate": 0.01
+  },
+  "resources": {
+    "cpu": { "request": "2000m", "limit": "4000m" },
+    "memory": { "request": "4Gi", "limit": "8Gi" },
+    "gpu": true,
+    "gpu_type": "nvidia-a100",
+    "gpu_count": 1
+  },
+  "scaling": {
+    "min_replicas": 1,
+    "max_replicas": 5,
+    "target_cpu_percent": 70
+  },
+  "governance": {
+    "risk_class": "critical",
+    "requires_approval": true,
+    "pii_handling": false,
+    "audit_logging": true,
+    "clinical_approval_required": true,
+    "model_risk_register_required": true
+  }
+}

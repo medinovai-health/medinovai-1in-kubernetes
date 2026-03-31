@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: 3cx-atlas
+  namespace: platform
+  labels:
+    app: 3cx-atlas
+    atlasos.io/managed: "true"
+spec:
+  selector:
+    app: 3cx-atlas
+  ports:
+  - port: 3000
+    targetPort: 3000
+    protocol: TCP
+    name: http
+  type: ClusterIP

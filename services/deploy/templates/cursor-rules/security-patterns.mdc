@@ -1,0 +1,29 @@
+---
+description: Security patterns for all MedinovAI services.
+alwaysApply: true
+---
+
+# Security Patterns
+
+## Authentication
+- Use MSS (medinovai-security-service) via SecurityClient SDK
+- NEVER implement local auth/login
+- JWT validation on ALL protected routes
+- CORS: specific origins only, NEVER wildcard `*`
+
+## Authorization
+- Dynamic authorization via SpiceDB (ReBAC)
+- NEVER hardcode roles or permissions
+- Check permissions at API boundary, not in business logic
+
+## PHI/PII Protection
+- Encrypt PHI at rest (encryption-vault) and in transit (TLS 1.3)
+- Log PHI access as audit events
+- Validate user has permission before ANY PHI access
+- NEVER log raw PHI values — use IDs only
+- Consent check before data use
+
+## Secrets
+- All secrets via secrets-manager-bridge
+- NEVER in .env files, config, or code
+- NEVER commit secrets to git

@@ -1,0 +1,26 @@
+---
+description: MedinovAI platform-wide non-negotiable rules. Apply to all files.
+alwaysApply: true
+---
+
+# MedinovAI Platform Context
+
+## Non-Negotiables
+- No PHI in logs, prompts, embeddings, fixtures, or comments.
+- No cross-tenant access. Every request path must stay tenant-scoped.
+- Every state-changing workflow requires an audit trail.
+- Least privilege for service accounts, CI tokens, and runtime roles.
+- Every deployable service must expose `GET /health`.
+- Use platform shared services — never reimplement auth, secrets, audit, or telemetry.
+- All logging MUST use structured JSON (ZTA structlog format).
+- All variables: `mos_` prefix. All constants: `E_` prefix.
+- Code blocks: max 40 lines. UTF-8 encoding. Type hints everywhere.
+
+## Tier Model
+- Tier 0: core libraries and shared contracts (NEVER break)
+- Tier 1: platform and security services (audit everything)
+- Tier 2-3: domain platform services and orchestration
+- Tier 4+: clinical, research, business, frontend applications
+
+## SDD Workflow (MANDATORY)
+1. SPECIFY → 2. VALIDATE (10-model consensus) → 3. BMAD → 4. TESTS (TDD) → 5. IMPLEMENT → 6. VALIDATE CODE → 7. DEPLOY

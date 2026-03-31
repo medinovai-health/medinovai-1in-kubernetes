@@ -1,0 +1,2821 @@
+{
+  "schema_version": "1.0.0",
+  "description": "Permanent port assignments for all MedinovAI repos. Each repo has a dedicated 100-port block that never changes.",
+  "port_range_start": 8100,
+  "port_range_end": 26099,
+  "ports_per_repo": 100,
+  "assignments": {
+    "medinovai-0br-developer": {
+      "repo_id": "medinovai-0br-developer",
+      "tier": 0,
+      "base_port": 8100,
+      "port_range": "8100-8199",
+      "host_port": 8100,
+      "container_port": 8000,
+      "old_name": "medinovai-Developer",
+      "category": "brain",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-0co-core": {
+      "repo_id": "medinovai-0co-core",
+      "tier": 0,
+      "base_port": 8200,
+      "port_range": "8200-8299",
+      "host_port": 8200,
+      "container_port": 8000,
+      "old_name": "medinovai-core",
+      "category": "core",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-0co-security": {
+      "repo_id": "medinovai-0co-security",
+      "tier": 0,
+      "base_port": 8300,
+      "port_range": "8300-8399",
+      "host_port": 8300,
+      "container_port": 8000,
+      "old_name": "medinovai-security-service",
+      "category": "core",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-1in-deploy": {
+      "repo_id": "medinovai-1in-deploy",
+      "tier": 1,
+      "base_port": 8400,
+      "port_range": "8400-8499",
+      "host_port": 8400,
+      "container_port": 8000,
+      "old_name": "medinovai-Deploy",
+      "category": "infrastructure",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-1in-kubernetes": {
+      "repo_id": "medinovai-1in-kubernetes",
+      "tier": 1,
+      "base_port": 8500,
+      "port_range": "8500-8599",
+      "host_port": 8500,
+      "container_port": 8000,
+      "old_name": "medinovai-infrastructure",
+      "category": "infrastructure",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-1in-stream-bus": {
+      "repo_id": "medinovai-1in-stream-bus",
+      "tier": 1,
+      "base_port": 8600,
+      "port_range": "8600-8699",
+      "host_port": 8600,
+      "container_port": 8000,
+      "old_name": "medinovai-real-time-stream-bus",
+      "category": "infrastructure",
+      "status": "active",
+      "existing_port": 8080
+    },
+    "medinovai-1mx-github-org": {
+      "repo_id": "medinovai-1mx-github-org",
+      "tier": 1,
+      "base_port": 8700,
+      "port_range": "8700-8799",
+      "host_port": 8700,
+      "container_port": 8000,
+      "old_name": ".github",
+      "category": "meta",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-1pl-registry": {
+      "repo_id": "medinovai-1pl-registry",
+      "tier": 1,
+      "base_port": 8800,
+      "port_range": "8800-8899",
+      "host_port": 8800,
+      "container_port": 8000,
+      "old_name": "medinovai-registry",
+      "category": "platform",
+      "status": "active",
+      "existing_port": 5000
+    },
+    "medinovai-1pl-trust": {
+      "repo_id": "medinovai-1pl-trust",
+      "tier": 1,
+      "base_port": 8900,
+      "port_range": "8900-8999",
+      "host_port": 8900,
+      "container_port": 8000,
+      "old_name": "Trust",
+      "category": "platform",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-1sc-audit-trail": {
+      "repo_id": "medinovai-1sc-audit-trail",
+      "tier": 1,
+      "base_port": 9000,
+      "port_range": "9000-9099",
+      "host_port": 9000,
+      "container_port": 8000,
+      "old_name": "medinovai-audit-trail-explorer",
+      "category": "security",
+      "status": "active",
+      "existing_port": 8080
+    },
+    "medinovai-1sc-consent-api": {
+      "repo_id": "medinovai-1sc-consent-api",
+      "tier": 1,
+      "base_port": 9100,
+      "port_range": "9100-9199",
+      "host_port": 9100,
+      "container_port": 8000,
+      "old_name": "medinovai-consent-preference-api",
+      "category": "security",
+      "status": "active",
+      "existing_port": 8080
+    },
+    "medinovai-1sc-encryption-vault": {
+      "repo_id": "medinovai-1sc-encryption-vault",
+      "tier": 1,
+      "base_port": 9200,
+      "port_range": "9200-9299",
+      "host_port": 9200,
+      "container_port": 8000,
+      "old_name": "medinovai-encryption-vault",
+      "category": "security",
+      "status": "active",
+      "existing_port": 8080
+    },
+    "medinovai-1sc-hipaa-guard": {
+      "repo_id": "medinovai-1sc-hipaa-guard",
+      "tier": 1,
+      "base_port": 9300,
+      "port_range": "9300-9399",
+      "host_port": 9300,
+      "container_port": 8000,
+      "old_name": "medinovai-hipaa-gdpr-guard",
+      "category": "security",
+      "status": "active",
+      "existing_port": 5000
+    },
+    "medinovai-1sc-rbac": {
+      "repo_id": "medinovai-1sc-rbac",
+      "tier": 1,
+      "base_port": 9400,
+      "port_range": "9400-9499",
+      "host_port": 9400,
+      "container_port": 8000,
+      "old_name": "medinovai-role-based-permissions",
+      "category": "security",
+      "status": "active",
+      "existing_port": 8080
+    },
+    "medinovai-1sc-secrets-bridge": {
+      "repo_id": "medinovai-1sc-secrets-bridge",
+      "tier": 1,
+      "base_port": 9500,
+      "port_range": "9500-9599",
+      "host_port": 9500,
+      "container_port": 8000,
+      "old_name": "medinovai-secrets-manager-bridge",
+      "category": "security",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-1sc-signon": {
+      "repo_id": "medinovai-1sc-signon",
+      "tier": 1,
+      "base_port": 9600,
+      "port_range": "9600-9699",
+      "host_port": 9600,
+      "container_port": 8000,
+      "old_name": "medinovai-universal-sign-on",
+      "category": "security",
+      "status": "active",
+      "existing_port": 8080
+    },
+    "zerotrustaudit": {
+      "repo_id": "zerotrustaudit",
+      "tier": 1,
+      "base_port": 9700,
+      "port_range": "9700-9799",
+      "host_port": 9700,
+      "container_port": 8000,
+      "old_name": "zerotrustaudit",
+      "category": "security",
+      "status": "active",
+      "existing_port": 8000
+    },
+    "medinovai-2ai-agent-sdk": {
+      "repo_id": "medinovai-2ai-agent-sdk",
+      "tier": 2,
+      "base_port": 9800,
+      "port_range": "9800-9899",
+      "host_port": 9800,
+      "container_port": 8000,
+      "old_name": "medinovai-agent-sdk",
+      "category": "ai-ml",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-2ai-agentic-framework": {
+      "repo_id": "medinovai-2ai-agentic-framework",
+      "tier": 2,
+      "base_port": 9900,
+      "port_range": "9900-9999",
+      "host_port": 9900,
+      "container_port": 8000,
+      "old_name": "agentic-framework",
+      "category": "ai-ml",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-2ai-cortex": {
+      "repo_id": "medinovai-2ai-cortex",
+      "tier": 2,
+      "base_port": 10000,
+      "port_range": "10000-10099",
+      "host_port": 10000,
+      "container_port": 8000,
+      "old_name": "medinovai-Cortex",
+      "category": "ai-ml",
+      "status": "active",
+      "existing_port": 8080
+    },
+    "medinovai-2ai-factory": {
+      "repo_id": "medinovai-2ai-factory",
+      "tier": 2,
+      "base_port": 10100,
+      "port_range": "10100-10199",
+      "host_port": 10100,
+      "container_port": 8000,
+      "old_name": "medinovai-aifactory",
+      "category": "ai-ml",
+      "status": "active",
+      "existing_port": 3000
+    },
+    "medinovai-2ai-health-llm": {
+      "repo_id": "medinovai-2ai-health-llm",
+      "tier": 2,
+      "base_port": 10200,
+      "port_range": "10200-10299",
+      "host_port": 10200,
+      "container_port": 8000,
+      "old_name": "medinovai-healthLLM",
+      "category": "ai-ml",
+      "status": "active",
+      "existing_port": 8080
+    },
+    "medinovai-2ai-model-orchestrator": {
+      "repo_id": "medinovai-2ai-model-orchestrator",
+      "tier": 2,
+      "base_port": 10300,
+      "port_range": "10300-10399",
+      "host_port": 10300,
+      "container_port": 8000,
+      "old_name": "MedinovAI-Model-Service-Orchestrator",
+      "category": "ai-ml",
+      "status": "active",
+      "existing_port": 8080
+    },
+    "medinovai-2da-search": {
+      "repo_id": "medinovai-2da-search",
+      "tier": 2,
+      "base_port": 10400,
+      "port_range": "10400-10499",
+      "host_port": 10400,
+      "container_port": 8000,
+      "old_name": "medinovai-search",
+      "category": "data",
+      "status": "active",
+      "existing_port": 8080
+    },
+    "medinovai-2da-services": {
+      "repo_id": "medinovai-2da-services",
+      "tier": 2,
+      "base_port": 10500,
+      "port_range": "10500-10599",
+      "host_port": 10500,
+      "container_port": 8000,
+      "old_name": "medinovai-data-services",
+      "category": "data",
+      "status": "active",
+      "existing_port": 3000
+    },
+    "medinovai-2in-edge-cdn": {
+      "repo_id": "medinovai-2in-edge-cdn",
+      "tier": 2,
+      "base_port": 10600,
+      "port_range": "10600-10699",
+      "host_port": 10600,
+      "container_port": 8000,
+      "old_name": "medinovai-edge-cache-cdn",
+      "category": "infrastructure",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-2in-gitlab-federation": {
+      "repo_id": "medinovai-2in-gitlab-federation",
+      "tier": 2,
+      "base_port": 10700,
+      "port_range": "10700-10799",
+      "host_port": 10700,
+      "container_port": 8000,
+      "old_name": "GitlabFederation",
+      "category": "infrastructure",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-2in-observability": {
+      "repo_id": "medinovai-2in-observability",
+      "tier": 2,
+      "base_port": 10800,
+      "port_range": "10800-10899",
+      "host_port": 10800,
+      "container_port": 8000,
+      "old_name": "medinovai-observability-fabric",
+      "category": "infrastructure",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-2in-test-infra": {
+      "repo_id": "medinovai-2in-test-infra",
+      "tier": 2,
+      "base_port": 10900,
+      "port_range": "10900-10999",
+      "host_port": 10900,
+      "container_port": 8000,
+      "old_name": "medinovai-test-infrastructure",
+      "category": "infrastructure",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-2pl-api-gateway": {
+      "repo_id": "medinovai-2pl-api-gateway",
+      "tier": 2,
+      "base_port": 11000,
+      "port_range": "11000-11099",
+      "host_port": 11000,
+      "container_port": 8000,
+      "old_name": "medinovai-api",
+      "category": "platform",
+      "status": "active",
+      "existing_port": 3000
+    },
+    "medinovai-2pl-arch-catalog": {
+      "repo_id": "medinovai-2pl-arch-catalog",
+      "tier": 2,
+      "base_port": 11100,
+      "port_range": "11100-11199",
+      "host_port": 11100,
+      "container_port": 8000,
+      "old_name": "architecture-catalog",
+      "category": "platform",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-2pl-atlas-os": {
+      "repo_id": "medinovai-2pl-atlas-os",
+      "tier": 2,
+      "base_port": 11200,
+      "port_range": "11200-11299",
+      "host_port": 11200,
+      "container_port": 8000,
+      "old_name": "medinovai-atlas-os",
+      "category": "platform",
+      "status": "active",
+      "existing_port": 8080
+    },
+    "medinovai-2pl-constitution": {
+      "repo_id": "medinovai-2pl-constitution",
+      "tier": 2,
+      "base_port": 11300,
+      "port_range": "11300-11399",
+      "host_port": 11300,
+      "container_port": 8000,
+      "old_name": "medinovai-constitution",
+      "category": "platform",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-2pl-feature-flags": {
+      "repo_id": "medinovai-2pl-feature-flags",
+      "tier": 2,
+      "base_port": 11400,
+      "port_range": "11400-11499",
+      "host_port": 11400,
+      "container_port": 8000,
+      "old_name": "medinovai-feature-flag-console",
+      "category": "platform",
+      "status": "active",
+      "existing_port": 5000
+    },
+    "medinovai-2pl-file-storage": {
+      "repo_id": "medinovai-2pl-file-storage",
+      "tier": 2,
+      "base_port": 11500,
+      "port_range": "11500-11599",
+      "host_port": 11500,
+      "container_port": 8000,
+      "old_name": "medinovai-file-storage",
+      "category": "platform",
+      "status": "active",
+      "existing_port": 8080
+    },
+    "medinovai-2pl-notifications": {
+      "repo_id": "medinovai-2pl-notifications",
+      "tier": 2,
+      "base_port": 11600,
+      "port_range": "11600-11699",
+      "host_port": 11600,
+      "container_port": 8000,
+      "old_name": "medinovai-notifications",
+      "category": "platform",
+      "status": "active",
+      "existing_port": 8080
+    },
+    "medinovai-2pl-saes": {
+      "repo_id": "medinovai-2pl-saes",
+      "tier": 2,
+      "base_port": 11700,
+      "port_range": "11700-11799",
+      "host_port": 11700,
+      "container_port": 8000,
+      "old_name": "medinovai-saes",
+      "category": "platform",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-2pl-validation": {
+      "repo_id": "medinovai-2pl-validation",
+      "tier": 2,
+      "base_port": 11800,
+      "port_range": "11800-11899",
+      "host_port": 11800,
+      "container_port": 8000,
+      "old_name": "medinovai-validation",
+      "category": "platform",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-2pl-workflow-engine": {
+      "repo_id": "medinovai-2pl-workflow-engine",
+      "tier": 2,
+      "base_port": 11900,
+      "port_range": "11900-11999",
+      "host_port": 11900,
+      "container_port": 8000,
+      "old_name": "medinovai-workflow-engine",
+      "category": "platform",
+      "status": "active",
+      "existing_port": 8080
+    },
+    "medinovai-2sc-epg": {
+      "repo_id": "medinovai-2sc-epg",
+      "tier": 2,
+      "base_port": 12000,
+      "port_range": "12000-12099",
+      "host_port": 12000,
+      "container_port": 8000,
+      "old_name": "medinovai-epg",
+      "category": "security",
+      "status": "active",
+      "existing_port": 8080
+    },
+    "atlasos-memory": {
+      "repo_id": "atlasos-memory",
+      "tier": 3,
+      "base_port": 12100,
+      "port_range": "12100-12199",
+      "host_port": 12100,
+      "container_port": 8000,
+      "old_name": "atlasos-memory",
+      "category": "platform",
+      "status": "active",
+      "existing_port": null
+    },
+    "atlasos-skills": {
+      "repo_id": "atlasos-skills",
+      "tier": 3,
+      "base_port": 12200,
+      "port_range": "12200-12299",
+      "host_port": 12200,
+      "container_port": 8000,
+      "old_name": "atlasos-skills",
+      "category": "platform",
+      "status": "active",
+      "existing_port": null
+    },
+    "coceo": {
+      "repo_id": "coceo",
+      "tier": 3,
+      "base_port": 12300,
+      "port_range": "12300-12399",
+      "host_port": 12300,
+      "container_port": 8000,
+      "old_name": "coceo",
+      "category": "platform",
+      "status": "active",
+      "existing_port": null
+    },
+    "cognaium": {
+      "repo_id": "cognaium",
+      "tier": 3,
+      "base_port": 12400,
+      "port_range": "12400-12499",
+      "host_port": 12400,
+      "container_port": 8000,
+      "old_name": "cognaium",
+      "category": "platform",
+      "status": "active",
+      "existing_port": null
+    },
+    "connector-framework": {
+      "repo_id": "connector-framework",
+      "tier": 3,
+      "base_port": 12500,
+      "port_range": "12500-12599",
+      "host_port": 12500,
+      "container_port": 8000,
+      "old_name": "connector-framework",
+      "category": "platform",
+      "status": "active",
+      "existing_port": null
+    },
+    "cortex": {
+      "repo_id": "cortex",
+      "tier": 3,
+      "base_port": 12600,
+      "port_range": "12600-12699",
+      "host_port": 12600,
+      "container_port": 8000,
+      "old_name": "cortex",
+      "category": "platform",
+      "status": "active",
+      "existing_port": null
+    },
+    "dataset-catalog": {
+      "repo_id": "dataset-catalog",
+      "tier": 3,
+      "base_port": 12700,
+      "port_range": "12700-12799",
+      "host_port": 12700,
+      "container_port": 8000,
+      "old_name": "dataset-catalog",
+      "category": "platform",
+      "status": "active",
+      "existing_port": null
+    },
+    "dq-gates": {
+      "repo_id": "dq-gates",
+      "tier": 3,
+      "base_port": 12800,
+      "port_range": "12800-12899",
+      "host_port": 12800,
+      "container_port": 8000,
+      "old_name": "dq-gates",
+      "category": "platform",
+      "status": "active",
+      "existing_port": null
+    },
+    "evidence-store": {
+      "repo_id": "evidence-store",
+      "tier": 3,
+      "base_port": 12900,
+      "port_range": "12900-12999",
+      "host_port": 12900,
+      "container_port": 8000,
+      "old_name": "evidence-store",
+      "category": "platform",
+      "status": "active",
+      "existing_port": null
+    },
+    "governance": {
+      "repo_id": "governance",
+      "tier": 3,
+      "base_port": 13000,
+      "port_range": "13000-13099",
+      "host_port": 13000,
+      "container_port": 8000,
+      "old_name": "governance",
+      "category": "platform",
+      "status": "active",
+      "existing_port": null
+    },
+    "integration-platform": {
+      "repo_id": "integration-platform",
+      "tier": 3,
+      "base_port": 13100,
+      "port_range": "13100-13199",
+      "host_port": 13100,
+      "container_port": 8000,
+      "old_name": "integration-platform",
+      "category": "platform",
+      "status": "active",
+      "existing_port": null
+    },
+    "marketing": {
+      "repo_id": "marketing",
+      "tier": 3,
+      "base_port": 13200,
+      "port_range": "13200-13299",
+      "host_port": 13200,
+      "container_port": 8000,
+      "old_name": "marketing",
+      "category": "platform",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3ai-anomaly": {
+      "repo_id": "medinovai-3ai-anomaly",
+      "tier": 3,
+      "base_port": 13300,
+      "port_range": "13300-13399",
+      "host_port": 13300,
+      "container_port": 8000,
+      "old_name": "medinovai-anomaly-detector",
+      "category": "ai-ml",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3ai-ceo-assistant": {
+      "repo_id": "medinovai-3ai-ceo-assistant",
+      "tier": 3,
+      "base_port": 13400,
+      "port_range": "13400-13499",
+      "host_port": 13400,
+      "container_port": 8000,
+      "old_name": "CEOassistant",
+      "category": "ai-ml",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3ai-chatbot": {
+      "repo_id": "medinovai-3ai-chatbot",
+      "tier": 3,
+      "base_port": 13500,
+      "port_range": "13500-13599",
+      "host_port": 13500,
+      "container_port": 8000,
+      "old_name": "medinovai-chatbot",
+      "category": "ai-ml",
+      "status": "active",
+      "existing_port": 8080
+    },
+    "medinovai-3ai-chatbot-v2": {
+      "repo_id": "medinovai-3ai-chatbot-v2",
+      "tier": 3,
+      "base_port": 13600,
+      "port_range": "13600-13699",
+      "host_port": 13600,
+      "container_port": 8000,
+      "old_name": "ChatbotV2",
+      "category": "ai-ml",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3ai-coach": {
+      "repo_id": "medinovai-3ai-coach",
+      "tier": 3,
+      "base_port": 13700,
+      "port_range": "13700-13799",
+      "host_port": 13700,
+      "container_port": 8000,
+      "old_name": "AI-Coach",
+      "category": "ai-ml",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3ai-compute-network": {
+      "repo_id": "medinovai-3ai-compute-network",
+      "tier": 3,
+      "base_port": 13800,
+      "port_range": "13800-13899",
+      "host_port": 13800,
+      "container_port": 8000,
+      "old_name": "AIComputeNetwork",
+      "category": "ai-ml",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3ai-doc-genie": {
+      "repo_id": "medinovai-3ai-doc-genie",
+      "tier": 3,
+      "base_port": 13900,
+      "port_range": "13900-13999",
+      "host_port": 13900,
+      "container_port": 8000,
+      "old_name": "DocumentGenie",
+      "category": "ai-ml",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3ai-doc-summarizer": {
+      "repo_id": "medinovai-3ai-doc-summarizer",
+      "tier": 3,
+      "base_port": 14000,
+      "port_range": "14000-14099",
+      "host_port": 14000,
+      "container_port": 8000,
+      "old_name": "medinovai-doc-summarizer",
+      "category": "ai-ml",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3ai-docugenie": {
+      "repo_id": "medinovai-3ai-docugenie",
+      "tier": 3,
+      "base_port": 14100,
+      "port_range": "14100-14199",
+      "host_port": 14100,
+      "container_port": 8000,
+      "old_name": "DocuGenie",
+      "category": "ai-ml",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3ai-docugenie-pro": {
+      "repo_id": "medinovai-3ai-docugenie-pro",
+      "tier": 3,
+      "base_port": 14200,
+      "port_range": "14200-14299",
+      "host_port": 14200,
+      "container_port": 8000,
+      "old_name": "DocuGeniePro",
+      "category": "ai-ml",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3ai-knowledge-graph": {
+      "repo_id": "medinovai-3ai-knowledge-graph",
+      "tier": 3,
+      "base_port": 14300,
+      "port_range": "14300-14399",
+      "host_port": 14300,
+      "container_port": 8000,
+      "old_name": "medinovai-knowledge-graph",
+      "category": "ai-ml",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3ai-model-orch": {
+      "repo_id": "medinovai-3ai-model-orch",
+      "tier": 3,
+      "base_port": 14400,
+      "port_range": "14400-14499",
+      "host_port": 14400,
+      "container_port": 8000,
+      "old_name": "medinovai-model-orchestrator",
+      "category": "ai-ml",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3ai-mos-chatbot": {
+      "repo_id": "medinovai-3ai-mos-chatbot",
+      "tier": 3,
+      "base_port": 14500,
+      "port_range": "14500-14599",
+      "host_port": 14500,
+      "container_port": 8000,
+      "old_name": "mos-chatbot",
+      "category": "ai-ml",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3ai-nlq": {
+      "repo_id": "medinovai-3ai-nlq",
+      "tier": 3,
+      "base_port": 14600,
+      "port_range": "14600-14699",
+      "host_port": 14600,
+      "container_port": 8000,
+      "old_name": "medinovai-natural-language-query",
+      "category": "ai-ml",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3ai-ocr": {
+      "repo_id": "medinovai-3ai-ocr",
+      "tier": 3,
+      "base_port": 14700,
+      "port_range": "14700-14799",
+      "host_port": 14700,
+      "container_port": 8000,
+      "old_name": "medinovai-image-to-text-ocr",
+      "category": "ai-ml",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3ai-pathology": {
+      "repo_id": "medinovai-3ai-pathology",
+      "tier": 3,
+      "base_port": 14800,
+      "port_range": "14800-14899",
+      "host_port": 14800,
+      "container_port": 8000,
+      "old_name": "medinovai-pathology-ai",
+      "category": "ai-ml",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3ai-prompt-vault": {
+      "repo_id": "medinovai-3ai-prompt-vault",
+      "tier": 3,
+      "base_port": 14900,
+      "port_range": "14900-14999",
+      "host_port": 14900,
+      "container_port": 8000,
+      "old_name": "medinovai-prompt-vault",
+      "category": "ai-ml",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3ai-qa-builder": {
+      "repo_id": "medinovai-3ai-qa-builder",
+      "tier": 3,
+      "base_port": 15000,
+      "port_range": "15000-15099",
+      "host_port": 15000,
+      "container_port": 8000,
+      "old_name": "medinovai-qa-agent-builder",
+      "category": "ai-ml",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3ai-scribe": {
+      "repo_id": "medinovai-3ai-scribe",
+      "tier": 3,
+      "base_port": 15100,
+      "port_range": "15100-15199",
+      "host_port": 15100,
+      "container_port": 8000,
+      "old_name": "medinovai-ai-scribe",
+      "category": "ai-ml",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3ai-sentiment": {
+      "repo_id": "medinovai-3ai-sentiment",
+      "tier": 3,
+      "base_port": 15200,
+      "port_range": "15200-15299",
+      "host_port": 15200,
+      "container_port": 8000,
+      "old_name": "medinovai-sentiment-monitor",
+      "category": "ai-ml",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3ai-tts": {
+      "repo_id": "medinovai-3ai-tts",
+      "tier": 3,
+      "base_port": 15300,
+      "port_range": "15300-15399",
+      "host_port": 15300,
+      "container_port": 8000,
+      "old_name": "medinovai-text-to-speech-narrator",
+      "category": "ai-ml",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3ai-voice-cmd": {
+      "repo_id": "medinovai-3ai-voice-cmd",
+      "tier": 3,
+      "base_port": 15400,
+      "port_range": "15400-15499",
+      "host_port": 15400,
+      "container_port": 8000,
+      "old_name": "medinovai-voice-command-layer",
+      "category": "ai-ml",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3cl-care-chat": {
+      "repo_id": "medinovai-3cl-care-chat",
+      "tier": 3,
+      "base_port": 15500,
+      "port_range": "15500-15599",
+      "host_port": 15500,
+      "container_port": 8000,
+      "old_name": "medinovai-care-team-chat",
+      "category": "clinical",
+      "status": "active",
+      "existing_port": 8080
+    },
+    "medinovai-3cl-cds-engine": {
+      "repo_id": "medinovai-3cl-cds-engine",
+      "tier": 3,
+      "base_port": 15600,
+      "port_range": "15600-15699",
+      "host_port": 15600,
+      "container_port": 8000,
+      "old_name": "medinovai-clinical-decision-support",
+      "category": "clinical",
+      "status": "active",
+      "existing_port": 8080
+    },
+    "medinovai-3cl-credentialing": {
+      "repo_id": "medinovai-3cl-credentialing",
+      "tier": 3,
+      "base_port": 15700,
+      "port_range": "15700-15799",
+      "host_port": 15700,
+      "container_port": 8000,
+      "old_name": "Credentialing",
+      "category": "clinical",
+      "status": "active",
+      "existing_port": 3000
+    },
+    "medinovai-3cl-ctms": {
+      "repo_id": "medinovai-3cl-ctms",
+      "tier": 3,
+      "base_port": 15800,
+      "port_range": "15800-15899",
+      "host_port": 15800,
+      "container_port": 8000,
+      "old_name": "medinovai-ctms",
+      "category": "clinical",
+      "status": "active",
+      "existing_port": 8080
+    },
+    "medinovai-3cl-ctms-simulation": {
+      "repo_id": "medinovai-3cl-ctms-simulation",
+      "tier": 3,
+      "base_port": 15900,
+      "port_range": "15900-15999",
+      "host_port": 15900,
+      "container_port": 8000,
+      "old_name": "CTMS-Simulation",
+      "category": "clinical",
+      "status": "active",
+      "existing_port": 8080
+    },
+    "medinovai-3cl-decision-support": {
+      "repo_id": "medinovai-3cl-decision-support",
+      "tier": 3,
+      "base_port": 16000,
+      "port_range": "16000-16099",
+      "host_port": 16000,
+      "container_port": 8000,
+      "old_name": "medinovai-cds",
+      "category": "clinical",
+      "status": "active",
+      "existing_port": 8080
+    },
+    "medinovai-3cl-doc-mgmt": {
+      "repo_id": "medinovai-3cl-doc-mgmt",
+      "tier": 3,
+      "base_port": 16100,
+      "port_range": "16100-16199",
+      "host_port": 16100,
+      "container_port": 8000,
+      "old_name": "medinovai-document-management",
+      "category": "clinical",
+      "status": "active",
+      "existing_port": 8080
+    },
+    "medinovai-3cl-drug-interact": {
+      "repo_id": "medinovai-3cl-drug-interact",
+      "tier": 3,
+      "base_port": 16200,
+      "port_range": "16200-16299",
+      "host_port": 16200,
+      "container_port": 8000,
+      "old_name": "medinovai-drug-interaction-checker",
+      "category": "clinical",
+      "status": "active",
+      "existing_port": 8080
+    },
+    "medinovai-3cl-edc": {
+      "repo_id": "medinovai-3cl-edc",
+      "tier": 3,
+      "base_port": 16300,
+      "port_range": "16300-16399",
+      "host_port": 16300,
+      "container_port": 8000,
+      "old_name": "medinovai-edc",
+      "category": "clinical",
+      "status": "active",
+      "existing_port": 8080
+    },
+    "medinovai-3cl-eprescribe": {
+      "repo_id": "medinovai-3cl-eprescribe",
+      "tier": 3,
+      "base_port": 16400,
+      "port_range": "16400-16499",
+      "host_port": 16400,
+      "container_port": 8000,
+      "old_name": "medinovai-e-prescribe-gateway",
+      "category": "clinical",
+      "status": "active",
+      "existing_port": 8080
+    },
+    "medinovai-3cl-esign": {
+      "repo_id": "medinovai-3cl-esign",
+      "tier": 3,
+      "base_port": 16500,
+      "port_range": "16500-16599",
+      "host_port": 16500,
+      "container_port": 8000,
+      "old_name": "medinovai-esign",
+      "category": "clinical",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3cl-etmf": {
+      "repo_id": "medinovai-3cl-etmf",
+      "tier": 3,
+      "base_port": 16600,
+      "port_range": "16600-16699",
+      "host_port": 16600,
+      "container_port": 8000,
+      "old_name": "medinovai-etmf",
+      "category": "clinical",
+      "status": "active",
+      "existing_port": 8080
+    },
+    "medinovai-3cl-field-services": {
+      "repo_id": "medinovai-3cl-field-services",
+      "tier": 3,
+      "base_port": 16700,
+      "port_range": "16700-16799",
+      "host_port": 16700,
+      "container_port": 8000,
+      "old_name": "medinovai-mobile-field-services",
+      "category": "clinical",
+      "status": "active",
+      "existing_port": 8080
+    },
+    "medinovai-3cl-genomics": {
+      "repo_id": "medinovai-3cl-genomics",
+      "tier": 3,
+      "base_port": 16800,
+      "port_range": "16800-16899",
+      "host_port": 16800,
+      "container_port": 8000,
+      "old_name": "medinovai-genomics-interpreter",
+      "category": "clinical",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3cl-guideline-update": {
+      "repo_id": "medinovai-3cl-guideline-update",
+      "tier": 3,
+      "base_port": 16900,
+      "port_range": "16900-16999",
+      "host_port": 16900,
+      "container_port": 8000,
+      "old_name": "medinovai-guideline-updater",
+      "category": "clinical",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3cl-health-timeline": {
+      "repo_id": "medinovai-3cl-health-timeline",
+      "tier": 3,
+      "base_port": 17000,
+      "port_range": "17000-17099",
+      "host_port": 17000,
+      "container_port": 8000,
+      "old_name": "medinovai-health-timeline",
+      "category": "clinical",
+      "status": "active",
+      "existing_port": 8080
+    },
+    "medinovai-3cl-imaging-viewer": {
+      "repo_id": "medinovai-3cl-imaging-viewer",
+      "tier": 3,
+      "base_port": 17100,
+      "port_range": "17100-17199",
+      "host_port": 17100,
+      "container_port": 8000,
+      "old_name": "medinovai-imaging-viewer",
+      "category": "clinical",
+      "status": "active",
+      "existing_port": 8080
+    },
+    "medinovai-3cl-inventory": {
+      "repo_id": "medinovai-3cl-inventory",
+      "tier": 3,
+      "base_port": 17200,
+      "port_range": "17200-17299",
+      "host_port": 17200,
+      "container_port": 8000,
+      "old_name": "medinovai-inventorymanagement",
+      "category": "clinical",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3cl-lab-router": {
+      "repo_id": "medinovai-3cl-lab-router",
+      "tier": 3,
+      "base_port": 17300,
+      "port_range": "17300-17399",
+      "host_port": 17300,
+      "container_port": 8000,
+      "old_name": "medinovai-lab-order-router",
+      "category": "clinical",
+      "status": "active",
+      "existing_port": 8080
+    },
+    "medinovai-3cl-lis": {
+      "repo_id": "medinovai-3cl-lis",
+      "tier": 3,
+      "base_port": 17400,
+      "port_range": "17400-17499",
+      "host_port": 17400,
+      "container_port": 8000,
+      "old_name": "medinovai-lis",
+      "category": "clinical",
+      "status": "active",
+      "existing_port": 8080
+    },
+    "medinovai-3cl-lis-platform": {
+      "repo_id": "medinovai-3cl-lis-platform",
+      "tier": 3,
+      "base_port": 17500,
+      "port_range": "17500-17599",
+      "host_port": 17500,
+      "container_port": 8000,
+      "old_name": "medinovai-lis-platform",
+      "category": "clinical",
+      "status": "active",
+      "existing_port": 8080
+    },
+    "medinovai-3cl-lis-v2": {
+      "repo_id": "medinovai-3cl-lis-v2",
+      "tier": 3,
+      "base_port": 17600,
+      "port_range": "17600-17699",
+      "host_port": 17600,
+      "container_port": 8000,
+      "old_name": "LIS-2.0",
+      "category": "clinical",
+      "status": "active",
+      "existing_port": 8080
+    },
+    "medinovai-3cl-livekit": {
+      "repo_id": "medinovai-3cl-livekit",
+      "tier": 3,
+      "base_port": 17700,
+      "port_range": "17700-17799",
+      "host_port": 17700,
+      "container_port": 8000,
+      "old_name": "medinovai-livekit",
+      "category": "clinical",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3cl-med-tracker": {
+      "repo_id": "medinovai-3cl-med-tracker",
+      "tier": 3,
+      "base_port": 17800,
+      "port_range": "17800-17899",
+      "host_port": 17800,
+      "container_port": 8000,
+      "old_name": "medinovai-medication-tracker",
+      "category": "clinical",
+      "status": "active",
+      "existing_port": 8080
+    },
+    "medinovai-3cl-patient-matching": {
+      "repo_id": "medinovai-3cl-patient-matching",
+      "tier": 3,
+      "base_port": 17900,
+      "port_range": "17900-17999",
+      "host_port": 17900,
+      "container_port": 8000,
+      "old_name": "medinovai-patientmatching",
+      "category": "clinical",
+      "status": "active",
+      "existing_port": 8080
+    },
+    "medinovai-3cl-patient-onboard": {
+      "repo_id": "medinovai-3cl-patient-onboard",
+      "tier": 3,
+      "base_port": 18000,
+      "port_range": "18000-18099",
+      "host_port": 18000,
+      "container_port": 8000,
+      "old_name": "medinovai-patient-onboarding",
+      "category": "clinical",
+      "status": "active",
+      "existing_port": 8080
+    },
+    "medinovai-3cl-risk-mgmt": {
+      "repo_id": "medinovai-3cl-risk-mgmt",
+      "tier": 3,
+      "base_port": 18100,
+      "port_range": "18100-18199",
+      "host_port": 18100,
+      "container_port": 8000,
+      "old_name": "medinovai-risk-management",
+      "category": "clinical",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3cl-scheduling": {
+      "repo_id": "medinovai-3cl-scheduling",
+      "tier": 3,
+      "base_port": 18200,
+      "port_range": "18200-18299",
+      "host_port": 18200,
+      "container_port": 8000,
+      "old_name": "medinovai-smart-scheduler",
+      "category": "clinical",
+      "status": "active",
+      "existing_port": 8080
+    },
+    "medinovai-3cl-telehealth": {
+      "repo_id": "medinovai-3cl-telehealth",
+      "tier": 3,
+      "base_port": 18300,
+      "port_range": "18300-18399",
+      "host_port": 18300,
+      "container_port": 8000,
+      "old_name": "medinovai-telehealth-hub",
+      "category": "clinical",
+      "status": "active",
+      "existing_port": 8080
+    },
+    "medinovai-3cl-virtual-triage": {
+      "repo_id": "medinovai-3cl-virtual-triage",
+      "tier": 3,
+      "base_port": 18400,
+      "port_range": "18400-18499",
+      "host_port": 18400,
+      "container_port": 8000,
+      "old_name": "medinovai-virtual-triage",
+      "category": "clinical",
+      "status": "active",
+      "existing_port": 8080
+    },
+    "medinovai-3cl-vitals-ingest": {
+      "repo_id": "medinovai-3cl-vitals-ingest",
+      "tier": 3,
+      "base_port": 18500,
+      "port_range": "18500-18599",
+      "host_port": 18500,
+      "container_port": 8000,
+      "old_name": "medinovai-remote-vitals-ingest",
+      "category": "clinical",
+      "status": "active",
+      "existing_port": 8080
+    },
+    "medinovai-3cl-waitlist": {
+      "repo_id": "medinovai-3cl-waitlist",
+      "tier": 3,
+      "base_port": 18600,
+      "port_range": "18600-18699",
+      "host_port": 18600,
+      "container_port": 8000,
+      "old_name": "medinovai-wait-list-balancer",
+      "category": "clinical",
+      "status": "active",
+      "existing_port": 8080
+    },
+    "medinovai-3da-analytics": {
+      "repo_id": "medinovai-3da-analytics",
+      "tier": 3,
+      "base_port": 18700,
+      "port_range": "18700-18799",
+      "host_port": 18700,
+      "container_port": 8000,
+      "old_name": "medinovai-analytics",
+      "category": "data",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3da-data-generator": {
+      "repo_id": "medinovai-3da-data-generator",
+      "tier": 3,
+      "base_port": 18800,
+      "port_range": "18800-18899",
+      "host_port": 18800,
+      "container_port": 8000,
+      "old_name": "data-generator",
+      "category": "data",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3da-data-officer": {
+      "repo_id": "medinovai-3da-data-officer",
+      "tier": 3,
+      "base_port": 18900,
+      "port_range": "18900-18999",
+      "host_port": 18900,
+      "container_port": 8000,
+      "old_name": "medinovai-data-officer",
+      "category": "data",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3da-insights": {
+      "repo_id": "medinovai-3da-insights",
+      "tier": 3,
+      "base_port": 19000,
+      "port_range": "19000-19099",
+      "host_port": 19000,
+      "container_port": 8000,
+      "old_name": "Insights",
+      "category": "data",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3da-lake-loader": {
+      "repo_id": "medinovai-3da-lake-loader",
+      "tier": 3,
+      "base_port": 19100,
+      "port_range": "19100-19199",
+      "host_port": 19100,
+      "container_port": 8000,
+      "old_name": "medinovai-data-lake-loader",
+      "category": "data",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3fi-finexus": {
+      "repo_id": "medinovai-3fi-finexus",
+      "tier": 3,
+      "base_port": 19200,
+      "port_range": "19200-19299",
+      "host_port": 19200,
+      "container_port": 8000,
+      "old_name": "Finexus",
+      "category": "finance",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3hr-ats": {
+      "repo_id": "medinovai-3hr-ats",
+      "tier": 3,
+      "base_port": 19300,
+      "port_range": "19300-19399",
+      "host_port": 19300,
+      "container_port": 8000,
+      "old_name": "ATS",
+      "category": "hr",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3hr-education": {
+      "repo_id": "medinovai-3hr-education",
+      "tier": 3,
+      "base_port": 19400,
+      "port_range": "19400-19499",
+      "host_port": 19400,
+      "container_port": 8000,
+      "old_name": "Education",
+      "category": "hr",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3hr-employee-portal": {
+      "repo_id": "medinovai-3hr-employee-portal",
+      "tier": 3,
+      "base_port": 19500,
+      "port_range": "19500-19599",
+      "host_port": 19500,
+      "container_port": 8000,
+      "old_name": "Employee-Portal",
+      "category": "hr",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3hr-skill-assess": {
+      "repo_id": "medinovai-3hr-skill-assess",
+      "tier": 3,
+      "base_port": 19600,
+      "port_range": "19600-19699",
+      "host_port": 19600,
+      "container_port": 8000,
+      "old_name": "ai_skill_assessment",
+      "category": "hr",
+      "status": "active",
+      "existing_port": 5174
+    },
+    "medinovai-3hr-upskill": {
+      "repo_id": "medinovai-3hr-upskill",
+      "tier": 3,
+      "base_port": 19700,
+      "port_range": "19700-19799",
+      "host_port": 19700,
+      "container_port": 8000,
+      "old_name": "Upskill",
+      "category": "hr",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3ig-cdr": {
+      "repo_id": "medinovai-3ig-cdr",
+      "tier": 3,
+      "base_port": 19800,
+      "port_range": "19800-19899",
+      "host_port": 19800,
+      "container_port": 8000,
+      "old_name": "CDR",
+      "category": "integration",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3ig-etl-designer": {
+      "repo_id": "medinovai-3ig-etl-designer",
+      "tier": 3,
+      "base_port": 19900,
+      "port_range": "19900-19999",
+      "host_port": 19900,
+      "container_port": 8000,
+      "old_name": "medinovai-etl-designer",
+      "category": "integration",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3ig-mirth-adapters": {
+      "repo_id": "medinovai-3ig-mirth-adapters",
+      "tier": 3,
+      "base_port": 20000,
+      "port_range": "20000-20099",
+      "host_port": 20000,
+      "container_port": 8000,
+      "old_name": "medinovai-mirth-scripts",
+      "category": "integration",
+      "status": "active",
+      "existing_port": 8080
+    },
+    "medinovai-3op-contracts": {
+      "repo_id": "medinovai-3op-contracts",
+      "tier": 3,
+      "base_port": 20100,
+      "port_range": "20100-20199",
+      "host_port": 20100,
+      "container_port": 8000,
+      "old_name": "medinovai-contract-management",
+      "category": "operations",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3op-onsite-monitor": {
+      "repo_id": "medinovai-3op-onsite-monitor",
+      "tier": 3,
+      "base_port": 20200,
+      "port_range": "20200-20299",
+      "host_port": 20200,
+      "container_port": 8000,
+      "old_name": "myonsite-ops-monitoring",
+      "category": "operations",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3op-onsite-ops": {
+      "repo_id": "medinovai-3op-onsite-ops",
+      "tier": 3,
+      "base_port": 20300,
+      "port_range": "20300-20399",
+      "host_port": 20300,
+      "container_port": 8000,
+      "old_name": "myonsite-ops",
+      "category": "operations",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3op-ops-analytics": {
+      "repo_id": "medinovai-3op-ops-analytics",
+      "tier": 3,
+      "base_port": 20400,
+      "port_range": "20400-20499",
+      "host_port": 20400,
+      "container_port": 8000,
+      "old_name": "OperationsAnalytics",
+      "category": "operations",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3op-process-auto": {
+      "repo_id": "medinovai-3op-process-auto",
+      "tier": 3,
+      "base_port": 20500,
+      "port_range": "20500-20599",
+      "host_port": 20500,
+      "container_port": 8000,
+      "old_name": "ProcessAutomations",
+      "category": "operations",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3op-procurement": {
+      "repo_id": "medinovai-3op-procurement",
+      "tier": 3,
+      "base_port": 20600,
+      "port_range": "20600-20699",
+      "host_port": 20600,
+      "container_port": 8000,
+      "old_name": "ProcurementPro",
+      "category": "operations",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3op-qms": {
+      "repo_id": "medinovai-3op-qms",
+      "tier": 3,
+      "base_port": 20700,
+      "port_range": "20700-20799",
+      "host_port": 20700,
+      "container_port": 8000,
+      "old_name": "QualityManagementSystem",
+      "category": "operations",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3pl-accessibility": {
+      "repo_id": "medinovai-3pl-accessibility",
+      "tier": 3,
+      "base_port": 20800,
+      "port_range": "20800-20899",
+      "host_port": 20800,
+      "container_port": 8000,
+      "old_name": "medinovai-accessibility-checker",
+      "category": "platform",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3pl-email": {
+      "repo_id": "medinovai-3pl-email",
+      "tier": 3,
+      "base_port": 20900,
+      "port_range": "20900-20999",
+      "host_port": 20900,
+      "container_port": 8000,
+      "old_name": "medinovai-email-service",
+      "category": "platform",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3pl-gov-templates": {
+      "repo_id": "medinovai-3pl-gov-templates",
+      "tier": 3,
+      "base_port": 21000,
+      "port_range": "21000-21099",
+      "host_port": 21000,
+      "container_port": 8000,
+      "old_name": "medinovai-governance-templates",
+      "category": "platform",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3pl-mail": {
+      "repo_id": "medinovai-3pl-mail",
+      "tier": 3,
+      "base_port": 21100,
+      "port_range": "21100-21199",
+      "host_port": 21100,
+      "container_port": 8000,
+      "old_name": "medinovai-mail",
+      "category": "platform",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3pl-media-hub": {
+      "repo_id": "medinovai-3pl-media-hub",
+      "tier": 3,
+      "base_port": 21200,
+      "port_range": "21200-21299",
+      "host_port": 21200,
+      "container_port": 8000,
+      "old_name": "medinovai-media-hub",
+      "category": "platform",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3pl-notif-center": {
+      "repo_id": "medinovai-3pl-notif-center",
+      "tier": 3,
+      "base_port": 21300,
+      "port_range": "21300-21399",
+      "host_port": 21300,
+      "container_port": 8000,
+      "old_name": "medinovai-notification-center",
+      "category": "platform",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3pl-policy-watcher": {
+      "repo_id": "medinovai-3pl-policy-watcher",
+      "tier": 3,
+      "base_port": 21400,
+      "port_range": "21400-21499",
+      "host_port": 21400,
+      "container_port": 8000,
+      "old_name": "medinovai-policy-diff-watcher",
+      "category": "platform",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3pl-prism": {
+      "repo_id": "medinovai-3pl-prism",
+      "tier": 3,
+      "base_port": 21500,
+      "port_range": "21500-21599",
+      "host_port": 21500,
+      "container_port": 8000,
+      "old_name": "medinovai-prism",
+      "category": "platform",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3pl-projects": {
+      "repo_id": "medinovai-3pl-projects",
+      "tier": 3,
+      "base_port": 21600,
+      "port_range": "21600-21699",
+      "host_port": 21600,
+      "container_port": 8000,
+      "old_name": "medinovai-projects",
+      "category": "platform",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3pl-quality-cert": {
+      "repo_id": "medinovai-3pl-quality-cert",
+      "tier": 3,
+      "base_port": 21700,
+      "port_range": "21700-21799",
+      "host_port": 21700,
+      "container_port": 8000,
+      "old_name": "medinovai-quality-certification",
+      "category": "platform",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3pl-sme": {
+      "repo_id": "medinovai-3pl-sme",
+      "tier": 3,
+      "base_port": 21800,
+      "port_range": "21800-21899",
+      "host_port": 21800,
+      "container_port": 8000,
+      "old_name": "medinovai-sme",
+      "category": "platform",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3pl-task-kanban": {
+      "repo_id": "medinovai-3pl-task-kanban",
+      "tier": 3,
+      "base_port": 21900,
+      "port_range": "21900-21999",
+      "host_port": 21900,
+      "container_port": 8000,
+      "old_name": "medinovai-task-kanban",
+      "category": "platform",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3pl-translator": {
+      "repo_id": "medinovai-3pl-translator",
+      "tier": 3,
+      "base_port": 22000,
+      "port_range": "22000-22099",
+      "host_port": 22000,
+      "container_port": 8000,
+      "old_name": "medinovai-content-translator",
+      "category": "platform",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3pl-white-label": {
+      "repo_id": "medinovai-3pl-white-label",
+      "tier": 3,
+      "base_port": 22100,
+      "port_range": "22100-22199",
+      "host_port": 22100,
+      "container_port": 8000,
+      "old_name": "medinovai-white-label-skinner",
+      "category": "platform",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3pl-workflow": {
+      "repo_id": "medinovai-3pl-workflow",
+      "tier": 3,
+      "base_port": 22200,
+      "port_range": "22200-22299",
+      "host_port": 22200,
+      "container_port": 8000,
+      "old_name": "medinovai-workflow",
+      "category": "platform",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3re-econsent": {
+      "repo_id": "medinovai-3re-econsent",
+      "tier": 3,
+      "base_port": 22300,
+      "port_range": "22300-22399",
+      "host_port": 22300,
+      "container_port": 8000,
+      "old_name": "medinovai-eConsent",
+      "category": "research",
+      "status": "active",
+      "existing_port": 8080
+    },
+    "medinovai-3re-eisf": {
+      "repo_id": "medinovai-3re-eisf",
+      "tier": 3,
+      "base_port": 22400,
+      "port_range": "22400-22499",
+      "host_port": 22400,
+      "container_port": 8000,
+      "old_name": "medinovai-eISF",
+      "category": "research",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3re-epro": {
+      "repo_id": "medinovai-3re-epro",
+      "tier": 3,
+      "base_port": 22500,
+      "port_range": "22500-22599",
+      "host_port": 22500,
+      "container_port": 8000,
+      "old_name": "medinovai-ePRO",
+      "category": "research",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3re-esource": {
+      "repo_id": "medinovai-3re-esource",
+      "tier": 3,
+      "base_port": 22600,
+      "port_range": "22600-22699",
+      "host_port": 22600,
+      "container_port": 8000,
+      "old_name": "medinovai-eSource",
+      "category": "research",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3re-iwrs": {
+      "repo_id": "medinovai-3re-iwrs",
+      "tier": 3,
+      "base_port": 22700,
+      "port_range": "22700-22799",
+      "host_port": 22700,
+      "container_port": 8000,
+      "old_name": "medinovai-iwrs",
+      "category": "research",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3re-pharmacovig": {
+      "repo_id": "medinovai-3re-pharmacovig",
+      "tier": 3,
+      "base_port": 22800,
+      "port_range": "22800-22899",
+      "host_port": 22800,
+      "container_port": 8000,
+      "old_name": "medinovai-pharmacovigilance",
+      "category": "research",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3re-protocol-design": {
+      "repo_id": "medinovai-3re-protocol-design",
+      "tier": 3,
+      "base_port": 22900,
+      "port_range": "22900-22999",
+      "host_port": 22900,
+      "container_port": 8000,
+      "old_name": "ProtocolDesign",
+      "category": "research",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3re-reg-submissions": {
+      "repo_id": "medinovai-3re-reg-submissions",
+      "tier": 3,
+      "base_port": 23000,
+      "port_range": "23000-23099",
+      "host_port": 23000,
+      "container_port": 8000,
+      "old_name": "medinovai-regulatory-submissions",
+      "category": "research",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3re-research-fabric": {
+      "repo_id": "medinovai-3re-research-fabric",
+      "tier": 3,
+      "base_port": 23100,
+      "port_range": "23100-23199",
+      "host_port": 23100,
+      "container_port": 8000,
+      "old_name": "medinovai-research-fabric",
+      "category": "research",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3re-research-suite": {
+      "repo_id": "medinovai-3re-research-suite",
+      "tier": 3,
+      "base_port": 23200,
+      "port_range": "23200-23299",
+      "host_port": 23200,
+      "container_port": 8000,
+      "old_name": "medinovai-research-suite",
+      "category": "research",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3re-risk-based-monitor": {
+      "repo_id": "medinovai-3re-risk-based-monitor",
+      "tier": 3,
+      "base_port": 23300,
+      "port_range": "23300-23399",
+      "host_port": 23300,
+      "container_port": 8000,
+      "old_name": "medinovai-rbm",
+      "category": "research",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3re-site-feasibility": {
+      "repo_id": "medinovai-3re-site-feasibility",
+      "tier": 3,
+      "base_port": 23400,
+      "port_range": "23400-23499",
+      "host_port": 23400,
+      "container_port": 8000,
+      "old_name": "medinovai-site-feasibility",
+      "category": "research",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3sl-crm": {
+      "repo_id": "medinovai-3sl-crm",
+      "tier": 3,
+      "base_port": 23500,
+      "port_range": "23500-23599",
+      "host_port": 23500,
+      "container_port": 8000,
+      "old_name": "CRM",
+      "category": "sales",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3sl-customer-svc": {
+      "repo_id": "medinovai-3sl-customer-svc",
+      "tier": 3,
+      "base_port": 23600,
+      "port_range": "23600-23699",
+      "host_port": 23600,
+      "container_port": 8000,
+      "old_name": "CustomerService",
+      "category": "sales",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3sl-expansion": {
+      "repo_id": "medinovai-3sl-expansion",
+      "tier": 3,
+      "base_port": 23700,
+      "port_range": "23700-23799",
+      "host_port": 23700,
+      "container_port": 8000,
+      "old_name": "ExpansionPlaybook",
+      "category": "sales",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3sl-marketing-hack": {
+      "repo_id": "medinovai-3sl-marketing-hack",
+      "tier": 3,
+      "base_port": 23800,
+      "port_range": "23800-23899",
+      "host_port": 23800,
+      "container_port": 8000,
+      "old_name": "marketinghackathon",
+      "category": "sales",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3sl-marketing-skills": {
+      "repo_id": "medinovai-3sl-marketing-skills",
+      "tier": 3,
+      "base_port": 23900,
+      "port_range": "23900-23999",
+      "host_port": 23900,
+      "container_port": 8000,
+      "old_name": "marketingskills",
+      "category": "sales",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3sl-sales": {
+      "repo_id": "medinovai-3sl-sales",
+      "tier": 3,
+      "base_port": 24000,
+      "port_range": "24000-24099",
+      "host_port": 24000,
+      "container_port": 8000,
+      "old_name": "medinovai-sales",
+      "category": "sales",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-3sl-sales-rag": {
+      "repo_id": "medinovai-3sl-sales-rag",
+      "tier": 3,
+      "base_port": 24100,
+      "port_range": "24100-24199",
+      "host_port": 24100,
+      "container_port": 8000,
+      "old_name": "SalesRAG",
+      "category": "sales",
+      "status": "active",
+      "existing_port": null
+    },
+    "omop-foundation": {
+      "repo_id": "omop-foundation",
+      "tier": 3,
+      "base_port": 24200,
+      "port_range": "24200-24299",
+      "host_port": 24200,
+      "container_port": 8000,
+      "old_name": "omop-foundation",
+      "category": "platform",
+      "status": "active",
+      "existing_port": null
+    },
+    "training-reference": {
+      "repo_id": "training-reference",
+      "tier": 3,
+      "base_port": 24300,
+      "port_range": "24300-24399",
+      "host_port": 24300,
+      "container_port": 8000,
+      "old_name": "training-reference",
+      "category": "platform",
+      "status": "active",
+      "existing_port": null
+    },
+    "workspace-operator": {
+      "repo_id": "workspace-operator",
+      "tier": 3,
+      "base_port": 24400,
+      "port_range": "24400-24499",
+      "host_port": 24400,
+      "container_port": 8000,
+      "old_name": "workspace-operator",
+      "category": "platform",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-4fe-cohort-studio": {
+      "repo_id": "medinovai-4fe-cohort-studio",
+      "tier": 4,
+      "base_port": 24500,
+      "port_range": "24500-24599",
+      "host_port": 24500,
+      "container_port": 8000,
+      "old_name": "medinovai-cohort-studio",
+      "category": "frontend",
+      "status": "active",
+      "existing_port": 3000
+    },
+    "medinovai-4fe-components": {
+      "repo_id": "medinovai-4fe-components",
+      "tier": 4,
+      "base_port": 24600,
+      "port_range": "24600-24699",
+      "host_port": 24600,
+      "container_port": 8000,
+      "old_name": "medinovai-ui-components",
+      "category": "frontend",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-4fe-dev-portal": {
+      "repo_id": "medinovai-4fe-dev-portal",
+      "tier": 4,
+      "base_port": 24700,
+      "port_range": "24700-24799",
+      "host_port": 24700,
+      "container_port": 8000,
+      "old_name": "medinovai-developer-portal",
+      "category": "frontend",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-4fe-help-center": {
+      "repo_id": "medinovai-4fe-help-center",
+      "tier": 4,
+      "base_port": 24800,
+      "port_range": "24800-24899",
+      "host_port": 24800,
+      "container_port": 8000,
+      "old_name": "medinovai-help",
+      "category": "frontend",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-4fe-lis-ui": {
+      "repo_id": "medinovai-4fe-lis-ui",
+      "tier": 4,
+      "base_port": 24900,
+      "port_range": "24900-24999",
+      "host_port": 24900,
+      "container_port": 8000,
+      "old_name": "medinovai-lis-ui",
+      "category": "frontend",
+      "status": "active",
+      "existing_port": 3000
+    },
+    "medinovai-4fe-multimodal-shell": {
+      "repo_id": "medinovai-4fe-multimodal-shell",
+      "tier": 4,
+      "base_port": 25000,
+      "port_range": "25000-25099",
+      "host_port": 25000,
+      "container_port": 8000,
+      "old_name": "medinovai-multimodal-ui-shell",
+      "category": "frontend",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-4fe-patient-portal": {
+      "repo_id": "medinovai-4fe-patient-portal",
+      "tier": 4,
+      "base_port": 25100,
+      "port_range": "25100-25199",
+      "host_port": 25100,
+      "container_port": 8000,
+      "old_name": "medinovai-patient-portal",
+      "category": "frontend",
+      "status": "active",
+      "existing_port": 3000
+    },
+    "medinovai-4fe-uiux": {
+      "repo_id": "medinovai-4fe-uiux",
+      "tier": 4,
+      "base_port": 25200,
+      "port_range": "25200-25299",
+      "host_port": 25200,
+      "container_port": 8000,
+      "old_name": "medinovai-Uiux",
+      "category": "frontend",
+      "status": "active",
+      "existing_port": 3000
+    },
+    "medinovai-4fe-web-core": {
+      "repo_id": "medinovai-4fe-web-core",
+      "tier": 4,
+      "base_port": 25300,
+      "port_range": "25300-25399",
+      "host_port": 25300,
+      "container_port": 8000,
+      "old_name": "medinovai-web-core",
+      "category": "frontend",
+      "status": "active",
+      "existing_port": 3000
+    },
+    "medinovai-4fe-workspace-hub": {
+      "repo_id": "medinovai-4fe-workspace-hub",
+      "tier": 4,
+      "base_port": 25400,
+      "port_range": "25400-25499",
+      "host_port": 25400,
+      "container_port": 8000,
+      "old_name": "medinovai-workspace-hub",
+      "category": "frontend",
+      "status": "active",
+      "existing_port": 3000
+    },
+    "medinovai-4mo-concierge-android": {
+      "repo_id": "medinovai-4mo-concierge-android",
+      "tier": 4,
+      "base_port": 25500,
+      "port_range": "25500-25599",
+      "host_port": 25500,
+      "container_port": 8000,
+      "old_name": "medinovai-health-concierge-android",
+      "category": "mobile",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-4mo-concierge-ios": {
+      "repo_id": "medinovai-4mo-concierge-ios",
+      "tier": 4,
+      "base_port": 25600,
+      "port_range": "25600-25699",
+      "host_port": 25600,
+      "container_port": 8000,
+      "old_name": "medinovai-health-concierge-ios",
+      "category": "mobile",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-4mo-mywork": {
+      "repo_id": "medinovai-4mo-mywork",
+      "tier": 4,
+      "base_port": 25700,
+      "port_range": "25700-25799",
+      "host_port": 25700,
+      "container_port": 8000,
+      "old_name": "mywork-android",
+      "category": "mobile",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-4mo-onsite": {
+      "repo_id": "medinovai-4mo-onsite",
+      "tier": 4,
+      "base_port": 25800,
+      "port_range": "25800-25899",
+      "host_port": 25800,
+      "container_port": 8000,
+      "old_name": "myonsite-mobile-app",
+      "category": "mobile",
+      "status": "active",
+      "existing_port": null
+    },
+    "medinovai-9mx-clawdbot-fixes": {
+      "repo_id": "medinovai-9mx-clawdbot-fixes",
+      "tier": 9,
+      "base_port": 25900,
+      "port_range": "25900-25999",
+      "host_port": 25900,
+      "container_port": 8000,
+      "old_name": "clawdbot-ui-fixes",
+      "category": "meta",
+      "status": "personal",
+      "existing_port": null
+    },
+    "medinovai-9mx-haritaoza": {
+      "repo_id": "medinovai-9mx-haritaoza",
+      "tier": 9,
+      "base_port": 26000,
+      "port_range": "26000-26099",
+      "host_port": 26000,
+      "container_port": 8000,
+      "old_name": "HaritaOza.com",
+      "category": "meta",
+      "status": "personal",
+      "existing_port": null
+    },
+    "extra-autograntpro-devin": {
+      "old_name": "AUtoGrantPro-Devin",
+      "base_port": 26100,
+      "port_range": "26100-26199",
+      "tier": 99
+    },
+    "extra-atlasos": {
+      "old_name": "AtlasOS",
+      "base_port": 26200,
+      "port_range": "26200-26299",
+      "tier": 99
+    },
+    "extra-autobidpro": {
+      "old_name": "AutoBidPro",
+      "base_port": 26300,
+      "port_range": "26300-26399",
+      "tier": 99
+    },
+    "extra-autobizdev": {
+      "old_name": "AutoBizDev",
+      "base_port": 26400,
+      "port_range": "26400-26499",
+      "tier": 99
+    },
+    "extra-autograntpro": {
+      "old_name": "AutoGrantPro",
+      "base_port": 26500,
+      "port_range": "26500-26599",
+      "tier": 99
+    },
+    "extra-autograntpro-cursor": {
+      "old_name": "AutoGrantPro-Cursor",
+      "base_port": 26600,
+      "port_range": "26600-26699",
+      "tier": 99
+    },
+    "extra-autograntpro-manus": {
+      "old_name": "AutoGrantPro-Manus",
+      "base_port": 26700,
+      "port_range": "26700-26799",
+      "tier": 99
+    },
+    "extra-autograntprocursorstudio": {
+      "old_name": "AutoGrantProCursorStudio",
+      "base_port": 26800,
+      "port_range": "26800-26899",
+      "tier": 99
+    },
+    "extra-automarketingpro": {
+      "old_name": "AutoMarketingPro",
+      "base_port": 26900,
+      "port_range": "26900-26999",
+      "tier": 99
+    },
+    "extra-autosalespro": {
+      "old_name": "AutoSalesPro",
+      "base_port": 27000,
+      "port_range": "27000-27099",
+      "tier": 99
+    },
+    "extra-autonomousqms": {
+      "old_name": "AutonomousQMS",
+      "base_port": 27100,
+      "port_range": "27100-27199",
+      "tier": 99
+    },
+    "extra-compliancemanus": {
+      "old_name": "ComplianceManus",
+      "base_port": 27200,
+      "port_range": "27200-27299",
+      "tier": 99
+    },
+    "extra-inventory-management-system": {
+      "old_name": "Inventory-Management-System",
+      "base_port": 27300,
+      "port_range": "27300-27399",
+      "tier": 99
+    },
+    "extra-learn": {
+      "old_name": "Learn",
+      "base_port": 27400,
+      "port_range": "27400-27499",
+      "tier": 99
+    },
+    "extra-local_llms": {
+      "old_name": "Local_LLMs",
+      "base_port": 27500,
+      "port_range": "27500-27599",
+      "tier": 99
+    },
+    "extra-medinovai---medical-fax-processing": {
+      "old_name": "MedinovAI---Medical-Fax-Processing",
+      "base_port": 27600,
+      "port_range": "27600-27699",
+      "tier": 99
+    },
+    "extra-medinovai-ai-standards": {
+      "old_name": "MedinovAI-AI-Standards",
+      "base_port": 27700,
+      "port_range": "27700-27799",
+      "tier": 99
+    },
+    "extra-northstar": {
+      "old_name": "Northstar",
+      "base_port": 27800,
+      "port_range": "27800-27899",
+      "tier": 99
+    },
+    "extra-nutrisense": {
+      "old_name": "NutriSense",
+      "base_port": 27900,
+      "port_range": "27900-27999",
+      "tier": 99
+    },
+    "extra-personalassistant": {
+      "old_name": "PersonalAssistant",
+      "base_port": 28000,
+      "port_range": "28000-28099",
+      "tier": 99
+    },
+    "extra-photoai": {
+      "old_name": "PhotoAI",
+      "base_port": 28100,
+      "port_range": "28100-28199",
+      "tier": 99
+    },
+    "extra-qms": {
+      "old_name": "QMS",
+      "base_port": 28200,
+      "port_range": "28200-28299",
+      "tier": 99
+    },
+    "extra-qualitymanagementsystemv0": {
+      "old_name": "QualityManagementSystemV0",
+      "base_port": 28300,
+      "port_range": "28300-28399",
+      "tier": 99
+    },
+    "extra-skillhub": {
+      "old_name": "Skillhub",
+      "base_port": 28400,
+      "port_range": "28400-28499",
+      "tier": 99
+    },
+    "extra-travelai": {
+      "old_name": "TravelAI",
+      "base_port": 28500,
+      "port_range": "28500-28599",
+      "tier": 99
+    },
+    "extra-workforceos": {
+      "old_name": "WorkforceOS",
+      "base_port": 28600,
+      "port_range": "28600-28699",
+      "tier": 99
+    },
+    "extra-__docker-maintenance": {
+      "old_name": "__Docker-Maintenance",
+      "base_port": 28700,
+      "port_range": "28700-28799",
+      "tier": 99
+    },
+    "extra-ai-chatbot": {
+      "old_name": "ai-chatbot",
+      "base_port": 28800,
+      "port_range": "28800-28899",
+      "tier": 99
+    },
+    "extra-ai-chatbot-mjt": {
+      "old_name": "ai-chatbot-mjt",
+      "base_port": 28900,
+      "port_range": "28900-28999",
+      "tier": 99
+    },
+    "extra-ajay-lis": {
+      "old_name": "ajay-lis",
+      "base_port": 29000,
+      "port_range": "29000-29099",
+      "tier": 99
+    },
+    "extra-atlas-command": {
+      "old_name": "atlas-command",
+      "base_port": 29100,
+      "port_range": "29100-29199",
+      "tier": 99
+    },
+    "extra-bug-free-computing-machine": {
+      "old_name": "bug-free-computing-machine",
+      "base_port": 29200,
+      "port_range": "29200-29299",
+      "tier": 99
+    },
+    "extra-cogniai-us": {
+      "old_name": "cogniai.us",
+      "base_port": 29300,
+      "port_range": "29300-29399",
+      "tier": 99
+    },
+    "extra-cognitive-firewall": {
+      "old_name": "cognitive-firewall",
+      "base_port": 29400,
+      "port_range": "29400-29499",
+      "tier": 99
+    },
+    "extra-cursor-config": {
+      "old_name": "cursor-config",
+      "base_port": 29500,
+      "port_range": "29500-29599",
+      "tier": 99
+    },
+    "extra-deployment": {
+      "old_name": "deployment",
+      "base_port": 29600,
+      "port_range": "29600-29699",
+      "tier": 99
+    },
+    "extra-descartesbio-in": {
+      "old_name": "descartesbio.in",
+      "base_port": 29700,
+      "port_range": "29700-29799",
+      "tier": 99
+    },
+    "extra-hello-world-claude": {
+      "old_name": "hello-world-claude",
+      "base_port": 29800,
+      "port_range": "29800-29899",
+      "tier": 99
+    },
+    "extra-hello-world-codex": {
+      "old_name": "hello-world-codex",
+      "base_port": 29900,
+      "port_range": "29900-29999",
+      "tier": 99
+    },
+    "extra-hello-world-cursor": {
+      "old_name": "hello-world-cursor",
+      "base_port": 30000,
+      "port_range": "30000-30099",
+      "tier": 99
+    },
+    "extra-hello-world-devin": {
+      "old_name": "hello-world-devin",
+      "base_port": 30100,
+      "port_range": "30100-30199",
+      "tier": 99
+    },
+    "extra-lis-1-0-mvc": {
+      "old_name": "lis-1.0-mvc",
+      "base_port": 30200,
+      "port_range": "30200-30299",
+      "tier": 99
+    },
+    "extra-lis-1-0-silverlight": {
+      "old_name": "lis-1.0-silverlight",
+      "base_port": 30300,
+      "port_range": "30300-30399",
+      "tier": 99
+    },
+    "extra-lis-iss": {
+      "old_name": "lis-iss",
+      "base_port": 30400,
+      "port_range": "30400-30499",
+      "tier": 99
+    },
+    "extra-localmodels": {
+      "old_name": "localmodels",
+      "base_port": 30500,
+      "port_range": "30500-30599",
+      "tier": 99
+    },
+    "extra-manus-consolidation-platform": {
+      "old_name": "manus-consolidation-platform",
+      "base_port": 30600,
+      "port_range": "30600-30699",
+      "tier": 99
+    },
+    "extra-mayanktrivedi": {
+      "old_name": "mayanktrivedi",
+      "base_port": 30700,
+      "port_range": "30700-30799",
+      "tier": 99
+    },
+    "extra-mayanktrivedi-1": {
+      "old_name": "mayanktrivedi-1",
+      "base_port": 30800,
+      "port_range": "30800-30899",
+      "tier": 99
+    },
+    "extra-mayanktrivedi-2": {
+      "old_name": "mayanktrivedi-2",
+      "base_port": 30900,
+      "port_range": "30900-30999",
+      "tier": 99
+    },
+    "extra-medinovai-sitefeasibility": {
+      "old_name": "medinovAI-SiteFeasibility",
+      "base_port": 31000,
+      "port_range": "31000-31099",
+      "tier": 99
+    },
+    "extra-medinovai-media": {
+      "old_name": "medinovAI-media",
+      "base_port": 31100,
+      "port_range": "31100-31199",
+      "tier": 99
+    },
+    "extra-medinovaiusb": {
+      "old_name": "medinovAIUSB",
+      "base_port": 31200,
+      "port_range": "31200-31299",
+      "tier": 99
+    },
+    "extra-medinovaiworkflow": {
+      "old_name": "medinovAIWorkFlow",
+      "base_port": 31300,
+      "port_range": "31300-31399",
+      "tier": 99
+    },
+    "extra-medinovaigent": {
+      "old_name": "medinovAIgent",
+      "base_port": 31400,
+      "port_range": "31400-31499",
+      "tier": 99
+    },
+    "extra-medinovai-0br-developer": {
+      "old_name": "medinovai-0br-developer",
+      "base_port": 31500,
+      "port_range": "31500-31599",
+      "tier": 99
+    },
+    "extra-medinovai-atlasos": {
+      "old_name": "medinovai-AtlasOS",
+      "base_port": 31600,
+      "port_range": "31600-31699",
+      "tier": 99
+    },
+    "extra-medinovai-dataofficer": {
+      "old_name": "medinovai-DataOfficer",
+      "base_port": 31700,
+      "port_range": "31700-31799",
+      "tier": 99
+    },
+    "extra-medinovai-researchsuite": {
+      "old_name": "medinovai-ResearchSuite",
+      "base_port": 31800,
+      "port_range": "31800-31899",
+      "tier": 99
+    },
+    "extra-medinovai-approval-workflow": {
+      "old_name": "medinovai-approval-workflow",
+      "base_port": 31900,
+      "port_range": "31900-31999",
+      "tier": 99
+    },
+    "extra-medinovai-auto-seeder": {
+      "old_name": "medinovai-auto-seeder",
+      "base_port": 32000,
+      "port_range": "32000-32099",
+      "tier": 99
+    },
+    "extra-medinovai-billing": {
+      "old_name": "medinovai-billing",
+      "base_port": 32100,
+      "port_range": "32100-32199",
+      "tier": 99
+    },
+    "extra-medinovai-canary-rollout-orchestrator": {
+      "old_name": "medinovai-canary-rollout-orchestrator",
+      "base_port": 32200,
+      "port_range": "32200-32299",
+      "tier": 99
+    },
+    "extra-medinovai-clinical-platform": {
+      "old_name": "medinovai-clinical-platform",
+      "base_port": 32300,
+      "port_range": "32300-32399",
+      "tier": 99
+    },
+    "extra-medinovai-competitor-detect": {
+      "old_name": "medinovai-competitor-detect",
+      "base_port": 32400,
+      "port_range": "32400-32499",
+      "tier": 99
+    },
+    "extra-medinovai-config-python": {
+      "old_name": "medinovai-config-python",
+      "base_port": 32500,
+      "port_range": "32500-32599",
+      "tier": 99
+    },
+    "extra-medinovai-core-python": {
+      "old_name": "medinovai-core-python",
+      "base_port": 32600,
+      "port_range": "32600-32699",
+      "tier": 99
+    },
+    "extra-medinovai-dev-standards": {
+      "old_name": "medinovai-dev-standards",
+      "base_port": 32700,
+      "port_range": "32700-32799",
+      "tier": 99
+    },
+    "extra-medinovai-devops-telemetry": {
+      "old_name": "medinovai-devops-telemetry",
+      "base_port": 32800,
+      "port_range": "32800-32899",
+      "tier": 99
+    },
+    "extra-medinovai-email-validator": {
+      "old_name": "medinovai-email-validator",
+      "base_port": 32900,
+      "port_range": "32900-32999",
+      "tier": 99
+    },
+    "extra-medinovai-failure-learning": {
+      "old_name": "medinovai-failure-learning",
+      "base_port": 33000,
+      "port_range": "33000-33099",
+      "tier": 99
+    },
+    "extra-medinovai-imaging": {
+      "old_name": "medinovai-imaging",
+      "base_port": 33100,
+      "port_range": "33100-33199",
+      "tier": 99
+    },
+    "extra-medinovai-lis-modern": {
+      "old_name": "medinovai-lis.modern",
+      "base_port": 33200,
+      "port_range": "33200-33299",
+      "tier": 99
+    },
+    "extra-medinovai-pharmacy": {
+      "old_name": "medinovai-pharmacy",
+      "base_port": 33300,
+      "port_range": "33300-33399",
+      "tier": 99
+    },
+    "extra-medinovai-platform-tools": {
+      "old_name": "medinovai-platform-tools",
+      "base_port": 33400,
+      "port_range": "33400-33499",
+      "tier": 99
+    },
+    "extra-medinovai-provider-credentialing": {
+      "old_name": "medinovai-provider-credentialing",
+      "base_port": 33500,
+      "port_range": "33500-33599",
+      "tier": 99
+    },
+    "extra-medinovai-reseach-fabric": {
+      "old_name": "medinovai-reseach-fabric",
+      "base_port": 33600,
+      "port_range": "33600-33699",
+      "tier": 99
+    },
+    "extra-medinovai-research-costs": {
+      "old_name": "medinovai-research-costs",
+      "base_port": 33700,
+      "port_range": "33700-33799",
+      "tier": 99
+    },
+    "extra-medinovai-research-engine": {
+      "old_name": "medinovai-research-engine",
+      "base_port": 33800,
+      "port_range": "33800-33899",
+      "tier": 99
+    },
+    "extra-medinovai-security-python": {
+      "old_name": "medinovai-security-python",
+      "base_port": 33900,
+      "port_range": "33900-33999",
+      "tier": 99
+    },
+    "extra-medinovai-source-adapters": {
+      "old_name": "medinovai-source-adapters",
+      "base_port": 34000,
+      "port_range": "34000-34099",
+      "tier": 99
+    },
+    "extra-medinovai-standards": {
+      "old_name": "medinovai-standards",
+      "base_port": 34100,
+      "port_range": "34100-34199",
+      "tier": 99
+    },
+    "extra-medinovai-telehealth": {
+      "old_name": "medinovai-telehealth",
+      "base_port": 34200,
+      "port_range": "34200-34299",
+      "tier": 99
+    },
+    "extra-medinovai-telemetry-python": {
+      "old_name": "medinovai-telemetry-python",
+      "base_port": 34300,
+      "port_range": "34300-34399",
+      "tier": 99
+    },
+    "extra-medinovai-tenant-onboarding": {
+      "old_name": "medinovai-tenant-onboarding",
+      "base_port": 34400,
+      "port_range": "34400-34499",
+      "tier": 99
+    },
+    "extra-medinovaios": {
+      "old_name": "medinovaios",
+      "base_port": 34500,
+      "port_range": "34500-34599",
+      "tier": 99
+    },
+    "extra-mediovai": {
+      "old_name": "mediovai",
+      "base_port": 34600,
+      "port_range": "34600-34699",
+      "tier": 99
+    },
+    "extra-mirth-scripts": {
+      "old_name": "mirth-scripts",
+      "base_port": 34700,
+      "port_range": "34700-34799",
+      "tier": 99
+    },
+    "extra-myhealthconcierge-android": {
+      "old_name": "myHealthConcierge-android",
+      "base_port": 34800,
+      "port_range": "34800-34899",
+      "tier": 99
+    },
+    "extra-myhealthconcierge-ios": {
+      "old_name": "myHealthConcierge-ios",
+      "base_port": 34900,
+      "port_range": "34900-34999",
+      "tier": 99
+    },
+    "extra-myonsite-golive": {
+      "old_name": "myOnsite-GoLive",
+      "base_port": 35000,
+      "port_range": "35000-35099",
+      "tier": 99
+    },
+    "extra-myonsiteops": {
+      "old_name": "myOnsiteOPS",
+      "base_port": 35100,
+      "port_range": "35100-35199",
+      "tier": 99
+    },
+    "extra-myonsiteoperationsmonitoringv1": {
+      "old_name": "myOnsiteOperationsMonitoringV1",
+      "base_port": 35200,
+      "port_range": "35200-35299",
+      "tier": 99
+    },
+    "extra-myonsite-all-code-base": {
+      "old_name": "myonsite-all-code-base",
+      "base_port": 35300,
+      "port_range": "35300-35399",
+      "tier": 99
+    },
+    "extra-myonsite-mywork-android": {
+      "old_name": "myonsite-myWork-Android",
+      "base_port": 35400,
+      "port_range": "35400-35499",
+      "tier": 99
+    },
+    "extra-myonsite_mobile_app": {
+      "old_name": "myonsite_mobile_app",
+      "base_port": 35500,
+      "port_range": "35500-35599",
+      "tier": 99
+    },
+    "extra-mywork": {
+      "old_name": "mywork",
+      "base_port": 35600,
+      "port_range": "35600-35699",
+      "tier": 99
+    },
+    "extra-mywork-by-myonsite-v2": {
+      "old_name": "mywork-by-myonsite-V2",
+      "base_port": 35700,
+      "port_range": "35700-35799",
+      "tier": 99
+    },
+    "extra-mywork-windsurf": {
+      "old_name": "mywork-windsurf",
+      "base_port": 35800,
+      "port_range": "35800-35899",
+      "tier": 99
+    },
+    "extra-neocognition": {
+      "old_name": "neocognition",
+      "base_port": 35900,
+      "port_range": "35900-35999",
+      "tier": 99
+    },
+    "extra-open-swe": {
+      "old_name": "open-swe",
+      "base_port": 36000,
+      "port_range": "36000-36099",
+      "tier": 99
+    },
+    "extra-orchids-mayank-trivedi-staging": {
+      "old_name": "orchids-mayank-trivedi-staging",
+      "base_port": 36100,
+      "port_range": "36100-36199",
+      "tier": 99
+    },
+    "extra-project-execution-task-management": {
+      "old_name": "project-execution-task-management",
+      "base_port": 36200,
+      "port_range": "36200-36299",
+      "tier": 99
+    },
+    "extra-skill-hub": {
+      "old_name": "skill-hub",
+      "base_port": 36300,
+      "port_range": "36300-36399",
+      "tier": 99
+    },
+    "extra-subscription": {
+      "old_name": "subscription",
+      "base_port": 36400,
+      "port_range": "36400-36499",
+      "tier": 99
+    },
+    "extra-vercel-clone": {
+      "old_name": "vercel-clone",
+      "base_port": 36500,
+      "port_range": "36500-36599",
+      "tier": 99
+    },
+    "extra-zerotouchmarketing": {
+      "old_name": "zeroTouchMarketing",
+      "base_port": 36600,
+      "port_range": "36600-36699",
+      "tier": 99
+    }
+  },
+  "reserved_ranges": {
+    "infrastructure": {
+      "postgres": 5432,
+      "redis": 6379,
+      "kafka": 9092,
+      "keycloak": 9080
+    },
+    "portal": {
+      "medinovai-os-portal": 3000
+    }
+  },
+  "metadata": {
+    "total_assignments": 286,
+    "port_range_start": 8100,
+    "port_range_end": 36699
+  }
+}

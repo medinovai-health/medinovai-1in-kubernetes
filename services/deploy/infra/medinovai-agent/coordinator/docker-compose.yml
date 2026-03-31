@@ -1,0 +1,92 @@
+version: "3.9"
+# =============================================================================
+# MedinovAI Coordinator — Docker Compose
+# =============================================================================
+# Runs the coordinator server with PostgreSQL + Cloudflare Tunnel.
+# Accessible on:
+#   - LAN:       http://0.0.0.0:8435
+#   - Tailscale: http://<tailscale-ip>:8435
+#   - Internet:  https://agent.medinovai.com  (via Cloudflare Tunnel)
+#
+# Usage:
+#   cp .env.example .env        # fill in secrets
+#   docker compose up -d
+#   docker compose logs -f coordinator
+# =============================================================================
+
+services:
+
+  coordinator:
+    build: .
+    image: medinovai/coordinator:latest
+    container_name: medinovai-coordinator
+    restart: unless-stopped
+    ports:
+      - "8435:8435"
+    environment:
+      - PORT=8435
+      - HOST=0.0.0.0
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - ENV=${ENV:-production}
+      - MEDINOVAI_JOIN_TOKEN=${MEDINOVAI_JOIN_TOKEN}
+      - MEDINOVAI_ADMIN_TOKEN=${MEDINOVAI_ADMIN_TOKEN}
+      - MEDINOVAI_HMAC_SECRET=${MEDINOVAI_HMAC_SECRET}
+      - DATABASE_URL=postgresql://medinovai:${DB_PASSWORD}@postgres:5432/medinovai
+      - MATTERMOST_WEBHOOK_URL=${MATTERMOST_WEBHOOK_URL:-}
+      - MATTERMOST_CHANNEL=${MATTERMOST_CHANNEL:-medinovai-agents}
+      - CURRENT_AGENT_VERSION=${CURRENT_AGENT_VERSION:-1.0.0}
+      - AGENT_DOWNLOAD_URL=${AGENT_DOWNLOAD_URL:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python3", "-c",
+             "import urllib.request; urllib.request.urlopen('http://localhost:8435/v1/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    networks:
+      - medinovai-net
+    labels:
+      - "com.medinovai.service=coordinator"
+      - "com.medinovai.version=${CURRENT_AGENT_VERSION:-1.0.0}"
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: medinovai-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=medinovai
+      - POSTGRES_USER=medinovai
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+    volumes:
+      - medinovai-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U medinovai"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - medinovai-net
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: medinovai-cloudflared
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    environment:
+      - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
+    depends_on:
+      - coordinator
+    networks:
+      - medinovai-net
+    profiles:
+      - cloudflare   # only start with: docker compose --profile cloudflare up -d
+
+volumes:
+  medinovai-pgdata:
+    driver: local
+
+networks:
+  medinovai-net:
+    driver: bridge

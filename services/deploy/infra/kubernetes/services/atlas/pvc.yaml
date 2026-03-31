@@ -1,0 +1,38 @@
+# ─── Atlas PersistentVolumeClaims ─────────────────────────────────────────────
+# These PVCs are populated by the atlas-bootstrap initContainer inside the
+# atlas-agent Deployment.  They replace the host-side ~/.atlas/ dependency.
+#
+# atlas-config-pvc      — atlas.json, .env, workspace template files (1 Gi)
+# atlas-workspaces-pvc  — agent workspace dirs: logs, outputs, state, audit (5 Gi)
+# ─────────────────────────────────────────────────────────────────────────────
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: atlas-config-pvc
+  namespace: medinovai-atlas
+  labels:
+    app.kubernetes.io/name: atlas-agent
+    app.kubernetes.io/component: config
+    app.kubernetes.io/part-of: medinovai
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: atlas-workspaces-pvc
+  namespace: medinovai-atlas
+  labels:
+    app.kubernetes.io/name: atlas-agent
+    app.kubernetes.io/component: workspaces
+    app.kubernetes.io/part-of: medinovai
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi

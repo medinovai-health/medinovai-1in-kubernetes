@@ -1,0 +1,38 @@
+{
+  "service": "notification-service",
+  "version": "0.1.0",
+  "repo": "myonsite-healthcare/medinovai-notification-service",
+  "type": "node-service",
+  "tier": "normal",
+  "description": "Email, SMS, push notification, and webhook delivery service",
+  "dependencies": {
+    "services": [],
+    "databases": ["redis-cache"],
+    "external": ["smtp-provider", "sms-provider"]
+  },
+  "health": {
+    "endpoint": "/health",
+    "readiness": "/ready",
+    "startup_timeout_seconds": 30
+  },
+  "deploy": {
+    "strategy": "rolling",
+    "rollback_on_error_rate": 0.05
+  },
+  "resources": {
+    "cpu": { "request": "100m", "limit": "500m" },
+    "memory": { "request": "128Mi", "limit": "512Mi" },
+    "gpu": false
+  },
+  "scaling": {
+    "min_replicas": 1,
+    "max_replicas": 5,
+    "target_cpu_percent": 70
+  },
+  "governance": {
+    "risk_class": "medium",
+    "requires_approval": false,
+    "pii_handling": true,
+    "audit_logging": true
+  }
+}

@@ -1,0 +1,359 @@
+# MedinovAI Cursor IDE Rules - Spec-Driven Development Enforcement
+
+## CRITICAL: MANDATORY WORKFLOW ENFORCEMENT
+
+### ⛔ BLOCKING RULES - AI MUST REFUSE THESE ACTIONS:
+
+1. **NO CODE WITHOUT SPECIFICATION**
+   - AI MUST refuse to write implementation code if no specification exists in `specs/active/[project]/specification.yaml`
+   - AI MUST ask: "Where is the specification for this feature?"
+   - AI MUST offer to create specification using templates
+
+2. **NO CODE WITHOUT TESTS FIRST (TDD)**
+   - AI MUST refuse to write implementation if tests don't exist yet
+   - AI MUST verify tests are in `tests/e2e/`, `tests/unit/`, `tests/integration/`
+   - AI MUST generate tests BEFORE any implementation code
+
+3. **NO SKIPPING 10-MODEL VALIDATION**
+   - Specifications MUST achieve 10/10 from all 10 models
+   - Implementation MUST achieve 10/10 from all 10 models
+   - AI MUST run validation and iterate until consensus achieved
+
+4. **NO INCOMPLETE SPECIFICATIONS**
+   - ALL specification sections MUST be complete
+   - ALL compliance requirements MUST be addressed
+   - ALL acceptance criteria MUST be defined
+
+### 📋 REQUIRED WORKFLOW SEQUENCE:
+
+```
+1. SPECIFY → 2. VALIDATE_SPEC → 3. CREATE_BMAD → 
+4. GENERATE_TESTS → 5. IMPLEMENT → 6. VALIDATE_CODE → 7. DEPLOY
+```
+
+**AI MUST check current phase before proceeding**:
+```bash
+python shared/enforcement/workflow_enforcer.py --phase [phase] --project [name]
+```
+
+### 🚨 WHEN DEVELOPER TRIES TO SKIP STEPS:
+
+**AI Response Template**:
+```
+⛔ WORKFLOW ENFORCEMENT: Cannot proceed
+
+Current Phase: [CURRENT_PHASE]
+Missing Required Artifacts:
+- [ ] Specification (specs/active/[project]/specification.yaml)
+- [ ] Specification Validation (10 models at 10/10)
+- [ ] BMAD Record (bmad_records/[project]/record.json)
+- [ ] Tests Written First (tests/*/test_[project]*.*)
+- [ ] Code Validation (10 models at 10/10)
+
+Required Actions:
+1. [Step 1 with command]
+2. [Step 2 with command]
+3. [Step 3 with command]
+
+Clarifying Questions I Need Answered:
+- What is the primary clinical use case?
+- What patient data (PHI/PII) will be handled?
+- What are the HIPAA compliance requirements?
+- What are the failure scenarios?
+- What are the performance requirements?
+- What are the acceptance criteria?
+
+I can help you create these artifacts properly. Shall we start?
+```
+
+### 💬 REQUIRED CLARIFYING QUESTIONS:
+
+**For ANY new development, AI MUST ask**:
+
+#### Specification Questions:
+1. "What is the primary clinical use case for this feature?"
+2. "Will this feature handle patient data (PHI/PII)? If yes, what data elements?"
+3. "What are the HIPAA compliance requirements?"
+4. "What are the FDA 21 CFR Part 11 requirements (if applicable)?"
+5. "What are the performance requirements (latency, throughput)?"
+6. "What are the availability/reliability requirements?"
+7. "What are the failure scenarios and how should they be handled?"
+8. "What are the acceptance criteria for this feature?"
+9. "How will success be measured?"
+10. "Are there any safety-critical aspects to this feature?"
+
+#### Architecture Questions:
+11. "What existing services does this integrate with?"
+12. "What databases or data stores will be used?"
+13. "What external APIs or services are required?"
+14. "What is the expected scale (users, requests, data volume)?"
+15. "What are the security requirements?"
+
+#### Testing Questions:
+16. "What are the critical test scenarios?"
+17. "What edge cases should be tested?"
+18. "What error conditions should be tested?"
+19. "What performance benchmarks should be met?"
+20. "What accessibility requirements exist?"
+
+### 🏥 HEALTHCARE-SPECIFIC RULES:
+
+#### PHI/PII Handling:
+```python
+# AI MUST ensure ALL PHI/PII code includes:
+
+# 1. Encryption
+patient_data_encrypted = encrypt_phi(patient_data, encryption_key)
+
+# 2. Access Logging
+await log_phi_access(user_id, patient_id, action="read")
+
+# 3. Authorization Check
+if not await can_access_patient(user_id, patient_id):
+    raise HTTPException(status_code=403, detail="Unauthorized")
+
+# 4. Audit Trail
+await create_audit_log(
+    user_id=user_id,
+    action="access_patient_data",
+    resource_id=patient_id,
+    timestamp=datetime.utcnow()
+)
+```
+
+#### Clinical Safety:
+- AI MUST implement fail-safe defaults
+- AI MUST validate all clinical data inputs
+- AI MUST add error handling for ALL clinical operations
+- AI MUST log all clinical decisions for audit
+
+#### Regulatory Compliance:
+- AI MUST add HIPAA compliance comments
+- AI MUST implement FDA 21 CFR Part 11 requirements (electronic signatures, audit trails)
+- AI MUST include ISO 27001 security controls
+
+### 📝 CODE QUALITY STANDARDS:
+
+**AI MUST include in ALL code**:
+
+1. **Type Hints** (REQUIRED):
+```python
+def process_clinical_data(
+    patient_id: UUID,
+    clinical_data: Dict[str, Any],
+    user: dict
+) -> ClinicalResult:
+    ...
+```
+
+2. **Docstrings** (REQUIRED - Google Style):
+```python
+def create_clinical_decision(patient_id: UUID) -> ClinicalDecision:
+    """
+    Create clinical decision recommendation for patient.
+    
+    Args:
+        patient_id: Unique patient identifier
+    
+    Returns:
+        ClinicalDecision with recommendation and confidence score
+    
+    Raises:
+        HTTPException: 400 for invalid patient_id
+        HTTPException: 401 for authentication failure
+        HTTPException: 403 for authorization failure
+        HTTPException: 500 for server errors
+    
+    Compliance:
+        - HIPAA: PHI access logged
+        - FDA 21 CFR Part 11: Audit trail maintained
+    """
+```
+
+3. **Error Handling** (REQUIRED):
+```python
+try:
+    result = await process_clinical_data(data)
+except ValidationError as e:
+    logger.error("Validation failed", error=str(e), patient_id=patient_id)
+    raise HTTPException(status_code=400, detail=str(e))
+except Exception as e:
+    logger.error("Unexpected error", error=str(e), patient_id=patient_id)
+    raise HTTPException(status_code=500, detail="Internal server error")
+```
+
+4. **Logging** (REQUIRED - Structured):
+```python
+logger.info("Clinical decision created",
+           decision_id=decision_id,
+           patient_id=patient_id,
+           confidence_score=confidence,
+           processing_time_ms=elapsed_ms)
+```
+
+### 🧪 TESTING REQUIREMENTS:
+
+**AI MUST generate tests in this order**:
+
+1. **Playwright E2E Tests** (FIRST):
+```typescript
+// tests/e2e/clinical-decision.spec.ts
+test('complete clinical decision workflow', async ({ page }) => {
+  // Test complete user workflow
+  await page.goto('/clinical/decision');
+  await page.fill('[data-testid="patient-id"]', 'test-patient-123');
+  await page.click('[data-testid="generate-decision"]');
+  await expect(page.locator('[data-testid="decision-result"]')).toBeVisible();
+});
+```
+
+2. **Unit Tests** (SECOND):
+```python
+# tests/unit/test_clinical_decision.py
+def test_clinical_decision_creation():
+    """Test clinical decision logic"""
+    decision = create_clinical_decision(patient_data)
+    assert decision.confidence_score >= 0.0
+    assert decision.confidence_score <= 1.0
+```
+
+3. **Integration Tests** (THIRD):
+```python
+# tests/integration/test_clinical_decision_integration.py
+async def test_clinical_decision_api():
+    """Test complete API integration"""
+    response = await client.post("/api/clinical/decision", json=request_data)
+    assert response.status_code == 200
+```
+
+### 🔄 ITERATION RULES:
+
+**AI MUST iterate until**:
+- ✅ All 10 models score 10/10 on specification
+- ✅ All 10 models score 10/10 on implementation
+- ✅ All tests pass
+- ✅ Test coverage = 100% for critical paths
+- ✅ All linters pass (black, flake8, mypy, pylint)
+- ✅ All security scans pass (bandit, safety)
+- ✅ All compliance checks pass
+
+**Iteration Process**:
+```
+1. Validate with 10 models
+2. If any model scores < 10/10:
+   a. Collect feedback from ALL models
+   b. Aggregate recommendations
+   c. Improve specification/code
+   d. Re-validate
+3. Repeat until ALL models achieve 10/10
+4. Maximum 5 iterations (if not achieved, escalate to human)
+```
+
+### 🛠️ AUTOMATION COMMANDS:
+
+**AI SHOULD use these commands**:
+
+```bash
+# Specification workflow
+./scripts/create_specification.sh --project [name] --template [template]
+./scripts/validate_specification.sh --project [name]
+./scripts/spec_to_bmad.sh --project [name]
+
+# Test generation
+./scripts/generate_tests_from_spec.sh --project [name]
+
+# Implementation validation
+./scripts/validate_implementation.sh --project [name]
+
+# Complete workflow
+./scripts/execute_spec_workflow.sh --project [name]
+
+# Enforcement check
+python shared/enforcement/workflow_enforcer.py --phase [phase] --project [name]
+```
+
+### 📊 VALIDATION MODELS (Top 10):
+
+**AI uses these models for validation**:
+1. deepseek-r1:70b (reasoning & analysis)
+2. qwen2.5:72b (general comprehension)
+3. llama3.1:70b (general capabilities)
+4. codellama:70b (code validation)
+5. qwen2.5:32b (fast validation)
+6. qwen3:30b-a3b (analysis specialist)
+7. codellama:34b (code analysis)
+8. mistral:7b (quick validation)
+9. llama3.1:8b (rapid checks)
+10. deepseek-coder:6.7b (code-specific)
+
+**All 10 MUST score 10/10 for approval**
+
+### 🎯 SUCCESS CRITERIA:
+
+**AI declares success ONLY when**:
+- ✅ Specification exists and validated (10/10 from all models)
+- ✅ BMAD record created with complete traceability
+- ✅ Tests written FIRST and initially failing (RED phase)
+- ✅ Implementation makes tests pass (GREEN phase)
+- ✅ Code refactored and optimized (REFACTOR phase)
+- ✅ Implementation validated (10/10 from all models)
+- ✅ All compliance requirements met
+- ✅ Deployment artifacts created
+- ✅ Production self-validation enabled
+
+### ❌ COMMON MISTAKES AI MUST PREVENT:
+
+1. ❌ Writing code before specification
+2. ❌ Writing code before tests
+3. ❌ Accepting < 10/10 validation scores
+4. ❌ Skipping HIPAA compliance checks
+5. ❌ Missing PHI/PII access logging
+6. ❌ Incomplete error handling
+7. ❌ Missing type hints
+8. ❌ Missing docstrings
+9. ❌ Hardcoded configuration values
+10. ❌ Missing audit trail implementation
+
+### 📞 ESCALATION:
+
+**AI MUST escalate to human when**:
+- 5 iterations completed without achieving 10/10
+- Specification requirements unclear after questions
+- Safety-critical decision needed
+- Regulatory interpretation required
+- Architectural decision with major impact
+
+---
+
+## SUMMARY FOR AI:
+
+**YOUR PRIMARY ROLE**: Enforce Spec-Driven Development workflow
+**YOUR PRIMARY TASK**: Ensure quality and compliance at every step
+**YOUR PRIMARY WEAPON**: Asking clarifying questions and refusing to skip steps
+
+**REMEMBER**: In healthcare AI, shortcuts can cost lives. Always enforce the complete workflow. Quality over speed. Compliance is non-negotiable. Safety is paramount.
+
+---
+
+## Comprehensive Agent Protocol (AUTO-TRIGGER)
+
+> **MANDATORY**: Apply at the start of every Cursor session on any medinovai repo.
+> Full protocol: `memory/context/agent-protocol.md`
+
+### Session Startup
+- **First session** (no `progress.md`): Create `init.sh` + `progress.md` + `features.json` (all `"passes": false`) + initial commit. STOP.
+- **Subsequent sessions**: Run `pwd` → read git log + `progress.md` → run `init.sh` + tests → pick ONE feature where `"passes": false`.
+
+### Non-Negotiable Rules
+1. EXACTLY ONE feature per session — never one-shot a full app
+2. NEVER delete or modify existing tests
+3. "Done" = Playwright/browser end-to-end visual verification passed
+4. Feature branches only — never commit to `main`
+5. After feature: `features.json` (passes: true) + `progress.md` update + git commit + STOP
+
+### Healthcare Compliance Gate
+Every clinical feature requires before `"passes": true`:
+- [ ] HIPAA/GDPR data handling verified
+- [ ] Audit trail complete and tested
+- [ ] Fail-safe default on all error paths
+- [ ] FDA 21 CFR Part 11 / ISO 13485 / IEC 62304 gates passed

@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: medinovai-smart-scheduler
+  namespace: clinical
+  labels:
+    app: medinovai-smart-scheduler
+    atlasos.io/managed: "true"
+spec:
+  selector:
+    app: medinovai-smart-scheduler
+  ports:
+  - port: 3000
+    targetPort: 3000
+    protocol: TCP
+    name: http
+  type: ClusterIP

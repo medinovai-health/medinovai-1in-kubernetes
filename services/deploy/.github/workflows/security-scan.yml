@@ -1,0 +1,95 @@
+name: Security Scan
+
+on:
+  schedule:
+    - cron: "0 6 * * *"
+  pull_request:
+    branches: [main, develop]
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  secret-scan:
+    name: Secret Exposure Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: TruffleHog Scan
+        uses: trufflesecurity/trufflehog@main
+        with:
+          extra_args: --only-verified
+
+  dependency-scan:
+    name: Dependency Vulnerability Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Check Python dependencies
+        run: |
+          if [ -f requirements.txt ]; then
+            pip install safety
+            safety check -r requirements.txt || true
+          fi
+          echo "Python dependency scan complete."
+
+      - name: Check Node dependencies
+        run: |
+          if [ -f package.json ]; then
+            npm audit --audit-level=high || true
+          fi
+          echo "Node dependency scan complete."
+
+  container-scan:
+    name: Container Image Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Trivy
+        run: |
+          sudo apt-get install -y wget apt-transport-https gnupg lsb-release
+          wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
+          echo deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main | sudo tee -a /etc/apt/sources.list.d/trivy.list
+          sudo apt-get update
+          sudo apt-get install -y trivy
+
+      - name: Scan Dockerfiles
+        run: |
+          echo "Scanning Dockerfiles for vulnerabilities..."
+          for dockerfile in $(find infra/docker -name 'Dockerfile' 2>/dev/null); do
+            echo "Scanning $dockerfile..."
+            trivy config "$dockerfile" || true
+          done
+
+      - name: Scan IaC for misconfigurations
+        run: |
+          echo "Scanning infrastructure code..."
+          trivy config infra/ || true
+
+  iac-security:
+    name: IaC Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install tfsec
+        run: |
+          curl -s https://raw.githubusercontent.com/aquasecurity/tfsec/master/scripts/install_linux.sh | bash
+
+      - name: Run tfsec
+        run: |
+          if [ -d "infra/terraform" ]; then
+            tfsec infra/terraform/ --soft-fail || true
+          fi
+          echo "IaC security scan complete."

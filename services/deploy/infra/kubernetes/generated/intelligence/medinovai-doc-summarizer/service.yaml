@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: medinovai-doc-summarizer
+  namespace: intelligence
+  labels:
+    app: medinovai-doc-summarizer
+    atlasos.io/managed: "true"
+spec:
+  selector:
+    app: medinovai-doc-summarizer
+  ports:
+  - port: 8000
+    targetPort: 8000
+    protocol: TCP
+    name: http
+  type: ClusterIP

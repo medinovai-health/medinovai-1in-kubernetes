@@ -1,0 +1,6 @@
+# Phase AA: AtlasOS Integration Tests
+# Install: pip install -r tests/integration/requirements.txt
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+httpx>=0.24.0
+pytest-timeout>=2.1.0

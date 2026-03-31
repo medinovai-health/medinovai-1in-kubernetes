@@ -1,0 +1,49 @@
+# Production: enforce stricter PDB for high availability
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: api-gateway
+  namespace: medinovai-services
+spec:
+  minAvailable: 2
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: auth-service
+  namespace: medinovai-services
+spec:
+  minAvailable: 2
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: clinical-engine
+  namespace: medinovai-services
+spec:
+  minAvailable: 2
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: data-pipeline
+  namespace: medinovai-services
+spec:
+  minAvailable: 2
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: ai-inference
+  namespace: medinovai-ai
+spec:
+  minAvailable: 1
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: notification-service
+  namespace: medinovai-services
+spec:
+  minAvailable: 1

@@ -1,0 +1,137 @@
+# MedinovAI Platform — Governance Layer
+# Governance runtime, security mesh, change authority, compliance,
+# AI guardian, rule compiler.
+
+services:
+
+  governance-runtime:
+    build:
+      context: ${ATLASOS_ROOT:-../../../AtlasOS}
+      dockerfile: services/governance-runtime/Dockerfile
+    ports:
+      - "${GOVERNANCE_RUNTIME_PORT:-8208}:8208"
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-atlasos}:${DB_PASSWORD}@atlasos-db:5432/atlasos
+      EVENT_BUS_URL: http://event-bus:8088
+      STORAGE_BACKEND: ${GOV_STORAGE_BACKEND:-postgresql}
+      EXPLAINABILITY_URL: http://ai-guardian:8221
+      APPROVAL_CHANNEL: "#ceo-approvals"
+      MATTERMOST_CONNECTOR_URL: http://mattermost-connector:8089
+    depends_on:
+      atlasos-db:
+        condition: service_healthy
+      event-bus:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8208/health')"]
+      interval: 10s
+      retries: 5
+    restart: unless-stopped
+
+  ai-guardian:
+    build:
+      context: ${ATLASOS_ROOT:-../../../AtlasOS}
+      dockerfile: services/ai-guardian/Dockerfile
+    ports:
+      - "${AI_GUARDIAN_PORT:-8221}:8221"
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-atlasos}:${DB_PASSWORD}@atlasos-db:5432/atlasos
+      EVENT_BUS_URL: http://event-bus:8088
+      PORT: "8221"
+      STORAGE_BACKEND: postgresql
+      SELF_LEARNING_URL: http://self-learning:8240
+    depends_on:
+      atlasos-db:
+        condition: service_healthy
+      event-bus:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8221/health')"]
+      interval: 10s
+      retries: 5
+    restart: unless-stopped
+
+  security-mesh:
+    build:
+      context: ${ATLASOS_ROOT:-../../../AtlasOS}
+      dockerfile: services/security-mesh/Dockerfile
+    ports:
+      - "${SECURITY_MESH_PORT:-8207}:8207"
+    environment:
+      EVENT_BUS_URL: http://event-bus:8088
+      AUDIT_SERVICE_URL: http://audit-chain:8084
+    depends_on:
+      event-bus:
+        condition: service_healthy
+      audit-chain:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8207/health')"]
+      interval: 10s
+      retries: 5
+    restart: unless-stopped
+
+  change-authority:
+    build:
+      context: ${ATLASOS_ROOT:-../../../AtlasOS}
+      dockerfile: services/change-authority/Dockerfile
+    ports:
+      - "${CHANGE_AUTHORITY_PORT:-8292}:8292"
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-atlasos}:${DB_PASSWORD}@atlasos-db:5432/atlasos
+      EVENT_BUS_URL: http://event-bus:8088
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: ${KEYCLOAK_REALM:-medinov-ai}
+      AUTH_ENABLED: ${AUTH_ENABLED:-true}
+      CHANGE_AUTHORITY_PORT: "8292"
+    depends_on:
+      atlasos-db:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8292/health')"]
+      interval: 10s
+      retries: 5
+    restart: unless-stopped
+
+  compliance-platform:
+    build:
+      context: ${ATLASOS_ROOT:-../../../AtlasOS}
+      dockerfile: services/compliance-platform/Dockerfile
+    ports:
+      - "${COMPLIANCE_PLATFORM_PORT:-8220}:8220"
+    environment:
+      EVENT_BUS_URL: http://event-bus:8088
+      PORT: "8220"
+      AUDIT_SERVICE_URL: http://audit-chain:8084
+    depends_on:
+      event-bus:
+        condition: service_healthy
+      audit-chain:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8220/health')"]
+      interval: 10s
+      retries: 5
+    restart: unless-stopped
+
+  rule-compiler:
+    build:
+      context: ${ATLASOS_ROOT:-../../../AtlasOS}
+      dockerfile: services/rule-compiler/Dockerfile
+    ports:
+      - "${RULE_COMPILER_PORT:-8211}:8211"
+    environment:
+      EVENT_BUS_URL: http://event-bus:8088
+      AUDIT_SERVICE_URL: http://audit-chain:8084
+    depends_on:
+      event-bus:
+        condition: service_healthy
+      audit-chain:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8211/health')"]
+      interval: 10s
+      retries: 5
+    restart: unless-stopped

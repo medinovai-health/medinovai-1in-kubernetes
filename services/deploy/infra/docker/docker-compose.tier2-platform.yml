@@ -1,0 +1,164 @@
+# MedinovAI Deploy — Tier 2: Platform Core Services
+# Service registry, data layer, messaging, API gateway, notifications.
+# Requires: Tier 0 + Tier 1 running.
+#
+# Usage:
+#   docker compose -f infra/docker/docker-compose.tier2-platform.yml up -d
+#   docker compose -f infra/docker/docker-compose.tier2-platform.yml build
+#
+# Image resolution: set REGISTRY= (empty) in .env to use locally-built <name>:latest images.
+
+services:
+  medinovai-registry:
+    image: ${REGISTRY:-}${REGISTRY:+/}medinovai-registry:${TAG:-latest}
+    build:
+      context: ${REPOS_BASE:-../../repos}/medinovai-registry
+      dockerfile: Dockerfile
+    container_name: medinovai-registry
+    environment:
+      DATABASE_URL: postgresql://medinovai:${POSTGRES_PASSWORD:-medinovai_dev}@medinovai-postgres-primary:5432/medinovai_main
+      REDIS_URL: redis://:${REDIS_PASSWORD:-medinovai_dev}@medinovai-redis:6379
+      SECURITY_SERVICE_URL: http://medinovai-security:9000
+      PORT: 8080
+    ports:
+      - "10100:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - medinovai-network
+
+  medinovai-data-services:
+    image: ${REGISTRY:-}${REGISTRY:+/}medinovai-data-services:${TAG:-latest}
+    build:
+      context: ${REPOS_BASE:-../../repos}/medinovai-data-services
+      dockerfile: Dockerfile
+    container_name: medinovai-data-services
+    environment:
+      DATABASE_URL: postgresql://medinovai:${POSTGRES_PASSWORD:-medinovai_dev}@medinovai-postgres-primary:5432/medinovai_main
+      CLINICAL_DATABASE_URL: postgresql://medinovai:${POSTGRES_PASSWORD:-medinovai_dev}@medinovai-postgres-clinical:5432/medinovai_clinical
+      REDIS_URL: redis://:${REDIS_PASSWORD:-medinovai_dev}@medinovai-redis:6379
+      SECURITY_SERVICE_URL: http://medinovai-security:9000
+      PORT: 8000
+    ports:
+      - "10101:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - medinovai-network
+
+  medinovai-real-time-stream-bus:
+    image: ${REGISTRY:-}${REGISTRY:+/}medinovai-real-time-stream-bus:${TAG:-latest}
+    build:
+      context: ${REPOS_BASE:-../../repos}/medinovai-real-time-stream-bus
+      dockerfile: Dockerfile
+    container_name: medinovai-stream-bus
+    environment:
+      KAFKA_BROKERS: medinovai-kafka:29092
+      REDIS_URL: redis://:${REDIS_PASSWORD:-medinovai_dev}@medinovai-redis:6379
+      SECURITY_SERVICE_URL: http://medinovai-security:9000
+      PORT: 3000
+    ports:
+      - "10102:3000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:3000/health/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - medinovai-network
+
+  medinovai-notification-center:
+    image: ${REGISTRY:-}${REGISTRY:+/}medinovai-notification-center:${TAG:-latest}
+    build:
+      context: ${REPOS_BASE:-../../repos}/medinovai-notification-center
+      dockerfile: Dockerfile
+    container_name: medinovai-notification-center
+    environment:
+      DATABASE_URL: postgresql://medinovai:${POSTGRES_PASSWORD:-medinovai_dev}@medinovai-postgres-primary:5432/medinovai_main
+      REDIS_URL: redis://:${REDIS_PASSWORD:-medinovai_dev}@medinovai-redis:6379
+      RABBITMQ_URL: amqp://medinovai:${RABBITMQ_PASSWORD:-medinovai_dev}@medinovai-rabbitmq:5672
+      SECURITY_SERVICE_URL: http://medinovai-security:9000
+      PORT: 8080
+    ports:
+      - "10103:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - medinovai-network
+
+  medinovai-aifactory:
+    image: ${REGISTRY:-}${REGISTRY:+/}medinovai-aifactory:${TAG:-latest}
+    build:
+      context: ${REPOS_BASE:-../../repos}/medinovai-aifactory
+      dockerfile: Dockerfile
+    container_name: medinovai-aifactory
+    environment:
+      DATABASE_URL: postgresql://medinovai:${POSTGRES_PASSWORD:-medinovai_dev}@medinovai-postgres-primary:5432/medinovai_main
+      REDIS_URL: redis://:${REDIS_PASSWORD:-medinovai_dev}@medinovai-redis:6379
+      SECURITY_SERVICE_URL: http://medinovai-security:9000
+      PORT: 8000
+    ports:
+      - "10104:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - medinovai-network
+
+  medinovai-api-gateway:
+    image: ${REGISTRY:-}${REGISTRY:+/}medinovai-api-gateway:${TAG:-latest}
+    build:
+      context: ${REPOS_BASE:-../../repos}/medinovai-api-gateway
+      dockerfile: Dockerfile
+    container_name: medinovai-api-gateway
+    environment:
+      SECURITY_SERVICE_URL: http://medinovai-security:9000
+      RBAC_SERVICE_URL: http://medinovai-role-based-permissions:8000
+      REGISTRY_URL: http://medinovai-registry:8080
+      PORT: 8080
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - medinovai-network
+
+  medinovai-atlas-engine:
+    image: ${REGISTRY:-}${REGISTRY:+/}medinovai-atlas-engine:${TAG:-latest}
+    build:
+      context: ${REPOS_BASE:-../../repos}/medinovai-atlas-engine
+      dockerfile: Dockerfile
+    container_name: medinovai-atlas-engine
+    environment:
+      DATABASE_URL: postgresql://medinovai:${POSTGRES_PASSWORD:-medinovai_dev}@medinovai-postgres-primary:5432/medinovai_main
+      REDIS_URL: redis://:${REDIS_PASSWORD:-medinovai_dev}@medinovai-redis:6379
+      SECURITY_SERVICE_URL: http://medinovai-security:9000
+      REGISTRY_URL: http://medinovai-registry:8080
+      PORT: 8000
+    ports:
+      - "10106:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - medinovai-network
+
+networks:
+  medinovai-network:
+    external: true

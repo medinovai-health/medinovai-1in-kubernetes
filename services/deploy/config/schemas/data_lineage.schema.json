@@ -1,0 +1,232 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://medinovai.com/schemas/data-lineage/v1.0.0",
+  "title": "MedinovAI Data Lineage Record",
+  "description": "Complete audit trail showing where data came from and how it shaped model behavior. Governance control GOV-07.",
+  "type": "object",
+  "required": ["lineage_version", "data_source_id", "source_type", "collection_method", "created_at"],
+  "properties": {
+    "lineage_version": {
+      "type": "string",
+      "description": "Schema version.",
+      "const": "1.0.0"
+    },
+    "data_source_id": {
+      "type": "string",
+      "pattern": "^DS-[A-Z0-9]{3,20}$",
+      "description": "Unique identifier for this data source. Format: DS-<ALPHANUMERIC>. Example: DS-LABRESULTS001."
+    },
+    "source_name": {
+      "type": "string",
+      "description": "Human-readable name of the data source."
+    },
+    "source_type": {
+      "type": "string",
+      "enum": [
+        "ehr",
+        "lab_system",
+        "imaging_system",
+        "patient_reported",
+        "wearable_device",
+        "claims_data",
+        "registry",
+        "public_dataset",
+        "synthetic",
+        "vendor_api",
+        "internal_pipeline",
+        "manual_entry",
+        "other"
+      ],
+      "description": "Category of data source."
+    },
+    "collection_method": {
+      "type": "string",
+      "enum": [
+        "automated_etl",
+        "api_pull",
+        "api_push",
+        "file_transfer",
+        "streaming",
+        "manual_upload",
+        "web_scrape",
+        "direct_query",
+        "other"
+      ],
+      "description": "How data is collected from the source."
+    },
+    "data_classification": {
+      "type": "string",
+      "enum": ["public", "internal", "confidential", "phi"],
+      "description": "Sensitivity classification of the data."
+    },
+    "consent_basis": {
+      "type": "string",
+      "enum": [
+        "patient_consent",
+        "treatment_operations_payment",
+        "research_irb_approved",
+        "public_health",
+        "legal_requirement",
+        "deidentified",
+        "synthetic",
+        "not_applicable"
+      ],
+      "description": "Legal basis for collecting and using this data."
+    },
+    "consent_reference": {
+      "type": "string",
+      "description": "Reference to the consent document, IRB approval, or legal authority."
+    },
+    "retention_policy": {
+      "type": "object",
+      "description": "Data retention and disposal rules.",
+      "properties": {
+        "retention_period": {
+          "type": "string",
+          "description": "How long data is retained. Examples: '7 years', '10 years post-study', 'indefinite'."
+        },
+        "disposal_method": {
+          "type": "string",
+          "enum": ["secure_deletion", "anonymization", "archival", "not_applicable"],
+          "description": "How data is disposed of after retention period."
+        },
+        "regulatory_basis": {
+          "type": "string",
+          "description": "Regulation requiring this retention period. Examples: 'HIPAA 6-year minimum', '21 CFR Part 11'."
+        }
+      }
+    },
+    "transformations": {
+      "type": "array",
+      "description": "Ordered list of transformations applied to this data, from raw source to model-ready state.",
+      "items": {
+        "type": "object",
+        "required": ["step", "tool", "timestamp", "input_hash", "output_hash"],
+        "properties": {
+          "step": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Sequential step number in the transformation pipeline."
+          },
+          "step_name": {
+            "type": "string",
+            "description": "Human-readable name of this transformation step."
+          },
+          "tool": {
+            "type": "string",
+            "description": "Tool or script that performed this transformation. Examples: 'etl-pipeline-v2', 'deidentification-service', 'feature-engineering-script'."
+          },
+          "tool_version": {
+            "type": "string",
+            "description": "Version of the tool used."
+          },
+          "description": {
+            "type": "string",
+            "description": "What this transformation does in plain language."
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When this transformation was executed."
+          },
+          "input_hash": {
+            "type": "string",
+            "description": "SHA-256 hash of the input data to this step. Enables integrity verification."
+          },
+          "output_hash": {
+            "type": "string",
+            "description": "SHA-256 hash of the output data from this step."
+          },
+          "input_record_count": {
+            "type": "integer",
+            "description": "Number of records entering this step."
+          },
+          "output_record_count": {
+            "type": "integer",
+            "description": "Number of records after this step."
+          },
+          "records_filtered": {
+            "type": "integer",
+            "description": "Number of records removed during this step (difference between input and output)."
+          },
+          "filter_reason": {
+            "type": "string",
+            "description": "Why records were filtered, if any."
+          },
+          "phi_handling": {
+            "type": "string",
+            "enum": ["none", "redacted", "tokenized", "encrypted", "deidentified", "anonymized"],
+            "description": "How PHI was handled in this step."
+          }
+        }
+      }
+    },
+    "consuming_models": {
+      "type": "array",
+      "description": "Models that consume this data source for training or inference.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "model_id": {
+            "type": "string",
+            "description": "Model ID from the Model Risk Register (GOV-01)."
+          },
+          "usage_type": {
+            "type": "string",
+            "enum": ["training", "validation", "inference", "fine_tuning", "evaluation"],
+            "description": "How the model uses this data."
+          },
+          "data_version": {
+            "type": "string",
+            "description": "Version or snapshot of the data used by this model."
+          },
+          "first_used": {
+            "type": "string",
+            "format": "date",
+            "description": "When this model first consumed this data source."
+          }
+        }
+      }
+    },
+    "quality_metrics": {
+      "type": "object",
+      "description": "Data quality metrics for this source.",
+      "properties": {
+        "completeness_pct": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Percentage of non-null values in required fields."
+        },
+        "freshness_sla": {
+          "type": "string",
+          "description": "Maximum acceptable age of data. Examples: '1 hour', '24 hours', '7 days'."
+        },
+        "last_updated": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When data was last refreshed from source."
+        },
+        "validation_status": {
+          "type": "string",
+          "enum": ["valid", "warning", "invalid", "unchecked"],
+          "description": "Current validation status."
+        }
+      }
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When this lineage record was created."
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When this lineage record was last updated."
+    },
+    "created_by": {
+      "type": "string",
+      "description": "Who created this lineage record."
+    }
+  }
+}

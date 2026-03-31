@@ -1,0 +1,98 @@
+# Infrastructure Conventions
+
+Coding standards and conventions for all infrastructure code in the medinovai-deploy repository.
+
+## Terraform Conventions
+
+### Module Structure
+Every Terraform module must follow this structure:
+```
+modules/<name>/
+├── main.tf           # Resource definitions
+├── variables.tf      # Input variables with descriptions + validation
+├── outputs.tf        # Exported values for downstream modules
+├── versions.tf       # Required providers + version constraints
+└── README.md         # Module documentation
+```
+
+### Naming
+- Resources: `<provider>_<resource>` with name `"${var.environment}-${var.project}-<purpose>"`
+- Variables: snake_case, descriptive, always include `description` and `type`
+- Outputs: snake_case, match the resource attribute name where possible
+- Tags: Every resource must have `Environment`, `Project`, `ManagedBy=terraform`, `CostCenter`
+
+### Variables
+- Always set `description` for every variable
+- Use `validation` blocks for critical inputs (CIDR ranges, instance types, etc.)
+- Never use default values for secrets or environment-specific values
+- Use `sensitive = true` for any variable containing credentials
+
+### State Management
+- Remote state in S3 with DynamoDB locking
+- One state file per environment per module layer
+- State bucket naming: `medinovai-terraform-state-<account-id>-<region>`
+- Lock table naming: `medinovai-terraform-lock`
+- Enable versioning and encryption on state bucket
+
+### Security
+- Never use `*` in IAM policies — always least privilege
+- Security groups default deny; explicit allow only
+- Encryption at rest for all data stores (RDS, S3, EBS, EFS)
+- Encryption in transit (TLS 1.2+ everywhere)
+- No public subnets for data stores or application services
+
+## Kubernetes Conventions
+
+### Manifests
+- Use Kustomize (not Helm) for environment overlays
+- Base manifests in `infra/kubernetes/base/` and `infra/kubernetes/services/<name>/`
+- Environment-specific patches in `infra/kubernetes/overlays/<env>/`
+
+### Resource Requirements
+- Every pod MUST have CPU and memory requests AND limits
+- Every deployment MUST have readiness and liveness probes
+- Every production deployment MUST have a PodDisruptionBudget
+- HorizontalPodAutoscaler for all stateless services
+
+### Naming
+- Namespaces: `medinovai-<domain>` (e.g., `medinovai-services`, `medinovai-data`)
+- Services: match the service manifest name
+- ConfigMaps: `<service>-config`
+- Secrets: `<service>-secrets`
+
+### Security
+- Default deny NetworkPolicies per namespace
+- Non-root containers (runAsNonRoot: true)
+- Read-only root filesystem where possible
+- No privileged containers
+- ServiceAccount per service (no default SA)
+
+## Docker Conventions
+
+### Base Images
+- Always pin exact versions (no `:latest`)
+- Use multi-stage builds (builder + runtime)
+- Non-root USER in every Dockerfile
+- HEALTHCHECK instruction in every Dockerfile
+- Minimize image size (no dev tools in production images)
+
+### Image Tagging
+- `<registry>/<service>:<git-sha>` for traceability
+- `<registry>/<service>:<semver>` for release versions
+- Never overwrite existing tags
+
+## Script Conventions
+
+### Bash Scripts
+- Start with `#!/usr/bin/env bash` and `set -euo pipefail`
+- Accept `--dry-run` flag for all destructive operations
+- Use consistent logging format with timestamps
+- Exit with meaningful codes (0=success, 1=error, 2=needs-human)
+- Support `--json` output for machine consumption
+- Checkpoint long operations for resumability
+
+### Python Scripts
+- Accept `--json-in` on stdin, output JSON to stdout
+- Include `if __name__ == "__main__"` guard
+- Use `argparse` for CLI arguments
+- Log to stderr, results to stdout

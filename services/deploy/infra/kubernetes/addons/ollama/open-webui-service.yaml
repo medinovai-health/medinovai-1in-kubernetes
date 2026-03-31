@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: open-webui
+  namespace: medinovai-ai-local
+  labels:
+    app: open-webui
+spec:
+  selector:
+    app: open-webui
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+      nodePort: 30090
+  type: NodePort

@@ -1,0 +1,132 @@
+# TEST2 — Orchestrator Brain
+# Phase 1: Deploy the AI brain first. Talk to it at http://localhost:16600
+# It will then deploy the full stack via docker-compose.TEST2-full.yml
+#
+# Deploy:
+#   docker compose -p TEST2 --env-file infra/docker/test2.env \
+#     -f infra/docker/docker-compose.TEST2-brain.yml up -d --build
+#
+# Health check:  curl http://localhost:16600/health
+# Status:        curl http://localhost:16600/api/status
+#
+# Talk to the AI deployment agent (after container is healthy):
+#   docker exec -it TEST2-orchestrator python3 /app/ai-deployment-agent/autonomous_orchestrator.py
+#
+# Port range: 16600-16603 (brain only)
+
+services:
+
+  medinovai-orchestrator:
+    build:
+      context: ${ATLASOS_PATH:-/Users/mayanktrivedi/Github/medinovai-health/medinovai-Atlas}
+      dockerfile: ${DEPLOY_REPO:-/Users/mayanktrivedi/Github/medinovai-health/medinovai-Deploy}/infra/docker/Dockerfile.TEST2-brain
+    image: medinovai/test2-orchestrator:latest
+    container_name: TEST2-orchestrator
+    hostname: test2-orchestrator
+    restart: unless-stopped
+    user: root
+
+    environment:
+      - PORT=8080
+      - SERVICE_NAME=TEST2-Orchestrator
+      - ENV=TEST2
+      - PYTHONUNBUFFERED=1
+      # Ollama — host machine (no new install needed)
+      - OLLAMA_HOST=http://host.docker.internal:11434
+      - AI_MODEL_PRIMARY=${AI_MODEL_PRIMARY:-deepseek-r1:70b}
+      - AI_MODEL_FAST=${AI_MODEL_FAST:-qwen3:8b}
+      - AI_MODEL_CODER=${AI_MODEL_CODER:-qwen3-coder:latest}
+      # GitHub / Registry
+      - GITHUB_TOKEN=${GITHUB_TOKEN:-}
+      - GITHUB_ORG=${GITHUB_ORG:-myonsite-healthcare}
+      # Deployment config
+      - DEPLOYMENT_ENV=TEST2
+      - COMPOSE_PROJECT_NAME=TEST2
+      - REPO_BASE_PATH=/repos
+      - REPO_ROOT=/app
+      - DEPLOY_REPO_PATH=/repos/medinovai-health/medinovai-Deploy
+      - VECTOR_DB_PATH=/data/chromadb
+      - CHROMADB_URL=http://test2-chromadb:8000
+      # AWS S3
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_REGION=${AWS_REGION:-us-west-1}
+      - S3_BUCKET_NAME=${S3_BUCKET_NAME:-agentos-mjt}
+      - LOG_LEVEL=INFO
+
+    ports:
+      - "16600:8080"    # UI + Health  →  http://localhost:16600
+      - "16601:8001"    # Reserved API port
+      - "16602:8002"    # Reserved metrics port
+
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock          # Brain controls Docker
+      - ${ATLASOS_PATH:-/Users/mayanktrivedi/Github/medinovai-health/medinovai-Atlas}:/app
+      - ${REPOS_PATH:-/Users/mayanktrivedi/Github}:/repos  # All repos accessible
+      - ~/.ollama:/root/.ollama:ro
+      - ~/.gitconfig:/root/.gitconfig:ro
+      - ~/.ssh:/root/.ssh:ro
+      - TEST2-orchestrator-data:/data
+
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+    networks:
+      - TEST2-network
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+    labels:
+      com.medinovai.project: TEST2
+      com.medinovai.service: orchestrator
+      com.medinovai.role: brain
+      com.medinovai.port.ui: "16600"
+      com.medinovai.managed-by: medinovai-Deploy
+
+  chromadb:
+    image: chromadb/chroma:latest
+    container_name: TEST2-chromadb
+    hostname: test2-chromadb
+    restart: unless-stopped
+
+    environment:
+      - IS_PERSISTENT=TRUE
+      - ANONYMIZED_TELEMETRY=FALSE
+
+    ports:
+      - "16603:8000"    # ChromaDB API
+
+    volumes:
+      - TEST2-chromadb-data:/chroma/chroma
+
+    networks:
+      - TEST2-network
+
+    healthcheck:
+      disable: true
+
+    labels:
+      com.medinovai.project: TEST2
+      com.medinovai.service: chromadb
+
+networks:
+  TEST2-network:
+    name: TEST2-network
+    driver: bridge
+    labels:
+      com.medinovai.project: TEST2
+
+volumes:
+  TEST2-orchestrator-data:
+    name: TEST2-orchestrator-data
+    labels:
+      com.medinovai.project: TEST2
+  TEST2-chromadb-data:
+    name: TEST2-chromadb-data
+    labels:
+      com.medinovai.project: TEST2

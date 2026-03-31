@@ -1,0 +1,51 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Dev overlay: single Mac Studio node, no GPU services, relaxed limits
+
+resources:
+  - ../../base
+  - ../../vault
+  - ../../external-secrets
+  - ../../services/tier0
+  - ../../services/tier1
+  - ../../services/tier2
+  - ../../services/atlasos
+  - ../../services/atlasos-node-agent
+  - ../../services/atlasos-cluster-brain
+  - ../../services/atlasos-sidecar
+
+patchesStrategicMerge: []
+
+patches:
+  # Reduce replicas to 1 for dev
+  - target:
+      kind: Deployment
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 1
+  # Reduce storage for dev
+  - target:
+      kind: PersistentVolumeClaim
+    patch: |-
+      - op: replace
+        path: /spec/resources/requests/storage
+        value: 5Gi
+  # Reduce resource requests for dev
+  - target:
+      kind: Deployment
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/memory
+        value: 64Mi
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/cpu
+        value: 25m
+
+commonLabels:
+  medinovai.com/overlay: onprem-dev
+
+commonAnnotations:
+  medinovai.com/environment: dev
+  medinovai.com/cluster: mac-studio-only

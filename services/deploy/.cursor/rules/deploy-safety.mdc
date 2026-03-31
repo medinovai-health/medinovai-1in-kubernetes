@@ -1,0 +1,89 @@
+# Deploy Safety Rules
+
+These rules enforce deployment safety for the MedinovAI platform. They apply to all infrastructure, configuration, and service deployment changes.
+
+## 1. No Destructive Operations Without Confirmation
+
+- NEVER run `terraform destroy`, `kubectl delete namespace`, `DROP DATABASE`, or force-push without explicit human confirmation.
+- NEVER scale production resources to zero.
+- NEVER modify production IAM policies, security groups, or network ACLs without approval.
+- All destructive operations must go through the approval pipeline.
+
+## 2. Environment Isolation
+
+- Dev, staging, and production are strictly isolated. No cross-environment resource access.
+- Production credentials are NEVER used in dev or staging.
+- Terraform state files are per-environment with separate backends.
+- Never deploy directly to production. Always go through staging first.
+
+## 3. Canary Before Full Rollout
+
+- All production deployments must use canary or blue-green strategy.
+- Canary receives 5% of traffic for minimum 10 minutes.
+- Automated rollback if error rate exceeds baseline by more than 1%.
+- Full rollout only after canary metrics are healthy.
+
+## 4. Infrastructure as Code Only
+
+- All infrastructure changes must be made through Terraform, Kubernetes manifests, or Helm charts.
+- No manual console/portal changes. If found, they must be imported into IaC or reverted.
+- Every IaC change must have a `terraform plan` reviewed before `terraform apply`.
+- IaC drift detection runs daily; drift triggers immediate alert.
+
+## 5. Secret Hygiene
+
+- NEVER hardcode secrets in code, configs, manifests, or Docker images.
+- All secrets must be stored in AWS Secrets Manager, HashiCorp Vault, or equivalent.
+- Secret references use environment variables or secret store integrations.
+- Secret rotation must be automated with zero-downtime rotation procedures.
+- Scan every PR for secret exposure before merge.
+
+## 6. Rollback Readiness
+
+- Every deployment must record the previous version for instant rollback.
+- Rollback procedures must be tested in staging before production deployment.
+- Database migrations must be backward-compatible (no breaking changes without a multi-step migration plan).
+- Keep previous container images available for at least 30 days.
+
+## 7. Health Check Requirements
+
+- Every deployed service MUST have:
+  - `/health` endpoint (liveness probe)
+  - `/ready` endpoint (readiness probe)
+  - Structured logging to stdout
+  - Metric emission (request count, latency, error rate)
+- Services failing health checks are automatically removed from load balancer.
+
+## 8. Deploy Windows
+
+- Production deployments are restricted to business hours (Mon-Thu 09:00-16:00 local time).
+- Friday deployments require eng lead approval.
+- Weekend/holiday deployments require CTO approval.
+- Emergency hotfixes bypass deploy windows but require post-deploy review.
+
+## 9. Audit Trail
+
+- Every deployment action must be logged with: who, what, when, where, why, outcome.
+- Deployment logs are immutable (append-only hash chain).
+- Retain deployment audit logs for minimum 1 year.
+- Log access to secrets, infrastructure changes, and permission modifications.
+
+## 10. Cost Guardrails
+
+- Any change that increases monthly cloud spend by more than 20% requires finance approval.
+- New GPU/high-compute resources require explicit justification.
+- Spot/preemptible instances preferred for non-critical workloads.
+- Cost anomaly alerts trigger within 4 hours of detection.
+
+## Quick Decision Matrix
+
+| Situation | Action |
+|-----------|--------|
+| Deploying to staging | Proceed with standard pipeline |
+| Deploying to production | Canary + approval gate required |
+| Terraform plan shows destroy | STOP — requires human review |
+| Secret found in code | Block merge immediately |
+| Health check failing post-deploy | Auto-rollback |
+| Cost spike detected | Alert + investigate before continuing |
+| IaC drift detected | Alert + auto-remediate if non-destructive |
+| Database migration | Must be backward-compatible |

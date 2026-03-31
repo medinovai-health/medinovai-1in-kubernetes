@@ -1,0 +1,26 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: atlasos
+
+resources:
+  - atlas-ui.yaml
+  - atlas-orchestrator.yaml
+  - ai-orchestrator.yaml
+  - mcp-gateway.yaml
+  - webhook-handler.yaml
+  - atlas-gateway.yaml
+  - event-bus.yaml
+  - rollup-engine.yaml
+  - audit-chain.yaml
+  - voice-bridge.yaml
+  - stirling-pdf.yaml
+  - briefing-engine.yaml
+  - correlation-engine.yaml
+  - decision-tracker.yaml
+  - mcp-connectors.yaml
+  - agent-platform.yaml
+  - ooda-brain.yaml
+  - stos.yaml
+  - compliance.yaml
+  - post-agi.yaml

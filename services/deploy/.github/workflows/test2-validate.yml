@@ -1,0 +1,125 @@
+name: Validate TEST2 Stack
+
+on:
+  pull_request:
+    paths:
+      - 'infra/docker/docker-compose.TEST2-full.yml'
+      - 'infra/docker/test2.env.example'
+      - 'infra/docker/preflight-check.py'
+      - 'infra/docker/health-wait.py'
+      - 'infra/docker/test2-smoke-test.py'
+      - 'infra/docker/test2-diagnose.sh'
+      - 'infra/docker/build-all-test2.sh'
+      - 'infra/docker/test2-deploy.sh'
+      - 'Makefile'
+  push:
+    branches:
+      - main
+    paths:
+      - 'infra/docker/docker-compose.TEST2-full.yml'
+
+jobs:
+  validate-compose:
+    name: Validate Compose File + Preflight
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Python dependencies
+        run: pip install pyyaml
+
+      - name: Prepare test2.env from example
+        run: |
+          cp infra/docker/test2.env.example /tmp/test2.env
+          # Set required variables for CI validation
+          echo "KAFKA_CLUSTER_ID=MkU3OEVBNTcwNTJENDM2Qk" >> /tmp/test2.env
+          echo "POSTGRES_PASSWORD=ci_test_pass" >> /tmp/test2.env
+          echo "REDIS_PASSWORD=ci_redis_pass" >> /tmp/test2.env
+          echo "AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE" >> /tmp/test2.env
+          echo "AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" >> /tmp/test2.env
+
+      - name: Validate Docker Compose syntax
+        run: |
+          docker compose -p test2 --env-file /tmp/test2.env \
+            -f infra/docker/docker-compose.TEST2-full.yml config --quiet
+          echo "✅ docker-compose.TEST2-full.yml syntax is valid"
+
+      - name: Count services in compose file
+        run: |
+          COUNT=$(docker compose -p test2 --env-file /tmp/test2.env \
+            -f infra/docker/docker-compose.TEST2-full.yml config --services | wc -l | tr -d ' ')
+          echo "Services defined: ${COUNT}"
+          if [[ "${COUNT}" -lt 50 ]]; then
+            echo "FAIL: Expected 50+ services, got ${COUNT}"
+            exit 1
+          fi
+          echo "✅ Service count OK: ${COUNT}"
+
+      - name: Run pre-flight check (skip image check for CI)
+        run: |
+          cp /tmp/test2.env infra/docker/test2.env
+          python3 infra/docker/preflight-check.py --skip-images --env-file infra/docker/test2.env
+
+      - name: Validate test2.env.example is complete
+        run: |
+          python3 -c "
+          required = ['KAFKA_CLUSTER_ID', 'POSTGRES_PASSWORD', 'REDIS_PASSWORD',
+                      'AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY', 'REGISTRY', 'TAG']
+          with open('infra/docker/test2.env.example') as f:
+              content = f.read()
+          missing = [v for v in required if v + '=' not in content and v + ' =' not in content]
+          if missing:
+              print(f'FAIL: Missing in test2.env.example: {missing}')
+              exit(1)
+          print(f'OK: All required vars documented in test2.env.example')
+          "
+
+      - name: Check all scripts are executable
+        run: |
+          for script in \
+            infra/docker/test2-deploy.sh \
+            infra/docker/build-all-test2.sh \
+            infra/docker/test2-diagnose.sh; do
+            if [[ ! -x "$script" ]]; then
+              echo "FAIL: $script is not executable"
+              exit 1
+            fi
+          done
+          echo "✅ All deployment scripts are executable"
+
+      - name: Validate Python scripts syntax
+        run: |
+          python3 -m py_compile infra/docker/preflight-check.py
+          python3 -m py_compile infra/docker/health-wait.py
+          python3 -m py_compile infra/docker/test2-smoke-test.py
+          echo "✅ All Python scripts have valid syntax"
+
+  validate-make-targets:
+    name: Validate Makefile TEST2 Targets
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check all test2-* targets exist in Makefile
+        run: |
+          REQUIRED="test2-up test2-down test2-status test2-wait test2-smoke test2-diagnose test2-logs test2-kafka-reset test2-rebuild test2-preflight test2-network"
+          for target in $REQUIRED; do
+            if ! grep -q "^${target}:" Makefile; then
+              echo "FAIL: Makefile missing target: ${target}"
+              exit 1
+            fi
+          done
+          echo "✅ All required test2-* Makefile targets present"
+
+      - name: Check AGENTS.md has TEST2 section
+        run: |
+          if ! grep -q "## TEST2 Local Deployment" AGENTS.md; then
+            echo "FAIL: AGENTS.md missing ## TEST2 Local Deployment section"
+            exit 1
+          fi
+          echo "✅ AGENTS.md has TEST2 documentation"

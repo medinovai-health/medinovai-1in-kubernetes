@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: atlasos-cluster-brain
+  namespace: atlasos
+  labels:
+    app.kubernetes.io/name: atlasos-cluster-brain
+    app.kubernetes.io/part-of: atlasos
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8100
+      targetPort: 8100
+      protocol: TCP
+      name: http
+  selector:
+    app: atlasos-cluster-brain

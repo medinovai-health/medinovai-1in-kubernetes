@@ -1,0 +1,5 @@
+# Frontend Application Conventions
+- React patterns: hooks, component composition, controlled components
+- WCAG 2.1 AA: semantic HTML, ARIA, keyboard nav, focus management
+- Code split and lazy load; monitor bundle size and Core Web Vitals
+- Loading and error states for all async operations

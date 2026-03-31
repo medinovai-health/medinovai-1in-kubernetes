@@ -1,0 +1,43 @@
+# ─── Atlas UI — Docker Image ──────────────────────────────────────────────────
+# Builds the Atlas UI (Next.js) from the host Atlas installation.
+# The Atlas Local Agent runs NATIVELY on the host (not containerized) because
+# it requires host-level access: terminal execution, browser automation,
+# filesystem access. Containerizing it would break those capabilities.
+#
+# The UI container connects to the host agent via host.docker.internal:8765
+#
+# Build (from repo root, requires Atlas installed at ~/.medinovai/atlas/):
+#   docker build -f Dockerfile.atlas \
+#     --build-arg ATLAS_UI_SRC=$HOME/.medinovai/atlas/ui \
+#     -t medinovai-atlas-ui:local .
+#
+# Or use: docker compose -f infra/docker/docker-compose.dev.yml up -d atlas-ui
+# (compose mounts the UI source as a volume — no build needed)
+# ─────────────────────────────────────────────────────────────────────────────
+
+FROM node:25-alpine
+
+RUN apk add --no-cache wget
+
+WORKDIR /app
+
+# Copy UI source (build-arg specifies path — defaults to expected location)
+ARG ATLAS_UI_SRC=.atlas-ui-build-context
+COPY ${ATLAS_UI_SRC}/package*.json ./
+RUN npm ci --silent
+
+COPY ${ATLAS_UI_SRC}/ .
+
+RUN npm run build
+
+EXPOSE 3000
+
+ENV NODE_ENV=production
+ENV PORT=3000
+# Agent WebSocket URL — override at runtime if agent isn't on localhost
+ENV NEXT_PUBLIC_AGENT_URL=ws://host.docker.internal:8765
+
+HEALTHCHECK --interval=15s --timeout=5s --start-period=60s --retries=5 \
+    CMD wget -q -O /dev/null http://localhost:3000 || exit 1
+
+CMD ["npm", "start"]

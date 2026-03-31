@@ -1,0 +1,66 @@
+name: Infrastructure Plan
+
+on:
+  pull_request:
+    paths:
+      - "infra/terraform/**"
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  terraform-plan:
+    name: Terraform Plan
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        environment: [dev, staging, production]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.7"
+
+      - name: Check for changes in environment
+        id: changes
+        run: |
+          if git diff --name-only origin/main...HEAD | grep -q "infra/terraform/environments/${{ matrix.environment }}\|infra/terraform/modules/"; then
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Terraform Init
+        if: steps.changes.outputs.has_changes == 'true'
+        working-directory: infra/terraform/environments/${{ matrix.environment }}
+        run: terraform init -backend=false
+
+      - name: Terraform Plan
+        if: steps.changes.outputs.has_changes == 'true'
+        working-directory: infra/terraform/environments/${{ matrix.environment }}
+        run: |
+          terraform plan -no-color -out=tfplan 2>&1 | tee plan_output.txt
+          echo "## Terraform Plan: ${{ matrix.environment }}" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          cat plan_output.txt >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Comment PR with plan
+        if: steps.changes.outputs.has_changes == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const planPath = `infra/terraform/environments/${{ matrix.environment }}/plan_output.txt`;
+            let plan = 'No plan output available.';
+            try { plan = fs.readFileSync(planPath, 'utf8'); } catch(e) {}
+            const body = `### Terraform Plan: \`${{ matrix.environment }}\`\n\`\`\`\n${plan.substring(0, 60000)}\n\`\`\``;
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });

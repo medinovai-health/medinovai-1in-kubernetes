@@ -1,0 +1,406 @@
+# ─── Docker Compose — MedinovAI Platform (Local Development) ───────────────────
+# Full greenfield deployment with restart/crash resilience.
+name: medinovai-dev
+# All data persisted to named volumes. Survives host restarts.
+#
+# Usage:
+#   docker compose -f infra/docker/docker-compose.dev.yml up -d
+#   bash scripts/backup.sh  # Before any infra changes
+#
+# Backup location: ~/medinovai-backups/medinovai-Deploy/
+# See: docs/DOCKER_GREENFIELD_DEPLOYMENT.md
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+
+  # ─── Deployer (self-bootstrapper) ─────────────────────────────────────────
+  # Runs once on first `docker compose up`.  Installs Atlas, writes all config
+  # and workspace files into named volumes, then exits 0.
+  # Downstream services (atlas-agent, atlas-ui) use depends_on: service_healthy
+  # so they are blocked until the deployer finishes.
+  #
+  # Idempotent: if /atlas-home/.deploy-complete already exists the container
+  # exits 0 immediately (fast path — no reinstall on every restart).
+  #
+  # Force re-bootstrap:
+  #   docker compose rm -f deployer && docker volume rm medinovai-dev_atlas-config
+  #   docker compose up -d deployer
+  deployer:
+    build:
+      context: ../..
+      dockerfile: Dockerfile.deployer
+    image: medinovai-deployer:local
+    container_name: medinovai-deployer
+    restart: unless-stopped
+    volumes:
+      - atlas-config:/atlas-home
+      - atlas-workspaces:/atlas-workspaces
+      - atlas-ui-source:/atlas-ui-built
+    environment:
+      ATLAS_HOME: /atlas-home
+      ATLAS_WORKSPACES: /atlas-workspaces
+      ATLAS_UI_OUT: /atlas-ui-built
+      SLACK_APP_TOKEN: ${SLACK_APP_TOKEN:-}
+      SLACK_BOT_TOKEN: ${SLACK_BOT_TOKEN:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      HOOKS_TOKEN: ${HOOKS_TOKEN:-}
+      OLLAMA_DEFAULT_MODEL: ${OLLAMA_DEFAULT_MODEL:-qwen2.5:1.5b}
+      MEDINOVAIOS_URL: http://medinovaios:3030
+      # ── Vault (AppRole) ──────────────────────────────────────────────────────
+      VAULT_ADDR: http://vault:8200
+      VAULT_ROLE_ID: ${API_GATEWAY_VAULT_ROLE_ID:-}
+      VAULT_SECRET_ID: ${API_GATEWAY_VAULT_SECRET_ID:-}
+    healthcheck:
+      # Passes only after the sentinel file is written (bootstrap complete)
+      test: ["CMD", "test", "-f", "/atlas-home/.deploy-complete"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 120s
+    networks:
+      - medinovai-dev
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: medinovai-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: medinovai
+      POSTGRES_USER: medinovai
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-localdev}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U medinovai -d medinovai"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - medinovai-dev
+
+  redis:
+    image: redis:7-alpine
+    container_name: medinovai-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-localdev}
+    command: redis-server --requirepass ${REDIS_PASSWORD:-localdev} --appendonly yes
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"$$REDIS_PASSWORD\" ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    networks:
+      - medinovai-dev
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: medinovai-prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=15d
+      - --web.enable-lifecycle
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost:9090/-/healthy"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    networks:
+      - medinovai-dev
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: medinovai-grafana
+    restart: unless-stopped
+    ports:
+      - "13001:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+    volumes:
+      - grafana-data:/var/lib/grafana
+    depends_on:
+      prometheus:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost:3000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - medinovai-dev
+
+  vault:
+    image: hashicorp/vault:latest
+    platform: linux/arm64
+    container_name: medinovai-vault
+    cap_add: [IPC_LOCK]
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: ${VAULT_DEV_ROOT_TOKEN:-medinovai-dev-token}
+      VAULT_DEV_LISTEN_ADDRESS: 0.0.0.0:8200
+    ports:
+      - "8200:8200"
+    healthcheck:
+      test: ["CMD", "vault", "status", "-address=http://localhost:8200"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - medinovai-dev
+
+  mailhog:
+    image: axllent/mailpit:latest
+    platform: linux/arm64
+    container_name: medinovai-mailhog
+    restart: unless-stopped
+    ports:
+      - "1025:1025"   # SMTP
+      - "8025:8025"   # Web UI
+    networks:
+      - medinovai-dev
+
+  localstack:
+    image: localstack/localstack:latest
+    container_name: medinovai-localstack
+    restart: unless-stopped
+    ports:
+      - "4566:4566"
+    environment:
+      SERVICES: s3,secretsmanager,sqs,sns
+      PERSISTENCE: 1
+    volumes:
+      - localstack-data:/var/lib/localstack
+    networks:
+      - medinovai-dev
+
+  # ─── AI Layer ─────────────────────────────────────────────────────────────────
+  # Local LLM inference — PHI-safe, runs fully on-device.
+  # Default model pulled by: make ollama-pull-default (qwen2.5:1.5b ~1 GB)
+  # Models persist across restarts via ollama-data volume.
+  ollama:
+    image: ollama/ollama:latest
+    container_name: medinovai-ollama
+    restart: unless-stopped
+    ports:
+      - "11435:11434"   # Host port 11435 — native Ollama holds 11434
+    volumes:
+      - ollama-data:/root/.ollama
+    healthcheck:
+      test: ["CMD-SHELL", "ollama list || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    networks:
+      - medinovai-dev
+
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: medinovai-open-webui
+    restart: unless-stopped
+    ports:
+      - "8091:8080"   # Host 8091 — Docker Desktop WebUI extension holds 8090
+    environment:
+      # Point at sibling Ollama container — no external API calls for inference
+      OLLAMA_BASE_URL: http://ollama:11434
+      # Disable telemetry / phone-home
+      SCARF_NO_ANALYTICS: "true"
+      DO_NOT_TRACK: "true"
+      ANONYMIZED_TELEMETRY: "false"
+    volumes:
+      - open-webui-data:/app/backend/data
+    depends_on:
+      ollama:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - medinovai-dev
+
+  # ─── IAM / Single Sign-On (Keycloak) ─────────────────────────────────────────
+  # Builds Keycloak from the MedinovAI-security-service sibling repo.
+  # Realm auto-imports on first start from keycloak/realm-config/ (start-dev --import-realm).
+  # SuperAdmin + product clients seeded by bootstrap-all.sh Step 0 after Keycloak is healthy.
+  #
+  # Prerequisites:
+  #   1. Clone: bash scripts/clone-repos.sh  (or git clone MedinovAI-security-service)
+  #   2. Set KEYCLOAK_ADMIN_PASSWORD + SUPERADMIN_PASSWORD in infra/docker/.env
+  #   3. bootstrap-all.sh creates the `keycloak` DB in postgres automatically
+  #
+  # Access:
+  #   Keycloak admin: http://localhost:8081/admin  (admin / $KEYCLOAK_ADMIN_PASSWORD)
+  #   Your portal:    http://localhost:3030         (superadmin@medinov.ai / $SUPERADMIN_PASSWORD)
+  keycloak:
+    build:
+      context: ${SECURITY_SERVICE_PATH:-../../../MedinovAI-security-service}/keycloak
+      dockerfile: docker/Dockerfile
+    image: medinovai-keycloak:local
+    container_name: medinovai-keycloak
+    restart: unless-stopped
+    command: start-dev
+    ports:
+      - "${KEYCLOAK_HTTP_PORT:-8081}:8080"
+    environment:
+      KC_DB: postgres
+      # Use existing local dev database to avoid bootstrap ordering issues
+      # when the dedicated `keycloak` database has not been created yet.
+      KC_DB_URL: jdbc:postgresql://postgres:5432/medinovai
+      KC_DB_USERNAME: medinovai
+      KC_DB_PASSWORD: ${POSTGRES_PASSWORD:-localdev}
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-localdev}
+      KC_HTTP_ENABLED: "true"
+      KC_HOSTNAME_STRICT: "false"
+      KC_HOSTNAME_STRICT_HTTPS: "false"
+      KC_PROXY_HEADERS: xforwarded
+      KC_HEALTH_ENABLED: "true"
+      KC_METRICS_ENABLED: "true"
+      KC_LOG_LEVEL: INFO
+      KC_SMTP_HOST: mailhog
+      KC_SMTP_PORT: 1025
+      KC_SMTP_FROM: ${SMTP_FROM:-noreply@medinov.ai}
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID:-}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN:-}
+      TWILIO_PHONE_NUMBER: ${TWILIO_PHONE_NUMBER:-}
+    volumes:
+      - ${SECURITY_SERVICE_PATH:-../../../MedinovAI-security-service}/keycloak/realm-config:/opt/keycloak/data/import:ro
+      - ${SECURITY_SERVICE_PATH:-../../../MedinovAI-security-service}/keycloak/themes:/opt/keycloak/themes:ro
+      - keycloak-data:/opt/keycloak/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mailhog:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/8080 && echo -e 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && cat <&3 | grep -q UP"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 120s
+    networks:
+      - medinovai-dev
+
+  # ─── Atlas UI (containerized Next.js frontend) ────────────────────────────
+  # The deployer builds the UI into the atlas-ui-source named volume.
+  # This service reads the pre-built output from that volume — no host path
+  # dependency, no host Atlas installation required.
+  #
+  # Agent WebSocket: atlas-agent runs as a sibling container (port 18789).
+  # If you still want to connect to a host-side agent, override:
+  #   NEXT_PUBLIC_AGENT_URL=ws://host.docker.internal:8765
+  atlas-ui:
+    image: node:22-alpine
+    container_name: medinovai-atlas-ui
+    restart: unless-stopped
+    working_dir: /app
+    ports:
+      - "3738:3000"
+    volumes:
+      - atlas-ui-source:/app
+      - atlas-ui-modules:/app/node_modules
+    command: sh -c "npm install --silent && npm start"
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      # Atlas agent runs as a sibling container inside the compose stack
+      NEXT_PUBLIC_AGENT_URL: ${NEXT_PUBLIC_AGENT_URL:-ws://atlas-agent:18789}
+    depends_on:
+      deployer:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:3000 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    networks:
+      - medinovai-dev
+
+  # ─── medinovaiOS — Unified Portal ─────────────────────────────────────────────
+  # Single URL to access every product, service, and tool. Dark-theme React portal
+  # with live health status, SSO, embedded panels, and Atlas cross-link.
+  # Access at: http://localhost:13030
+  medinovaios:
+    build:
+      context: ../../services/medinovaios
+      dockerfile: Dockerfile
+    image: medinovaios:local
+    container_name: medinovaios
+    restart: unless-stopped
+    ports:
+      - "${MEDINOVAIOS_HTTP_PORT:-13030}:3030"
+    environment:
+      NODE_ENV: production
+      PORT: "3030"
+      # ── Keycloak OIDC (replaces old AUTH_SERVICE_URL) ────────────────────
+      # medinovaiOS is a confidential OIDC client — server-side code exchange.
+      KEYCLOAK_URL: http://medinovai-keycloak:8080
+      KEYCLOAK_PUBLIC_URL: ${KEYCLOAK_PUBLIC_URL:-http://localhost:8081}
+      KEYCLOAK_REALM: medinov-ai
+      KEYCLOAK_CLIENT_ID: medinovaios
+      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:-}
+      KEYCLOAK_REDIRECT_URI: ${MEDINOVAIOS_PUBLIC_URL:-http://localhost:${MEDINOVAIOS_HTTP_PORT:-13030}}/api/sso/callback
+      KEYCLOAK_JWKS_URI: http://medinovai-keycloak:8080/realms/medinov-ai/protocol/openid-connect/certs
+      # ── Internal service URLs ─────────────────────────────────────────────
+      ATLAS_UI_URL: ${ATLAS_UI_URL:-http://localhost:3738}
+      LIS_INTERNAL_URL: http://medinovai-lis:3000
+      CORTEX_INTERNAL_URL: http://medinovai-cortex:3100
+      # ── Vault (AppRole) ──────────────────────────────────────────────────────
+      VAULT_ADDR: http://vault:8200
+      VAULT_ROLE_ID: ${MEDINOVAIOS_VAULT_ROLE_ID:-}
+      VAULT_SECRET_ID: ${MEDINOVAIOS_VAULT_SECRET_ID:-}
+    depends_on:
+      deployer:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://localhost:3030/health',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))\""]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - medinovai-dev
+
+volumes:
+  postgres-data:
+  redis-data:
+  prometheus-data:
+  grafana-data:
+  localstack-data:
+  ollama-data:
+  open-webui-data:
+  atlas-ui-modules:
+  vault-data:
+  keycloak-data:       # Keycloak runtime data (H2 sessions, caches — not realm config)
+  # ─── Deployer volumes (populated by the deployer service on first boot) ──
+  atlas-config:        # Atlas config (atlas.json, .env, workspace templates)
+  atlas-workspaces:    # Agent workspace dirs (logs, outputs, state, audit)
+  atlas-ui-source:     # Built Next.js output served by atlas-ui
+
+networks:
+  medinovai-dev:
+    driver: bridge

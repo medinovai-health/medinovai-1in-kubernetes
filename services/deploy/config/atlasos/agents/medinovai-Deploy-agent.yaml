@@ -1,0 +1,51 @@
+# AtlasOS Agent Configuration — medinovai-Deploy
+# Generated: 2026-03-29
+
+agent_id: "medinovai-Deploy-agent"
+service: "medinovai-Deploy"
+version: "1.0.0"
+
+composition:
+    base_layer: "templates/base"
+    domain_layer: "templates/domains/infrastructure"
+    skill_layers:
+        - "service-management"
+        - "compliance-monitoring"
+        - "health-check"
+
+ooda_integration:
+    enabled: true
+    observe:
+        inputs:
+            - "health_endpoint:/health"
+            - "metrics:prometheus"
+            - "logs:structured"
+        frequency_seconds: 30
+    orient:
+        risk_assessment: true
+        anomaly_detection: true
+    decide:
+        escalation_threshold: "warning"
+        auto_remediate: true
+    act:
+        allowed_actions:
+            - "restart_service"
+            - "scale_replicas"
+            - "alert_squad"
+        blocked_actions:
+            - "delete_data"
+            - "modify_production"
+            - "rotate_secrets"
+
+compliance:
+    hipaa: false
+    fda_21cfr11: false
+    audit_trail: true
+    phi_handling: false
+
+runtime:
+    squad: "infrastructure-squad"
+    tier: 1
+    risk_class: "Low"
+    domain: "Infrastructure"
+    language: "Shell"

@@ -1,0 +1,14 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: notification-service
+  namespace: medinovai-services
+  labels:
+    app.kubernetes.io/name: notification-service
+    app.kubernetes.io/component: notification
+    app.kubernetes.io/part-of: medinovai
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: notification-service

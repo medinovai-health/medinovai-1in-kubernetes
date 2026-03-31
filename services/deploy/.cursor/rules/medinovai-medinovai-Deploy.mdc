@@ -1,0 +1,54 @@
+---
+description: Rules specific to the medinovai-Deploy repository. Apply only when working in this repo. Supplements the platform-wide context rule.
+globs: ["**/*"]
+alwaysApply: true
+---
+
+# medinovai-Deploy: AI Development Rules
+
+## Repo Identity
+
+| Field | Value |
+|-------|-------|
+| Service name | medinovai-Deploy |
+| Tier | 1 |
+| Category | infrastructure |
+| Squad | infrastructure-squad |
+| Regulatory class | FDA-CLASS-II |
+| Health endpoint | /health |
+| Port | 0 |
+
+## What This Repo Does
+
+medinovai-Deploy backend service
+
+## Critical Constraints
+
+- This is a **production repo** in the `medinovai-health` GitHub org.
+- Never write code that violates the platform architecture decisions (see `medinovai-platform-context.mdc`).
+- All PRs must pass AtlasOS 8-gate validation before human approval.
+- No PHI in code, logs, comments, or test data.
+- Every state-changing function must call `audit_logger.log()`.
+- Tier compliance: only import from Tier < 1.
+
+## Coding Standards (this repo)
+
+- Function length: <= 40 lines
+- Test coverage: >= 85%
+- API response time: < 200ms P95
+- `GET /health` must return `{status: "healthy", version: string}`
+- All DB queries must be scoped by `tenant_id`
+
+## Sprint 0 Context
+
+This repo is being configured as part of MedinovAI Sprint 0 (Foundation Hardening).
+The `config/atlasos/` directory in this repo defines how AtlasOS monitors and
+orchestrates this service. See `docs/SPRINT_0_STORY_MAP.md` in `medinovai-Developer`.
+
+## References
+
+- Platform context: `.cursor/rules/medinovai-platform-context.mdc`
+- Architecture: `medinovai-Developer/docs/INTEGRATION_ARCHITECTURE.md`
+- Sprint plan: `medinovai-Developer/docs/MASTER_IMPLEMENTATION_PLAN.md`
+- Repo routing: `medinovai-Developer/docs/PRODUCTION_REPO_ROUTING_MAP.md`
+- AtlasOS plan: `medinovai-Developer/docs/ATLAS_OS_AUTONOMOUS_CONTROL_PLAN.md`

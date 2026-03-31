@@ -1,0 +1,5 @@
+# Security Conventions
+- Zero trust: verify explicitly; least privilege
+- Secret scanning before merge; no credentials in git
+- HIPAA-aware logging: no PHI; audit security events
+- Block merge on critical vulnerabilities

@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: travelai
+  namespace: platform
+  labels:
+    app: travelai
+    atlasos.io/managed: "true"
+spec:
+  selector:
+    app: travelai
+  ports:
+  - port: 3000
+    targetPort: 3000
+    protocol: TCP
+    name: http
+  type: ClusterIP

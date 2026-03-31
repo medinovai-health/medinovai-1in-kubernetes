@@ -1,0 +1,21 @@
+{
+  "name": "@medinovai/deploy",
+  "version": "0.2.0",
+  "description": "Autonomous deployment, instantiation, CI/CD, and monitoring system for the MedinovAI platform",
+  "private": true,
+  "scripts": {
+    "validate": "make validate",
+    "lint": "make lint-json && make lint-yaml",
+    "test": "make test-unit",
+    "test:integration": "make test-integration",
+    "test:e2e": "make test-e2e",
+    "setup": "make setup",
+    "health": "make health"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/myonsite-healthcare/medinovai-Deploy.git"
+  },
+  "author": "MedinovAI / MyOnsite Healthcare",
+  "license": "UNLICENSED"
+}

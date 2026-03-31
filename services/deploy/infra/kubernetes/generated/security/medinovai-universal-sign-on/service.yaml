@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: medinovai-universal-sign-on
+  namespace: security
+  labels:
+    app: medinovai-universal-sign-on
+    atlasos.io/managed: "true"
+spec:
+  selector:
+    app: medinovai-universal-sign-on
+  ports:
+  - port: 5000
+    targetPort: 5000
+    protocol: TCP
+    name: http
+  type: ClusterIP

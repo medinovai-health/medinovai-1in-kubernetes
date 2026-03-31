@@ -1,0 +1,112 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: atlas-orchestrator
+  namespace: atlasos
+  labels:
+    app.kubernetes.io/name: atlas-orchestrator
+    app.kubernetes.io/part-of: atlasos
+spec:
+  ports:
+    - name: http
+      port: 8888
+      targetPort: 8000
+    - name: grpc
+      port: 8889
+      targetPort: 8001
+    - name: metrics
+      port: 8890
+      targetPort: 8002
+  selector:
+    app: atlas-orchestrator
+  namespace: medinovai-services
+  labels:
+    app.kubernetes.io/name: atlas-orchestrator
+    app.kubernetes.io/part-of: atlasos
+spec:
+  accessModes: ["ReadWriteOnce"]
+  storageClassName: hostpath
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-orchestrator
+  namespace: atlasos
+  labels:
+    app: atlas-orchestrator
+    app.kubernetes.io/name: atlas-orchestrator
+    app.kubernetes.io/part-of: atlasos
+    app.kubernetes.io/version: "1.2.0"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: atlas-orchestrator
+  template:
+    metadata:
+      labels:
+        app: atlas-orchestrator
+        atlasos.medinovai.com/sidecar: "enabled"
+    spec:
+      serviceAccountName: atlasos-sa
+      containers:
+        - name: orchestrator
+          image: medinovai-atlas-1-orchestrator:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+            - containerPort: 8001
+            - containerPort: 8002
+          envFrom:
+            - secretRef:
+                name: atlasos-secrets
+            - secretRef:
+                name: atlasos-infra-secrets
+          env:
+            - name: OLLAMA_HOST
+              value: "http://ollama.ai-ml.svc.cluster.local:11434"
+            - name: CHROMADB_URL
+              value: "http://chromadb.ai-ml.svc.cluster.local:8000"
+            - name: AIFACTORY_MOE_URL
+              value: "http://aifactory.ai-ml.svc.cluster.local:5000"
+          volumeMounts:
+            - name: atlas-state
+              mountPath: /data/atlas
+          resources:
+            requests:
+              memory: 512Mi
+              cpu: 250m
+            limits:
+              memory: 2Gi
+              cpu: "2"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 30
+      volumes:
+        - name: atlas-state
+          persistentVolumeClaim:
+            claimName: atlas-state-pvc
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: atlas-state-pvc
+  namespace: atlasos
+spec:
+  accessModes: ["ReadWriteOnce"]
+  storageClassName: hostpath
+  resources:
+    requests:
+      storage: 20Gi

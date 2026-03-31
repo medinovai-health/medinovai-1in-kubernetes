@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: bug-free-computing-machine
+  namespace: platform
+  labels:
+    app: bug-free-computing-machine
+    atlasos.io/managed: "true"
+spec:
+  selector:
+    app: bug-free-computing-machine
+  ports:
+  - port: 3000
+    targetPort: 3000
+    protocol: TCP
+    name: http
+  type: ClusterIP

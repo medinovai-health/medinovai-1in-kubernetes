@@ -1,0 +1,562 @@
+// MedinovAI Repo Registry — Single source of truth for all platform repos.
+// Used by embed_atlasos.sh to deploy agent kits to every repo.
+{
+  "repos": [
+    {
+      "name": "medinovai-Deploy",
+      "category": "platform",
+      "tier": 0,
+      "sidecar_enabled": false
+    },
+    {
+      "name": "medinovai-infrastructure",
+      "category": "platform",
+      "tier": 0,
+      "sidecar_enabled": false
+    },
+    {
+      "name": "++Docker-Maintenance",
+      "category": "platform",
+      "tier": 0,
+      "sidecar_enabled": false
+    },
+    {
+      "name": "medinovai-devops-telemetry",
+      "category": "platform",
+      "tier": 0,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "medinovai-test-infrastructure",
+      "category": "platform",
+      "tier": 0,
+      "sidecar_enabled": false
+    },
+    {
+      "name": "MedinovAI-security",
+      "category": "security",
+      "tier": 0,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "MedinovAI-security-service",
+      "category": "security",
+      "tier": 0,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "medinovai-secrets-manager-bridge",
+      "category": "security",
+      "tier": 0,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "medinovai-encryption-vault",
+      "category": "security",
+      "tier": 0,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "medinovai-universal-sign-on",
+      "category": "security",
+      "tier": 0,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "medinovai-role-based-permissions",
+      "category": "security",
+      "tier": 0,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "medinovai-hipaa-gdpr-guard",
+      "category": "security",
+      "tier": 0,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "medinovai-governance-templates",
+      "category": "docs-standards",
+      "tier": 0,
+      "sidecar_enabled": false
+    },
+    {
+      "name": "medinovai-standards",
+      "category": "docs-standards",
+      "tier": 0,
+      "sidecar_enabled": false
+    },
+    {
+      "name": "medinovai-core",
+      "category": "backend-service",
+      "tier": 1,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "medinovai-api",
+      "category": "backend-service",
+      "tier": 1,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "medinovai-web-core",
+      "category": "library",
+      "tier": 1,
+      "sidecar_enabled": false
+    },
+    {
+      "name": "medinovai-data-services",
+      "category": "data",
+      "tier": 1,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "database",
+      "category": "data",
+      "tier": 1,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "medinovai-notification-center",
+      "category": "backend-service",
+      "tier": 1,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "MedinovAI-Email-Service",
+      "category": "backend-service",
+      "tier": 1,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "medinovai-real-time-stream-bus",
+      "category": "backend-service",
+      "tier": 1,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "medinovai-registry",
+      "category": "backend-service",
+      "tier": 1,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "medinovai-validation",
+      "category": "backend-service",
+      "tier": 1,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "AtlasOS",
+      "category": "platform",
+      "tier": 2,
+      "sidecar_enabled": false
+    },
+    {
+      "name": "medinovai-aifactory",
+      "category": "ai-ml",
+      "tier": 2,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "medinovai-healthLLM",
+      "category": "ai-ml",
+      "tier": 2,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "medinovai-agent-sdk",
+      "category": "library",
+      "tier": 2,
+      "sidecar_enabled": false
+    },
+    {
+      "name": "medinovai-Atlas",
+      "category": "platform",
+      "tier": 2,
+      "sidecar_enabled": false
+    },
+    {
+      "name": "MedinovAI-Model-Service-Orchestrator",
+      "category": "ai-ml",
+      "tier": 2,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "medinovai-cds",
+      "category": "clinical",
+      "tier": 2,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "medinovai-ai-scribe",
+      "category": "ai-ml",
+      "tier": 2,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "medinovai-anomaly-detector",
+      "category": "ai-ml",
+      "tier": 2,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "MedinovAI-Chatbot",
+      "category": "ai-ml",
+      "tier": 2,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "medinovai-patientmatching",
+      "category": "clinical",
+      "tier": 2,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "medinovai-pathology-ai",
+      "category": "ai-ml",
+      "tier": 2,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "medinovai-genomics-interpreter",
+      "category": "ai-ml",
+      "tier": 2,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "medinovai-drug-interaction-checker",
+      "category": "clinical",
+      "tier": 2,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "medinovai-prompt-vault",
+      "category": "ai-ml",
+      "tier": 2,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "medinovai-knowledge-graph",
+      "category": "data",
+      "tier": 2,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "medinovai-natural-language-query",
+      "category": "ai-ml",
+      "tier": 2,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "medinovai-CTMS",
+      "category": "clinical",
+      "tier": 3,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "medinovai-EDC",
+      "category": "clinical",
+      "tier": 3,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "medinovai-eConsent",
+      "category": "clinical",
+      "tier": 3,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "medinovai-eISF",
+      "category": "clinical",
+      "tier": 3,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "medinovai-ePRO",
+      "category": "clinical",
+      "tier": 3,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "medinovai-eSource",
+      "category": "clinical",
+      "tier": 3,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "medinovai-etmf",
+      "category": "clinical",
+      "tier": 3,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "medinovai-iwrs",
+      "category": "clinical",
+      "tier": 3,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "medinovai-RBM",
+      "category": "clinical",
+      "tier": 3,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "medinovai-Pharmacovigilance",
+      "category": "clinical",
+      "tier": 3,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "medinovai-regulatory-submissions",
+      "category": "clinical",
+      "tier": 3,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "medinovai-lis",
+      "category": "clinical",
+      "tier": 3,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "medinovai-lis-platform",
+      "category": "clinical",
+      "tier": 3,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "medinovai-lis-ui",
+      "category": "frontend-app",
+      "tier": 3,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "medinovAIUSB",
+      "category": "clinical",
+      "tier": 3,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "medinovai-care-team-chat",
+      "category": "clinical",
+      "tier": 3,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "medinovai-telehealth-hub",
+      "category": "clinical",
+      "tier": 3,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "medinovai-patient-onboarding",
+      "category": "clinical",
+      "tier": 3,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "medinovai-consent-preference-api",
+      "category": "clinical",
+      "tier": 3,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "medinovai-sales",
+      "category": "sales-crm",
+      "tier": 3,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "AutoSalesPro",
+      "category": "sales-crm",
+      "tier": 3,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "AutoBidPro",
+      "category": "sales-crm",
+      "tier": 3,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "Credentialing",
+      "category": "sales-crm",
+      "tier": 3,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "Employee-Portal",
+      "category": "frontend-app",
+      "tier": 3,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "ATS",
+      "category": "sales-crm",
+      "tier": 3,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "medinovai-projects",
+      "category": "backend-service",
+      "tier": 3,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "DocuGenie",
+      "category": "sales-crm",
+      "tier": 3,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "medinovaios",
+      "category": "frontend-app",
+      "tier": 4,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "medinovai-multimodal-ui-shell",
+      "category": "frontend-app",
+      "tier": 4,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "Uiux",
+      "category": "library",
+      "tier": 4,
+      "sidecar_enabled": false
+    },
+    {
+      "name": "medinovai-ui-components",
+      "category": "library",
+      "tier": 4,
+      "sidecar_enabled": false
+    },
+    {
+      "name": "VisionClaw",
+      "category": "frontend-app",
+      "tier": 4,
+      "sidecar_enabled": false
+    },
+    {
+      "name": "medinovai-developer-portal",
+      "category": "frontend-app",
+      "tier": 4,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "medinovai-accessibility-checker",
+      "category": "frontend-app",
+      "tier": 4,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "medinovai-constitution",
+      "category": "docs-standards",
+      "tier": 1,
+      "sidecar_enabled": false
+    },
+    {
+      "name": "MedinovAI-AI-Standards",
+      "category": "docs-standards",
+      "tier": 1,
+      "sidecar_enabled": false
+    },
+    {
+      "name": "medinovai-dev-standards",
+      "category": "docs-standards",
+      "tier": 1,
+      "sidecar_enabled": false
+    },
+    {
+      "name": "medinovai-quality-certification",
+      "category": "docs-standards",
+      "tier": 1,
+      "sidecar_enabled": false
+    },
+    {
+      "name": "medinovai-data-lake-loader",
+      "category": "data",
+      "tier": 2,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "medinovai-DataOfficer",
+      "category": "data",
+      "tier": 3,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "medinovai-audit-trail-explorer",
+      "category": "frontend-app",
+      "tier": 1,
+      "sidecar_enabled": true
+    },
+    {
+"name": "medinovai-agent-provisioner",
+      "category": "platform",
+      "tier": 1,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "medinovai-agent-config-api",
+      "category": "platform",
+      "tier": 1,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "medinovai-rbac-guard",
+      "category": "security",
+      "tier": 1,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "atlasos-stream-bus-bridge",
+      "category": "platform",
+      "tier": 2,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "medinovai-lobster-engine",
+      "category": "platform",
+      "tier": 2,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "medinovai-escalation-resolver",
+      "category": "platform",
+      "tier": 2,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "medinovai-mcp-deploy",
+      "category": "platform",
+      "tier": 2,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "medinovai-webhook-receiver",
+      "category": "backend-service",
+      "tier": 2,
+      "sidecar_enabled": true
+    },
+    {
+      "name": "Northstar",
+      "category": "platform",
+      "tier": 4,
+      "sidecar_enabled": true,
+      "host_port_range": "18000-18099",
+      "description": "Employee recognition, rewards, culture building, and engagement platform (Northstar Culture OS)"
+    },
+    {
+      "name": "medinovai-contract-management",
+      "category": "business",
+      "tier": 4,
+      "sidecar_enabled": true,
+      "host_port_range": "33000-33500",
+      "description": "Contract & engagement lifecycle management for myOnsite Healthcare mobile phlebotomy (LaunchOps Autopilot)"
+    }
+  ]
+}

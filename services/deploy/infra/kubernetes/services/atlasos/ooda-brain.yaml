@@ -1,0 +1,477 @@
+# OODA Brain + Fleet Management
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ooda-brain
+  namespace: atlasos
+  labels:
+    app.kubernetes.io/name: ooda-brain
+    app.kubernetes.io/part-of: atlasos
+spec:
+  ports:
+    - port: 8000
+      targetPort: 8000
+  selector:
+    app: ooda-brain
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ooda-brain
+  namespace: atlasos
+  labels:
+    app: ooda-brain
+    app.kubernetes.io/name: ooda-brain
+    app.kubernetes.io/part-of: atlasos
+    app.kubernetes.io/version: "4.0.0"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ooda-brain
+  template:
+    metadata:
+      labels:
+        app: ooda-brain
+        atlasos.medinovai.com/sidecar: "enabled"
+    spec:
+      serviceAccountName: atlasos-sa
+      containers:
+        - name: ooda-brain
+          image: atlasos/ooda-brain:4.0.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - secretRef:
+                name: atlasos-integration-secrets
+            - secretRef:
+                name: atlasos-infra-secrets
+          resources:
+            requests:
+              memory: 128Mi
+              cpu: 50m
+            limits:
+              memory: 256Mi
+              cpu: 250m
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 30
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: squad-manager
+  namespace: atlasos
+  labels:
+    app.kubernetes.io/name: squad-manager
+    app.kubernetes.io/part-of: atlasos
+spec:
+  ports:
+    - port: 8001
+      targetPort: 8001
+  selector:
+    app: squad-manager
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: squad-manager
+  namespace: atlasos
+  labels:
+    app: squad-manager
+    app.kubernetes.io/name: squad-manager
+    app.kubernetes.io/part-of: atlasos
+    app.kubernetes.io/version: "4.0.0"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: squad-manager
+  template:
+    metadata:
+      labels:
+        app: squad-manager
+        atlasos.medinovai.com/sidecar: "enabled"
+    spec:
+      serviceAccountName: atlasos-sa
+      containers:
+        - name: squad-manager
+          image: atlasos/squad-manager:4.0.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8001
+          envFrom:
+            - secretRef:
+                name: atlasos-integration-secrets
+            - secretRef:
+                name: atlasos-infra-secrets
+          resources:
+            requests:
+              memory: 128Mi
+              cpu: 50m
+            limits:
+              memory: 256Mi
+              cpu: 250m
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8001
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8001
+            initialDelaySeconds: 30
+            periodSeconds: 30
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: fleet-monitor
+  namespace: atlasos
+  labels:
+    app.kubernetes.io/name: fleet-monitor
+    app.kubernetes.io/part-of: atlasos
+spec:
+  ports:
+    - port: 8014
+      targetPort: 8014
+  selector:
+    app: fleet-monitor
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fleet-monitor
+  namespace: atlasos
+  labels:
+    app: fleet-monitor
+    app.kubernetes.io/name: fleet-monitor
+    app.kubernetes.io/part-of: atlasos
+    app.kubernetes.io/version: "4.0.0"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fleet-monitor
+  template:
+    metadata:
+      labels:
+        app: fleet-monitor
+        atlasos.medinovai.com/sidecar: "enabled"
+    spec:
+      serviceAccountName: atlasos-sa
+      containers:
+        - name: fleet-monitor
+          image: atlasos/fleet-monitor:4.0.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8014
+          envFrom:
+            - secretRef:
+                name: atlasos-integration-secrets
+            - secretRef:
+                name: atlasos-infra-secrets
+          resources:
+            requests:
+              memory: 128Mi
+              cpu: 50m
+            limits:
+              memory: 256Mi
+              cpu: 250m
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8014
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8014
+            initialDelaySeconds: 30
+            periodSeconds: 30
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: service-registry
+  namespace: atlasos
+  labels:
+    app.kubernetes.io/name: service-registry
+    app.kubernetes.io/part-of: atlasos
+spec:
+  ports:
+    - port: 8002
+      targetPort: 8002
+  selector:
+    app: service-registry
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: service-registry
+  namespace: atlasos
+  labels:
+    app: service-registry
+    app.kubernetes.io/name: service-registry
+    app.kubernetes.io/part-of: atlasos
+    app.kubernetes.io/version: "4.0.0"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: service-registry
+  template:
+    metadata:
+      labels:
+        app: service-registry
+        atlasos.medinovai.com/sidecar: "enabled"
+    spec:
+      serviceAccountName: atlasos-sa
+      containers:
+        - name: service-registry
+          image: atlasos/service-registry:4.0.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8002
+          envFrom:
+            - secretRef:
+                name: atlasos-integration-secrets
+            - secretRef:
+                name: atlasos-infra-secrets
+          resources:
+            requests:
+              memory: 128Mi
+              cpu: 50m
+            limits:
+              memory: 256Mi
+              cpu: 250m
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8002
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8002
+            initialDelaySeconds: 30
+            periodSeconds: 30
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: health-probe
+  namespace: atlasos
+  labels:
+    app.kubernetes.io/name: health-probe
+    app.kubernetes.io/part-of: atlasos
+spec:
+  ports:
+    - port: 8003
+      targetPort: 8003
+  selector:
+    app: health-probe
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: health-probe
+  namespace: atlasos
+  labels:
+    app: health-probe
+    app.kubernetes.io/name: health-probe
+    app.kubernetes.io/part-of: atlasos
+    app.kubernetes.io/version: "4.0.0"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: health-probe
+  template:
+    metadata:
+      labels:
+        app: health-probe
+        atlasos.medinovai.com/sidecar: "enabled"
+    spec:
+      serviceAccountName: atlasos-sa
+      containers:
+        - name: health-probe
+          image: atlasos/health-probe:4.0.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8003
+          envFrom:
+            - secretRef:
+                name: atlasos-integration-secrets
+            - secretRef:
+                name: atlasos-infra-secrets
+          resources:
+            requests:
+              memory: 128Mi
+              cpu: 50m
+            limits:
+              memory: 256Mi
+              cpu: 250m
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8003
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8003
+            initialDelaySeconds: 30
+            periodSeconds: 30
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rule-compiler
+  namespace: atlasos
+  labels:
+    app.kubernetes.io/name: rule-compiler
+    app.kubernetes.io/part-of: atlasos
+spec:
+  ports:
+    - port: 8211
+      targetPort: 8211
+  selector:
+    app: rule-compiler
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rule-compiler
+  namespace: atlasos
+  labels:
+    app: rule-compiler
+    app.kubernetes.io/name: rule-compiler
+    app.kubernetes.io/part-of: atlasos
+    app.kubernetes.io/version: "4.0.0"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rule-compiler
+  template:
+    metadata:
+      labels:
+        app: rule-compiler
+        atlasos.medinovai.com/sidecar: "enabled"
+    spec:
+      serviceAccountName: atlasos-sa
+      containers:
+        - name: rule-compiler
+          image: atlasos/rule-compiler:4.0.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8211
+          envFrom:
+            - secretRef:
+                name: atlasos-integration-secrets
+            - secretRef:
+                name: atlasos-infra-secrets
+          resources:
+            requests:
+              memory: 128Mi
+              cpu: 50m
+            limits:
+              memory: 256Mi
+              cpu: 250m
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8211
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8211
+            initialDelaySeconds: 30
+            periodSeconds: 30
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: engine-registry
+  namespace: atlasos
+  labels:
+    app.kubernetes.io/name: engine-registry
+    app.kubernetes.io/part-of: atlasos
+spec:
+  ports:
+    - port: 8213
+      targetPort: 8213
+  selector:
+    app: engine-registry
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: engine-registry
+  namespace: atlasos
+  labels:
+    app: engine-registry
+    app.kubernetes.io/name: engine-registry
+    app.kubernetes.io/part-of: atlasos
+    app.kubernetes.io/version: "4.0.0"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: engine-registry
+  template:
+    metadata:
+      labels:
+        app: engine-registry
+        atlasos.medinovai.com/sidecar: "enabled"
+    spec:
+      serviceAccountName: atlasos-sa
+      containers:
+        - name: engine-registry
+          image: atlasos/engine-registry:4.0.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8213
+          envFrom:
+            - secretRef:
+                name: atlasos-integration-secrets
+            - secretRef:
+                name: atlasos-infra-secrets
+          resources:
+            requests:
+              memory: 128Mi
+              cpu: 50m
+            limits:
+              memory: 256Mi
+              cpu: 250m
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8213
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8213
+            initialDelaySeconds: 30
+            periodSeconds: 30

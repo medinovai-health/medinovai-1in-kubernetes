@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: medinovai-esign
+  namespace: clinical
+  labels:
+    app: medinovai-esign
+    atlasos.io/managed: "true"
+spec:
+  selector:
+    app: medinovai-esign
+  ports:
+  - port: 3000
+    targetPort: 3000
+    protocol: TCP
+    name: http
+  type: ClusterIP

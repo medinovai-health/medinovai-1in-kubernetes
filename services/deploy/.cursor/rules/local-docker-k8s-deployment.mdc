@@ -1,0 +1,511 @@
+# Local Docker + Kubernetes Deployment (Tailscale HA)
+
+Learned knowledge from live deployments on this machine. Apply whenever working with Docker Compose, Kubernetes, or Tailscale networking in this repo.
+
+---
+
+## THE ONE COMMAND
+
+When a user asks to "install everything", "set up the stack", "deploy", or "bootstrap" on a new machine:
+
+```bash
+make up
+```
+
+That is the ONLY command needed. It runs `scripts/bootstrap/bootstrap-all.sh` which installs all 3 layers automatically, idempotently, with health checks and a final summary.
+
+Variants:
+```bash
+make up PRIMARY=true          # this machine is the DB host (Tailscale primary)
+make up DB_HOST=100.x.x.x    # secondary machine, DB lives on that Tailscale IP
+make down                     # stop gracefully, data preserved
+make nuke                     # wipe and rebuild from scratch
+```
+
+Do NOT walk the user through manual steps. Do NOT ask clarifying questions about layers. Just run `make up`.
+
+---
+
+## Environment Layout
+
+**This machine**: `mayank-mbp25` · Tailscale IP `100.79.214.33` · Role: primary (DB node)
+
+Two-layer stack:
+
+| Layer | Tool | Services | Persistence |
+|-------|------|----------|-------------|
+| Infra | Docker Compose (`infra/docker/docker-compose.dev.yml`) | postgres, redis, prometheus, grafana, mailhog, localstack | Named volumes + `restart: unless-stopped` |
+| Apps | Kubernetes (docker-desktop context) | api-gateway, auth-service, clinical-engine, data-pipeline, ai-inference, notification-service | K8s auto-restarts pods |
+
+Both layers must be running for the stack to work. Infra must start before K8s pods.
+
+---
+
+## One-Command Flows
+
+### First machine (primary — hosts postgres/redis for the whole Tailscale cluster)
+```bash
+make docker-up && make k8s-install-primary
+```
+
+### Every additional machine (secondary — on Tailscale)
+```bash
+make docker-up && bash scripts/bootstrap/install-k8s.sh --db-host 100.79.214.33
+```
+Replace `100.79.214.33` with the primary machine's Tailscale IP.
+
+### Clean reinstall (any machine, keeps Docker volumes)
+```bash
+make k8s-reinstall
+```
+
+### Full nuclear reset (wipes all data)
+```bash
+make k8s-uninstall && make docker-down
+bash scripts/seed.sh --reset
+make docker-up && make k8s-install
+```
+
+---
+
+## Scripts Reference
+
+| Script | When | What It Does |
+|--------|------|--------------|
+| `scripts/backup.sh` | Before ANY infra change | DB dump + volume tarballs → `~/medinovai-backups/medinovai-Deploy/` |
+| `scripts/restore.sh --from-latest` | After data loss | Stop stack → restore DB → restart |
+| `scripts/seed.sh` | New machine / fresh env | Start infra → run migrations → start all services |
+| `scripts/seed.sh --reset` | Nuclear reset | Wipe all volumes → rebuild from scratch |
+| `scripts/bootstrap/tailscale-config.sh --primary` | First run on primary | Write `.env.tailscale` + `configmap-env-local.yaml` |
+| `scripts/bootstrap/tailscale-config.sh --db-host <ip>` | First run on secondary | Same, pointing at primary's Tailscale IP |
+| `scripts/bootstrap/install-k8s.sh` | Install / update K8s | Tailscale config → infra up → apply manifests → wait healthy |
+| `scripts/bootstrap/install-k8s.sh --primary` | Primary machine | Same + registers this machine as DB host |
+| `scripts/bootstrap/uninstall-k8s.sh` | Remove K8s only | Delete `medinovai-*` namespaces + resources (keeps Docker) |
+| `scripts/bootstrap/uninstall-k8s.sh --also-infra` | Remove everything | Uninstall K8s + stop Docker Compose |
+| `scripts/bootstrap/instantiate-docker.sh` | Full greenfield Docker | 8-step bootstrap with pre/post-deploy backup checkpoints |
+
+---
+
+## Makefile Targets (Quick Reference)
+
+| Target | What It Does |
+|--------|--------------|
+| `make docker-up` | Start Docker Compose infra |
+| `make docker-down` | Stop Docker Compose (volumes preserved) |
+| `make docker-backup` | Run `scripts/backup.sh` |
+| `make docker-restore` | Run `scripts/restore.sh` |
+| `make docker-seed` | Run `scripts/seed.sh` |
+| `make k8s-install` | Install K8s (auto-detect Tailscale) |
+| `make k8s-install-primary` | Install K8s as primary DB node |
+| `make k8s-uninstall` | Remove all K8s resources |
+| `make k8s-reinstall` | Uninstall + reinstall K8s |
+| `make k8s-status` | Print pod + service status for all namespaces |
+| `make tailscale-config` | Re-run Tailscale config detection |
+| `make docker-instantiate` | Full greenfield Docker bootstrap |
+
+---
+
+## Kubernetes Overlay Structure
+
+```
+infra/kubernetes/
+├── base/                             # Shared: namespaces, RBAC, NetworkPolicies, Quotas
+├── services/<name>/                  # Per-service: deployment, service, hpa, pdb
+└── overlays/
+    ├── docker-desktop/               # ← LOCAL MACHINE OVERLAY
+    │   ├── kustomization.yaml        # Entry point: references base + all patches
+    │   ├── configmap-env.yaml        # Default env (host.docker.internal)
+    │   ├── configmap-env-local.yaml  # ← GITIGNORED — generated by tailscale-config.sh
+    │   ├── configmap-env-ai.yaml     # AI namespace env (default)
+    │   ├── configmap-env-ai-local.yaml # ← GITIGNORED — generated
+    │   ├── patch-<service>.yaml      # Image swap (traefik/whoami) + reduced resources
+    │   ├── patch-*-nodeport.yaml     # NodePort 30080/30081 for Tailscale
+    │   └── patch-quota-*.yaml        # Reduced ResourceQuota for laptop
+    ├── dev/                          # Dev cloud overlay
+    ├── staging/                      # Staging cloud overlay
+    └── production/                   # Production cloud overlay
+```
+
+**Apply local K8s:**
+```bash
+kubectl apply -k infra/kubernetes/overlays/docker-desktop
+```
+
+**Preview without applying:**
+```bash
+kubectl kustomize infra/kubernetes/overlays/docker-desktop | grep -E "^(kind|  image):"
+```
+
+---
+
+## Known Bugs Fixed in Production (Do Not Regress)
+
+### BUG-001 — `readOnlyRootFilesystem` at wrong level
+- **Error**: `strict decoding error: unknown field "spec.template.spec.securityContext.readOnlyRootFilesystem"`
+- **Cause**: These are container-level fields, not pod-level. Base `deployment.yaml` files had them wrong.
+- **Fix applied**: Removed `readOnlyRootFilesystem` and `allowPrivilegeEscalation` from `spec.template.spec.securityContext` in all 6 base service `deployment.yaml` files.
+- **Rule**: `spec.template.spec.securityContext` accepts only `runAsNonRoot`, `runAsUser`, `fsGroup`, `supplementalGroups`, `sysctls`. Container-level security fields go under `spec.template.spec.containers[].securityContext`.
+
+### BUG-002 — GPU resource blocks ai-inference pod on non-GPU machines
+- **Error**: `0/1 nodes are available: 1 Insufficient nvidia.com/gpu` → pod stays Pending
+- **Fix applied**: JSON patch in `patch-ai-inference.yaml` removes GPU limit and GPU tolerations for the docker-desktop overlay.
+- **Rule**: Use JSON 6902 `op: remove` patch, not strategic merge, for removing resource keys. Encode `/` in JSON Patch paths as `~1` (e.g., `nvidia.com/gpu` → `/nvidia.com~1gpu`).
+
+### BUG-003 — ResourceQuota conflict (overlay adds duplicate)
+- **Error**: `may not add resource with an already registered id: ResourceQuota`
+- **Cause**: ResourceQuota already defined in base; overlay was adding it again as a `resource:`.
+- **Fix applied**: Moved quota overrides to `patches:` targeting existing base objects instead of `resources:`.
+
+### BUG-004 — `commonLabels` deprecated in Kustomize
+- **Warning**: `'commonLabels' is deprecated. Please use 'labels' instead.`
+- **Fix applied**: Replaced with:
+  ```yaml
+  labels:
+    - pairs:
+        environment: docker-desktop
+      includeSelectors: false
+  ```
+
+### BUG-005 — Strategic merge patch cannot delete resource keys
+- **Problem**: Patching `resources.limits` with strategic merge only merges — it won't remove keys like `nvidia.com/gpu: 1` from base.
+- **Fix**: Always use JSON 6902 patch (`op: remove`) to delete individual resource limit keys.
+
+### BUG-006 — Tailscale version mismatch warning
+- `Warning: client (x.y.z) / server (x.y.z-1) version mismatch` is benign — Tailscale still works. No action needed.
+
+### BUG-007 — Docker volume names include compose project prefix
+- **Problem**: With `name: medinovai-dev` in compose file, volumes are named `medinovai-dev_postgres-data`, not bare `postgres-data`.
+- **Fix**: Use `docker volume ls -q | grep "postgres-data$"` to find the actual volume name dynamically in scripts.
+
+### BUG-008 — kubectl context not set after fresh Docker Desktop install
+- **Symptom**: `error: current-context is not set`
+- **Fix**: `kubectl config use-context docker-desktop`
+
+---
+
+## Tailscale Networking Rules
+
+| Machine Role | Command | DB URL in ConfigMap |
+|-------------|---------|---------------------|
+| Primary (hosts postgres/redis) | `tailscale-config.sh --primary` | `host.docker.internal:5432` |
+| Secondary | `tailscale-config.sh --db-host <ts-ip>` | `<ts-ip>:5432` |
+
+**Gitignored files** (machine-specific, never commit):
+- `.env.tailscale`
+- `infra/kubernetes/overlays/docker-desktop/configmap-env-local.yaml`
+- `infra/kubernetes/overlays/docker-desktop/configmap-env-ai-local.yaml`
+
+**Required open ports on Tailscale firewall / ACL:**
+
+| Port | Service | Direction |
+|------|---------|-----------|
+| 5432 | PostgreSQL | Secondary → Primary |
+| 6379 | Redis | Secondary → Primary |
+| 30080 | api-gateway NodePort | Any machine → Any |
+| 30081 | auth-service NodePort | Any machine → Any |
+
+**Test connectivity:**
+```bash
+nc -zv 100.79.214.33 5432    # postgres
+nc -zv 100.79.214.33 6379    # redis
+nc -zv 100.79.214.33 30080   # api-gateway
+```
+
+---
+
+## Service Endpoints
+
+| Service | Local | Tailscale (primary machine) |
+|---------|-------|-----------------------------|
+| api-gateway | `http://localhost:30080` | `http://100.79.214.33:30080` |
+| auth-service | `http://localhost:30081` | `http://100.79.214.33:30081` |
+| Grafana | `http://localhost:3000` | `http://100.79.214.33:3000` |
+| Prometheus | `http://localhost:9090` | `http://100.79.214.33:9090` |
+| Postgres | `localhost:5432` | `100.79.214.33:5432` |
+| Redis | `localhost:6379` | `100.79.214.33:6379` |
+| MailHog | `http://localhost:8025` | — |
+| LocalStack | `localhost:4566` | — |
+
+---
+
+## Project Host Port Ranges (Docker Compose)
+
+Each project is assigned a unique 100-port block for host-side Docker Compose mappings. Internal container ports always follow the Deploy standard (8000 for Python, 3000 for Node.js). Never overlap ranges.
+
+| Project | Host Port Range | Key Services |
+|---------|-----------------|--------------|
+| Northstar | `18000–18099` | identity=18000, recognition=18001, rewards=18002, communications=18003, listening=18004, learning=18005, onboarding=18006, analytics=18007, connector=18008, openclaw=18009, phi-firewall=18010, mock-registry=18099, K8s NodePort=31800 |
+| SAES / Cortex | `3050` / `3100` | Legacy — pre-dates range policy |
+
+Register new projects here before assigning ports.
+
+---
+
+## Smoke Test Sequence
+
+Run after any install or reinstall to verify the full stack:
+
+```bash
+# 1. Docker infra
+docker exec medinovai-postgres pg_isready -U medinovai -d medinovai
+docker exec medinovai-redis redis-cli -a localdev ping
+curl -sf http://localhost:9090/-/healthy && echo "Prometheus OK"
+curl -sf http://localhost:3000/api/health && echo "Grafana OK"
+
+# 2. K8s pods running
+kubectl get pods -n medinovai-services
+kubectl get pods -n medinovai-ai
+
+# 3. K8s NodePort services responding
+curl -sf http://localhost:30080 | grep Hostname && echo "api-gateway OK"
+curl -sf http://localhost:30081 | grep Hostname && echo "auth-service OK"
+
+# 4. Tailscale cross-machine (run from a secondary machine)
+nc -zv 100.79.214.33 5432
+curl -sf http://100.79.214.33:30080 | grep Hostname
+```
+
+---
+
+## Stub Images in docker-desktop Overlay
+
+All 6 app services use `traefik/whoami:latest` as placeholder. This image:
+- Responds HTTP 200 to **any** path (including `/health`, `/ready`)
+- Prints pod hostname, IP, and request headers
+- Requires zero configuration
+- Pulls from Docker Hub automatically
+
+**Replace with real images when app code is built:**
+```yaml
+# In overlay kustomization.yaml
+images:
+  - name: traefik/whoami
+    newName: ghcr.io/myonsite-healthcare/api-gateway
+    newTag: v1.0.0
+```
+
+---
+
+## Multi-Machine HA Pattern Summary
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    TAILSCALE NETWORK                         │
+│                                                             │
+│  ┌──────────────────────────────┐                           │
+│  │ Machine 1 (PRIMARY)          │                           │
+│  │ 100.79.214.33                │                           │
+│  │ ┌──────────────────────────┐ │                           │
+│  │ │ Docker Compose (Infra)   │ │                           │
+│  │ │  postgres:5432           │ │←── all machines connect   │
+│  │ │  redis:6379              │ │                           │
+│  │ │  prometheus, grafana...  │ │                           │
+│  │ └──────────────────────────┘ │                           │
+│  │ ┌──────────────────────────┐ │                           │
+│  │ │ K8s (docker-desktop)    │ │                           │
+│  │ │  api-gateway :30080      │ │                           │
+│  │ │  auth-service :30081     │ │                           │
+│  │ │  + 4 more services       │ │                           │
+│  │ └──────────────────────────┘ │                           │
+│  └──────────────────────────────┘                           │
+│                                                             │
+│  ┌──────────────────────────────┐                           │
+│  │ Machine 2 (SECONDARY)        │                           │
+│  │ <tailscale-ip>               │                           │
+│  │ ┌──────────────────────────┐ │                           │
+│  │ │ Docker Compose (Infra)   │ │  ← local monitoring only  │
+│  │ │  prometheus, grafana...  │ │                           │
+│  │ └──────────────────────────┘ │                           │
+│  │ ┌──────────────────────────┐ │                           │
+│  │ │ K8s → DB @ primary TS IP │ │                           │
+│  │ │  api-gateway :30080      │ │                           │
+│  │ │  + 5 more services       │ │                           │
+│  │ └──────────────────────────┘ │                           │
+│  └──────────────────────────────┘                           │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Cluster Addons (Layer 3 — on top of K8s)
+
+Four addons deployed — all local, zero cloud accounts:
+
+| Addon | Namespace | Access | Command |
+|-------|-----------|--------|---------|
+| NGINX Ingress | `ingress-nginx` | `http://localhost:30800` | direct |
+| Kubernetes Dashboard | `kubernetes-dashboard` | `https://localhost:8443` | `make dashboard-forward` |
+| kube-state-metrics | `medinovai-monitoring` | internal Prometheus feed | — |
+| ArgoCD | `argocd` | `http://localhost:8080` | `make argocd-forward` |
+
+**Install all addons**: `make addons-install`  
+**Reinstall one**: `make addons-ingress` / `make addons-dashboard` / `make addons-monitoring` / `make addons-argocd`  
+**Remove all**: `make addons-uninstall`
+
+### NGINX Ingress Routes (via Host: medinovai.local)
+
+```bash
+curl -H "Host: medinovai.local" http://localhost:30800/          # → api-gateway
+curl -H "Host: medinovai.local" http://localhost:30800/auth      # → auth-service
+curl -H "Host: medinovai.local" http://localhost:30800/clinical  # → clinical-engine
+curl -H "Host: medinovai.local" http://localhost:30800/pipeline  # → data-pipeline
+curl -H "Host: medinovai.local" http://localhost:30800/notify    # → notification-service
+curl -H "Host: medinovai.local" http://localhost:30800/ai        # → ai-inference
+```
+
+### ArgoCD GitOps — How It Works
+
+- Watches: `infra/kubernetes/overlays/docker-desktop` on `main` branch
+- Every `git push main` → ArgoCD syncs cluster within ~3 minutes automatically
+- `selfHeal: true` → manual kubectl edits get reverted to Git state
+- `prune: false` → won't auto-delete (safety)
+- Check sync status: `kubectl get application medinovai-platform -n argocd`
+
+### Dashboard Token
+
+```bash
+# Get token
+kubectl -n kubernetes-dashboard get secret medinovai-dashboard-admin-token \
+  -o jsonpath="{.data.token}" | base64 --decode
+# Or: cat .dashboard-token (gitignored, generated by install-addons.sh)
+```
+
+### ArgoCD Password
+
+```bash
+kubectl -n argocd get secret argocd-initial-admin-secret \
+  -o jsonpath="{.data.password}" | base64 --decode
+```
+
+### Kubernetes Dashboard — Namespace Gotcha
+
+Docker Desktop's built-in Kubernetes UI only shows the `default` namespace. Switch the namespace dropdown to see `medinovai-services`, `medinovai-ai`, `ingress-nginx`, etc. The full Kubernetes Dashboard at `https://localhost:8443` shows all namespaces.
+
+---
+
+## Backup Rule (Always Enforce)
+
+Run `scripts/backup.sh` before:
+- Any `kubectl apply` that modifies the cluster
+- Any compose file change
+- Any `scripts/seed.sh --reset`
+- Any Makefile infra target that changes state
+
+Backups go to: `~/medinovai-backups/medinovai-Deploy/{db,volumes,config}/`
+
+---
+
+## 200-Repo Bulk Deployment
+
+The full MedinovAI system consists of ~200 repositories in `myonsite-healthcare` GitHub org.
+They are all deployed to Docker Desktop Kubernetes via the smart deploy engine.
+
+### Clone All 200 Repos
+
+```bash
+# Requires gh CLI authenticated to myonsite-healthcare org
+gh repo list myonsite-healthcare --limit 200 --json name,sshUrl \
+  --jq '.[] | "git clone " + .sshUrl + " ~/medinovai-all-repos/" + .name' \
+  > /tmp/clone_all.sh
+bash /tmp/clone_all.sh
+```
+
+### Deploy Engine
+
+Located at `scripts/deploy-all-repos.py`. Log output → `logs/deploy-history.json`.
+
+```bash
+# See plan without making changes
+python3 scripts/deploy-all-repos.py --dry-run
+
+# Fix Dockerfiles only (safe, no K8s changes)
+python3 scripts/deploy-all-repos.py --fix-only
+
+# Deploy tier 1 (registry must come first)
+python3 scripts/deploy-all-repos.py --tier 1
+
+# Deploy everything
+python3 scripts/deploy-all-repos.py
+
+# Deploy a single repo
+python3 scripts/deploy-all-repos.py --repo medinovai-registry
+
+# Check current K8s pod health summary
+python3 scripts/deploy-all-repos.py --status
+```
+
+### Tier Deployment Order
+
+| Tier | Repos | Must be healthy before next tier |
+|------|-------|----------------------------------|
+| 1 | `medinovai-registry` | Yes |
+| 2 | `medinovai-data-services`, `medinovai-secrets-manager-bridge`, `medinovai-universal-sign-on`, `medinovai-role-based-permissions`, `medinovai-real-time-stream-bus`, `medinovai-saes` | Yes |
+| 3 | `medinovai-aifactory`, `medinovai-healthLLM`, `medinovai-lis`, `medinovai-Cortex` | Yes |
+| 4+ | All remaining 190+ repos | N/A |
+
+### imagePullPolicy: Never Mandate
+
+All 200-repo services use locally-built Docker images. Every K8s manifest MUST include:
+```yaml
+imagePullPolicy: Never
+```
+Without it, K8s will attempt Docker Hub pull → `ErrImagePull` on a local image.
+
+### REGISTRY_URL Injection
+
+Every K8s deployment must include:
+```yaml
+env:
+- name: REGISTRY_URL
+  value: "http://medinovai-registry.medinovai:8000"
+```
+
+---
+
+## Dockerfile Common Bugs (10 Patterns)
+
+All discovered in the Feb 2026 200-repo bulk deployment. The deploy engine fixes these automatically.
+
+| # | Symptom | Root Cause | Fix |
+|---|---------|-----------|-----|
+| BUG-009 | `docker build` fails with `unknown instruction: '''` | BMAD AI generator wraps Dockerfile in Python triple-quoted string | Strip leading/trailing `'''` |
+| BUG-010 | `docker build` fails with `dockerfile parse error on line 1: unknown instruction: _#` | BMAD template adds `_` before `# syntax=docker/dockerfile:1.6` | Remove leading `_` from line 1 |
+| BUG-011 | `pip wheel` fails for `shared/medinovai-core` | `requirements.txt` has `-e shared/medinovai-core` which is an empty stub | Remove `-e shared/*` lines |
+| BUG-012 | `npm install` fails with lockfile mismatch | `pnpm-lock.yaml` exists but Dockerfile uses `npm install` | Switch to `pnpm install --frozen-lockfile` |
+| BUG-013 | `gunicorn: executable file not found` | Multi-stage Dockerfile installs gunicorn in builder, not in final stage | Add gunicorn to final stage or use single-stage |
+| BUG-014 | `Error: Cannot find module '/app/server.js'` | Node Dockerfile references `server.js` that doesn't exist | Create stub `server.js` |
+| BUG-015 | `ModuleNotFoundError: No module named 'main'` | Python Dockerfile references `main.py` that doesn't exist | Create stub `main.py` |
+| BUG-016 | K8s manifest port mismatch (8000 vs 8001) | Auto-generated K8s manifest uses different port than Dockerfile EXPOSE | Re-derive port from EXPOSE |
+| BUG-017 | Invalid K8s resource name (`cogniai.us`) | Repo names with `.` are invalid K8s names | Replace `.` with `-` |
+| BUG-018 | .NET multi-stage build fails (SDK missing) | ASP.NET Core builds need .NET SDK image + restore + publish | Replace with Python FastAPI stub |
+
+---
+
+## Pod Limit Management
+
+Docker Desktop's single-node K8s cluster defaults to **110 pods maximum**.
+
+### Check current usage
+```bash
+kubectl get nodes -o jsonpath='{.items[0].status.allocatable.pods}'  # max
+kubectl get pods --all-namespaces --no-headers | wc -l               # current
+```
+
+### When nearing the limit (>100 pods)
+```bash
+# Identify placeholder deployments using traefik/whoami or nginx:latest
+kubectl get deployments --all-namespaces \
+  -o jsonpath='{range .items[*]}{.metadata.namespace}{"\t"}{.metadata.name}{"\t"}{.spec.template.spec.containers[0].image}{"\n"}{end}' \
+  | grep -E "whoami|placeholder|nginx:latest"
+
+# Delete them manually to free pod slots
+kubectl delete deployment <name> -n <namespace>
+```
+
+**NEVER delete tier 1-2 pods (medinovai-registry, medinovai-data-services, etc.) to free capacity.**
+Only remove old placeholder test deployments.
+
+### Prevent hitting the limit
+- Deploy stubs with `replicas: 1` (the engine default)
+- Remove completed/failed Jobs: `kubectl delete jobs --field-selector=status.successful=1 -A`
+- Keep `Evicted` pods cleaned: `kubectl get pods -A | grep Evicted | awk '{print $1,$2}' | xargs -n2 kubectl delete pod -n`

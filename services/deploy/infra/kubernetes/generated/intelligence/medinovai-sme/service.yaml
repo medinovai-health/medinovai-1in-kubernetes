@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: medinovai-sme
+  namespace: intelligence
+  labels:
+    app: medinovai-sme
+    atlasos.io/managed: "true"
+spec:
+  selector:
+    app: medinovai-sme
+  ports:
+  - port: 8000
+    targetPort: 8000
+    protocol: TCP
+    name: http
+  type: ClusterIP

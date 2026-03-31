@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: medinovai-devops-telemetry
+  namespace: platform
+  labels:
+    app: medinovai-devops-telemetry
+    atlasos.io/managed: "true"
+spec:
+  selector:
+    app: medinovai-devops-telemetry
+  ports:
+  - port: 3000
+    targetPort: 3000
+    protocol: TCP
+    name: http
+  type: ClusterIP

@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ai-coach
+  namespace: platform
+  labels:
+    app: ai-coach
+    atlasos.io/managed: "true"
+  annotations:
+    atlasos.io/sidecar-enabled: "true"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ai-coach
+  template:
+    metadata:
+      labels:
+        app: ai-coach
+        atlasos.io/managed: "true"
+    spec:
+      containers:
+      - name: ai-coach
+        image: ai-coach:latest
+        ports:
+        - containerPort: 3000
+          name: http
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 200m
+            memory: 512Mi
+
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 3000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+
+        volumeMounts:
+        - name: secrets
+          mountPath: /run/secrets/atlasos
+          readOnly: true
+      volumes:
+      - name: secrets
+        secret:
+          secretName: atlasos-infra-secrets
+

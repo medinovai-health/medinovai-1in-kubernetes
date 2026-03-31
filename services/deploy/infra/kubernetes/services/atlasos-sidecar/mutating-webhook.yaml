@@ -1,0 +1,30 @@
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: atlasos-sidecar-injector
+  annotations:
+    cert-manager.io/inject-ca-from: atlasos/atlasos-sidecar-cert
+webhooks:
+  - name: sidecar.atlasos.medinovai.com
+    admissionReviewVersions: [v1]
+    sideEffects: None
+    failurePolicy: Ignore
+    namespaceSelector:
+      matchLabels:
+        app.kubernetes.io/part-of: atlasos
+    objectSelector:
+      matchExpressions:
+        - key: atlasos.medinovai.com/sidecar
+          operator: In
+          values: ["enabled"]
+    rules:
+      - operations: [CREATE]
+        apiGroups: [""]
+        apiVersions: [v1]
+        resources: [pods]
+    clientConfig:
+      service:
+        name: atlasos-sidecar-webhook
+        namespace: atlasos
+        path: /inject
+        port: 8443

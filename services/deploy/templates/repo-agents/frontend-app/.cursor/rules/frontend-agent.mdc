@@ -1,0 +1,8 @@
+# Frontend Application — AtlasOS Agent Rules
+
+- Use TypeScript strict mode. No `any` types in new code.
+- All components must be accessible (WCAG 2.1 AA): proper ARIA labels, keyboard navigation, color contrast.
+- Bundle size budgets: initial load < 200KB gzipped.
+- All user inputs must be sanitized before rendering.
+- API calls must go through a centralized client with auth token injection.
+- Visual regression tests required for shared components.

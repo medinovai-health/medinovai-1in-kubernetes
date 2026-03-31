@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: medinovai-ai-local
+  labels:
+    app.kubernetes.io/managed-by: medinovai
+    purpose: local-llm-inference

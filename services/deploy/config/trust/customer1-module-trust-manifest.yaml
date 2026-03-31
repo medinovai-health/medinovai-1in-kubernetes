@@ -1,0 +1,132 @@
+# Customer-1 Golden Scenarios — module-trust-manifest overlay (v2 schema)
+# Maps golden scenarios to each deployed service for myOnsiteHealthcare.
+# Each service should adopt the relevant section into its own module-trust-manifest.yaml.
+version: "2.0"
+
+services:
+
+  medinovai-os-portal:
+    demo:
+      synthetic_data_pack_id: "myonsite-sdg-v1"
+      demo_mode_env_var: "DEMO_MODE"
+      golden_scenarios:
+        - id: GS-PORTAL-001
+          title: "Portal loads with myOnsite branding"
+          steps_ref: "tests/e2e/customer1/myonsite-login.spec.ts"
+          deterministic: true
+          kiosk_safe: true
+        - id: GS-PORTAL-002
+          title: "Portal shows all services in sidebar"
+          steps_ref: "tests/e2e/customer1/myonsite-login.spec.ts"
+          deterministic: true
+          kiosk_safe: true
+
+  medinovai-universal-sign-on:
+    demo:
+      synthetic_data_pack_id: "myonsite-sdg-v1"
+      demo_mode_env_var: "DEMO_MODE"
+      golden_scenarios:
+        - id: GS-AUTH-001
+          title: "myonsite user login via Keycloak OIDC"
+          steps_ref: "tests/e2e/customer1/myonsite-login.spec.ts"
+          deterministic: true
+          kiosk_safe: true
+        - id: GS-AUTH-002
+          title: "Role-based redirect after login"
+          steps_ref: "tests/e2e/customer1/myonsite-login.spec.ts"
+          deterministic: true
+          kiosk_safe: true
+        - id: GS-AUTH-003
+          title: "Tenant isolation — cross-tenant token rejected"
+          steps_ref: "tests/e2e/customer1/myonsite-tenant-isolation.spec.ts"
+          deterministic: true
+          kiosk_safe: false
+
+  medinovai-lis:
+    demo:
+      synthetic_data_pack_id: "myonsite-sdg-v1"
+      demo_mode_env_var: "DEMO_MODE"
+      golden_scenarios:
+        - id: GS-LIS-001
+          title: "Lab order to result — full lifecycle"
+          steps_ref: "tests/e2e/customer1/myonsite-lab-order.spec.ts"
+          deterministic: true
+          kiosk_safe: true
+        - id: GS-LIS-002
+          title: "Search synthetic patient by MRN"
+          steps_ref: "tests/e2e/customer1/myonsite-data-search.spec.ts"
+          deterministic: true
+          kiosk_safe: true
+        - id: GS-LIS-003
+          title: "View lab result with reference range flags"
+          steps_ref: "tests/e2e/customer1/myonsite-lab-order.spec.ts"
+          deterministic: true
+          kiosk_safe: true
+
+  medinovai-data-services:
+    demo:
+      synthetic_data_pack_id: "myonsite-sdg-v1"
+      demo_mode_env_var: "DEMO_MODE"
+      golden_scenarios:
+        - id: GS-DATA-001
+          title: "Patient list returns SDG-seeded records"
+          steps_ref: "tests/e2e/customer1/myonsite-data-search.spec.ts"
+          deterministic: true
+          kiosk_safe: true
+        - id: GS-DATA-002
+          title: "Tenant-scoped query returns only myonsite-healthcare data"
+          steps_ref: "tests/e2e/customer1/myonsite-tenant-isolation.spec.ts"
+          deterministic: true
+          kiosk_safe: false
+
+  medinovai-audit-trail-explorer:
+    demo:
+      synthetic_data_pack_id: "myonsite-sdg-v1"
+      demo_mode_env_var: "DEMO_MODE"
+      golden_scenarios:
+        - id: GS-AUDIT-001
+          title: "Audit trail shows seeded events"
+          steps_ref: "tests/e2e/customer1/myonsite-login.spec.ts"
+          deterministic: true
+          kiosk_safe: true
+        - id: GS-AUDIT-002
+          title: "Login creates audit event"
+          steps_ref: "tests/e2e/customer1/myonsite-login.spec.ts"
+          deterministic: true
+          kiosk_safe: true
+
+  medinovai-registry:
+    demo:
+      synthetic_data_pack_id: "myonsite-sdg-v1"
+      demo_mode_env_var: "DEMO_MODE"
+      golden_scenarios:
+        - id: GS-REG-001
+          title: "Registry lists all deployed services"
+          steps_ref: "tests/e2e/customer1/myonsite-login.spec.ts"
+          deterministic: true
+          kiosk_safe: true
+
+  medinovai-role-based-permissions:
+    demo:
+      synthetic_data_pack_id: "myonsite-sdg-v1"
+      demo_mode_env_var: "DEMO_MODE"
+      golden_scenarios:
+        - id: GS-RBAC-001
+          title: "Admin role has full permissions"
+          steps_ref: "tests/e2e/customer1/myonsite-user-management.spec.ts"
+          deterministic: true
+          kiosk_safe: true
+        - id: GS-RBAC-002
+          title: "read_only role blocked from write operations"
+          steps_ref: "tests/e2e/customer1/myonsite-tenant-isolation.spec.ts"
+          deterministic: true
+          kiosk_safe: false
+
+  medinovai-encryption-vault:
+    demo:
+      golden_scenarios:
+        - id: GS-VAULT-001
+          title: "Health endpoint returns vault status"
+          steps_ref: "tests/e2e/customer1/myonsite-login.spec.ts"
+          deterministic: true
+          kiosk_safe: true

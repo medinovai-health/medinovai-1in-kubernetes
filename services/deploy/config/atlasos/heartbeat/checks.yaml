@@ -1,0 +1,43 @@
+# AtlasOS Heartbeat Configuration — medinovai-Deploy
+# Generated: 2026-03-29
+
+service: "medinovai-Deploy"
+interval_seconds: 30
+timeout_seconds: 5
+
+checks:
+    - name: "health_endpoint"
+      type: "http"
+      url: "http://localhost:8111/health"
+      expected_status: 200
+      critical: true
+
+    - name: "process_alive"
+      type: "process"
+      pattern: "medinovai-Deploy"
+      critical: true
+
+    - name: "port_listening"
+      type: "port"
+      port: 8111
+      critical: true
+
+    - name: "disk_space"
+      type: "disk"
+      threshold_percent: 90
+      critical: false
+
+    - name: "memory_usage"
+      type: "memory"
+      threshold_percent: 85
+      critical: false
+
+alerts:
+    on_failure:
+        - type: "squad_notification"
+          target: "infrastructure-squad"
+        - type: "ooda_trigger"
+          action: "observe"
+    on_recovery:
+        - type: "squad_notification"
+          target: "infrastructure-squad"

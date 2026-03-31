@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: atlasos-sidecar-webhook
+  namespace: atlasos
+  labels:
+    app.kubernetes.io/name: atlasos-sidecar-webhook
+    app.kubernetes.io/part-of: atlasos
+spec:
+  ports:
+    - port: 443
+      targetPort: 8443
+  selector:
+    app: atlasos-sidecar-webhook
