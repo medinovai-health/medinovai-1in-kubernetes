@@ -1,0 +1,181 @@
+openapi: 3.1.0
+info:
+  title: Canary Rollout Orchestrator API
+  version: "1.0"
+paths:
+  /deployments:
+    get:
+      summary: List all deployments
+      operationId: listDeployments
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: after
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: A list of deployments
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeploymentList'
+    post:
+      summary: Create a new canary deployment
+      operationId: createDeployment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeploymentRequest'
+      responses:
+        '201':
+          description: Deployment created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Deployment'
+  /deployments/{deploymentId}:
+    get:
+      summary: Get a specific deployment
+      operationId: getDeployment
+      parameters:
+        - name: deploymentId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: A single deployment
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Deployment'
+  /deployments/{deploymentId}/promote:
+    post:
+      summary: Promote a canary deployment
+      operationId: promoteDeployment
+      parameters:
+        - name: deploymentId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '202':
+          description: Promotion accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeploymentStatus'
+  /deployments/{deploymentId}/rollback:
+    post:
+      summary: Rollback a canary deployment
+      operationId: rollbackDeployment
+      parameters:
+        - name: deploymentId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '202':
+          description: Rollback accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeploymentStatus'
+  /deployments/{deploymentId}/metrics:
+    get:
+      summary: Get deployment metrics
+      operationId: getDeploymentMetrics
+      parameters:
+        - name: deploymentId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Deployment metrics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeploymentMetrics'
+components:
+  schemas:
+    Deployment:
+      type: object
+      properties:
+        deploymentId:
+          type: string
+        applicationName:
+          type: string
+        version:
+          type: string
+        status:
+          type: string
+        canaryPercentage:
+          type: integer
+        durationMinutes:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+    DeploymentRequest:
+      type: object
+      properties:
+        applicationName:
+          type: string
+        version:
+          type: string
+        canaryPercentage:
+          type: integer
+        durationMinutes:
+          type: integer
+    DeploymentList:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Deployment'
+        pagination:
+          type: object
+          properties:
+            nextCursor:
+              type: string
+    DeploymentStatus:
+      type: object
+      properties:
+        deploymentId:
+          type: string
+        status:
+          type: string
+    DeploymentMetrics:
+      type: object
+      properties:
+        deploymentId:
+          type: string
+        metrics:
+          type: object
+          properties:
+            requestCount:
+              type: integer
+            errorRate:
+              type: number
+            latencyP95:
+              type: integer
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+security:
+  - bearerAuth: []

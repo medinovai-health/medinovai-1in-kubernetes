@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: medinovai-canary-rollout-orchestrator
+  namespace: medinovai-services
+  labels:
+    app: medinovai-canary-rollout-orchestrator
+    managed-by: medinovai-smart-deploy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: medinovai-canary-rollout-orchestrator
+  template:
+    metadata:
+      labels:
+        app: medinovai-canary-rollout-orchestrator
+    spec:
+      containers:
+      - name: medinovai-canary-rollout-orchestrator
+        image: medinovai-canary-rollout-orchestrator:latest
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 8000
+          name: http
+        env:
+        - name: SERVICE_NAME
+          value: "medinovai-canary-rollout-orchestrator"
+        - name: REGISTRY_URL
+          value: "http://medinovai-registry.medinovai:8000"
+        - name: PORT
+          value: "8000"
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 45
+          periodSeconds: 15
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 15
+          periodSeconds: 10
+          failureThreshold: 2
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: medinovai-canary-rollout-orchestrator
+  namespace: medinovai-services
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8000
+    targetPort: 8000
+    protocol: TCP
+    name: http
+  selector:
+    app: medinovai-canary-rollout-orchestrator

@@ -1,0 +1,15 @@
+{
+  "health_check_endpoint": "/health",
+  "dependencies": [
+    {
+      "name": "database",
+      "type": "postgres",
+      "connection_string": "db:5432"
+    },
+    {
+      "name": "redis",
+      "type": "redis",
+      "connection_string": "redis:6379"
+    }
+  ]
+}

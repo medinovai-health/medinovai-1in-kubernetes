@@ -1,0 +1,37 @@
+service:
+  name: medinovai-canary-rollout-orchestrator
+  version: 1.0.0
+  tier: 1
+  category: platform
+  health_endpoint: /health
+  port: 7000
+  dependencies: []
+  squad: infrastructure-squad
+module:
+  name: medinovai-canary-rollout-orchestrator
+  version: 1.0.0
+  domain: platform
+  profile: platform
+  tier: 1
+  status: active
+  description: medinovai-canary-rollout-orchestrator service
+  owner: '@medinovai-health'
+deployment:
+  runtime: node
+  containerized: true
+  dockerfile: ./Dockerfile
+  k8s_namespace: medinovai-services
+  health_endpoint: /health
+  ready_endpoint: /ready
+  port: 7000
+  min_replicas: 1
+  canary_enabled: false
+  gpu_required: false
+  sidecar_enabled: true
+  secrets_required:
+  - vault-runtime-secrets
+governance:
+  compliance:
+  - HIPAA
+  phi_handling: false
+  audit_required: true

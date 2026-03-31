@@ -1,0 +1,12 @@
+# AI Governance Controls
+Enforce GOV-01 through GOV-10 at development time.
+- GOV-01: Verify model is registered in Model Risk Register before deployment
+- GOV-02: All AI model changes must pass pre-deployment validation pipeline
+- GOV-03: Bias testing required for models affecting patient care
+- GOV-04: Human override pathway required for all clinician-facing AI
+- GOV-05: Explainability fields proportional to model risk class
+- GOV-06: Heartbeat monitoring for accuracy drift and alert fatigue
+- GOV-07: Data lineage tracking for all AI data sources
+- GOV-08: Vendor accountability terms for third-party AI
+- GOV-09: AI incident response protocol for failures
+- GOV-10: AI Governance Board approval for clinical deployments
