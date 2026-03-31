@@ -1,0 +1,31 @@
+apiVersion: medinovai.dev/v1
+kind: ServiceManifest
+metadata:
+  id: MED-svc-CHANGE_ME
+  name: CHANGE_ME
+  displayName: "CHANGE_ME"
+  monorepo: MONOREPO_NAME
+  path: services/CHANGE_ME
+  migratedFrom: CHANGE_ME
+  migrationDate: "YYYY-MM-DD"
+  ownerSquad: CHANGE_ME
+  tier: "2"
+  complianceTier: "2"
+spec:
+  language: python
+  runtimePort: 8000
+  contracts: []
+  tests:
+    unit: tests/unit
+    integration: tests/integration
+  ci:
+    workflow: .github/workflows/services-CHANGE_ME.yml
+    pathFilters:
+      - "services/CHANGE_ME/**"
+  deployment:
+    chartPath: deploy/charts/CHANGE_ME
+    imageName: CHANGE_ME
+  regulatory:
+    dhfEntry: docs/qms/dhf/DHF_INDEX.md
+    riskClass: "B"
+    soupComponents: []

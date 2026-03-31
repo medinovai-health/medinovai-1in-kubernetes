@@ -1,29 +1,40 @@
-# Claude AI Instructions — medinovai-infrastructure
-## Import Central Standards
-@import .ai-standards/CLAUDE.md
-## Repository-Specific Context
-- **Repository:** medinovai-infrastructure
-- **Role:** Core platform infrastructure — IaC, Kubernetes configs, Terraform modules
-- **Tier:** Tier 2 (Platform / Infrastructure)
-- **Compliance Level:** FDA-CLASS-II
-- **Primary Language:** Python
-## Repository Purpose
-Core platform infrastructure — IaC, Kubernetes configs, Terraform modules. Part of the MedinovAI platform under medinovai-health.
-## When Working on This Repository
-1. Read central standards first — medinovai-ai-standards/CLAUDE.md
-2. Follow coding conventions — E_ prefix constants, mos_ prefix variables, 40-line limit
-3. Infrastructure changes require rollback plans — scripts must be idempotent
-4. Security by default — zero-trust principles, RBAC on all endpoints
-5. Test coverage minimum: 85%
-6. Document thoroughly — every API, configuration, and deployment procedure
-## Related Standards
-| Document | Location |
-|----------|----------|
-| Master AI Instructions | medinovai-ai-standards/CLAUDE.md |
-| Coding Standards | medinovai-ai-standards/CODING_STANDARDS.md |
-| Compliance Matrix | medinovai-ai-standards/COMPLIANCE_MATRIX.md |
-| Security & ZeroTrust | medinovai-ai-standards/SECURITY_AND_ZEROTRUST.md |
-| Observability | medinovai-ai-standards/OBSERVABILITY.md |
-| Agent Harness | medinovai-ai-standards/AGENT_HARNESS.md |
-| Architecture | medinovai-ai-standards/ARCHITECTURE.md |
-| Repo Bootstrap | medinovai-ai-standards/REPO_BOOTSTRAP.md |
+# CLAUDE.md - medinovai-infrastructure
+
+## Purpose
+
+Infrastructure - Helm, Terraform, deploy engine, monitoring, DevOps tooling
+
+## Compliance Tier
+
+- **Platform Tier:** Varies by service
+- **Compliance Tier:** Varies by service (check each service.yaml)
+
+## Repo Identity
+
+| Field | Value |
+|-------|-------|
+| Repo | medinovai-infrastructure |
+| Type | Monorepo |
+| Domain | infrastructure |
+| Language | Mixed (Python, TypeScript, C#) |
+| Platform Standard | v2.1 |
+
+## How to Run Tests
+
+```bash
+# Per-service tests
+cd services/<service-name>
+pytest  # Python
+npm test  # Node.js
+dotnet test  # C#
+```
+
+## Coding Conventions
+
+- Constants: `E_VARIABLE` (uppercase, E_ prefix)
+- Variables: `mos_variableName` (lowerCamelCase, mos_ prefix)
+- Methods: max 40 lines
+- Docstrings: Google-style on all public functions
+- Type hints on ALL function parameters and returns
+- Logging: structlog ZTA format (structured JSON)
+- Encoding: UTF-8 everywhere
