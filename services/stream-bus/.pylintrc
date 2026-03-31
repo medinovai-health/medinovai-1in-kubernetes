@@ -1,0 +1,33 @@
+# .pylintrc — medinovai-real-time-stream-bus
+# MedinovAI Python linting rules — medinovai-ai-standards/CODING_STANDARDS.md
+
+[MASTER]
+jobs=1
+persistent=yes
+
+[MESSAGES CONTROL]
+disable=C0114,C0115,C0116,R0903
+
+[FORMAT]
+max-line-length=120
+max-module-lines=500
+
+[DESIGN]
+max-args=10
+max-locals=20
+max-returns=6
+max-branches=12
+max-statements=50
+max-bool-expr=5
+max-public-methods=20
+max-attributes=12
+
+[VARIABLES]
+# MedinovAI naming: variables=mos_*, constants=E_*
+good-names=i,j,k,e,f,db,id,ok,ex,tz
+
+[TYPECHECK]
+generated-members=objects,query
+
+[SIMILARITIES]
+min-similarity-lines=6

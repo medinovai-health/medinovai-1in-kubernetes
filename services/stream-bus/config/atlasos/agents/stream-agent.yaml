@@ -1,0 +1,35 @@
+# AtlasOS Agent Definition — stream-agent
+# Repository: medinovai-real-time-stream-bus
+# Generated: 2026-02-23
+# Version: 1.0.0
+# Status: Active
+
+agent_id: stream-agent
+name: stream-agent
+version: "1.0.0"
+squad: infrastructure-squad
+tier: 1
+
+capabilities:
+  - event_routing
+  - queue_management
+  - rabbitmq_mgmt
+
+schedule:
+  interval: 30s
+
+approval_gates:
+  - type: human
+    condition: "anomaly_score > 0.8 OR action_type == destructive"
+  - type: automated
+    condition: "anomaly_score <= 0.8"
+
+compliance:
+  phi_handling: false
+  audit_required: true
+  tenant_scoped: true
+
+ooda_integration:
+  reports_to: ooda-brain
+  escalation_channel: "#atlas-infrastructure-squad-escalation"
+  heartbeat_interval: 5m

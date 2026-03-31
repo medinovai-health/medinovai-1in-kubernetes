@@ -1,0 +1,703 @@
+openapi: '3.0.3'
+info:
+  title: Real-time Stream Bus API
+  description: |
+    API for Real-time Stream Bus (medinovai-real-time-stream-bus).
+    Tier: T2 — FDA-CLASS-I, platform service
+
+    ## Authentication
+    All endpoints require Bearer token (JWT) from MedinovAI Security Service.
+
+    ## Multi-Tenant Isolation
+    Every request MUST include `org_id` header for tenant isolation.
+    Cross-tenant access is blocked at the API gateway and enforced in SpiceDB.
+
+    ## Audit Trail
+    All mutations are logged to the immutable audit trail per FDA 21 CFR Part 11.
+  version: '1.0.0'
+  contact:
+    name: MedinovAI Platform Team
+    email: platform@medinovai.com
+  license:
+    name: Proprietary
+    url: https://medinovai.com/terms
+
+servers:
+  - url: https://real-time-stream-bus.staging.medinovai.com/api
+    description: Staging
+  - url: https://real-time-stream-bus.medinovai.com/api
+    description: Production
+
+paths:
+  /api/v1/streams:
+    get:
+      summary: List streams
+      operationId: listStreams
+      tags: [Real-time Stream Bus]
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+        - name: org_id
+          in: header
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Tenant organization ID (multi-tenant isolation)
+      responses:
+        '200':
+          description: Paginated list of streams
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Stream'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+        - bearerAuth: []
+    post:
+      summary: Create stream
+      operationId: createStream
+      tags: [Real-time Stream Bus]
+      parameters:
+        - name: org_id
+          in: header
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StreamCreate'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Stream'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+      security:
+        - bearerAuth: []
+  /api/v1/streams/{id}:
+    get:
+      summary: Get stream by ID
+      operationId: getStream
+      tags: [Real-time Stream Bus]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: org_id
+          in: header
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Stream details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Stream'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      security:
+        - bearerAuth: []
+
+  /api/v1/topics:
+    get:
+      summary: List topics
+      operationId: listTopics
+      tags: [Real-time Stream Bus]
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+        - name: org_id
+          in: header
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Tenant organization ID (multi-tenant isolation)
+      responses:
+        '200':
+          description: Paginated list of topics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Topic'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+        - bearerAuth: []
+    post:
+      summary: Create topic
+      operationId: createTopic
+      tags: [Real-time Stream Bus]
+      parameters:
+        - name: org_id
+          in: header
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TopicCreate'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Topic'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+      security:
+        - bearerAuth: []
+  /api/v1/topics/{id}:
+    get:
+      summary: Get topic by ID
+      operationId: getTopic
+      tags: [Real-time Stream Bus]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: org_id
+          in: header
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Topic details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Topic'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      security:
+        - bearerAuth: []
+
+  /api/v1/consumers:
+    get:
+      summary: List consumers
+      operationId: listConsumers
+      tags: [Real-time Stream Bus]
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+        - name: org_id
+          in: header
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Tenant organization ID (multi-tenant isolation)
+      responses:
+        '200':
+          description: Paginated list of consumers
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Consumer'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+        - bearerAuth: []
+    post:
+      summary: Create consumer
+      operationId: createConsumer
+      tags: [Real-time Stream Bus]
+      parameters:
+        - name: org_id
+          in: header
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConsumerCreate'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Consumer'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+      security:
+        - bearerAuth: []
+  /api/v1/consumers/{id}:
+    get:
+      summary: Get consumer by ID
+      operationId: getConsumer
+      tags: [Real-time Stream Bus]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: org_id
+          in: header
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Consumer details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Consumer'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      security:
+        - bearerAuth: []
+
+  /api/v1/offsets:
+    get:
+      summary: List offsets
+      operationId: listOffsets
+      tags: [Real-time Stream Bus]
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+        - name: org_id
+          in: header
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Tenant organization ID (multi-tenant isolation)
+      responses:
+        '200':
+          description: Paginated list of offsets
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Offset'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+        - bearerAuth: []
+    post:
+      summary: Create offset
+      operationId: createOffset
+      tags: [Real-time Stream Bus]
+      parameters:
+        - name: org_id
+          in: header
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OffsetCreate'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Offset'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+      security:
+        - bearerAuth: []
+  /api/v1/offsets/{id}:
+    get:
+      summary: Get offset by ID
+      operationId: getOffset
+      tags: [Real-time Stream Bus]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: org_id
+          in: header
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Offset details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Offset'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      security:
+        - bearerAuth: []
+
+  /health:
+    get:
+      summary: Health check
+      operationId: healthCheck
+      tags: [System]
+      responses:
+        '200':
+          description: Service healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+      security: []
+
+  /health/ready:
+    get:
+      summary: Readiness check (includes dependency status)
+      operationId: readinessCheck
+      tags: [System]
+      responses:
+        '200':
+          description: Service ready
+        '503':
+          description: Service not ready (dependency down)
+      security: []
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT from MedinovAI Security Service (MSS)
+
+  schemas:
+    Stream:
+      type: object
+      required: [id, created_at, org_id]
+      properties:
+        id:
+          type: string
+          format: uuid
+        org_id:
+          type: string
+          format: uuid
+          description: Owning organization (tenant isolation)
+        name:
+          type: string
+          maxLength: 255
+        status:
+          type: string
+          enum: [draft, active, archived]
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        created_by:
+          type: string
+          format: uuid
+    StreamCreate:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          maxLength: 255
+        metadata:
+          type: object
+          additionalProperties: true
+
+    Topic:
+      type: object
+      required: [id, created_at, org_id]
+      properties:
+        id:
+          type: string
+          format: uuid
+        org_id:
+          type: string
+          format: uuid
+          description: Owning organization (tenant isolation)
+        name:
+          type: string
+          maxLength: 255
+        status:
+          type: string
+          enum: [draft, active, archived]
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        created_by:
+          type: string
+          format: uuid
+    TopicCreate:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          maxLength: 255
+        metadata:
+          type: object
+          additionalProperties: true
+
+    Consumer:
+      type: object
+      required: [id, created_at, org_id]
+      properties:
+        id:
+          type: string
+          format: uuid
+        org_id:
+          type: string
+          format: uuid
+          description: Owning organization (tenant isolation)
+        name:
+          type: string
+          maxLength: 255
+        status:
+          type: string
+          enum: [draft, active, archived]
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        created_by:
+          type: string
+          format: uuid
+    ConsumerCreate:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          maxLength: 255
+        metadata:
+          type: object
+          additionalProperties: true
+
+    Offset:
+      type: object
+      required: [id, created_at, org_id]
+      properties:
+        id:
+          type: string
+          format: uuid
+        org_id:
+          type: string
+          format: uuid
+          description: Owning organization (tenant isolation)
+        name:
+          type: string
+          maxLength: 255
+        status:
+          type: string
+          enum: [draft, active, archived]
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        created_by:
+          type: string
+          format: uuid
+    OffsetCreate:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          maxLength: 255
+        metadata:
+          type: object
+          additionalProperties: true
+
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+        page_size:
+          type: integer
+        total_count:
+          type: integer
+        total_pages:
+          type: integer
+
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, degraded, unhealthy]
+        service:
+          type: string
+        version:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        dependencies:
+          type: object
+          additionalProperties:
+            type: string
+
+    ErrorResponse:
+      type: object
+      required: [error_code, message]
+      properties:
+        error_code:
+          type: string
+          description: Structured error code (E_SAFE_DEFAULT format)
+        message:
+          type: string
+        details:
+          type: object
+        correlation_id:
+          type: string
+          format: uuid
+
+  responses:
+    Unauthorized:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Forbidden:
+      description: Insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    ValidationError:
+      description: Request validation failed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+security:
+  - bearerAuth: []

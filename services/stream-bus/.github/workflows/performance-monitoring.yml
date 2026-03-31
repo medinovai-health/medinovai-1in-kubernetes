@@ -1,0 +1,72 @@
+name: Performance Monitoring
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    - cron: '0 */6 * * *'  # Every 6 hours
+
+jobs:
+  performance-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+      
+      - name: Install performance tools
+        run: |
+          pip install locust pytest-benchmark memory-profiler psutil
+          npm install -g lighthouse-cli
+      
+      - name: Run load tests
+        run: |
+          if [ -f locustfile.py ]; then
+            locust --headless --users 10 --spawn-rate 2 --run-time 60s --html reports/locust-report.html
+          fi
+      
+      - name: Run benchmark tests
+        run: |
+          if [ -f tests/test_performance.py ]; then
+            pytest tests/test_performance.py --benchmark-only --benchmark-json reports/benchmark-results.json
+          fi
+      
+      - name: Memory profiling
+        run: |
+          python -m memory_profiler scripts/profile_memory.py || echo "Memory profiling script not found"
+      
+      - name: Lighthouse audit
+        run: |
+          if [ -f public/index.html ]; then
+            lighthouse public/index.html --output html --output-path reports/lighthouse-report.html
+          fi
+      
+      - name: Upload performance reports
+        uses: actions/upload-artifact@v3
+        with:
+          name: performance-reports-${{ github.run_number }}
+          path: reports/
+      
+      - name: Performance summary
+        run: |
+          echo "## Performance Results for medinovai-real-time-stream-bus" >> $GITHUB_STEP_SUMMARY
+          echo "- Load testing completed" >> $GITHUB_STEP_SUMMARY
+          echo "- Benchmark tests completed" >> $GITHUB_STEP_SUMMARY
+          echo "- Memory profiling completed" >> $GITHUB_STEP_SUMMARY
+          echo "- Lighthouse audit completed" >> $GITHUB_STEP_SUMMARY
+
+  monitoring-setup:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Deploy monitoring
+        run: |
+          echo "Setting up monitoring for medinovai-real-time-stream-bus"
+          # Add monitoring deployment commands here

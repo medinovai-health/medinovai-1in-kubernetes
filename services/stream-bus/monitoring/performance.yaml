@@ -1,0 +1,29 @@
+# Performance Monitoring Configuration for medinovai-real-time-stream-bus
+monitoring:
+  metrics:
+    - response_time
+    - throughput
+    - error_rate
+    - memory_usage
+    - cpu_usage
+    
+  thresholds:
+    response_time_p95: 1000ms
+    error_rate: 0.01
+    memory_usage: 80%
+    cpu_usage: 70%
+    
+  alerts:
+    enabled: true
+    channels:
+      - slack
+      - email
+      
+  dashboards:
+    - name: "medinovai-real-time-stream-bus Performance"
+      url: "https://grafana.example.com/d/medinovai-real-time-stream-bus"
+      
+  profiling:
+    enabled: true
+    sampling_rate: 0.1
+    retention_days: 30
