@@ -1,0 +1,17 @@
+name: stream-bus
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - "services/stream-bus/**"
+      - ".github/workflows/services-stream-bus.yml"
+  pull_request:
+    paths:
+      - "services/stream-bus/**"
+
+jobs:
+  ci:
+    uses: ./.github/workflows/templates/python-service.yml
+    with:
+      service-path: services/stream-bus
+      service-name: medinovai-real-time-stream-bus
