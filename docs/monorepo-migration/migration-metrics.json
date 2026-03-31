@@ -1,0 +1,48 @@
+{
+  "migration_id": "MONO-2026-Q1",
+  "release_version": "v1.0.0-migration-2026Q1",
+  "release_date": "2026-03-31",
+  "org": "medinovai-health",
+  "total_repos_in_scope": 192,
+  "target_monorepo_count": 7,
+  "migrated_components_total": 104,
+  "monorepos": {
+    "medinovai-platform-brain": {
+      "migrated_components": 7,
+      "domain": "reference",
+      "description": "Architecture, standards, deploy reference, and governance documentation"
+    },
+    "medinovai-core-platform": {
+      "migrated_components": 13,
+      "domain": "platform",
+      "description": "Registry, security, audit, identity, workflow, and shared platform libraries"
+    },
+    "medinovai-security-compliance": {
+      "migrated_components": 9,
+      "domain": "security_compliance",
+      "description": "Encryption, secrets, consent, HIPAA/GDPR guard, and policy tooling"
+    },
+    "medinovai-data-integration": {
+      "migrated_components": 7,
+      "domain": "data_integration",
+      "description": "Data services, EPG, lake/ETL, CDR, and supporting data libraries"
+    },
+    "medinovai-clinical-research": {
+      "migrated_components": 40,
+      "domain": "clinical_research",
+      "description": "CTMS, eClinical stack, LIS, lab routing, and related clinical services"
+    },
+    "medinovai-experience": {
+      "migrated_components": 19,
+      "domain": "experience",
+      "description": "Customer-facing apps, UI libraries, portals, and multimodal experience tooling"
+    },
+    "medinovai-infrastructure": {
+      "migrated_components": 9,
+      "domain": "infrastructure",
+      "description": "Deploy automation, canary rollout, telemetry, QA infrastructure, and ops services"
+    }
+  },
+  "manifest_source": "monorepo-migration/migration-manifest.json",
+  "notes": "migrated_components counts include entries with action migrate or already-in-repo in the migration manifest."
+}
