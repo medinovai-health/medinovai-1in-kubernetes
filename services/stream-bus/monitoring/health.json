@@ -1,0 +1,18 @@
+{
+  "health_check": {
+    "endpoint": "/health",
+    "interval": "30s",
+    "timeout": "10s",
+    "retries": 3
+  },
+  "dependencies": {
+    "database": {
+      "type": "postgres",
+      "connection": "db.example.com:5432"
+    },
+    "cache": {
+      "type": "redis",
+      "connection": "cache.example.com:6379"
+    }
+  }
+}

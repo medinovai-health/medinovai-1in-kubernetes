@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "argocd_sync_failed",
+  "description": "Emitted when ArgoCD sync fails",
+  "type": "object",
+  "required": ["event_type", "timestamp", "source", "tenant_id"],
+  "properties": {
+    "event_type": { "const": "argocd_sync_failed" },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "source": { "type": "string" },
+    "tenant_id": { "type": "string" },
+    "correlation_id": { "type": "string" },
+    "payload": {
+      "type": "object",
+      "properties": {
+        "application": { "type": "string" },
+        "namespace": { "type": "string" },
+        "revision": { "type": "string" },
+        "error_message": { "type": "string" },
+        "phase": { "type": "string" }
+      }
+    }
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,452 @@
+# AutonomyOS Domain Event Catalog
+# Real-time Stream Bus (medinovai-real-time-stream-bus) — Tier 2
+#
+# Event-driven architecture for the MedinovAI AutonomyOS platform.
+# All events are published to ActiveMQ topics and consumed by registered subscribers.
+# Events follow CloudEvents v1.0 specification.
+
+module: real-time-stream-bus
+version: "1.0.0"
+domain: Real-time Stream Bus
+tier: 2
+
+event_defaults:
+  content_type: application/json
+  encoding: utf-8
+  broker: activemq
+  dead_letter_topic: "medinovai.real-time-stream-bus.dlq"
+  retry_policy:
+    max_retries: 3
+    backoff: exponential
+    initial_delay_ms: 1000
+
+events:
+  real-time-stream-bus.stream.created:
+    description: "Stream was created"
+    schema:
+      type: object
+      required: [event_id, timestamp, org_id, actor_id, stream_id]
+      properties:
+        event_id:
+          type: string
+          format: uuid
+        timestamp:
+          type: string
+          format: date-time
+        org_id:
+          type: string
+          format: uuid
+          description: Tenant organization
+        actor_id:
+          type: string
+          format: uuid
+          description: User who triggered the event
+        stream_id:
+          type: string
+          format: uuid
+        action:
+          type: string
+          enum: [created]
+        correlation_id:
+          type: string
+          format: uuid
+    topic: "medinovai.real-time-stream-bus.stream.created"
+    retention: 30d
+    consumers:
+      - audit-trail
+      - analytics-pipeline
+
+  real-time-stream-bus.stream.updated:
+    description: "Stream was updated"
+    schema:
+      type: object
+      required: [event_id, timestamp, org_id, actor_id, stream_id]
+      properties:
+        event_id:
+          type: string
+          format: uuid
+        timestamp:
+          type: string
+          format: date-time
+        org_id:
+          type: string
+          format: uuid
+          description: Tenant organization
+        actor_id:
+          type: string
+          format: uuid
+          description: User who triggered the event
+        stream_id:
+          type: string
+          format: uuid
+        action:
+          type: string
+          enum: [updated]
+        correlation_id:
+          type: string
+          format: uuid
+    topic: "medinovai.real-time-stream-bus.stream.updated"
+    retention: 30d
+    consumers:
+      - audit-trail
+      - analytics-pipeline
+
+  real-time-stream-bus.stream.deleted:
+    description: "Stream was deleted"
+    schema:
+      type: object
+      required: [event_id, timestamp, org_id, actor_id, stream_id]
+      properties:
+        event_id:
+          type: string
+          format: uuid
+        timestamp:
+          type: string
+          format: date-time
+        org_id:
+          type: string
+          format: uuid
+          description: Tenant organization
+        actor_id:
+          type: string
+          format: uuid
+          description: User who triggered the event
+        stream_id:
+          type: string
+          format: uuid
+        action:
+          type: string
+          enum: [deleted]
+        correlation_id:
+          type: string
+          format: uuid
+    topic: "medinovai.real-time-stream-bus.stream.deleted"
+    retention: 30d
+    consumers:
+      - audit-trail
+      - analytics-pipeline
+
+  real-time-stream-bus.topic.created:
+    description: "Topic was created"
+    schema:
+      type: object
+      required: [event_id, timestamp, org_id, actor_id, topic_id]
+      properties:
+        event_id:
+          type: string
+          format: uuid
+        timestamp:
+          type: string
+          format: date-time
+        org_id:
+          type: string
+          format: uuid
+          description: Tenant organization
+        actor_id:
+          type: string
+          format: uuid
+          description: User who triggered the event
+        topic_id:
+          type: string
+          format: uuid
+        action:
+          type: string
+          enum: [created]
+        correlation_id:
+          type: string
+          format: uuid
+    topic: "medinovai.real-time-stream-bus.topic.created"
+    retention: 30d
+    consumers:
+      - audit-trail
+      - analytics-pipeline
+
+  real-time-stream-bus.topic.updated:
+    description: "Topic was updated"
+    schema:
+      type: object
+      required: [event_id, timestamp, org_id, actor_id, topic_id]
+      properties:
+        event_id:
+          type: string
+          format: uuid
+        timestamp:
+          type: string
+          format: date-time
+        org_id:
+          type: string
+          format: uuid
+          description: Tenant organization
+        actor_id:
+          type: string
+          format: uuid
+          description: User who triggered the event
+        topic_id:
+          type: string
+          format: uuid
+        action:
+          type: string
+          enum: [updated]
+        correlation_id:
+          type: string
+          format: uuid
+    topic: "medinovai.real-time-stream-bus.topic.updated"
+    retention: 30d
+    consumers:
+      - audit-trail
+      - analytics-pipeline
+
+  real-time-stream-bus.topic.deleted:
+    description: "Topic was deleted"
+    schema:
+      type: object
+      required: [event_id, timestamp, org_id, actor_id, topic_id]
+      properties:
+        event_id:
+          type: string
+          format: uuid
+        timestamp:
+          type: string
+          format: date-time
+        org_id:
+          type: string
+          format: uuid
+          description: Tenant organization
+        actor_id:
+          type: string
+          format: uuid
+          description: User who triggered the event
+        topic_id:
+          type: string
+          format: uuid
+        action:
+          type: string
+          enum: [deleted]
+        correlation_id:
+          type: string
+          format: uuid
+    topic: "medinovai.real-time-stream-bus.topic.deleted"
+    retention: 30d
+    consumers:
+      - audit-trail
+      - analytics-pipeline
+
+  real-time-stream-bus.consumer.created:
+    description: "Consumer was created"
+    schema:
+      type: object
+      required: [event_id, timestamp, org_id, actor_id, consumer_id]
+      properties:
+        event_id:
+          type: string
+          format: uuid
+        timestamp:
+          type: string
+          format: date-time
+        org_id:
+          type: string
+          format: uuid
+          description: Tenant organization
+        actor_id:
+          type: string
+          format: uuid
+          description: User who triggered the event
+        consumer_id:
+          type: string
+          format: uuid
+        action:
+          type: string
+          enum: [created]
+        correlation_id:
+          type: string
+          format: uuid
+    topic: "medinovai.real-time-stream-bus.consumer.created"
+    retention: 30d
+    consumers:
+      - audit-trail
+      - analytics-pipeline
+
+  real-time-stream-bus.consumer.updated:
+    description: "Consumer was updated"
+    schema:
+      type: object
+      required: [event_id, timestamp, org_id, actor_id, consumer_id]
+      properties:
+        event_id:
+          type: string
+          format: uuid
+        timestamp:
+          type: string
+          format: date-time
+        org_id:
+          type: string
+          format: uuid
+          description: Tenant organization
+        actor_id:
+          type: string
+          format: uuid
+          description: User who triggered the event
+        consumer_id:
+          type: string
+          format: uuid
+        action:
+          type: string
+          enum: [updated]
+        correlation_id:
+          type: string
+          format: uuid
+    topic: "medinovai.real-time-stream-bus.consumer.updated"
+    retention: 30d
+    consumers:
+      - audit-trail
+      - analytics-pipeline
+
+  real-time-stream-bus.consumer.deleted:
+    description: "Consumer was deleted"
+    schema:
+      type: object
+      required: [event_id, timestamp, org_id, actor_id, consumer_id]
+      properties:
+        event_id:
+          type: string
+          format: uuid
+        timestamp:
+          type: string
+          format: date-time
+        org_id:
+          type: string
+          format: uuid
+          description: Tenant organization
+        actor_id:
+          type: string
+          format: uuid
+          description: User who triggered the event
+        consumer_id:
+          type: string
+          format: uuid
+        action:
+          type: string
+          enum: [deleted]
+        correlation_id:
+          type: string
+          format: uuid
+    topic: "medinovai.real-time-stream-bus.consumer.deleted"
+    retention: 30d
+    consumers:
+      - audit-trail
+      - analytics-pipeline
+
+  real-time-stream-bus.offset.created:
+    description: "Offset was created"
+    schema:
+      type: object
+      required: [event_id, timestamp, org_id, actor_id, offset_id]
+      properties:
+        event_id:
+          type: string
+          format: uuid
+        timestamp:
+          type: string
+          format: date-time
+        org_id:
+          type: string
+          format: uuid
+          description: Tenant organization
+        actor_id:
+          type: string
+          format: uuid
+          description: User who triggered the event
+        offset_id:
+          type: string
+          format: uuid
+        action:
+          type: string
+          enum: [created]
+        correlation_id:
+          type: string
+          format: uuid
+    topic: "medinovai.real-time-stream-bus.offset.created"
+    retention: 30d
+    consumers:
+      - audit-trail
+      - analytics-pipeline
+
+  real-time-stream-bus.offset.updated:
+    description: "Offset was updated"
+    schema:
+      type: object
+      required: [event_id, timestamp, org_id, actor_id, offset_id]
+      properties:
+        event_id:
+          type: string
+          format: uuid
+        timestamp:
+          type: string
+          format: date-time
+        org_id:
+          type: string
+          format: uuid
+          description: Tenant organization
+        actor_id:
+          type: string
+          format: uuid
+          description: User who triggered the event
+        offset_id:
+          type: string
+          format: uuid
+        action:
+          type: string
+          enum: [updated]
+        correlation_id:
+          type: string
+          format: uuid
+    topic: "medinovai.real-time-stream-bus.offset.updated"
+    retention: 30d
+    consumers:
+      - audit-trail
+      - analytics-pipeline
+
+  real-time-stream-bus.offset.deleted:
+    description: "Offset was deleted"
+    schema:
+      type: object
+      required: [event_id, timestamp, org_id, actor_id, offset_id]
+      properties:
+        event_id:
+          type: string
+          format: uuid
+        timestamp:
+          type: string
+          format: date-time
+        org_id:
+          type: string
+          format: uuid
+          description: Tenant organization
+        actor_id:
+          type: string
+          format: uuid
+          description: User who triggered the event
+        offset_id:
+          type: string
+          format: uuid
+        action:
+          type: string
+          enum: [deleted]
+        correlation_id:
+          type: string
+          format: uuid
+    topic: "medinovai.real-time-stream-bus.offset.deleted"
+    retention: 30d
+    consumers:
+      - audit-trail
+      - analytics-pipeline
+
+
+subscriptions:
+  # Events this module consumes from other modules
+  - topic: "medinovai.security.auth.*"
+    handler: src/handlers/auth_events
+    description: "Auth events for session tracking"
+  - topic: "medinovai.notification.delivery.*"
+    handler: src/handlers/notification_events
+    description: "Delivery confirmations for notification tracking"

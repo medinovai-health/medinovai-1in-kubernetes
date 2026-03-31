@@ -1,0 +1,26 @@
+{
+  "medinovai": {
+    "architecture": "centralized",
+    "version": "1.0.0",
+    "services": {
+      "data": {
+        "provider": "medinovai-data-services",
+        "endpoint": "https://api.medinovai.com/v1",
+        "authentication": "oauth2"
+      },
+      "auth": {
+        "provider": "MedinovAI-security",
+        "endpoint": "https://auth.medinovai.com",
+        "realm": "medinovai"
+      },
+      "ui": {
+        "provider": "Uiux",
+        "components": "https://ui.medinovai.com/components"
+      },
+      "infrastructure": {
+        "provider": "MedinovAI-infrastructure",
+        "registry": "registry.medinovai.com"
+      }
+    }
+  }
+}

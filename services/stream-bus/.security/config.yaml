@@ -1,0 +1,23 @@
+# Security Configuration for medinovai-real-time-stream-bus
+security:
+  scanning:
+    enabled: true
+    tools:
+      - trivy
+      - bandit
+      - safety
+      - semgrep
+    severity_threshold: HIGH
+    fail_on_critical: true
+  
+  secrets:
+    scanning: true
+    patterns:
+      - "AKIA[0-9A-Z]{16}"
+      - "sk-[a-zA-Z0-9]{48}"
+      - "ghp_[a-zA-Z0-9]{36}"
+  
+  dependencies:
+    auto_update: true
+    vulnerability_check: true
+    license_check: true

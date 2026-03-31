@@ -1,0 +1,109 @@
+_***/
+apiVersion: v1
+kind: Service
+metadata:
+  name: medinovai-real-time-stream-bus
+spec:
+  ports:
+  - port: 80
+    targetPort: 8080
+  selector:
+    app: medinovai-real-time-stream-bus
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: medinovai-real-time-stream-bus
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: medinovai-real-time-stream-bus
+  template:
+    metadata:
+      labels:
+        app: medinovai-real-time-stream-bus
+    spec:
+      containers:
+      - name: medinovai-real-time-stream-bus
+        image: myonsite-healthcare/medinovai-real-time-stream-bus:latest
+        ports:
+        - containerPort: 8080
+        resources:
+          limits:
+            cpu: "1"
+            memory: 512Mi
+          requests:
+            cpu: 500m
+            memory: 256Mi
+        livenessProbe:
+          httpGet:
+            path: /health/live
+            port: 8080
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: medinovai-real-time-stream-bus-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: medinovai-real-time-stream-bus
+  minReplicas: 2
+  maxReplicas: 5
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 80
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: medinovai-real-time-stream-bus-policy
+spec:
+  podSelector:
+    matchLabels:
+      app: medinovai-real-time-stream-bus
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: medinovai-api-gateway
+    ports:
+    - protocol: TCP
+      port: 8080
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          app: medinovai-auth-service
+    ports:
+    - protocol: TCP
+      port: 8080
+---
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: medinovai-real-time-stream-bus-mtls
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      app: medinovai-real-time-stream-bus
+  mtls:
+    mode: STRICT

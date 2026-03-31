@@ -1,0 +1,23 @@
+# Test Configuration for medinovai-real-time-stream-bus
+testing:
+  unit_tests:
+    enabled: true
+    framework: pytest
+    coverage_threshold: 80
+    
+  integration_tests:
+    enabled: true
+    timeout: 300
+    
+  performance_tests:
+    enabled: true
+    baseline_threshold: 1000ms
+    
+  linting:
+    python:
+      - flake8
+      - black
+      - isort
+    javascript:
+      - eslint
+      - prettier

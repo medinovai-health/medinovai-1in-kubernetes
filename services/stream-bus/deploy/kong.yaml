@@ -1,0 +1,132 @@
+# Kong API Gateway Configuration — Real-time Stream Bus (medinovai-real-time-stream-bus)
+# Auto-generated from schemas/openapi.yaml
+# Tier 2 — FDA-CLASS-I
+
+_format_version: "3.0"
+
+services:
+  - name: real-time-stream-bus
+    url: http://medinovai-real-time-stream-bus:8080
+    connect_timeout: 5000
+    write_timeout: 10000
+    read_timeout: 30000
+    retries: 3
+
+routes:
+- name: real-time-stream-bus-streams
+  paths:
+    - /api/v1/streams
+  service:
+    name: real-time-stream-bus
+    url: http://medinovai-real-time-stream-bus:8080
+  plugins:
+    - name: jwt
+      config:
+        claims_to_verify: [exp]
+    - name: acl
+      config:
+        allow: [real-time-stream-bus-read, real-time-stream-bus-write, admin]
+    - name: rate-limiting
+      config:
+        minute: 120
+        policy: redis
+    - name: request-transformer
+      config:
+        add:
+          headers:
+            - X-Correlation-ID:$(uuid)
+            - X-Service-Tier:2
+
+- name: real-time-stream-bus-topics
+  paths:
+    - /api/v1/topics
+  service:
+    name: real-time-stream-bus
+    url: http://medinovai-real-time-stream-bus:8080
+  plugins:
+    - name: jwt
+      config:
+        claims_to_verify: [exp]
+    - name: acl
+      config:
+        allow: [real-time-stream-bus-read, real-time-stream-bus-write, admin]
+    - name: rate-limiting
+      config:
+        minute: 120
+        policy: redis
+    - name: request-transformer
+      config:
+        add:
+          headers:
+            - X-Correlation-ID:$(uuid)
+            - X-Service-Tier:2
+
+- name: real-time-stream-bus-consumers
+  paths:
+    - /api/v1/consumers
+  service:
+    name: real-time-stream-bus
+    url: http://medinovai-real-time-stream-bus:8080
+  plugins:
+    - name: jwt
+      config:
+        claims_to_verify: [exp]
+    - name: acl
+      config:
+        allow: [real-time-stream-bus-read, real-time-stream-bus-write, admin]
+    - name: rate-limiting
+      config:
+        minute: 120
+        policy: redis
+    - name: request-transformer
+      config:
+        add:
+          headers:
+            - X-Correlation-ID:$(uuid)
+            - X-Service-Tier:2
+
+- name: real-time-stream-bus-offsets
+  paths:
+    - /api/v1/offsets
+  service:
+    name: real-time-stream-bus
+    url: http://medinovai-real-time-stream-bus:8080
+  plugins:
+    - name: jwt
+      config:
+        claims_to_verify: [exp]
+    - name: acl
+      config:
+        allow: [real-time-stream-bus-read, real-time-stream-bus-write, admin]
+    - name: rate-limiting
+      config:
+        minute: 120
+        policy: redis
+    - name: request-transformer
+      config:
+        add:
+          headers:
+            - X-Correlation-ID:$(uuid)
+            - X-Service-Tier:2
+
+# Health check route (no auth)
+- name: real-time-stream-bus-health
+  paths:
+    - /api/v1/real-time-stream-bus/health
+  service:
+    name: real-time-stream-bus
+    url: http://medinovai-real-time-stream-bus:8080/health
+  plugins: []
+
+upstreams:
+  - name: real-time-stream-bus-upstream
+    algorithm: round-robin
+    healthchecks:
+      active:
+        http_path: /health/ready
+        healthy:
+          interval: 10
+          successes: 2
+        unhealthy:
+          interval: 5
+          http_failures: 3

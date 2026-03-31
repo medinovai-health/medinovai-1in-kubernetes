@@ -1,0 +1,31 @@
+apiVersion: medinovai.dev/v1
+kind: ServiceManifest
+metadata:
+  id: MED-svc-stream-bus
+  name: medinovai-real-time-stream-bus
+  displayName: "medinovai-real-time-stream-bus"
+  monorepo: medinovai-infrastructure
+  path: services/stream-bus
+  migratedFrom: medinovai-real-time-stream-bus
+  migrationDate: "2026-03-30"
+  ownerSquad: devops
+  tier: "5"
+  complianceTier: "3"
+spec:
+  language: python
+  runtimePort: 8000
+  contracts: []
+  tests:
+    unit: tests/unit
+    integration: tests/integration
+  ci:
+    workflow: .github/workflows/services-stream-bus.yml
+    pathFilters:
+      - "services/stream-bus/**"
+  deployment:
+    chartPath: deploy/charts/stream-bus
+    imageName: medinovai-real-time-stream-bus
+  regulatory:
+    dhfEntry: docs/qms/dhf/DHF_INDEX.md
+    riskClass: "B"
+    soupComponents: []

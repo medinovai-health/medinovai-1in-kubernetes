@@ -1,0 +1,11 @@
+controls:
+  auth_required_on_phi: true
+  min_coverage: 0.8
+  ci_required: true
+  no_default_prod_secrets: true
+enforcement:
+  scripts:
+    - scripts/standards_check.py
+documentation:
+  openapi: /api/v1/openapi.json
+  docs_url: /api/v1/docs
