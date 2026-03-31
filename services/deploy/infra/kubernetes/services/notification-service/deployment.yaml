@@ -1,0 +1,88 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notification-service
+  namespace: medinovai-services
+  labels:
+    app.kubernetes.io/name: notification-service
+    app.kubernetes.io/component: notification
+    app.kubernetes.io/part-of: medinovai
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: notification-service
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: notification-service
+        app.kubernetes.io/component: notification
+        app.kubernetes.io/part-of: medinovai
+      annotations:
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/agent-inject-secret-notification: "secret/medinovai/notification-service/smtp"
+        vault.hashicorp.com/agent-inject-template-notification: |
+          {{- with secret "secret/medinovai/notification-service/smtp" -}}
+          export SMTP_PASSWORD="{{ .Data.data.password }}"
+          export SMTP_API_KEY="{{ .Data.data.api_key }}"
+          {{- end }}
+        vault.hashicorp.com/role: "notification-service"
+    spec:
+      serviceAccountName: notification-service
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app.kubernetes.io/name: notification-service
+                topologyKey: kubernetes.io/hostname
+      securityContext:
+        runAsNonRoot: true
+      containers:
+        - name: notification-service
+          image: REGISTRY/notification-service:IMAGE_TAG
+          securityContext:
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+          ports:
+            - containerPort: 3000
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          env:
+            - name: NODE_ENV
+              value: production
+            - name: LOG_FORMAT
+              value: json
+            - name: LOG_LEVEL
+              value: info
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          startupProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            failureThreshold: 30
+            periodSeconds: 10
+      volumes:
+        - name: tmp
+          emptyDir: {}

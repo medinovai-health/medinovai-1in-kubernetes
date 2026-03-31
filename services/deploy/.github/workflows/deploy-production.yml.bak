@@ -1,0 +1,132 @@
+name: Deploy to Production
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to deploy (e.g., v1.2.3)"
+        required: true
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  pre-flight:
+    name: Pre-flight Checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check deploy window
+        run: |
+          HOUR=$(date -u +%H)
+          DAY=$(date -u +%u)
+          if [ "$DAY" -ge 5 ]; then
+            echo "WARNING: Weekend deployment requires CTO approval"
+            echo "::warning::Weekend deployment detected"
+          fi
+          if [ "$DAY" -eq 5 ] && [ "$HOUR" -ge 16 ]; then
+            echo "WARNING: Friday afternoon deployment requires eng lead approval"
+            echo "::warning::Friday afternoon deployment detected"
+          fi
+
+      - name: Verify staging is healthy
+        run: |
+          echo "Verifying staging environment health..."
+          echo "TODO: Check staging health endpoints"
+
+      - name: Check for open incidents
+        run: |
+          echo "Checking for open critical incidents..."
+          echo "TODO: Query incident management system"
+
+  build:
+    name: Build & Security Scan
+    needs: pre-flight
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build images
+        run: echo "TODO: Build production Docker images"
+
+      - name: Security scan
+        run: echo "TODO: Trivy container scan + Snyk dependency audit"
+
+      - name: Generate SBOM
+        run: echo "TODO: Generate Software Bill of Materials"
+
+  approval:
+    name: Production Approval Gate
+    needs: build
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Approval received
+        run: |
+          echo "Production deployment approved."
+          echo "Approver: ${{ github.actor }}"
+          echo "Time: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+  canary-deploy:
+    name: Canary Deployment (5%)
+    needs: approval
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy canary
+        run: |
+          echo "Deploying canary (5% traffic)..."
+          echo "TODO: Deploy canary to production K8s cluster"
+
+      - name: Monitor canary (10 minutes)
+        run: |
+          echo "Monitoring canary for 10 minutes..."
+          echo "TODO: Check error rate, latency, 5xx count vs baseline"
+          echo "Auto-rollback if error rate exceeds 1% above baseline"
+
+  promote:
+    name: Promote to Full Rollout
+    needs: canary-deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Promote canary to 100%
+        run: |
+          echo "Promoting canary to full rollout..."
+          echo "TODO: Scale canary to 100% traffic"
+
+  post-deploy:
+    name: Post-Deploy Verification
+    needs: promote
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Health check
+        run: |
+          echo "Running post-deploy health checks..."
+          echo "TODO: Verify all services healthy"
+
+      - name: Smoke tests
+        run: |
+          echo "Running production smoke tests..."
+          echo "TODO: Health endpoints, auth flow, key APIs, AI inference"
+
+  notify:
+    name: Notify
+    needs: [post-deploy]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Notify channels
+        run: |
+          echo "Deployment complete. Notifying #eng and #exec channels."
+          echo "TODO: Post deployment summary to Slack"

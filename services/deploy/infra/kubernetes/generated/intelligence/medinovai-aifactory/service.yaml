@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: medinovai-aifactory
+  namespace: intelligence
+  labels:
+    app: medinovai-aifactory
+    atlasos.io/managed: "true"
+spec:
+  selector:
+    app: medinovai-aifactory
+  ports:
+  - port: 8000
+    targetPort: 8000
+    protocol: TCP
+    name: http
+  type: ClusterIP

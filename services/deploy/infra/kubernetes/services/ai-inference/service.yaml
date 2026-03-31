@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: ai-inference
+  namespace: medinovai-ai
+  labels:
+    app.kubernetes.io/name: ai-inference
+    app.kubernetes.io/component: inference
+    app.kubernetes.io/part-of: medinovai
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8080
+      targetPort: 8080
+      protocol: TCP
+      name: http
+  selector:
+    app.kubernetes.io/name: ai-inference

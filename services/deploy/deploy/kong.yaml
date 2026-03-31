@@ -1,0 +1,132 @@
+# Kong API Gateway Configuration — Deployment Service (medinovai-deploy)
+# Auto-generated from schemas/openapi.yaml
+# Tier 2 — FDA-CLASS-I
+
+_format_version: "3.0"
+
+services:
+  - name: deploy
+    url: http://medinovai-deploy:8080
+    connect_timeout: 5000
+    write_timeout: 10000
+    read_timeout: 30000
+    retries: 3
+
+routes:
+- name: deploy-deployments
+  paths:
+    - /api/v1/deployments
+  service:
+    name: deploy
+    url: http://medinovai-deploy:8080
+  plugins:
+    - name: jwt
+      config:
+        claims_to_verify: [exp]
+    - name: acl
+      config:
+        allow: [deploy-read, deploy-write, admin]
+    - name: rate-limiting
+      config:
+        minute: 120
+        policy: redis
+    - name: request-transformer
+      config:
+        add:
+          headers:
+            - X-Correlation-ID:$(uuid)
+            - X-Service-Tier:2
+
+- name: deploy-releases
+  paths:
+    - /api/v1/releases
+  service:
+    name: deploy
+    url: http://medinovai-deploy:8080
+  plugins:
+    - name: jwt
+      config:
+        claims_to_verify: [exp]
+    - name: acl
+      config:
+        allow: [deploy-read, deploy-write, admin]
+    - name: rate-limiting
+      config:
+        minute: 120
+        policy: redis
+    - name: request-transformer
+      config:
+        add:
+          headers:
+            - X-Correlation-ID:$(uuid)
+            - X-Service-Tier:2
+
+- name: deploy-rollbacks
+  paths:
+    - /api/v1/rollbacks
+  service:
+    name: deploy
+    url: http://medinovai-deploy:8080
+  plugins:
+    - name: jwt
+      config:
+        claims_to_verify: [exp]
+    - name: acl
+      config:
+        allow: [deploy-read, deploy-write, admin]
+    - name: rate-limiting
+      config:
+        minute: 120
+        policy: redis
+    - name: request-transformer
+      config:
+        add:
+          headers:
+            - X-Correlation-ID:$(uuid)
+            - X-Service-Tier:2
+
+- name: deploy-configs
+  paths:
+    - /api/v1/configs
+  service:
+    name: deploy
+    url: http://medinovai-deploy:8080
+  plugins:
+    - name: jwt
+      config:
+        claims_to_verify: [exp]
+    - name: acl
+      config:
+        allow: [deploy-read, deploy-write, admin]
+    - name: rate-limiting
+      config:
+        minute: 120
+        policy: redis
+    - name: request-transformer
+      config:
+        add:
+          headers:
+            - X-Correlation-ID:$(uuid)
+            - X-Service-Tier:2
+
+# Health check route (no auth)
+- name: deploy-health
+  paths:
+    - /api/v1/deploy/health
+  service:
+    name: deploy
+    url: http://medinovai-deploy:8080/health
+  plugins: []
+
+upstreams:
+  - name: deploy-upstream
+    algorithm: round-robin
+    healthchecks:
+      active:
+        http_path: /health/ready
+        healthy:
+          interval: 10
+          successes: 2
+        unhealthy:
+          interval: 5
+          http_failures: 3

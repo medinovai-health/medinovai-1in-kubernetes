@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: hello-world-cursor
+  namespace: platform
+  labels:
+    app: hello-world-cursor
+    atlasos.io/managed: "true"
+spec:
+  selector:
+    app: hello-world-cursor
+  ports:
+  - port: 3000
+    targetPort: 3000
+    protocol: TCP
+    name: http
+  type: ClusterIP

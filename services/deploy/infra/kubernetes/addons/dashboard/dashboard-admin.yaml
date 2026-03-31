@@ -1,0 +1,30 @@
+# Dashboard admin ServiceAccount + ClusterRoleBinding + token
+# Apply after dashboard is deployed
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: medinovai-dashboard-admin
+  namespace: kubernetes-dashboard
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: medinovai-dashboard-admin
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+  - kind: ServiceAccount
+    name: medinovai-dashboard-admin
+    namespace: kubernetes-dashboard
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: medinovai-dashboard-admin-token
+  namespace: kubernetes-dashboard
+  annotations:
+    kubernetes.io/service-account.name: medinovai-dashboard-admin
+type: kubernetes.io/service-account-token

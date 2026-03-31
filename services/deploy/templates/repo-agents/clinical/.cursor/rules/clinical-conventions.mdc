@@ -1,0 +1,6 @@
+# Clinical Conventions
+- FHIR first: use R4 resources and standard code systems (LOINC, SNOMED, RxNorm)
+- PHI redaction at source; never log or embed PHI
+- Audit trail for all create/update/delete on clinical data
+- 21 CFR Part 11: electronic signatures, access controls, data integrity
+- ICH E6: protocol adherence, source data verification, trial integrity

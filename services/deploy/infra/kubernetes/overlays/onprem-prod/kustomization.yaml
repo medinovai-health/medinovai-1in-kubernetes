@@ -1,0 +1,61 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Prod overlay: Full 4-node fleet (Mac Studio, MacBook Pro, 2x DGX)
+# All tiers deployed, HA replicas, full storage, GPU workloads.
+
+resources:
+  - ../../services/tier0
+  - ../../services/atlasos
+  - ../../services/atlasos-node-agent
+  - ../../services/atlasos-cluster-brain
+  - ../../services/atlasos-sidecar
+  - ../../vault
+  - ../../external-secrets
+  - pdb.yaml
+
+# Production-specific patches
+patches:
+  # Ensure HA for critical services
+  - target:
+      kind: Deployment
+      name: atlas-ui
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 2
+  - target:
+      kind: Deployment
+      name: atlas-gateway
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 2
+  - target:
+      kind: Deployment
+      name: atlas-orchestrator
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 2
+  - target:
+      kind: Deployment
+      name: mcp-gateway
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 2
+  - target:
+      kind: Deployment
+      name: ai-orchestrator
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 2
+
+commonLabels:
+  medinovai.com/overlay: onprem-prod
+
+commonAnnotations:
+  medinovai.com/environment: production
+  medinovai.com/cluster: full-fleet

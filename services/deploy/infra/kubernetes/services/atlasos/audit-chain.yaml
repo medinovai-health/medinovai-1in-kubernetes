@@ -1,0 +1,82 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: audit-chain
+  namespace: atlasos
+  labels:
+    app.kubernetes.io/name: audit-chain
+    app.kubernetes.io/part-of: atlasos
+spec:
+  ports:
+    - port: 8084
+      targetPort: 8084
+  selector:
+    app: audit-chain
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: audit-chain
+  namespace: atlasos
+  labels:
+    app: audit-chain
+    app.kubernetes.io/name: audit-chain
+    app.kubernetes.io/part-of: atlasos
+    app.kubernetes.io/version: "1.2.0"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: audit-chain
+  template:
+    metadata:
+      labels:
+        app: audit-chain
+    spec:
+      containers:
+        - name: audit-chain
+          image: medinovai-audit-chain:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8084
+          env:
+            - name: AUDIT_PATH
+              value: /data/audit/audit.jsonl
+          volumeMounts:
+            - name: audit-data
+              mountPath: /data/audit
+          resources:
+            requests:
+              memory: 64Mi
+              cpu: 50m
+            limits:
+              memory: 256Mi
+              cpu: 250m
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8084
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8084
+            initialDelaySeconds: 30
+            periodSeconds: 30
+      volumes:
+        - name: audit-data
+          persistentVolumeClaim:
+            claimName: audit-data-pvc
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: audit-data-pvc
+  namespace: atlasos
+spec:
+  accessModes: ["ReadWriteOnce"]
+  storageClassName: hostpath
+  resources:
+    requests:
+      storage: 10Gi

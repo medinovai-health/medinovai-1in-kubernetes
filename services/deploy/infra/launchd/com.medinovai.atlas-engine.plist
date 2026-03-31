@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  LaunchAgent: com.medinovai.atlas-engine
+  ─────────────────────────────────────────────────────────────────────────────
+  Legacy native AtlasOS gateway runner.
+  Production channel traffic now belongs to the Dockerized ceo-atlas-gateway,
+  which bind-mounts ~/.atlas and owns port 18789.
+  This LaunchAgent is retained for manual diagnostics only.
+
+  IMPORTANT: Run as the user (LaunchAgent, not LaunchDaemon).
+  The engine needs the user's WhatsApp Web session and home directory.
+
+  Status: launchctl list | grep medinovai.atlas-engine
+  Logs:   tail -f ~/Library/Logs/medinovai-atlas-engine.log
+  Stop:   launchctl unload ~/Library/LaunchAgents/com.medinovai.atlas-engine.plist
+  Start:  launchctl load ~/Library/LaunchAgents/com.medinovai.atlas-engine.plist
+  ─────────────────────────────────────────────────────────────────────────────
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.medinovai.atlas-engine</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>/Users/mayanktrivedi/Github/medinovai-health/medinovai-Deploy/infra/launchd/run-atlas-engine.sh</string>
+  </array>
+
+  <!-- Diagnostic-only: do not start automatically in production -->
+  <key>RunAtLoad</key>
+  <false/>
+
+  <!-- Diagnostic-only: do not restart automatically -->
+  <key>KeepAlive</key>
+  <false/>
+
+  <!-- 60s backoff to prevent rapid restart loops -->
+  <key>ThrottleInterval</key>
+  <integer>60</integer>
+
+  <!-- Log to user Library/Logs (no root needed) -->
+  <key>StandardOutPath</key>
+  <string>/Users/mayanktrivedi/Library/Logs/medinovai-atlas-engine.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/mayanktrivedi/Library/Logs/medinovai-atlas-engine.log</string>
+
+  <key>WorkingDirectory</key>
+  <string>/Users/mayanktrivedi/Github/medinovai-health/AtlasOS</string>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/opt/homebrew/sbin</string>
+    <key>HOME</key>
+    <string>/Users/mayanktrivedi</string>
+    <!-- AtlasOS reads config and session state from ~/.atlas/ -->
+    <key>ATLASOS_STATE_DIR</key>
+    <string>/Users/mayanktrivedi/.atlas</string>
+    <!-- Native gateway is manual/diagnostic only. -->
+    <key>ATLASOS_NATIVE_GATEWAY_MODE</key>
+    <string>disabled</string>
+    <!-- Gateway port retained for manual recovery if Docker gateway is offline. -->
+    <key>ATLASOS_GATEWAY_PORT</key>
+    <string>18789</string>
+    <!-- Disable node compile cache to avoid stale build issues -->
+    <key>NODE_ENV</key>
+    <string>production</string>
+  </dict>
+</dict>
+</plist>

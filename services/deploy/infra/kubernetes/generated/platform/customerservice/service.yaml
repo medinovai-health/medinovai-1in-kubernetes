@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: customerservice
+  namespace: platform
+  labels:
+    app: customerservice
+    atlasos.io/managed: "true"
+spec:
+  selector:
+    app: customerservice
+  ports:
+  - port: 3000
+    targetPort: 3000
+    protocol: TCP
+    name: http
+  type: ClusterIP

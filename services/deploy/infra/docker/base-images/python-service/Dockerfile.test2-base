@@ -1,0 +1,34 @@
+# MedinovAI Python Test2 Base Image
+# Pre-installs common dependencies to speed up service builds by 10x.
+# Build: docker build -f Dockerfile.test2-base -t ghcr.io/myonsite-healthcare/medinovai-python-base:3.12 .
+
+FROM python:3.12-slim
+
+LABEL org.opencontainers.image.title="MedinovAI Python Base"
+LABEL org.opencontainers.image.description="Pre-built base for TEST2 Python services"
+LABEL org.opencontainers.image.source="https://github.com/myonsite-healthcare/medinovai-Deploy"
+
+# System deps needed by all services
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Pre-install common Python dependencies
+RUN pip install --no-cache-dir \
+    fastapi==0.110.0 \
+    "uvicorn[standard]==0.27.0" \
+    pydantic==2.6.0 \
+    requests==2.31.0 \
+    httpx==0.26.0 \
+    prometheus-client==0.20.0 \
+    python-multipart==0.0.9 \
+    aiofiles==23.2.1 \
+    structlog==24.1.0
+
+# Non-root user for security
+RUN groupadd -r medinovai && useradd -r -g medinovai -d /app -s /sbin/nologin medinovai
+
+WORKDIR /app
+
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1

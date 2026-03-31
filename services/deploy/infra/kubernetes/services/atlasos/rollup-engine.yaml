@@ -1,0 +1,99 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: rollup-engine
+  namespace: atlasos
+  labels:
+    app: rollup-engine
+    app.kubernetes.io/name: rollup-engine
+    app.kubernetes.io/part-of: atlasos
+    app.kubernetes.io/version: "1.2.0"
+spec:
+  schedule: "*/15 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+            - name: rollup
+              image: python:3.12-slim
+              command: ["python3", "-m", "rollup_engine", "company"]
+              volumeMounts:
+                - name: atlas-state
+                  mountPath: /data/atlas
+              resources:
+                requests:
+                  memory: 128Mi
+                  cpu: 50m
+                limits:
+                  memory: 512Mi
+                  cpu: 500m
+          volumes:
+            - name: atlas-state
+              persistentVolumeClaim:
+                claimName: atlas-state-pvc
+          restartPolicy: OnFailure
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rollup-engine-server
+  namespace: atlasos
+  labels:
+    app.kubernetes.io/name: rollup-engine-server
+    app.kubernetes.io/part-of: atlasos
+spec:
+  ports:
+    - port: 8089
+      targetPort: 8089
+  selector:
+    app: rollup-engine-server
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rollup-engine-server
+  namespace: atlasos
+  labels:
+    app: rollup-engine-server
+    app.kubernetes.io/name: rollup-engine-server
+    app.kubernetes.io/part-of: atlasos
+    app.kubernetes.io/version: "1.2.0"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rollup-engine-server
+  template:
+    metadata:
+      labels:
+        app: rollup-engine-server
+    spec:
+      containers:
+        - name: rollup-engine-server
+          image: atlasos/rollup-engine:1.2.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8089
+          resources:
+            requests:
+              memory: 128Mi
+              cpu: 50m
+            limits:
+              memory: 256Mi
+              cpu: 250m
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8089
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8089
+            initialDelaySeconds: 30
+            periodSeconds: 30

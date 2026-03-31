@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: medinovai-lis
+  namespace: clinical
+  labels:
+    app: medinovai-lis
+    atlasos.io/managed: "true"
+spec:
+  selector:
+    app: medinovai-lis
+  ports:
+  - port: 3000
+    targetPort: 3000
+    protocol: TCP
+    name: http
+  type: ClusterIP

@@ -1,0 +1,175 @@
+---
+description: TEST2 local deployment knowledge base. Apply when working with docker-compose.TEST2-full.yml, medinovai service Dockerfiles, or any TEST2 deployment task.
+globs: ["infra/docker/docker-compose.TEST2-full.yml", "infra/docker/test2.env", "**/Dockerfile.TEST2", "**/main_test2.py"]
+alwaysApply: false
+---
+
+# TEST2 Deployment Knowledge Base
+
+Validated: 2026-02-22 — 53/53 services running, 52 healthy.
+
+## Critical: Kafka Volume Reset Protocol
+
+When Kafka shows `InconsistentClusterIdException`:
+
+```bash
+# ALWAYS reset BOTH volumes together — note DASHES not underscores
+docker stop TEST2-kafka TEST2-zookeeper && docker rm TEST2-kafka TEST2-zookeeper
+docker volume rm test2-kafka-data test2-zookeeper-data
+# Start zookeeper FIRST, wait healthy, then kafka
+docker compose -p test2 --env-file infra/docker/test2.env \
+  -f infra/docker/docker-compose.TEST2-full.yml up -d zookeeper
+sleep 25
+docker compose -p test2 --env-file infra/docker/test2.env \
+  -f infra/docker/docker-compose.TEST2-full.yml up -d kafka
+```
+
+**NEVER** try to add `KAFKA_CLUSTER_ID` env var — it conflicts with existing ZK data.
+**NEVER** delete only the kafka volume — both must be reset together.
+**Volume names use dashes**: `test2-kafka-data`, `test2-zookeeper-data` (NOT underscores).
+
+## Services With Non-Standard Ports (Healthcheck Critical)
+
+Always use these exact ports in healthchecks — these are NOT default 8080:
+
+| Service | Actual Port | Healthcheck URL |
+|---------|-------------|-----------------|
+| `medinovai-registry` | 8000 | `http://localhost:8000/health` |
+| `medinovai-data-services` | 8300 | `http://localhost:8300/api/health` |
+| `medinovai-healthllm` | 12304 | `http://localhost:12304/health` |
+| `medinovai-real-time-stream-bus` | 3000 | `http://localhost:3000/health` |
+
+All other application services default to `http://localhost:8080/health`.
+
+## Services With Dockerfile.TEST2 Overrides
+
+The following services have broken original Dockerfiles. Always build using `Dockerfile.TEST2`:
+
+**Broken originals (syntax/language/dependency):**
+- `medinovai-registry` — Dockerfile starts with `'''#` (Python docstring, unparseable)
+- `medinovai-notification-center` — .NET compilation errors
+- `medinovai-hipaa-gdpr-guard` — .NET compilation errors
+- `medinovai-api-gateway` — Node.js server crashes on init
+
+**Shared-core dependency issues (need special COPY pattern):**
+- `medinovai-data-services` — `requirements.txt` has `-e shared/medinovai-core`
+- `medinovai-registry` — same issue
+- `medinovai-aifactory` — complex build + port mismatch
+- `medinovai-real-time-stream-bus` — wrong language (Node.js Dockerfile for Python service)
+- `medinovai-healthLLM` — missing dirs, httpx conflict, NameError in main.py
+
+**CMD runs script not server:**
+- `medinovai-secrets-manager-bridge`, `medinovai-security-service`, `medinovai-universal-sign-on`
+- `medinovai-role-based-permissions`, `medinovai-encryption-vault`, `MedinovAI-Model-Service-Orchestrator`
+- `medinovai-consent-preference-api`, `medinovai-audit-trail-explorer`
+
+## medinovai-core Dependency Pattern
+
+`pyproject.toml` MUST use `grpcio`, not `grpc`:
+```toml
+"grpcio>=1.60.0",  # CORRECT
+# "grpc>=1.60.0",  # WRONG — no such PyPI package
+```
+
+Requires Python `>=3.10`. Always use `FROM python:3.12-slim` in Dockerfiles using medinovai-core.
+
+Correct COPY pattern for shared/medinovai-core:
+```dockerfile
+COPY shared/medinovai-core /tmp/medinovai-core
+RUN pip install /tmp/medinovai-core
+COPY requirements.txt .
+RUN grep -v "medinovai-core" requirements.txt | pip install --no-cache-dir -r /dev/stdin
+```
+
+When copying directory contents: use `cp -r "$CORE/." "$dest/"` not `cp -r "$CORE" "$dest"` — the latter creates a nested `medinovai-core/medinovai-core/` subdirectory.
+
+## medinovai-data-services Flask Entry Point
+
+The Flask app uses `create_app()` pattern inside `if __name__ == "__main__":`. 
+Gunicorn cannot import `app` directly. Use `wsgi.py`:
+
+```python
+# wsgi.py at repo root
+from src.main import create_app
+app = create_app()
+```
+
+Gunicorn CMD: `["gunicorn", "-w", "2", "-b", "0.0.0.0:8300", "wsgi:app"]`
+
+## Python CMD One-Liner Anti-Pattern
+
+**NEVER** put decorator syntax in a Docker CMD one-liner:
+```dockerfile
+# WRONG — SyntaxError: invalid syntax
+CMD ["python3", "-c", "from fastapi import FastAPI; app = FastAPI(); @app.get('/health') def h(): ..."]
+
+# CORRECT — always use a separate .py file
+COPY main_test2.py .
+CMD ["python3", "main_test2.py"]
+```
+
+## Pydantic v2 Enum Pattern
+
+AI-generated services commonly have this bug:
+```python
+# WRONG — causes PydanticSchemaGenerationError
+class TaskPriority(str):
+    LOW = "low"
+
+# CORRECT
+from enum import Enum
+class TaskPriority(str, Enum):
+    LOW = "low"
+```
+
+## FastAPI Status Code Pattern
+
+AI-generated services often use incorrect status imports:
+```python
+# WRONG — AttributeError: 'function' object has no attribute 'HTTP_201_CREATED'
+from fastapi import status
+return JSONResponse(status_code=status.HTTP_201_CREATED, ...)
+
+# CORRECT — use starlette or integer literals
+from starlette import status
+# or simply:
+return JSONResponse(status_code=201, ...)
+```
+
+## Service Startup Order
+
+```
+1. Infrastructure (postgres, mongodb, redis-cache, rabbitmq, elasticsearch, vault, loki, prometheus, grafana, jaeger, mailhog, keycloak)
+2. zookeeper (wait healthy ~20s)
+3. kafka (wait healthy ~30s)
+4. Security tier (encryption-vault, secrets-manager-bridge, universal-sign-on, rbac, security)
+5. Platform tier (registry, configuration-management, data-services, api-gateway, notification-center)
+6. AI/ML tier (healthllm, aifactory, atlas-engine, model-service-orchestrator)
+7. Data tier: real-time-stream-bus (then data-lake-loader depends on it + data-services)
+8. Application tier (all remaining)
+9. UI tier (multimodal-ui-shell, medinovaios)
+```
+
+## "Service in created state" Diagnosis
+
+If a service stays in `created` (never starts), it's waiting on a dependency healthcheck:
+```bash
+docker compose -p test2 --env-file infra/docker/test2.env \
+  -f infra/docker/docker-compose.TEST2-full.yml up <service> 2>&1 | grep "Waiting\|Healthy\|Error"
+```
+
+## Deployment Validation Command
+
+```bash
+TOTAL=$(docker ps --filter "name=TEST2" -q | wc -l | tr -d ' ')
+HEALTHY=$(docker ps --filter "name=TEST2" --format '{{.Status}}' | grep -c "(healthy)" || true)
+UNHEALTHY=$(docker ps --filter "name=TEST2" --format '{{.Status}}' | grep -c "unhealthy" || true)
+CRASH=$(docker ps --filter "name=TEST2" --format '{{.Status}}' | grep -c "Restarting" || true)
+echo "Total: $TOTAL | Healthy: $HEALTHY | Unhealthy: $UNHEALTHY | Crashing: $CRASH"
+# Expected: Total: 53 | Healthy: 52 | Unhealthy: 0 | Crashing: 0
+# (mailhog has no healthcheck — counted in Total but not Healthy)
+```
+
+## Full Runbook
+
+See `docs/TEST2-DEPLOYMENT-RUNBOOK.md` for complete step-by-step deployment guide.

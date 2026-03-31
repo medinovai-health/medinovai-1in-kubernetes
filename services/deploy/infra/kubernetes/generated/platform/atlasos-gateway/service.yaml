@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: atlasos-gateway
+  namespace: platform
+  labels:
+    app: atlasos-gateway
+    atlasos.io/managed: "true"
+spec:
+  selector:
+    app: atlasos-gateway
+  ports:
+  - port: 3000
+    targetPort: 3000
+    protocol: TCP
+    name: http
+  type: ClusterIP

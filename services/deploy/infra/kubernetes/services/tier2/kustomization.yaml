@@ -1,0 +1,14 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: medinovai-services
+
+resources:
+  - registry.yaml
+  - data-services.yaml
+  - real-time-stream-bus.yaml
+  - configuration-management.yaml
+  - notification-center.yaml
+  - aifactory.yaml
+  - api-gateway.yaml
+  - atlas-engine.yaml

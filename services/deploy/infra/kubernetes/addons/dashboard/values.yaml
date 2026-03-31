@@ -1,0 +1,29 @@
+# Kubernetes Dashboard — Docker Desktop values
+# Helm chart: kubernetes-dashboard/kubernetes-dashboard
+# Access: kubectl port-forward -n kubernetes-dashboard svc/kubernetes-dashboard-kong-proxy 8443:443
+
+app:
+  ingress:
+    enabled: false  # Use port-forward locally
+
+  # Disable auth for local dev (re-enable for staging/prod)
+  settings:
+    global:
+      clusterName: "medinovai-local"
+      itemsPerPage: 25
+      logsAutoRefreshTimeInterval: 5
+
+kong:
+  enabled: true
+
+auth:
+  enabled: true
+
+api:
+  enabled: true
+
+web:
+  enabled: true
+
+metricsScraper:
+  enabled: true

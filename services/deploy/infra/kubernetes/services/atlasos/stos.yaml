@@ -1,0 +1,477 @@
+# STOS (Safety, Trust, Observability, Security) services
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: stos-orchestrator
+  namespace: atlasos
+  labels:
+    app.kubernetes.io/name: stos-orchestrator
+    app.kubernetes.io/part-of: atlasos
+spec:
+  ports:
+    - port: 8100
+      targetPort: 8100
+  selector:
+    app: stos-orchestrator
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stos-orchestrator
+  namespace: atlasos
+  labels:
+    app: stos-orchestrator
+    app.kubernetes.io/name: stos-orchestrator
+    app.kubernetes.io/part-of: atlasos
+    app.kubernetes.io/version: "4.0.0"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: stos-orchestrator
+  template:
+    metadata:
+      labels:
+        app: stos-orchestrator
+        atlasos.medinovai.com/sidecar: "enabled"
+    spec:
+      serviceAccountName: atlasos-sa
+      containers:
+        - name: stos-orchestrator
+          image: atlasos/stos-orchestrator:4.0.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8100
+          envFrom:
+            - secretRef:
+                name: atlasos-integration-secrets
+            - secretRef:
+                name: atlasos-infra-secrets
+          resources:
+            requests:
+              memory: 128Mi
+              cpu: 50m
+            limits:
+              memory: 256Mi
+              cpu: 250m
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8100
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8100
+            initialDelaySeconds: 30
+            periodSeconds: 30
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: stos-model-registry
+  namespace: atlasos
+  labels:
+    app.kubernetes.io/name: stos-model-registry
+    app.kubernetes.io/part-of: atlasos
+spec:
+  ports:
+    - port: 8103
+      targetPort: 8103
+  selector:
+    app: stos-model-registry
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stos-model-registry
+  namespace: atlasos
+  labels:
+    app: stos-model-registry
+    app.kubernetes.io/name: stos-model-registry
+    app.kubernetes.io/part-of: atlasos
+    app.kubernetes.io/version: "4.0.0"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: stos-model-registry
+  template:
+    metadata:
+      labels:
+        app: stos-model-registry
+        atlasos.medinovai.com/sidecar: "enabled"
+    spec:
+      serviceAccountName: atlasos-sa
+      containers:
+        - name: stos-model-registry
+          image: atlasos/stos-model-registry:4.0.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8103
+          envFrom:
+            - secretRef:
+                name: atlasos-integration-secrets
+            - secretRef:
+                name: atlasos-infra-secrets
+          resources:
+            requests:
+              memory: 128Mi
+              cpu: 50m
+            limits:
+              memory: 256Mi
+              cpu: 250m
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8103
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8103
+            initialDelaySeconds: 30
+            periodSeconds: 30
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: stos-inference-service
+  namespace: atlasos
+  labels:
+    app.kubernetes.io/name: stos-inference-service
+    app.kubernetes.io/part-of: atlasos
+spec:
+  ports:
+    - port: 8101
+      targetPort: 8101
+  selector:
+    app: stos-inference-service
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stos-inference-service
+  namespace: atlasos
+  labels:
+    app: stos-inference-service
+    app.kubernetes.io/name: stos-inference-service
+    app.kubernetes.io/part-of: atlasos
+    app.kubernetes.io/version: "4.0.0"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: stos-inference-service
+  template:
+    metadata:
+      labels:
+        app: stos-inference-service
+        atlasos.medinovai.com/sidecar: "enabled"
+    spec:
+      serviceAccountName: atlasos-sa
+      containers:
+        - name: stos-inference-service
+          image: atlasos/stos-inference-service:4.0.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8101
+          envFrom:
+            - secretRef:
+                name: atlasos-integration-secrets
+            - secretRef:
+                name: atlasos-infra-secrets
+          resources:
+            requests:
+              memory: 128Mi
+              cpu: 50m
+            limits:
+              memory: 256Mi
+              cpu: 250m
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8101
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8101
+            initialDelaySeconds: 30
+            periodSeconds: 30
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: stos-feature-store
+  namespace: atlasos
+  labels:
+    app.kubernetes.io/name: stos-feature-store
+    app.kubernetes.io/part-of: atlasos
+spec:
+  ports:
+    - port: 8102
+      targetPort: 8102
+  selector:
+    app: stos-feature-store
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stos-feature-store
+  namespace: atlasos
+  labels:
+    app: stos-feature-store
+    app.kubernetes.io/name: stos-feature-store
+    app.kubernetes.io/part-of: atlasos
+    app.kubernetes.io/version: "4.0.0"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: stos-feature-store
+  template:
+    metadata:
+      labels:
+        app: stos-feature-store
+        atlasos.medinovai.com/sidecar: "enabled"
+    spec:
+      serviceAccountName: atlasos-sa
+      containers:
+        - name: stos-feature-store
+          image: atlasos/stos-feature-store:4.0.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8102
+          envFrom:
+            - secretRef:
+                name: atlasos-integration-secrets
+            - secretRef:
+                name: atlasos-infra-secrets
+          resources:
+            requests:
+              memory: 128Mi
+              cpu: 50m
+            limits:
+              memory: 256Mi
+              cpu: 250m
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8102
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8102
+            initialDelaySeconds: 30
+            periodSeconds: 30
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: stos-evaluation-engine
+  namespace: atlasos
+  labels:
+    app.kubernetes.io/name: stos-evaluation-engine
+    app.kubernetes.io/part-of: atlasos
+spec:
+  ports:
+    - port: 8104
+      targetPort: 8104
+  selector:
+    app: stos-evaluation-engine
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stos-evaluation-engine
+  namespace: atlasos
+  labels:
+    app: stos-evaluation-engine
+    app.kubernetes.io/name: stos-evaluation-engine
+    app.kubernetes.io/part-of: atlasos
+    app.kubernetes.io/version: "4.0.0"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: stos-evaluation-engine
+  template:
+    metadata:
+      labels:
+        app: stos-evaluation-engine
+        atlasos.medinovai.com/sidecar: "enabled"
+    spec:
+      serviceAccountName: atlasos-sa
+      containers:
+        - name: stos-evaluation-engine
+          image: atlasos/stos-evaluation-engine:4.0.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8104
+          envFrom:
+            - secretRef:
+                name: atlasos-integration-secrets
+            - secretRef:
+                name: atlasos-infra-secrets
+          resources:
+            requests:
+              memory: 128Mi
+              cpu: 50m
+            limits:
+              memory: 256Mi
+              cpu: 250m
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8104
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8104
+            initialDelaySeconds: 30
+            periodSeconds: 30
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: stos-evidence-bundle
+  namespace: atlasos
+  labels:
+    app.kubernetes.io/name: stos-evidence-bundle
+    app.kubernetes.io/part-of: atlasos
+spec:
+  ports:
+    - port: 8108
+      targetPort: 8108
+  selector:
+    app: stos-evidence-bundle
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stos-evidence-bundle
+  namespace: atlasos
+  labels:
+    app: stos-evidence-bundle
+    app.kubernetes.io/name: stos-evidence-bundle
+    app.kubernetes.io/part-of: atlasos
+    app.kubernetes.io/version: "4.0.0"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: stos-evidence-bundle
+  template:
+    metadata:
+      labels:
+        app: stos-evidence-bundle
+        atlasos.medinovai.com/sidecar: "enabled"
+    spec:
+      serviceAccountName: atlasos-sa
+      containers:
+        - name: stos-evidence-bundle
+          image: atlasos/stos-evidence-bundle:4.0.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8108
+          envFrom:
+            - secretRef:
+                name: atlasos-integration-secrets
+            - secretRef:
+                name: atlasos-infra-secrets
+          resources:
+            requests:
+              memory: 128Mi
+              cpu: 50m
+            limits:
+              memory: 256Mi
+              cpu: 250m
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8108
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8108
+            initialDelaySeconds: 30
+            periodSeconds: 30
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: stos-phi-boundary
+  namespace: atlasos
+  labels:
+    app.kubernetes.io/name: stos-phi-boundary
+    app.kubernetes.io/part-of: atlasos
+spec:
+  ports:
+    - port: 8109
+      targetPort: 8109
+  selector:
+    app: stos-phi-boundary
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stos-phi-boundary
+  namespace: atlasos
+  labels:
+    app: stos-phi-boundary
+    app.kubernetes.io/name: stos-phi-boundary
+    app.kubernetes.io/part-of: atlasos
+    app.kubernetes.io/version: "4.0.0"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: stos-phi-boundary
+  template:
+    metadata:
+      labels:
+        app: stos-phi-boundary
+        atlasos.medinovai.com/sidecar: "enabled"
+    spec:
+      serviceAccountName: atlasos-sa
+      containers:
+        - name: stos-phi-boundary
+          image: atlasos/stos-phi-boundary:4.0.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8109
+          envFrom:
+            - secretRef:
+                name: atlasos-integration-secrets
+            - secretRef:
+                name: atlasos-infra-secrets
+          resources:
+            requests:
+              memory: 128Mi
+              cpu: 50m
+            limits:
+              memory: 256Mi
+              cpu: 250m
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8109
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8109
+            initialDelaySeconds: 30
+            periodSeconds: 30

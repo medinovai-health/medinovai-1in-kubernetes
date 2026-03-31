@@ -1,0 +1,87 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-clinical
+  namespace: medinovai-data
+  labels:
+    app.kubernetes.io/name: postgres-clinical
+    app.kubernetes.io/component: database
+    medinovai.com/tier: data
+spec:
+  ports:
+    - port: 5432
+      targetPort: 5432
+      name: postgres
+  selector:
+    app.kubernetes.io/name: postgres-clinical
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres-clinical
+  namespace: medinovai-data
+  labels:
+    app.kubernetes.io/name: postgres-clinical
+    app.kubernetes.io/component: database
+    medinovai.com/tier: data
+spec:
+  serviceName: postgres-clinical
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: postgres-clinical
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: postgres-clinical
+        app.kubernetes.io/component: database
+        medinovai.com/tier: data
+        medinovai.com/phi: "true"
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: role
+                    operator: In
+                    values:
+                      - control-plane
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          ports:
+            - containerPort: 5432
+          envFrom:
+            - secretRef:
+                name: postgres-clinical-credentials
+          env:
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+          resources:
+            requests:
+              memory: 512Mi
+            limits:
+              memory: 1Gi
+          livenessProbe:
+            exec:
+              command: ["pg_isready"]
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            exec:
+              command: ["pg_isready"]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: hostpath
+        resources:
+          requests:
+            storage: 50Gi

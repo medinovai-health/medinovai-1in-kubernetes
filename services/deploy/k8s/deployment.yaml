@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: medinovai-deploy
+  namespace: medinovai-services
+  labels:
+    app: medinovai-deploy
+    managed-by: medinovai-smart-deploy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: medinovai-deploy
+  template:
+    metadata:
+      labels:
+        app: medinovai-deploy
+    spec:
+      containers:
+      - name: medinovai-deploy
+        image: medinovai-deploy:latest
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 3000
+          name: http
+        env:
+        - name: SERVICE_NAME
+          value: "medinovai-Deploy"
+        - name: REGISTRY_URL
+          value: "http://medinovai-registry.medinovai:8000"
+        - name: PORT
+          value: "3000"
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 45
+          periodSeconds: 15
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 15
+          periodSeconds: 10
+          failureThreshold: 2
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: medinovai-deploy
+  namespace: medinovai-services
+spec:
+  type: ClusterIP
+  ports:
+  - port: 3000
+    targetPort: 3000
+    protocol: TCP
+    name: http
+  selector:
+    app: medinovai-deploy

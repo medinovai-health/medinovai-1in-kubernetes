@@ -1,0 +1,5 @@
+# Documentation Conventions
+- Doc build passing; no broken links
+- Standards-compliant: FHIR, ICH, internal templates
+- Changelog and version for significant changes
+- Accuracy over speed; no factual errors

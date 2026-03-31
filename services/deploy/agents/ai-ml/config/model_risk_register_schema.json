@@ -1,0 +1,198 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://medinovai.com/schemas/model-risk-register/v1.0.0",
+  "title": "MedinovAI Model Risk Register",
+  "description": "Living inventory of every deployed AI/ML model with impact classification and mitigation plans. Governance control GOV-01.",
+  "type": "object",
+  "required": ["register_version", "last_updated", "models"],
+  "properties": {
+    "register_version": {
+      "type": "string",
+      "description": "Schema version of this register file.",
+      "const": "1.0.0"
+    },
+    "last_updated": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO-8601 timestamp of the last update to this register."
+    },
+    "reviewed_by": {
+      "type": "string",
+      "description": "Name or role of the person who last reviewed this register."
+    },
+    "next_review_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date of the next scheduled quarterly review."
+    },
+    "models": {
+      "type": "array",
+      "description": "Array of registered AI/ML models.",
+      "items": {
+        "$ref": "#/$defs/ModelEntry"
+      }
+    }
+  },
+  "$defs": {
+    "ModelEntry": {
+      "type": "object",
+      "required": [
+        "model_id",
+        "model_name",
+        "version",
+        "purpose",
+        "clinical_use",
+        "risk_class",
+        "impact_classification",
+        "deployment_status",
+        "owner",
+        "last_validated",
+        "next_review_date"
+      ],
+      "properties": {
+        "model_id": {
+          "type": "string",
+          "pattern": "^MDL-[A-Z0-9]{3,12}$",
+          "description": "Unique model identifier. Format: MDL-<ALPHANUMERIC>. Example: MDL-CDS001."
+        },
+        "model_name": {
+          "type": "string",
+          "description": "Human-readable name of the model."
+        },
+        "version": {
+          "type": "string",
+          "description": "Current deployed version (semver recommended)."
+        },
+        "vendor": {
+          "type": "string",
+          "description": "Vendor name if third-party model. 'internal' for in-house models.",
+          "default": "internal"
+        },
+        "vendor_contract_ref": {
+          "type": "string",
+          "description": "Reference to vendor accountability terms document (if third-party). See GOV-08."
+        },
+        "purpose": {
+          "type": "string",
+          "description": "What the model does in plain language."
+        },
+        "clinical_use": {
+          "type": "boolean",
+          "description": "True if the model directly or indirectly affects patient care or clinical decisions."
+        },
+        "risk_class": {
+          "type": "string",
+          "enum": ["low", "medium", "high", "critical"],
+          "description": "Risk classification based on patient safety impact, clinical decision impact, and regulatory exposure. low: administrative/internal only. medium: affects workflow but not clinical decisions. high: informs clinical decisions. critical: directly drives treatment or diagnosis."
+        },
+        "impact_classification": {
+          "type": "object",
+          "description": "Detailed impact assessment across dimensions.",
+          "properties": {
+            "patient_safety": {
+              "type": "string",
+              "enum": ["none", "indirect", "direct"],
+              "description": "none: no patient impact. indirect: affects workflows that affect patients. direct: directly influences treatment/diagnosis."
+            },
+            "clinical_decision": {
+              "type": "string",
+              "enum": ["none", "advisory", "deterministic"],
+              "description": "none: not used in decisions. advisory: provides recommendations. deterministic: drives automated decisions."
+            },
+            "regulatory_exposure": {
+              "type": "string",
+              "enum": ["none", "low", "moderate", "high"],
+              "description": "Degree of regulatory scrutiny this model is subject to."
+            },
+            "data_sensitivity": {
+              "type": "string",
+              "enum": ["public", "internal", "confidential", "phi"],
+              "description": "Sensitivity level of data consumed by this model."
+            }
+          }
+        },
+        "data_types_consumed": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Types of data the model consumes. Examples: 'patient_demographics', 'lab_results', 'imaging', 'free_text_notes', 'medication_orders'."
+        },
+        "deployment_status": {
+          "type": "string",
+          "enum": ["development", "staging", "shadow", "production", "quarantined", "deprecated", "retired"],
+          "description": "Current deployment lifecycle stage."
+        },
+        "deployment_environment": {
+          "type": "string",
+          "description": "Where the model is deployed. Examples: 'medinovai-cds', 'medinovai-pathology-ai'."
+        },
+        "mitigation_plan": {
+          "type": "object",
+          "description": "Risk mitigation measures in place for this model.",
+          "properties": {
+            "fallback_mechanism": {
+              "type": "string",
+              "description": "What happens when the model fails or is quarantined. Examples: 'rule-based fallback', 'human decision', 'cached last-good response'."
+            },
+            "monitoring_checks": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "List of heartbeat checks monitoring this model."
+            },
+            "bias_testing_schedule": {
+              "type": "string",
+              "description": "How often bias testing is performed. Examples: 'every-deployment', 'quarterly', 'monthly'."
+            },
+            "human_override_enabled": {
+              "type": "boolean",
+              "description": "Whether clinicians can override this model's outputs."
+            },
+            "max_acceptable_drift_pct": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 100,
+              "description": "Maximum acceptable accuracy drift percentage before auto-disable."
+            }
+          }
+        },
+        "explainability_tier": {
+          "type": "string",
+          "enum": ["low", "medium", "high", "critical"],
+          "description": "Required explainability tier per GOV-05. Must match or exceed risk_class."
+        },
+        "owner": {
+          "type": "string",
+          "description": "Team or individual responsible for this model."
+        },
+        "last_validated": {
+          "type": "string",
+          "format": "date",
+          "description": "Date of the last successful validation pipeline run."
+        },
+        "last_bias_audit": {
+          "type": "string",
+          "format": "date",
+          "description": "Date of the last bias testing audit."
+        },
+        "next_review_date": {
+          "type": "string",
+          "format": "date",
+          "description": "Date of the next scheduled review."
+        },
+        "governance_notes": {
+          "type": "string",
+          "description": "Free-text notes from governance board reviews."
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When this model was first registered."
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When this registry entry was last updated."
+        }
+      }
+    }
+  }
+}

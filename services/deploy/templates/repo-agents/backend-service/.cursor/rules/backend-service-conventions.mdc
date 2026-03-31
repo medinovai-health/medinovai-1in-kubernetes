@@ -1,0 +1,5 @@
+# Backend Service Conventions
+- RESTful or GraphQL with versioning; avoid breaking changes without migration
+- Health endpoints: /health and /ready; structured JSON logging
+- Input validation, parameterized queries, error handling with proper status codes
+- No secrets in code; use environment or secret manager

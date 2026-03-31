@@ -1,0 +1,447 @@
+# MedinovAI Control Plane — Universal Self-Assembly Architecture
+# This compose file starts ALL control-plane services needed for
+# automated deployment of the entire MedinovAI platform.
+#
+# Tier 0: Registry + Redis (must start first)
+# Control Plane: 11 Provisioners + Self-Healing Engine + Orchestrator
+#
+# Usage:
+#   docker-compose -f services/registry/docker-compose.registry.yml \
+#                  -f services/docker-compose.control-plane.yml up -d
+#
+# See: medinovai-Developer/UNIVERSAL_SELF_ASSEMBLY_ARCHITECTURE.md
+# See: medinovai-Developer/DEPLOYMENT_RUNBOOK.md
+
+version: '3.8'
+
+services:
+  # =========================================================================
+  # PROVISIONER SERVICES (ports 9011-9021)
+  # Each provisioner handles one subsystem's infrastructure setup
+  # =========================================================================
+
+  database-provisioner:
+    image: medinovai/database-provisioner:latest
+    build:
+      context: ../provisioners/database-provisioner
+      dockerfile: Dockerfile
+    container_name: medinovai-database-provisioner
+    ports:
+      - "9011:9011"
+    environment:
+      - E_PORT=9011
+      - E_POSTGRES_HOST=postgres
+      - E_POSTGRES_PORT=5432
+      - E_POSTGRES_ADMIN_USER=${POSTGRES_ADMIN_USER:-medinovai_admin}
+      - E_POSTGRES_ADMIN_PASSWORD=${POSTGRES_ADMIN_PASSWORD}
+      - E_PGBOUNCER_ADMIN_URL=http://pgbouncer:6432
+      - E_ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      - E_AUDIT_ENABLED=true
+    depends_on:
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9011/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - medinovai-internal
+    labels:
+      medinovai.tier: "0"
+      medinovai.domain: "control-plane"
+      medinovai.provisioner: "database"
+
+  monitoring-provisioner:
+    image: medinovai/monitoring-provisioner:latest
+    build:
+      context: ../provisioners/monitoring-provisioner
+      dockerfile: Dockerfile
+    container_name: medinovai-monitoring-provisioner
+    ports:
+      - "9012:9012"
+    environment:
+      - E_PORT=9012
+      - E_PROMETHEUS_URL=http://prometheus:9090
+      - E_GRAFANA_URL=http://grafana:3000
+      - E_GRAFANA_API_KEY=${GRAFANA_API_KEY}
+      - E_ALERTMANAGER_URL=http://alertmanager:9093
+      - E_ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      - E_AUDIT_ENABLED=true
+    depends_on:
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9012/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - medinovai-internal
+    labels:
+      medinovai.tier: "0"
+      medinovai.domain: "control-plane"
+      medinovai.provisioner: "monitoring"
+
+  messaging-provisioner:
+    image: medinovai/messaging-provisioner:latest
+    build:
+      context: ../provisioners/messaging-provisioner
+      dockerfile: Dockerfile
+    container_name: medinovai-messaging-provisioner
+    ports:
+      - "9013:9013"
+    environment:
+      - E_PORT=9013
+      - E_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - E_KAFKA_ADMIN_TIMEOUT=30
+      - E_ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      - E_AUDIT_ENABLED=true
+    depends_on:
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9013/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - medinovai-internal
+    labels:
+      medinovai.tier: "0"
+      medinovai.domain: "control-plane"
+      medinovai.provisioner: "messaging"
+
+  storage-provisioner:
+    image: medinovai/storage-provisioner:latest
+    build:
+      context: ../provisioners/storage-provisioner
+      dockerfile: Dockerfile
+    container_name: medinovai-storage-provisioner
+    ports:
+      - "9014:9014"
+    environment:
+      - E_PORT=9014
+      - E_AWS_REGION=${AWS_REGION:-us-east-1}
+      - E_S3_ENDPOINT=${S3_ENDPOINT}
+      - E_ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      - E_AUDIT_ENABLED=true
+    depends_on:
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9014/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - medinovai-internal
+    labels:
+      medinovai.tier: "0"
+      medinovai.domain: "control-plane"
+      medinovai.provisioner: "storage"
+
+  sdg-provisioner:
+    image: medinovai/sdg-provisioner:latest
+    build:
+      context: ../provisioners/sdg-provisioner
+      dockerfile: Dockerfile
+    container_name: medinovai-sdg-provisioner
+    ports:
+      - "9015:9015"
+    environment:
+      - E_PORT=9015
+      - E_SYNTHEA_PATH=/opt/synthea
+      - E_OUTPUT_DIR=/data/sdg-output
+      - E_FHIR_SERVER_URL=http://fhir-server:8080/fhir
+      - E_ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      - E_AUDIT_ENABLED=true
+    depends_on:
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9015/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - medinovai-internal
+    volumes:
+      - sdg-data:/data/sdg-output
+    labels:
+      medinovai.tier: "0"
+      medinovai.domain: "control-plane"
+      medinovai.provisioner: "sdg"
+
+  qa-provisioner:
+    image: medinovai/qa-provisioner:latest
+    build:
+      context: ../provisioners/qa-provisioner
+      dockerfile: Dockerfile
+    container_name: medinovai-qa-provisioner
+    ports:
+      - "9016:9016"
+    environment:
+      - E_PORT=9016
+      - E_WORKSPACE_DIR=/workspace
+      - E_ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      - E_AUDIT_ENABLED=true
+    depends_on:
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9016/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - medinovai-internal
+    volumes:
+      - qa-workspace:/workspace
+    labels:
+      medinovai.tier: "0"
+      medinovai.domain: "control-plane"
+      medinovai.provisioner: "qa"
+
+  model-provisioner:
+    image: medinovai/model-provisioner:latest
+    build:
+      context: ../provisioners/model-provisioner
+      dockerfile: Dockerfile
+    container_name: medinovai-model-provisioner
+    ports:
+      - "9017:9017"
+    environment:
+      - E_PORT=9017
+      - E_MLFLOW_TRACKING_URI=http://mlflow:5000
+      - E_KSERVE_NAMESPACE=medinovai-models
+      - E_MODEL_REGISTRY_URL=http://model-registry:8080
+      - E_ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      - E_AUDIT_ENABLED=true
+    depends_on:
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9017/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - medinovai-internal
+    labels:
+      medinovai.tier: "0"
+      medinovai.domain: "control-plane"
+      medinovai.provisioner: "model"
+
+  gateway-provisioner:
+    image: medinovai/gateway-provisioner:latest
+    build:
+      context: ../provisioners/gateway-provisioner
+      dockerfile: Dockerfile
+    container_name: medinovai-gateway-provisioner
+    ports:
+      - "9018:9018"
+    environment:
+      - E_PORT=9018
+      - E_KONG_ADMIN_URL=http://kong:8001
+      - E_ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      - E_AUDIT_ENABLED=true
+    depends_on:
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9018/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - medinovai-internal
+    labels:
+      medinovai.tier: "0"
+      medinovai.domain: "control-plane"
+      medinovai.provisioner: "gateway"
+
+  compliance-provisioner:
+    image: medinovai/compliance-provisioner:latest
+    build:
+      context: ../provisioners/compliance-provisioner
+      dockerfile: Dockerfile
+    container_name: medinovai-compliance-provisioner
+    ports:
+      - "9019:9019"
+    environment:
+      - E_PORT=9019
+      - E_VAULT_URL=http://vault:8200
+      - E_VAULT_TOKEN=${VAULT_TOKEN}
+      - E_ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      - E_AUDIT_ENABLED=true
+    depends_on:
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9019/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - medinovai-internal
+    labels:
+      medinovai.tier: "0"
+      medinovai.domain: "control-plane"
+      medinovai.provisioner: "compliance"
+
+  featureflag-provisioner:
+    image: medinovai/featureflag-provisioner:latest
+    build:
+      context: ../provisioners/featureflag-provisioner
+      dockerfile: Dockerfile
+    container_name: medinovai-featureflag-provisioner
+    ports:
+      - "9020:9020"
+    environment:
+      - E_PORT=9020
+      - E_REDIS_URL=redis://redis:6379/2
+      - E_ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      - E_AUDIT_ENABLED=true
+    depends_on:
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9020/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - medinovai-internal
+    labels:
+      medinovai.tier: "0"
+      medinovai.domain: "control-plane"
+      medinovai.provisioner: "featureflag"
+
+  cache-provisioner:
+    image: medinovai/cache-provisioner:latest
+    build:
+      context: ../provisioners/cache-provisioner
+      dockerfile: Dockerfile
+    container_name: medinovai-cache-provisioner
+    ports:
+      - "9021:9021"
+    environment:
+      - E_PORT=9021
+      - E_REDIS_URL=redis://redis:6379/1
+      - E_ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      - E_AUDIT_ENABLED=true
+    depends_on:
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9021/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - medinovai-internal
+    labels:
+      medinovai.tier: "0"
+      medinovai.domain: "control-plane"
+      medinovai.provisioner: "cache"
+
+  # =========================================================================
+  # SELF-HEALING ENGINE (port 9030)
+  # Detects failures, diagnoses root causes, applies fixes, learns
+  # =========================================================================
+
+  self-healing-engine:
+    image: medinovai/self-healing-engine:latest
+    build:
+      context: ../self-healing-engine
+      dockerfile: Dockerfile
+    container_name: medinovai-self-healing-engine
+    ports:
+      - "9030:9030"
+    environment:
+      - E_PORT=9030
+      - E_REGISTRY_URL=http://medinovai-registry:9010
+      - E_REDIS_URL=redis://redis:6379/3
+      - E_HEALTH_POLL_INTERVAL_SECONDS=10
+      - E_MAX_REMEDIATION_ATTEMPTS=3
+      - E_LEARNINGS_PATH=/data/deployment-learnings.json
+      - E_ENCRYPTION_KEY=${ENCRYPTION_KEY}
+    depends_on:
+      medinovai-registry:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9030/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - medinovai-internal
+    volumes:
+      - healing-data:/data
+    labels:
+      medinovai.tier: "0"
+      medinovai.domain: "control-plane"
+      medinovai.component: "self-healing"
+
+  # =========================================================================
+  # ORCHESTRATOR (port 9040)
+  # Coordinates 6-phase deployment with validation gates
+  # =========================================================================
+
+  orchestrator:
+    image: medinovai/orchestrator:latest
+    build:
+      context: ../orchestrator
+      dockerfile: Dockerfile
+    container_name: medinovai-orchestrator
+    ports:
+      - "9040:9040"
+    environment:
+      - E_PORT=9040
+      - E_REGISTRY_URL=http://medinovai-registry:9010
+      - E_REDIS_URL=redis://redis:6379/4
+      - E_HEALING_ENGINE_URL=http://self-healing-engine:9030
+      - E_DEPLOYMENT_PLAN_PATH=/data/deployment-plan.json
+      - E_ENCRYPTION_KEY=${ENCRYPTION_KEY}
+    depends_on:
+      medinovai-registry:
+        condition: service_healthy
+      self-healing-engine:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9040/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - medinovai-internal
+    volumes:
+      - orchestrator-data:/data
+    labels:
+      medinovai.tier: "0"
+      medinovai.domain: "control-plane"
+      medinovai.component: "orchestrator"
+
+volumes:
+  sdg-data:
+  qa-workspace:
+  healing-data:
+  orchestrator-data:
+
+networks:
+  medinovai-internal:
+    external: true

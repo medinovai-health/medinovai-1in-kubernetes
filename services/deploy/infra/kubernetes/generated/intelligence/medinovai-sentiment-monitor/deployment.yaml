@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: medinovai-sentiment-monitor
+  namespace: intelligence
+  labels:
+    app: medinovai-sentiment-monitor
+    atlasos.io/managed: "true"
+  annotations:
+    atlasos.io/sidecar-enabled: "true"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: medinovai-sentiment-monitor
+  template:
+    metadata:
+      labels:
+        app: medinovai-sentiment-monitor
+        atlasos.io/managed: "true"
+    spec:
+      containers:
+      - name: medinovai-sentiment-monitor
+        image: medinovai-sentiment-monitor:latest
+        ports:
+        - containerPort: 8000
+          name: http
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 200m
+            memory: 512Mi
+            nvidia.com/gpu: "1"
+
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+
+        volumeMounts:
+        - name: secrets
+          mountPath: /run/secrets/atlasos
+          readOnly: true
+      volumes:
+      - name: secrets
+        secret:
+          secretName: atlasos-infra-secrets
+

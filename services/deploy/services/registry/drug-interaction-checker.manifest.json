@@ -1,0 +1,41 @@
+{
+  "service": "drug-interaction-checker",
+  "version": "0.1.0",
+  "repo": "medinovai/medinovai-drug-interaction-checker",
+  "type": "ml-service",
+  "tier": "critical",
+  "description": "Drug-drug and drug-allergy interaction checking",
+  "dependencies": {
+    "services": ["security", "clinical-decision-support", "knowledge-graph"],
+    "databases": ["postgres-primary"],
+    "external": []
+  },
+  "health": {
+    "endpoint": "/health",
+    "readiness": "/ready",
+    "startup_timeout_seconds": 30
+  },
+  "deploy": {
+    "strategy": "canary",
+    "canary_percentage": 10,
+    "canary_duration_minutes": 10,
+    "rollback_on_error_rate": 0.01
+  },
+  "resources": {
+    "cpu": { "request": "250m", "limit": "1000m" },
+    "memory": { "request": "256Mi", "limit": "1Gi" },
+    "gpu": false
+  },
+  "scaling": {
+    "min_replicas": 1,
+    "max_replicas": 5,
+    "target_cpu_percent": 70
+  },
+  "governance": {
+    "risk_class": "critical",
+    "requires_approval": true,
+    "pii_handling": false,
+    "audit_logging": true,
+    "clinical_approval_required": true
+  }
+}

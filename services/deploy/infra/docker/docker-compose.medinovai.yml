@@ -1,0 +1,929 @@
+# ─── AtlasOS MedinovAI Platform Stack ─────────────────────────────────────────
+# Full deployment for the AtlasOS Platform Operations Brain
+#
+# FIXED PORT RANGE: 42000-42999
+# Runs alongside the CEO stack (41xxx) without conflicts
+# Zero-Trust: All secrets stored in Vault, never in .env
+# Auth: Keycloak OIDC
+# Audit: Every action hash-chained in audit-chain service
+#
+# Usage:
+#   ATLASOS_PATH=/path/to/AtlasOS \
+#     docker compose -p medinovai -f infra/docker/docker-compose.medinovai.yml up -d
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+  # ─── Secrets Management ──────────────────────────────────────────────────
+  vault:
+    image: hashicorp/vault:1.17
+    container_name: medinovai-vault
+    cap_add:
+      - IPC_LOCK
+    ports:
+      - "42100:8200"
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: ${VAULT_DEV_ROOT_TOKEN_ID:-medinovai-platform-dev-token}
+      VAULT_DEV_LISTEN_ADDRESS: "0.0.0.0:8200"
+      VAULT_ADDR: "http://0.0.0.0:8200"
+      VAULT_API_ADDR: "http://vault:8200"
+    volumes:
+      - vault-data:/vault/data
+    healthcheck:
+      test: ["CMD", "vault", "status"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - medinovai-network
+
+  vault-init:
+    image: hashicorp/vault:1.17
+    container_name: medinovai-vault-init
+    depends_on:
+      vault:
+        condition: service_healthy
+    environment:
+      VAULT_ADDR: "http://vault:8200"
+      VAULT_TOKEN: ${VAULT_DEV_ROOT_TOKEN_ID:-medinovai-platform-dev-token}
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        sleep 2
+        vault secrets enable -path=medinovai-secrets kv-v2 2>/dev/null || true
+        vault kv put medinovai-secrets/atlasos/config \
+          initialized=true \
+          instance=medinovai-platform \
+          created_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+        vault policy write atlasos-read - <<POLICY
+        path "medinovai-secrets/data/atlasos/*" {
+          capabilities = ["read", "list"]
+        }
+        path "medinovai-secrets/metadata/atlasos/*" {
+          capabilities = ["read", "list"]
+        }
+        POLICY
+        echo "Vault initialized for MedinovAI Platform instance"
+    restart: "no"
+    networks:
+      - medinovai-network
+
+  # ─── Keycloak SSO ────────────────────────────────────────────────────────
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.1
+    container_name: medinovai-keycloak
+    command: start-dev --import-realm
+    ports:
+      - "42080:8080"
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: MedinovAI-Admin-2026!
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/atlasos
+      KC_DB_USERNAME: medinovai
+      KC_DB_PASSWORD: ""
+      KC_HOSTNAME_STRICT: "false"
+      KC_HTTP_ENABLED: "true"
+      KC_PROXY_HEADERS: xforwarded
+      KC_HEALTH_ENABLED: "true"
+    volumes:
+      - ${ATLASOS_PATH:-../../repos/AtlasOS}/config/keycloak:/opt/keycloak/data/import:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/8080 && echo -e 'GET /realms/master HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n' >&3 && cat <&3 | grep -q 'public_key'"]
+      interval: 10s
+      timeout: 10s
+      retries: 15
+      start_period: 45s
+    restart: unless-stopped
+    networks:
+      - medinovai-network
+
+  keycloak-init:
+    image: python:3.12-slim
+    container_name: medinovai-keycloak-init
+    depends_on:
+      keycloak:
+        condition: service_healthy
+    environment:
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinov-ai
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: MedinovAI-Admin-2026!
+      ATLAS_ROOT: /app
+    volumes:
+      - ${ATLASOS_PATH:-../../repos/AtlasOS}/lib:/app/lib:ro
+      - ${ATLASOS_PATH:-../../repos/AtlasOS}/config:/app/config:ro
+      - ${ATLASOS_PATH:-../../repos/AtlasOS}/scripts:/app/scripts:ro
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        pip install -q requests pyyaml 2>/dev/null
+        python3 /app/scripts/keycloak_bootstrap.py
+    restart: "no"
+    networks:
+      - medinovai-network
+
+  # ─── Infrastructure ──────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: medinovai-postgres
+    ports:
+      - "42200:5432"
+    environment:
+      POSTGRES_DB: atlasos
+      POSTGRES_USER: medinovai
+      POSTGRES_HOST_AUTH_METHOD: trust
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U medinovai -d atlasos"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - medinovai-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: medinovai-redis
+    ports:
+      - "42300:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - medinovai-network
+
+  chromadb:
+    image: chromadb/chroma:latest
+    container_name: medinovai-chromadb
+    ports:
+      - "42400:8000"
+    volumes:
+      - chromadb-data:/chroma/chroma
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/localhost/8000'"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - medinovai-network
+
+  # ─── AtlasOS UI (Dashboard + Chat + Deployment) ──────────────────────────
+  atlas-ui:
+    build:
+      context: ${ATLASOS_PATH:-../../repos/AtlasOS}/ui
+      dockerfile: Dockerfile
+      args:
+        ATLAS_VERSION: ${ATLAS_VERSION:-4.0.0}
+        ATLAS_GIT_SHA: ${ATLAS_GIT_SHA:-unknown}
+        BUILD_TIME: ${BUILD_TIME:-unknown}
+        NEXT_PUBLIC_KEYCLOAK_URL: http://localhost:42080
+        NEXT_PUBLIC_KEYCLOAK_REALM: medinov-ai
+        NEXT_PUBLIC_KEYCLOAK_CLIENT_ID: medinovai-atlas
+        NEXT_PUBLIC_AUTH_ENABLED: "true"
+        NEXT_PUBLIC_DEMO_MODE: "true"
+    container_name: medinovai-atlas-ui
+    ports:
+      - "42020:3000"
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      NEXTAUTH_URL: http://localhost:42020
+      AUTH_BRIDGE_URL: http://auth-bridge:8250
+      AIFACTORY_ENDPOINT: ${AIFACTORY_ENDPOINT:-http://host.docker.internal:5000}
+      AI_MODEL: ${AI_MODEL:-qwen2.5:32b}
+      OLLAMA_HOST: ${OLLAMA_HOST:-http://host.docker.internal:11434}
+      CHROMADB_URL: http://chromadb:8000
+      POSTGRES_URL: postgresql://medinovai@postgres:5432/atlasos
+      REDIS_URL: redis://redis:6379
+      VAULT_ADDR: http://vault:8200
+      VAULT_TOKEN: ${VAULT_DEV_ROOT_TOKEN_ID:-medinovai-platform-dev-token}
+      AUDIT_SERVICE_URL: http://audit-chain:8084
+      ATLAS_HOME: /data/atlas
+      ATLASOS_GATEWAY_URL: http://atlas-gateway:8080
+      OODA_BRAIN_URL: http://ooda-brain:8000
+      SERVICE_REGISTRY_URL: http://service-registry:8002
+      FLEET_MONITOR_URL: http://fleet-monitor:8014
+      EVENT_BUS_URL: http://event-bus:8088
+      AGENT_RUNTIME_URL: http://agent-runtime:8200
+      INSTANCE_NAME: medinovai-platform
+    volumes:
+      - atlas-data:/data
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      vault:
+        condition: service_healthy
+      audit-chain:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    restart: unless-stopped
+    networks:
+      - medinovai-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  # ─── AtlasOS Gateway (Agent Runtime) ─────────────────────────────────────
+  atlas-gateway:
+    build:
+      context: ${ATLASOS_PATH:-../../repos/AtlasOS}
+      dockerfile: Dockerfile
+    container_name: medinovai-atlas-gateway
+    ports:
+      - "42010:8080"
+    environment:
+      PYTHONUNBUFFERED: "1"
+      PORT: "8080"
+      VAULT_ADDR: http://vault:8200
+      VAULT_TOKEN: ${VAULT_DEV_ROOT_TOKEN_ID:-medinovai-platform-dev-token}
+      AUDIT_SERVICE_URL: http://audit-chain:8084
+      REDIS_URL: redis://redis:6379
+      POSTGRES_URL: postgresql://medinovai@postgres:5432/atlasos
+      AIFACTORY_ENDPOINT: ${AIFACTORY_ENDPOINT:-http://host.docker.internal:5000}
+      OLLAMA_HOST: ${OLLAMA_HOST:-http://host.docker.internal:11434}
+      CHROMADB_URL: http://chromadb:8000
+      EVENT_BUS_URL: http://event-bus:8088
+    volumes:
+      - atlas-data:/data
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      vault:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      audit-chain:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+    networks:
+      - medinovai-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  # ─── Zero-Trust Audit Chain ──────────────────────────────────────────────
+  audit-chain:
+    build:
+      context: ${ATLASOS_PATH:-../../repos/AtlasOS}/services/audit-chain
+      dockerfile: Dockerfile
+    container_name: medinovai-audit-chain
+    ports:
+      - "42500:8084"
+    environment:
+      AUDIT_LOG_PATH: /data/audit/audit.jsonl
+      FLASK_ENV: production
+    volumes:
+      - audit-data:/data/audit
+      - ${ATLASOS_PATH:-../../repos/AtlasOS}/lib:/app/lib:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8084/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - medinovai-network
+
+  # ─── Event Bus ───────────────────────────────────────────────────────────
+  event-bus:
+    build:
+      context: ${ATLASOS_PATH:-../../repos/AtlasOS}/services/event-bus
+      dockerfile: Dockerfile
+    container_name: medinovai-event-bus
+    ports:
+      - "42088:8088"
+    environment:
+      EVENTS_DIR: /data/events
+    volumes:
+      - events-data:/data/events
+      - ${ATLASOS_PATH:-../../repos/AtlasOS}/lib:/app/lib:ro
+    healthcheck:
+      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8088/health')\" 2>/dev/null && echo ok || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - medinovai-network
+
+  # ─── OODA Brain ──────────────────────────────────────────────────────────
+  ooda-brain:
+    build:
+      context: ${ATLASOS_PATH:-../../repos/AtlasOS}
+      dockerfile: services/ooda_brain/Dockerfile
+    container_name: medinovai-ooda-brain
+    ports:
+      - "42001:8000"
+    environment:
+      EVENT_BUS_URL: http://event-bus:8088
+      AGENT_RUNTIME_URL: http://agent-runtime:8200
+      MEMORY_SERVICE_URL: http://memory-service:8201
+      AUDIT_SERVICE_URL: http://audit-chain:8084
+      VAULT_ADDR: http://vault:8200
+      VAULT_TOKEN: ${VAULT_DEV_ROOT_TOKEN_ID:-medinovai-platform-dev-token}
+    volumes:
+      - ${ATLASOS_PATH:-../../repos/AtlasOS}/config:/app/config:ro
+      - ${ATLASOS_PATH:-../../repos/AtlasOS}/lib:/app/lib:ro
+    depends_on:
+      event-bus:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health')\" 2>/dev/null && echo ok || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - medinovai-network
+
+  # ─── Service Registry ────────────────────────────────────────────────────
+  service-registry:
+    build:
+      context: ${ATLASOS_PATH:-../../repos/AtlasOS}
+      dockerfile: services/service_registry/Dockerfile
+    container_name: medinovai-service-registry
+    ports:
+      - "42002:8002"
+    environment:
+      EVENT_BUS_URL: http://event-bus:8088
+      VAULT_ADDR: http://vault:8200
+      VAULT_TOKEN: ${VAULT_DEV_ROOT_TOKEN_ID:-medinovai-platform-dev-token}
+    volumes:
+      - ${ATLASOS_PATH:-../../repos/AtlasOS}/config:/app/config:ro
+      - ${ATLASOS_PATH:-../../repos/AtlasOS}/lib:/app/lib:ro
+    depends_on:
+      event-bus:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8002/health')\" 2>/dev/null && echo ok || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - medinovai-network
+
+  # ─── Fleet Monitor ───────────────────────────────────────────────────────
+  fleet-monitor:
+    build:
+      context: ${ATLASOS_PATH:-../../repos/AtlasOS}
+      dockerfile: services/fleet_monitor/Dockerfile
+    container_name: medinovai-fleet-monitor
+    ports:
+      - "42014:8014"
+    environment:
+      EVENT_BUS_URL: http://event-bus:8088
+      AGENT_RUNTIME_URL: http://agent-runtime:8200
+      VAULT_ADDR: http://vault:8200
+      VAULT_TOKEN: ${VAULT_DEV_ROOT_TOKEN_ID:-medinovai-platform-dev-token}
+    volumes:
+      - ${ATLASOS_PATH:-../../repos/AtlasOS}/config:/app/config:ro
+      - ${ATLASOS_PATH:-../../repos/AtlasOS}/lib:/app/lib:ro
+    depends_on:
+      event-bus:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8014/health')\" 2>/dev/null && echo ok || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - medinovai-network
+
+  # ─── Health Probe ────────────────────────────────────────────────────────
+  health-probe:
+    build:
+      context: ${ATLASOS_PATH:-../../repos/AtlasOS}
+      dockerfile: services/health_probe/Dockerfile
+    container_name: medinovai-health-probe
+    ports:
+      - "42003:8003"
+    environment:
+      EVENT_BUS_URL: http://event-bus:8088
+      VAULT_ADDR: http://vault:8200
+      VAULT_TOKEN: ${VAULT_DEV_ROOT_TOKEN_ID:-medinovai-platform-dev-token}
+    volumes:
+      - ${ATLASOS_PATH:-../../repos/AtlasOS}/config:/app/config:ro
+      - ${ATLASOS_PATH:-../../repos/AtlasOS}/lib:/app/lib:ro
+    depends_on:
+      event-bus:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8003/health')\" 2>/dev/null && echo ok || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - medinovai-network
+
+  # ─── Agent Runtime ───────────────────────────────────────────────────────
+  agent-runtime:
+    build:
+      context: ${ATLASOS_PATH:-../../repos/AtlasOS}/services/agent-runtime
+      dockerfile: Dockerfile
+    container_name: medinovai-agent-runtime
+    ports:
+      - "42220:8200"
+    environment:
+      ATLAS_ROOT: /app
+      EVENT_BUS_URL: http://event-bus:8088
+      SKILL_ENGINE_URL: http://skill-engine:8090
+      MEMORY_SERVICE_URL: http://memory-service:8201
+      AGENT_MESH_URL: http://agent-mesh:8203
+      SECURITY_MESH_URL: http://security-mesh:8207
+      GOVERNANCE_URL: http://governance-runtime:8208
+      LLM_ENDPOINT: ${LLM_ENDPOINT:-http://host.docker.internal:5000}
+      VAULT_ADDR: http://vault:8200
+      VAULT_TOKEN: ${VAULT_DEV_ROOT_TOKEN_ID:-medinovai-platform-dev-token}
+      DATABASE_URL: postgresql://medinovai@postgres:5432/atlasos
+    volumes:
+      - ${ATLASOS_PATH:-../../repos/AtlasOS}/config:/app/config:ro
+      - ${ATLASOS_PATH:-../../repos/AtlasOS}/workspaces:/app/workspaces:ro
+      - ${ATLASOS_PATH:-../../repos/AtlasOS}/skills:/app/skills:ro
+      - ${ATLASOS_PATH:-../../repos/AtlasOS}/templates:/app/templates:ro
+      - ${ATLASOS_PATH:-../../repos/AtlasOS}/lib:/app/lib:ro
+    depends_on:
+      event-bus:
+        condition: service_healthy
+      vault:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8200/health')\" 2>/dev/null && echo ok || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - medinovai-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  # ─── Memory Service ──────────────────────────────────────────────────────
+  memory-service:
+    build:
+      context: ${ATLASOS_PATH:-../../repos/AtlasOS}/services/memory-service
+      dockerfile: Dockerfile
+    container_name: medinovai-memory-service
+    ports:
+      - "42201:8201"
+    environment:
+      EVENT_BUS_URL: http://event-bus:8088
+      MEMORY_DIR: /data/memory
+    volumes:
+      - memory-data:/data/memory
+      - ${ATLASOS_PATH:-../../repos/AtlasOS}/lib:/app/lib:ro
+    healthcheck:
+      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8201/health')\" 2>/dev/null && echo ok || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - medinovai-network
+
+  # ─── Agent Orchestrator ──────────────────────────────────────────────────
+  agent-orchestrator:
+    build:
+      context: ${ATLASOS_PATH:-../../repos/AtlasOS}/services/agent-orchestrator
+      dockerfile: Dockerfile
+    container_name: medinovai-agent-orchestrator
+    ports:
+      - "42202:8202"
+    environment:
+      ATLAS_ROOT: /app
+      AGENT_RUNTIME_URL: http://agent-runtime:8200
+      EVENT_BUS_URL: http://event-bus:8088
+      MEMORY_SERVICE_URL: http://memory-service:8201
+      HEARTBEAT_URL: http://heartbeat-executor:8205
+      LEARNING_URL: http://learning-engine:8206
+    volumes:
+      - ${ATLASOS_PATH:-../../repos/AtlasOS}/config:/app/config:ro
+      - ${ATLASOS_PATH:-../../repos/AtlasOS}/lib:/app/lib:ro
+    depends_on:
+      agent-runtime:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8202/health')\" 2>/dev/null && echo ok || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - medinovai-network
+
+  # ─── Agent Mesh ──────────────────────────────────────────────────────────
+  agent-mesh:
+    build:
+      context: ${ATLASOS_PATH:-../../repos/AtlasOS}/services/agent-mesh
+      dockerfile: Dockerfile
+    container_name: medinovai-agent-mesh
+    ports:
+      - "42203:8203"
+    environment:
+      AGENT_RUNTIME_URL: http://agent-runtime:8200
+      EVENT_BUS_URL: http://event-bus:8088
+      AUDIT_SERVICE_URL: http://audit-chain:8084
+      SECURITY_MESH_URL: http://security-mesh:8207
+    volumes:
+      - ${ATLASOS_PATH:-../../repos/AtlasOS}/lib:/app/lib:ro
+    depends_on:
+      agent-runtime:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8203/health')\" 2>/dev/null && echo ok || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - medinovai-network
+
+  # ─── Skill Engine ────────────────────────────────────────────────────────
+  skill-engine:
+    build:
+      context: ${ATLASOS_PATH:-../../repos/AtlasOS}/services/skill-engine
+      dockerfile: Dockerfile
+    container_name: medinovai-skill-engine
+    ports:
+      - "42090:8090"
+    environment:
+      ATLAS_ROOT: /app
+      SKILL_INDEX_PATH: /app/config/skill_index.yaml
+      ARTIFACT_ROOT: /data/artifacts
+      AUDIT_SERVICE_URL: http://audit-chain:8084
+      EVENT_BUS_URL: http://event-bus:8088
+      LLM_ENDPOINT: ${LLM_ENDPOINT:-http://host.docker.internal:5000}
+    volumes:
+      - ${ATLASOS_PATH:-../../repos/AtlasOS}/config:/app/config:ro
+      - ${ATLASOS_PATH:-../../repos/AtlasOS}/skills:/app/skills:ro
+      - skill-artifacts:/data/artifacts
+      - ${ATLASOS_PATH:-../../repos/AtlasOS}/lib:/app/lib:ro
+    depends_on:
+      event-bus:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8090/health')\" 2>/dev/null && echo ok || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - medinovai-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  # ─── Security Mesh ──────────────────────────────────────────────────────
+  security-mesh:
+    build:
+      context: ${ATLASOS_PATH:-../../repos/AtlasOS}/services/security-mesh
+      dockerfile: Dockerfile
+    container_name: medinovai-security-mesh
+    ports:
+      - "42207:8207"
+    environment:
+      EVENT_BUS_URL: http://event-bus:8088
+      AGENT_RUNTIME_URL: http://agent-runtime:8200
+      ORCHESTRATOR_URL: http://agent-orchestrator:8202
+      AGENT_SIGNING_SECRET: ${AGENT_SIGNING_SECRET:-atlas-platform-signing-secret-change-me}
+    volumes:
+      - ${ATLASOS_PATH:-../../repos/AtlasOS}/lib:/app/lib:ro
+    depends_on:
+      event-bus:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8207/health')\" 2>/dev/null && echo ok || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - medinovai-network
+
+  # ─── Governance Runtime ──────────────────────────────────────────────────
+  governance-runtime:
+    build:
+      context: ${ATLASOS_PATH:-../../repos/AtlasOS}/services/governance-runtime
+      dockerfile: Dockerfile
+    container_name: medinovai-governance-runtime
+    ports:
+      - "42208:8208"
+    environment:
+      ATLAS_ROOT: /app
+      EVENT_BUS_URL: http://event-bus:8088
+      AUDIT_SERVICE_URL: http://audit-chain:8084
+      SECURITY_MESH_URL: http://security-mesh:8207
+    volumes:
+      - ${ATLASOS_PATH:-../../repos/AtlasOS}/config:/app/config:ro
+      - ${ATLASOS_PATH:-../../repos/AtlasOS}/lib:/app/lib:ro
+    depends_on:
+      security-mesh:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8208/health')\" 2>/dev/null && echo ok || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - medinovai-network
+
+  # ─── Heartbeat Executor ──────────────────────────────────────────────────
+  heartbeat-executor:
+    build:
+      context: ${ATLASOS_PATH:-../../repos/AtlasOS}/services/heartbeat-executor
+      dockerfile: Dockerfile
+    container_name: medinovai-heartbeat-executor
+    ports:
+      - "42205:8205"
+    environment:
+      ATLAS_ROOT: /app
+      AGENT_RUNTIME_URL: http://agent-runtime:8200
+      EVENT_BUS_URL: http://event-bus:8088
+      HEARTBEAT_CHECK_INTERVAL: "300"
+    volumes:
+      - ${ATLASOS_PATH:-../../repos/AtlasOS}/workspaces:/app/workspaces:ro
+      - ${ATLASOS_PATH:-../../repos/AtlasOS}/lib:/app/lib:ro
+    depends_on:
+      agent-runtime:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8205/health')\" 2>/dev/null && echo ok || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - medinovai-network
+
+  # ─── Learning Engine ─────────────────────────────────────────────────────
+  learning-engine:
+    build:
+      context: ${ATLASOS_PATH:-../../repos/AtlasOS}/services/learning-engine
+      dockerfile: Dockerfile
+    container_name: medinovai-learning-engine
+    ports:
+      - "42206:8206"
+    environment:
+      MEMORY_SERVICE_URL: http://memory-service:8201
+      EVENT_BUS_URL: http://event-bus:8088
+    volumes:
+      - ${ATLASOS_PATH:-../../repos/AtlasOS}/lib:/app/lib:ro
+    depends_on:
+      memory-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8206/health')\" 2>/dev/null && echo ok || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - medinovai-network
+
+  # ─── Intelligence Services ───────────────────────────────────────────────
+  correlation-engine:
+    build:
+      context: ${ATLASOS_PATH:-../../repos/AtlasOS}/services/correlation-engine
+      dockerfile: Dockerfile
+    container_name: medinovai-correlation-engine
+    ports:
+      - "42510:8085"
+    environment:
+      VAULT_ADDR: http://vault:8200
+      VAULT_TOKEN: ${VAULT_DEV_ROOT_TOKEN_ID:-medinovai-platform-dev-token}
+      AUDIT_SERVICE_URL: http://audit-chain:8084
+      EVENT_BUS_URL: http://event-bus:8088
+      CORRELATION_INTERVAL_MIN: "${CORRELATION_INTERVAL_MIN:-15}"
+    volumes:
+      - correlation-data:/data/correlations
+      - ${ATLASOS_PATH:-../../repos/AtlasOS}/lib:/app/lib:ro
+    depends_on:
+      vault:
+        condition: service_healthy
+      audit-chain:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8085/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    restart: unless-stopped
+    networks:
+      - medinovai-network
+
+  briefing-engine:
+    build:
+      context: ${ATLASOS_PATH:-../../repos/AtlasOS}/services/briefing-engine
+      dockerfile: Dockerfile
+    container_name: medinovai-briefing-engine
+    ports:
+      - "42520:8086"
+    environment:
+      VAULT_ADDR: http://vault:8200
+      VAULT_TOKEN: ${VAULT_DEV_ROOT_TOKEN_ID:-medinovai-platform-dev-token}
+      AUDIT_SERVICE_URL: http://audit-chain:8084
+      CORRELATION_ENGINE_URL: http://correlation-engine:8085
+    volumes:
+      - briefing-data:/data/briefings
+      - ${ATLASOS_PATH:-../../repos/AtlasOS}/lib:/app/lib:ro
+    depends_on:
+      vault:
+        condition: service_healthy
+      audit-chain:
+        condition: service_healthy
+      correlation-engine:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8086/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    restart: unless-stopped
+    networks:
+      - medinovai-network
+
+  decision-tracker:
+    build:
+      context: ${ATLASOS_PATH:-../../repos/AtlasOS}/services/decision-tracker
+      dockerfile: Dockerfile
+    container_name: medinovai-decision-tracker
+    ports:
+      - "42530:8087"
+    environment:
+      VAULT_ADDR: http://vault:8200
+      VAULT_TOKEN: ${VAULT_DEV_ROOT_TOKEN_ID:-medinovai-platform-dev-token}
+      AUDIT_SERVICE_URL: http://audit-chain:8084
+      CORRELATION_ENGINE_URL: http://correlation-engine:8085
+    volumes:
+      - decision-data:/data/decisions
+      - ${ATLASOS_PATH:-../../repos/AtlasOS}/lib:/app/lib:ro
+    depends_on:
+      vault:
+        condition: service_healthy
+      audit-chain:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8087/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    restart: unless-stopped
+    networks:
+      - medinovai-network
+
+  # ─── Tenancy Engine ──────────────────────────────────────────────────────
+  tenancy-engine:
+    build:
+      context: ${ATLASOS_PATH:-../../repos/AtlasOS}/services/tenancy-engine
+      dockerfile: Dockerfile
+    container_name: medinovai-tenancy-engine
+    ports:
+      - "42204:8204"
+    environment:
+      ATLAS_ROOT: /app
+      TENANCY_DATA_DIR: /data/tenancy
+    volumes:
+      - ${ATLASOS_PATH:-../../repos/AtlasOS}/config:/app/config:ro
+      - tenancy-data:/data/tenancy
+      - ${ATLASOS_PATH:-../../repos/AtlasOS}/lib:/app/lib:ro
+    healthcheck:
+      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8204/health')\" 2>/dev/null && echo ok || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - medinovai-network
+
+  # ─── Squad Manager ──────────────────────────────────────────────────────
+  squad-manager:
+    build:
+      context: ${ATLASOS_PATH:-../../repos/AtlasOS}
+      dockerfile: services/squad_manager/Dockerfile
+    container_name: medinovai-squad-manager
+    ports:
+      - "42050:8001"
+    environment:
+      AGENT_RUNTIME_URL: http://agent-runtime:8200
+      EVENT_BUS_URL: http://event-bus:8088
+      VAULT_ADDR: http://vault:8200
+      VAULT_TOKEN: ${VAULT_DEV_ROOT_TOKEN_ID:-medinovai-platform-dev-token}
+    volumes:
+      - ${ATLASOS_PATH:-../../repos/AtlasOS}/config:/app/config:ro
+      - ${ATLASOS_PATH:-../../repos/AtlasOS}/lib:/app/lib:ro
+    depends_on:
+      event-bus:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8001/health')\" 2>/dev/null && echo ok || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - medinovai-network
+
+  # ─── PDF Processing ──────────────────────────────────────────────────────
+  stirling-pdf:
+    image: docker.stirlingpdf.com/stirlingtools/stirling-pdf:latest
+    container_name: medinovai-stirling-pdf
+    ports:
+      - "42030:8080"
+    environment:
+      DOCKER_ENABLE_SECURITY: "false"
+      INSTALL_BOOK_AND_ADVANCED_HTML_OPS: "true"
+      LANGS: en_US
+    volumes:
+      - stirling-data:/customFiles
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/v1/info/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+    networks:
+      - medinovai-network
+
+  # ─── Auth Bridge (OIDC/SAML to internal JWT) ──────────────────────────────
+  auth-bridge:
+    build:
+      context: ${ATLASOS_PATH:-../../repos/AtlasOS}/services/auth-bridge
+      dockerfile: Dockerfile
+    container_name: medinovai-auth-bridge
+    ports:
+      - "42250:8250"
+    environment:
+      PORT: "8250"
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: medinov-ai
+      KEYCLOAK_CLIENT_ID: medinovai-atlas
+      OIDC_DISCOVERY_URL: http://keycloak:8080/realms/medinov-ai/.well-known/openid-configuration
+      OIDC_AUDIENCE: medinovai-atlas
+      AUTH_SECRET: ${AUTH_SECRET:-medinovai-auth-bridge-secret}
+      EVENT_BUS_URL: http://event-bus:8088
+      TENANCY_ENGINE_URL: http://tenancy-engine:8204
+    volumes:
+      - ${ATLASOS_PATH:-../../repos/AtlasOS}/lib:/app/lib:ro
+      - ${ATLASOS_PATH:-../../repos/AtlasOS}/config:/app/config:ro
+    depends_on:
+      keycloak:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8250/health', timeout=5)\" 2>/dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    restart: unless-stopped
+    networks:
+      - medinovai-network
+
+volumes:
+  vault-data:
+  postgres-data:
+  chromadb-data:
+  atlas-data:
+  audit-data:
+  events-data:
+  memory-data:
+  tenancy-data:
+  skill-artifacts:
+  correlation-data:
+  briefing-data:
+  decision-data:
+  stirling-data:
+
+networks:
+  medinovai-network:
+    driver: bridge
+    name: medinovai-platform-network

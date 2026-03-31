@@ -1,0 +1,18 @@
+{
+  "service": "mcp-deploy",
+  "version": "0.1.0",
+  "repo": "myonsite-healthcare/medinovai-mcp-deploy",
+  "type": "node-service",
+  "tier": "critical",
+  "namespace": "medinovai",
+  "port": 3117,
+  "description": "MCP server exposing deploy tools (health_check, drift_check, backup) to AtlasOS agents",
+  "dependencies": {"services": ["registry"], "databases": [], "external": []},
+  "health": {"endpoint": "/health", "readiness": "/ready", "startup_timeout_seconds": 30},
+  "deploy": {"strategy": "rolling", "canary_percentage": 5, "canary_duration_minutes": 15, "rollback_on_error_rate": 0.005},
+  "resources": {"cpu": {"request": "250m", "limit": "1000m"}, "memory": {"request": "256Mi", "limit": "1Gi"}, "gpu": false},
+  "scaling": {"min_replicas": 1, "max_replicas": 3, "target_cpu_percent": 60},
+  "governance": {"risk_class": "high", "requires_approval": true, "pii_handling": false, "audit_logging": true},
+  "agent_enabled": true,
+  "agent_permissions": ["health_check", "drift_check", "backup", "deploy_read"]
+}

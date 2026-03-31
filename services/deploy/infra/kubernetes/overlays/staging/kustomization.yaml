@@ -1,0 +1,30 @@
+# Staging overlay: staging image tags
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../base
+  - ../../services/api-gateway
+  - ../../services/auth-service
+  - ../../services/clinical-engine
+  - ../../services/data-pipeline
+  - ../../services/ai-inference
+  - ../../services/notification-service
+  - ../../ingress
+  - ../../monitoring/prometheus
+  - ../../monitoring/grafana
+  - ../../monitoring/alertmanager
+  - ../../monitoring/loki
+  - ../../jobs
+images:
+  - name: REGISTRY/api-gateway:IMAGE_TAG
+    newTag: staging
+  - name: REGISTRY/auth-service:IMAGE_TAG
+    newTag: staging
+  - name: REGISTRY/clinical-engine:IMAGE_TAG
+    newTag: staging
+  - name: REGISTRY/data-pipeline:IMAGE_TAG
+    newTag: staging
+  - name: REGISTRY/ai-inference:IMAGE_TAG
+    newTag: staging
+  - name: REGISTRY/notification-service:IMAGE_TAG
+    newTag: staging

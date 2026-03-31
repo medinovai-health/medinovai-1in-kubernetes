@@ -1,0 +1,77 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: medinovai-api-gateway
+  namespace: medinovai-services
+  labels:
+    app: medinovai-api-gateway
+    tier: platform
+    app.kubernetes.io/managed-by: medinovai-deploy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: medinovai-api-gateway
+  template:
+    metadata:
+      labels:
+        app: medinovai-api-gateway
+        tier: platform
+        app.kubernetes.io/managed-by: medinovai-deploy
+    spec:
+      containers:
+        - name: medinovai-api-gateway
+          image: medinovai-api-gateway:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SERVICE_NAME
+              value: medinovai-api-gateway
+            - name: PORT
+              value: "8080"
+            - name: SECURITY_SERVICE_URL
+              value: http://medinovai-security.medinovai-security:9000
+            - name: RBAC_SERVICE_URL
+              value: http://medinovai-role-based-permissions.medinovai-security:8000
+            - name: REGISTRY_URL
+              value: http://medinovai-registry.medinovai-services:8080
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            failureThreshold: 2
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 45
+            periodSeconds: 15
+            failureThreshold: 3
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "50m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: medinovai-api-gateway
+  namespace: medinovai-services
+  labels:
+    app: medinovai-api-gateway
+    tier: platform
+    app.kubernetes.io/managed-by: medinovai-deploy
+spec:
+  selector:
+    app: medinovai-api-gateway
+  ports:
+    - port: 8080
+      targetPort: 8080
+      protocol: TCP
+      name: http

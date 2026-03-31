@@ -1,0 +1,53 @@
+name: Deploy On-Prem
+
+on:
+  workflow_dispatch:
+    inputs:
+      tier:
+        description: 'Tier to deploy (0-6, atlasos, gpu, agents, all)'
+        required: true
+        default: 'all'
+      commit_sha:
+        description: 'Immutable commit SHA to deploy (required for production)'
+        required: false
+        type: string
+      dry_run:
+        description: 'Dry run'
+        required: false
+        default: 'false'
+        type: boolean
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    environment: onprem
+    steps:
+      - name: Validate commit SHA
+        if: inputs.commit_sha != ''
+        run: |
+          SHA="${{ inputs.commit_sha }}"
+          if ! echo "$SHA" | grep -qE '^[0-9a-f]{40}$'; then
+            echo "::error::commit_sha must be a full 40-character hex SHA, not a branch name or short ref"
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.commit_sha || github.sha }}
+
+      - name: Run preflight validation
+        run: bash scripts/validation/validate_setup.sh
+
+      - name: Deploy tier
+        run: |
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            bash scripts/deploy/deploy_tier.sh ${{ inputs.tier }} --dry-run
+          else
+            bash scripts/deploy/deploy_tier.sh ${{ inputs.tier }}
+          fi
+
+      - name: Health check
+        if: inputs.dry_run == 'false'
+        run: |
+          kubectl get nodes
+          kubectl get pods --all-namespaces --field-selector=status.phase!=Running | head -20

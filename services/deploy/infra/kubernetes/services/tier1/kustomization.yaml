@@ -1,0 +1,15 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: medinovai-security
+
+resources:
+  # Keycloak is owned by tier0 (infra). Do not add keycloak.yaml here.
+  - secrets-manager-bridge.yaml
+  - security.yaml
+  - universal-sign-on.yaml
+  - role-based-permissions.yaml
+  - encryption-vault.yaml
+  - hipaa-gdpr-guard.yaml
+  - consent-preference-api.yaml
+  - audit-trail-explorer.yaml

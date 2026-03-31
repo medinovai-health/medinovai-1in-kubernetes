@@ -1,0 +1,40 @@
+{
+  "service": "regulatory-submissions",
+  "version": "0.1.0",
+  "repo": "myonsite-healthcare/regulatory-submissions",
+  "type": "python-service",
+  "tier": "high",
+  "description": "Regulatory submissions with security, eTMF, and CTMS integration",
+  "dependencies": {
+    "services": ["security", "etmf", "ctms"],
+    "databases": ["postgres-primary"],
+    "external": ["s3"]
+  },
+  "health": {
+    "endpoint": "/health",
+    "readiness": "/ready",
+    "startup_timeout_seconds": 30
+  },
+  "deploy": {
+    "strategy": "rolling",
+    "canary_percentage": 10,
+    "canary_duration_minutes": 10,
+    "rollback_on_error_rate": 0.01
+  },
+  "resources": {
+    "cpu": { "request": "250m", "limit": "1000m" },
+    "memory": { "request": "256Mi", "limit": "1Gi" },
+    "gpu": false
+  },
+  "scaling": {
+    "min_replicas": 1,
+    "max_replicas": 5,
+    "target_cpu_percent": 70
+  },
+  "governance": {
+    "risk_class": "high",
+    "requires_approval": false,
+    "pii_handling": false,
+    "audit_logging": true
+  }
+}

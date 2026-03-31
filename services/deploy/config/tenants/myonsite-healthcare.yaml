@@ -1,0 +1,39 @@
+# Customer-1: myOnsiteHealthcare.com Tenant CR
+# Apply: kubectl apply -f deploy/tenant/crd/myonsite-healthcare.yaml
+# For Docker Compose: use deploy/tenant/api POST /api/v1/tenants with equivalent payload
+apiVersion: medinovai.io/v1alpha1
+kind: Tenant
+metadata:
+  name: myonsite-healthcare
+  labels:
+    medinovai.com/audit: enabled
+    medinovai.com/compliance: hipaa
+    medinovai.com/customer: customer-1
+    medinovai.com/sla-tier: gold
+spec:
+  tenantId: myonsite-healthcare
+  displayName: myOnsiteHealthcare
+  adminEmail: admin@myonsitehealthcare.com
+  complianceProfile: hipaa
+  dataResidency:
+    region: us-east-1
+    country: US
+  resourceQuotas:
+    requests.cpu: "8"
+    requests.memory: "16Gi"
+    limits.cpu: "16"
+    limits.memory: "32Gi"
+    pods: "100"
+    persistentvolumeclaims: "30"
+  featureFlags:
+    aiInference: true
+    clinicalTrials: true
+    advancedAnalytics: true
+    labOrders: true
+    epgPipeline: true
+    cohortStudio: false
+    researchWorkspace: false
+  branding:
+    logoUrl: https://myonsitehealthcare.com/logo.png
+    primaryColor: "#0066CC"
+    secondaryColor: "#003366"

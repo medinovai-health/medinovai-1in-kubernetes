@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: medinovai-env
+  namespace: medinovai-services
+  labels:
+    app.kubernetes.io/managed-by: medinovai-deploy
+    environment: docker-desktop
+data:
+  NODE_ENV: "development"
+  LOG_FORMAT: "json"
+  LOG_LEVEL: "debug"
+  # host.docker.internal resolves to host machine from inside Docker Desktop K8s
+  DATABASE_URL: "postgresql://medinovai:localdev@host.docker.internal:5432/medinovai"
+  REDIS_URL: "redis://:localdev@host.docker.internal:6379/0"
+  ENVIRONMENT: "docker-desktop"

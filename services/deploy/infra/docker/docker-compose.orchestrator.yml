@@ -1,0 +1,84 @@
+# ─── MedinovAI Orchestrator Stack ─────────────────────────────────────────────
+# Canonical production definition for the medinovai-orchestrator service.
+# Source of truth: medinovai-Deploy (NOT worktrees or local dev directories).
+#
+# Usage:
+#   ATLASOS_PATH=/path/to/medinovai-Atlas make orchestrator-start
+#   make orchestrator-update   # pull latest + recreate
+#   make orchestrator-rollback TAG=sha-abc123
+#
+# Volumes are NEVER deleted on update — only containers are recreated.
+# Data safety: docker_backup.sh runs before any orchestrator-update.
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+  medinovai-orchestrator:
+    build:
+      context: ${ATLASOS_PATH:-/Users/mayanktrivedi/Github/medinovai-health/medinovai-Atlas}
+      dockerfile: Dockerfile
+    image: medinovai/orchestrator:${ORCHESTRATOR_TAG:-latest}
+    container_name: medinovai-orchestrator
+    hostname: orchestrator
+    restart: unless-stopped
+
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${ATLASOS_PATH:-/Users/mayanktrivedi/Github/medinovai-health/medinovai-Atlas}:/workspace
+      - ~/.ollama:/root/.ollama:ro
+      - ~/.gitconfig:/root/.gitconfig:ro
+      - ~/.ssh:/root/.ssh:ro
+      - ${REPOS_PATH:-/Users/mayanktrivedi/Github}:/repos
+      - orchestrator-data:/data
+
+    environment:
+      - PYTHONUNBUFFERED=1
+      - OLLAMA_HOST=http://host.docker.internal:11434
+      - GITHUB_TOKEN=${GITHUB_TOKEN:-}
+      - GITHUB_ORG=myonsite-healthcare
+      - DEPLOYMENT_ENV=orchestrator
+      - AI_MODEL_PRIMARY=${AI_MODEL_PRIMARY:-deepseek-r1:70b}
+      - AI_MODEL_FAST=${AI_MODEL_FAST:-qwen3:8b}
+      - AI_MODEL_CODER=${AI_MODEL_CODER:-qwen3-coder:latest}
+      - VECTOR_DB_PATH=/data/chromadb
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - REPO_BASE_PATH=/repos
+      - REPO_ROOT=/workspace
+
+    networks:
+      - medinovai-orchestrator-network
+
+    ports:
+      - "8080:8080"
+      - "8001:8001"
+      - "8002:8002"
+
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://localhost:8080/health',r=>process.exit(r.statusCode<400?0:1)).on('error',()=>process.exit(1))\" 2>/dev/null"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+    labels:
+      com.medinovai.service: orchestrator
+      com.medinovai.managed-by: medinovai-Deploy
+      com.medinovai.version: "${ORCHESTRATOR_TAG:-latest}"
+
+  # Note: medinovai-chromadb is managed by the AtlasOS stack (docker-compose.yml)
+  # It is declared as external here to avoid conflict; AtlasOS ensures it runs.
+
+networks:
+  medinovai-orchestrator-network:
+    name: medinovai-orchestrator-network
+    external: true
+
+volumes:
+  orchestrator-data:
+    name: medinovai-orchestrator-data
+    external: true
+  chromadb-data:
+    name: medinovai-chromadb-data
+    external: true

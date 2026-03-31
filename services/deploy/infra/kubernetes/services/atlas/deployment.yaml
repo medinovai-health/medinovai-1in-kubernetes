@@ -1,0 +1,151 @@
+# ─── Atlas Agent Deployment ───────────────────────────────────────────────────
+# The atlas-bootstrap initContainer runs first: it installs Atlas, writes all
+# config and workspace files into the PVCs, then exits 0.  Only then does the
+# main atlas-agent container start.
+#
+# Secrets required (create before applying):
+#   kubectl create secret generic atlas-secrets \
+#     --namespace medinovai-atlas \
+#     --from-literal=slack-app-token=xapp-... \
+#     --from-literal=slack-bot-token=xoxb-... \
+#     --from-literal=anthropic-api-key=sk-ant-... \
+#     --from-literal=hooks-token=<random>
+# ─────────────────────────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-agent
+  namespace: medinovai-atlas
+  labels:
+    app.kubernetes.io/name: atlas-agent
+    app.kubernetes.io/component: agent
+    app.kubernetes.io/part-of: medinovai
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: atlas-agent
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: atlas-agent
+        app.kubernetes.io/component: agent
+        app.kubernetes.io/part-of: medinovai
+    spec:
+      securityContext:
+        runAsNonRoot: false  # Atlas CLI requires write access to $ATLAS_HOME
+      volumes:
+        - name: atlas-config
+          persistentVolumeClaim:
+            claimName: atlas-config-pvc
+        - name: atlas-workspaces
+          persistentVolumeClaim:
+            claimName: atlas-workspaces-pvc
+
+      # ── Bootstrap initContainer ────────────────────────────────────────────
+      # Runs deploy_config.sh with ATLAS_HOME=/atlas-home inside the PVC.
+      # Exits 0 when complete; the main container starts only after this exits.
+      initContainers:
+        - name: atlas-bootstrap
+          image: medinovai-deployer:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: ATLAS_HOME
+              value: /atlas-home
+            - name: ATLAS_WORKSPACES
+              value: /atlas-workspaces
+            - name: SLACK_APP_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: atlas-secrets
+                  key: slack-app-token
+                  optional: true
+            - name: SLACK_BOT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: atlas-secrets
+                  key: slack-bot-token
+                  optional: true
+            - name: ANTHROPIC_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: atlas-secrets
+                  key: anthropic-api-key
+                  optional: true
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: atlas-secrets
+                  key: openai-api-key
+                  optional: true
+            - name: HOOKS_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: atlas-secrets
+                  key: hooks-token
+                  optional: true
+            - name: OLLAMA_DEFAULT_MODEL
+              value: "qwen2.5:1.5b"
+            # Ollama service inside the cluster (medinovai-ai namespace)
+            - name: OLLAMA_BASE_URL
+              value: "http://ollama.medinovai-ai.svc.cluster.local:11434"
+          volumeMounts:
+            - name: atlas-config
+              mountPath: /atlas-home
+            - name: atlas-workspaces
+              mountPath: /atlas-workspaces
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+            limits:
+              cpu: 1000m
+              memory: 1Gi
+
+      # ── Main Atlas agent container ─────────────────────────────────────────
+      containers:
+        - name: atlas-agent
+          image: medinovai-atlas-agent:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: gateway
+              containerPort: 18789
+              protocol: TCP
+          env:
+            - name: ATLAS_HOME
+              value: /atlas-home
+            - name: ATLAS_WORKSPACES
+              value: /atlas-workspaces
+            # Gateway binds on all interfaces inside the pod
+            - name: ATLAS_BIND
+              value: "0.0.0.0"
+            - name: OLLAMA_BASE_URL
+              value: "http://ollama.medinovai-ai.svc.cluster.local:11434"
+          volumeMounts:
+            - name: atlas-config
+              mountPath: /atlas-home
+              readOnly: false  # agent writes state/telemetry back to the volume
+            - name: atlas-workspaces
+              mountPath: /atlas-workspaces
+              readOnly: false
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 18789
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 18789
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: 2000m
+              memory: 2Gi

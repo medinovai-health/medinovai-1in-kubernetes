@@ -1,0 +1,141 @@
+# MedinovAI Platform — AtlasOS Core Control Plane
+# Always-on services: OODA brain, service registry, health probe, fleet monitor,
+# event bus, audit chain, auth bridge, migrations.
+
+services:
+
+  atlasos-migrations:
+    build:
+      context: ${ATLASOS_ROOT:-../../../AtlasOS}
+      dockerfile: services/migrations/Dockerfile
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-atlasos}:${DB_PASSWORD}@atlasos-db:5432/atlasos
+    depends_on:
+      atlasos-db:
+        condition: service_healthy
+
+  event-bus:
+    build:
+      context: ${ATLASOS_ROOT:-../../../AtlasOS}
+      dockerfile: services/event-bus/Dockerfile
+    ports:
+      - "${EVENT_BUS_PORT:-8088}:8088"
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-atlasos}:${DB_PASSWORD}@atlasos-db:5432/atlasos
+      STORAGE_BACKEND: ${EVENT_STORAGE_BACKEND:-postgresql}
+    depends_on:
+      atlasos-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8088/health')"]
+      interval: 10s
+      retries: 5
+    restart: unless-stopped
+
+  audit-chain:
+    build:
+      context: ${ATLASOS_ROOT:-../../../AtlasOS}
+      dockerfile: services/audit-chain/Dockerfile
+    ports:
+      - "${AUDIT_CHAIN_PORT:-8085}:8084"
+    environment:
+      AUDIT_PATH: /data/audit
+    volumes:
+      - audit-data:/data/audit
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8084/health')"]
+      interval: 10s
+      retries: 5
+    restart: unless-stopped
+
+  ooda-brain:
+    build:
+      context: ${ATLASOS_ROOT:-../../../AtlasOS}
+      dockerfile: services/ooda_brain/Dockerfile
+    ports:
+      - "${OODA_BRAIN_PORT:-8000}:8000"
+    environment:
+      LLM_ENDPOINT: ${LLM_ENDPOINT:-http://aifactory-gateway:8300}
+      OLLAMA_HOST: ${ATLASOS_OLLAMA_URL:-http://host.docker.internal:11434}
+      ATLASOS_LOCAL_MODEL: ${ATLASOS_LOCAL_MODEL:-qwen2.5:14b}
+      ATLASOS_PRIMARY_MODEL: ${ATLASOS_PRIMARY_MODEL:-qwen2.5:14b}
+      REGISTRY_URL: http://service-registry-agent:8002
+      LOKI_URL: http://loki:3100
+      TEMPO_URL: http://tempo:3200
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      retries: 5
+    restart: unless-stopped
+
+  service-registry-agent:
+    build:
+      context: ${ATLASOS_ROOT:-../../../AtlasOS}
+      dockerfile: services/service_registry/Dockerfile
+    ports:
+      - "${SERVICE_REGISTRY_PORT:-8012}:8002"
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-atlasos}:${DB_PASSWORD}@atlasos-db:5432/atlasos
+      REPOS_ROOT: /repos
+      SCAN_INTERVAL_SECONDS: "300"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8002/health')"]
+      interval: 10s
+      retries: 5
+    restart: unless-stopped
+
+  squad-manager:
+    build:
+      context: ${ATLASOS_ROOT:-../../../AtlasOS}
+      dockerfile: services/squad_manager/Dockerfile
+    ports:
+      - "${SQUAD_MANAGER_PORT:-8011}:8001"
+    environment:
+      SQUADS_CONFIG_PATH: config/squads.yaml
+    depends_on:
+      ooda-brain:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health')"]
+      interval: 10s
+      retries: 5
+    restart: unless-stopped
+
+  health-probe-agent:
+    build:
+      context: ${ATLASOS_ROOT:-../../../AtlasOS}
+      dockerfile: services/health_probe/Dockerfile
+    ports:
+      - "${HEALTH_PROBE_PORT:-8013}:8003"
+    environment:
+      REGISTRY_URL: http://service-registry-agent:8002
+      OODA_BRAIN_URL: http://ooda-brain:8000
+      PROBE_INTERVAL_SECONDS: "60"
+    depends_on:
+      service-registry-agent:
+        condition: service_healthy
+      ooda-brain:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8003/health')"]
+      interval: 10s
+      retries: 5
+    restart: unless-stopped
+
+  fleet-monitor:
+    build:
+      context: ${ATLASOS_ROOT:-../../../AtlasOS}
+      dockerfile: services/fleet_monitor/Dockerfile
+    ports:
+      - "${FLEET_MONITOR_PORT:-8014}:8014"
+    environment:
+      REGISTRY_URL: http://service-registry-agent:8002
+      POLL_INTERVAL_SECONDS: "30"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8014/health')"]
+      interval: 10s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  audit-data:

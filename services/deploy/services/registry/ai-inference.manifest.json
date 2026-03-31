@@ -1,0 +1,43 @@
+{
+  "service": "ai-inference",
+  "version": "0.1.0",
+  "repo": "myonsite-healthcare/medinovai-ai-inference",
+  "type": "ml-service",
+  "tier": "high",
+  "description": "AI model serving and inference endpoint",
+  "dependencies": {
+    "services": ["auth-service", "data-pipeline"],
+    "databases": ["redis-cache"],
+    "external": ["openai-api", "model-registry"]
+  },
+  "health": {
+    "endpoint": "/health",
+    "readiness": "/ready",
+    "startup_timeout_seconds": 120
+  },
+  "deploy": {
+    "strategy": "canary",
+    "canary_percentage": 5,
+    "canary_duration_minutes": 15,
+    "rollback_on_error_rate": 0.01
+  },
+  "resources": {
+    "cpu": { "request": "1000m", "limit": "4000m" },
+    "memory": { "request": "2Gi", "limit": "8Gi" },
+    "gpu": true,
+    "gpu_type": "nvidia-t4",
+    "gpu_count": 1
+  },
+  "scaling": {
+    "min_replicas": 1,
+    "max_replicas": 8,
+    "target_cpu_percent": 60
+  },
+  "governance": {
+    "risk_class": "high",
+    "requires_approval": true,
+    "pii_handling": true,
+    "audit_logging": true,
+    "model_risk_register_required": true
+  }
+}

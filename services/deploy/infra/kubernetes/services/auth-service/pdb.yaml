@@ -1,0 +1,14 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: auth-service
+  namespace: medinovai-services
+  labels:
+    app.kubernetes.io/name: auth-service
+    app.kubernetes.io/component: auth
+    app.kubernetes.io/part-of: medinovai
+spec:
+  minAvailable: 50%
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: auth-service

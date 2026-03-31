@@ -1,0 +1,110 @@
+{
+  "name": "atlas-ceo",
+  "version": "1.0.0",
+  "description": "AtlasOS CO-CEO Stack - Autonomous AI executive assistant with zero-trust audit",
+  "tier": "critical",
+  "type": "composite",
+  "components": [
+    {
+      "name": "atlas-command",
+      "type": "node-service",
+      "port": 3000,
+      "repo": "atlas-command",
+      "description": "CO-CEO Command Center UI"
+    },
+    {
+      "name": "atlas-gateway",
+      "type": "python-service",
+      "port": 18789,
+      "repo": "AtlasOS",
+      "description": "Agent runtime with 9 workspaces"
+    },
+    {
+      "name": "atlas-ui",
+      "type": "node-service",
+      "port": 3737,
+      "repo": "AtlasOS/ui",
+      "description": "Chat and deployment interface"
+    },
+    {
+      "name": "audit-chain",
+      "type": "python-service",
+      "port": 8084,
+      "repo": "AtlasOS/services/audit-chain",
+      "description": "Zero-trust hash-chained audit log"
+    },
+    {
+      "name": "mcp-vtiger",
+      "type": "python-service",
+      "port": 8090,
+      "repo": "AtlasOS/services/mcp-connectors/vtiger",
+      "description": "vTiger CRM read-only connector"
+    },
+    {
+      "name": "mcp-quickbooks",
+      "type": "python-service",
+      "port": 8091,
+      "repo": "AtlasOS/services/mcp-connectors/quickbooks",
+      "description": "QuickBooks Online read-only connector"
+    },
+    {
+      "name": "mcp-google",
+      "type": "python-service",
+      "port": 8092,
+      "repo": "AtlasOS/services/mcp-connectors",
+      "description": "Google Workspace read-only connector"
+    },
+    {
+      "name": "mcp-lis",
+      "type": "python-service",
+      "port": 8093,
+      "repo": "AtlasOS/services/mcp-connectors",
+      "description": "LIS read-only connector"
+    },
+    {
+      "name": "mcp-mattermost",
+      "type": "python-service",
+      "port": 8094,
+      "repo": "AtlasOS/services/mcp-connectors",
+      "description": "Mattermost read-only connector"
+    }
+  ],
+  "infrastructure": {
+    "vault": { "image": "hashicorp/vault:1.15", "port": 8200 },
+    "postgres": { "image": "postgres:16-alpine", "port": 5432 },
+    "redis": { "image": "redis:7-alpine", "port": 6379 },
+    "chromadb": { "image": "chromadb/chroma:latest", "port": 8003 },
+    "stirling-pdf": { "image": "docker.stirlingpdf.com/stirlingtools/stirling-pdf:latest", "port": 8083 }
+  },
+  "zero_trust": {
+    "audit_chain": true,
+    "vault_secrets": true,
+    "guardian_fail_closed": true,
+    "approval_required_for_actions": true,
+    "self_distrust_enabled": true
+  },
+  "compose_file": "infra/docker/docker-compose.ceo.yml",
+  "deployment_order": [
+    "vault",
+    "postgres",
+    "redis",
+    "chromadb",
+    "audit-chain",
+    "atlas-gateway",
+    "atlas-ui",
+    "atlas-command",
+    "stirling-pdf",
+    "mcp-vtiger",
+    "mcp-quickbooks",
+    "mcp-google",
+    "mcp-lis",
+    "mcp-mattermost"
+  ],
+  "healthcheck_endpoints": {
+    "vault": "http://localhost:8200/v1/sys/health",
+    "audit-chain": "http://localhost:8084/health",
+    "atlas-command": "http://localhost:3000",
+    "atlas-ui": "http://localhost:3737/api/health",
+    "atlas-gateway": "http://localhost:18789/health"
+  }
+}

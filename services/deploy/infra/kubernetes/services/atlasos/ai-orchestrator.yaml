@@ -1,0 +1,85 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: ai-orchestrator
+  namespace: atlasos
+  labels:
+    app.kubernetes.io/name: ai-orchestrator
+    app.kubernetes.io/part-of: atlasos
+spec:
+  ports:
+    - port: 3003
+      targetPort: 3000
+  selector:
+    app: ai-orchestrator
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ai-orchestrator
+  namespace: atlasos
+  labels:
+    app: ai-orchestrator
+    app.kubernetes.io/name: ai-orchestrator
+    app.kubernetes.io/part-of: atlasos
+    app.kubernetes.io/version: "1.2.0"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ai-orchestrator
+  template:
+    metadata:
+      labels:
+        app: ai-orchestrator
+        atlasos.medinovai.com/sidecar: "enabled"
+    spec:
+      serviceAccountName: atlasos-sa
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 80
+              preference:
+                matchExpressions:
+                  - key: gpu
+                    operator: In
+                    values: ["true"]
+      containers:
+        - name: ai-orchestrator
+          image: medinovai-atlas-1-ai-orchestrator:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3000
+          envFrom:
+            - secretRef:
+                name: atlasos-secrets
+            - secretRef:
+                name: atlasos-infra-secrets
+          env:
+            - name: AIFACTORY_MOE_URL
+              value: "http://aifactory.ai-ml.svc.cluster.local:5000"
+            - name: OLLAMA_HOST
+              value: "http://ollama.ai-ml.svc.cluster.local:11434"
+            - name: USE_DISTRIBUTED_COMPUTE
+              value: "true"
+            - name: MOE_NODE1_ENDPOINT
+              value: "http://ollama.ai-ml.svc.cluster.local:11434"
+          resources:
+            requests:
+              memory: 256Mi
+              cpu: 100m
+            limits:
+              memory: 1Gi
+              cpu: "1"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 30
+            periodSeconds: 30

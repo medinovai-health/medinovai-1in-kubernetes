@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: medinovai-pathology-ai
+  namespace: intelligence
+  labels:
+    app: medinovai-pathology-ai
+    atlasos.io/managed: "true"
+spec:
+  selector:
+    app: medinovai-pathology-ai
+  ports:
+  - port: 8000
+    targetPort: 8000
+    protocol: TCP
+    name: http
+  type: ClusterIP

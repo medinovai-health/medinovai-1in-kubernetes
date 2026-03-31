@@ -1,0 +1,125 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "MedinovAI Service Manifest",
+  "description": "Deployment manifest for a MedinovAI platform service",
+  "type": "object",
+  "required": ["service", "version", "type", "tier", "health", "deploy", "resources", "scaling", "governance"],
+  "properties": {
+    "service": {
+      "type": "string",
+      "description": "Unique service identifier"
+    },
+    "version": {
+      "type": "string",
+      "description": "Current service version (semver)"
+    },
+    "repo": {
+      "type": "string",
+      "description": "GitHub repository (org/repo format)"
+    },
+    "type": {
+      "type": "string",
+      "enum": ["python-service", "node-service", "ml-service"],
+      "description": "Service type (determines base Docker image)"
+    },
+    "tier": {
+      "type": "string",
+      "enum": ["critical", "high", "normal", "batch"],
+      "description": "Service criticality tier"
+    },
+    "description": {
+      "type": "string",
+      "description": "Human-readable service description"
+    },
+    "dependencies": {
+      "type": "object",
+      "properties": {
+        "services": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Other MedinovAI services this depends on"
+        },
+        "databases": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Database dependencies"
+        },
+        "external": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "External API dependencies"
+        }
+      }
+    },
+    "health": {
+      "type": "object",
+      "required": ["endpoint", "readiness"],
+      "properties": {
+        "endpoint": { "type": "string" },
+        "readiness": { "type": "string" },
+        "startup_timeout_seconds": { "type": "integer", "minimum": 10 }
+      }
+    },
+    "deploy": {
+      "type": "object",
+      "required": ["strategy"],
+      "properties": {
+        "strategy": {
+          "type": "string",
+          "enum": ["canary", "blue-green", "rolling"]
+        },
+        "canary_percentage": { "type": "integer", "minimum": 1, "maximum": 50 },
+        "canary_duration_minutes": { "type": "integer", "minimum": 1 },
+        "rollback_on_error_rate": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "resources": {
+      "type": "object",
+      "required": ["cpu", "memory"],
+      "properties": {
+        "cpu": {
+          "type": "object",
+          "properties": {
+            "request": { "type": "string" },
+            "limit": { "type": "string" }
+          }
+        },
+        "memory": {
+          "type": "object",
+          "properties": {
+            "request": { "type": "string" },
+            "limit": { "type": "string" }
+          }
+        },
+        "gpu": { "type": "boolean" },
+        "gpu_type": { "type": "string" },
+        "gpu_count": { "type": "integer" }
+      }
+    },
+    "scaling": {
+      "type": "object",
+      "required": ["min_replicas", "max_replicas"],
+      "properties": {
+        "min_replicas": { "type": "integer", "minimum": 1 },
+        "max_replicas": { "type": "integer", "minimum": 1 },
+        "target_cpu_percent": { "type": "integer", "minimum": 10, "maximum": 95 }
+      }
+    },
+    "governance": {
+      "type": "object",
+      "required": ["risk_class"],
+      "properties": {
+        "risk_class": {
+          "type": "string",
+          "enum": ["critical", "high", "medium", "low"]
+        },
+        "requires_approval": { "type": "boolean" },
+        "pii_handling": { "type": "boolean" },
+        "audit_logging": { "type": "boolean" },
+        "clinical_approval_required": { "type": "boolean" },
+        "model_risk_register_required": { "type": "boolean" },
+        "data_lineage_required": { "type": "boolean" }
+      }
+    }
+  }
+}

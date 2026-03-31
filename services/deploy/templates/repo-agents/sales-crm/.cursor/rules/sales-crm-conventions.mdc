@@ -1,0 +1,5 @@
+# Sales/CRM Conventions
+- CRM data integrity: validate sync; handle conflicts
+- Tenant isolation: no cross-tenant customer data
+- Consent and retention policies respected
+- Bulk operations require approval

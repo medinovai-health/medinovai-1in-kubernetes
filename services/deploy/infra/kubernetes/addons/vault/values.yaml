@@ -1,0 +1,70 @@
+# HashiCorp Vault — Helm chart values for MedinovAI
+# Chart: hashicorp/vault  (helm repo add hashicorp https://helm.releases.hashicorp.com)
+# Install: helm install vault hashicorp/vault -n medinovai-security -f infra/kubernetes/addons/vault/values.yaml
+#
+# Dev/docker-desktop: single replica, no HA, audit storage optional
+# Production: HA Raft with 3 replicas, audit storage required
+
+global:
+  enabled: true
+  tlsDisable: true       # TLS handled by ingress/mesh layer; enable for prod
+
+injector:
+  enabled: true          # Vault Agent Sidecar Injector — injects secrets before app starts
+  authPath: "auth/kubernetes"
+  resources:
+    requests:
+      memory: 64Mi
+      cpu: 50m
+    limits:
+      memory: 256Mi
+      cpu: 250m
+
+server:
+  # ── Dev / docker-desktop: single node, in-memory storage ─────────────────
+  # Override for production with ha.enabled=true
+  dev:
+    enabled: false        # Do not use dev mode in K8s; use Raft instead
+
+  standalone:
+    enabled: true         # Single node for docker-desktop
+
+  ha:
+    enabled: false        # Set to true for production (3 replicas, Raft)
+    replicas: 3
+    raft:
+      enabled: true
+      setNodeId: true
+
+  # Audit logging — required for HIPAA
+  auditStorage:
+    enabled: true
+    size: 10Gi
+
+  dataStorage:
+    enabled: true
+    size: 10Gi
+
+  resources:
+    requests:
+      memory: 256Mi
+      cpu: 250m
+    limits:
+      memory: 1Gi
+      cpu: 1000m
+
+  # affinity: "" is needed for docker-desktop (single node)
+  affinity: ""
+
+  readinessProbe:
+    enabled: true
+    path: "/v1/sys/health?standbyok=true&sealedcode=204&uninitcode=204"
+
+  livenessProbe:
+    enabled: true
+    path: "/v1/sys/health?standbyok=true"
+    initialDelaySeconds: 60
+
+ui:
+  enabled: true          # Vault UI at http://vault.medinovai-security:8200/ui
+  serviceType: "ClusterIP"

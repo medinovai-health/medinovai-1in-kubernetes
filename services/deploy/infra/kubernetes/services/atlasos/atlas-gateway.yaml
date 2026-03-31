@@ -1,0 +1,91 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: atlas-gateway
+  namespace: atlasos
+  labels:
+    app.kubernetes.io/name: atlas-gateway
+    app.kubernetes.io/part-of: atlasos
+spec:
+  ports:
+    - port: 18789
+      targetPort: 18789
+  selector:
+    app: atlas-gateway
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-gateway
+  namespace: atlasos
+  labels:
+    app: atlas-gateway
+    app.kubernetes.io/name: atlas-gateway
+    app.kubernetes.io/part-of: atlasos
+    app.kubernetes.io/version: "1.2.0"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: atlas-gateway
+  template:
+    metadata:
+      labels:
+        app: atlas-gateway
+        atlasos.medinovai.com/sidecar: "enabled"
+    spec:
+      serviceAccountName: atlasos-sa
+      containers:
+        - name: gateway
+          image: node:22-alpine
+          command: ["atlas", "gateway", "--port", "18789"]
+          ports:
+            - containerPort: 18789
+          envFrom:
+            - secretRef:
+                name: atlasos-secrets
+            - secretRef:
+                name: atlasos-infra-secrets
+          volumeMounts:
+            - name: atlas-config
+              mountPath: /root/.atlas
+            - name: atlas-state
+              mountPath: /data/atlas
+          resources:
+            requests:
+              memory: 512Mi
+              cpu: 250m
+            limits:
+              memory: 2Gi
+              cpu: "2"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 18789
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 18789
+            initialDelaySeconds: 30
+            periodSeconds: 30
+      volumes:
+        - name: atlas-config
+          persistentVolumeClaim:
+            claimName: atlas-config-pvc
+        - name: atlas-state
+          persistentVolumeClaim:
+            claimName: atlas-state-pvc
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: atlas-config-pvc
+  namespace: atlasos
+spec:
+  accessModes: ["ReadWriteOnce"]
+  storageClassName: hostpath
+  resources:
+    requests:
+      storage: 5Gi

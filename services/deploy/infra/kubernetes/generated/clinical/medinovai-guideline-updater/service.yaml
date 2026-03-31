@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: medinovai-guideline-updater
+  namespace: clinical
+  labels:
+    app: medinovai-guideline-updater
+    atlasos.io/managed: "true"
+spec:
+  selector:
+    app: medinovai-guideline-updater
+  ports:
+  - port: 3000
+    targetPort: 3000
+    protocol: TCP
+    name: http
+  type: ClusterIP

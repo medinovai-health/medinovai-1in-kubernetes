@@ -1,0 +1,129 @@
+# Ingress routes for all MedinovAI services
+# Apply after ingress-nginx controller is running
+# Access via: http://localhost:30800/<path>
+#
+# SSO Enforcement:
+#   All product ingress blocks carry nginx auth_request annotations pointing to
+#   medinovaiOS /api/sso/validate. Any request without a valid kc_access cookie
+#   is redirected to /api/sso/login.
+#
+#   Keycloak (auth.medinovai.local) and medinovaiOS health endpoints are excluded
+#   from auth_request — they cannot protect themselves.
+#
+# medinovaiOS (unified portal) has its own ingress in:
+#   infra/kubernetes/services/medinovaios/ingress.yaml
+# Access: http://medinovaios.local  (NodePort: http://localhost:30030)
+---
+# ── Shared SSO annotations applied to all protected ingress blocks ─────────────
+# These values are repeated below (YAML does not support anchors across documents).
+# medinovaios validate endpoint: http://medinovaios.medinovai-os.svc.cluster.local:3030/api/sso/validate
+# auth-signin: redirects unauthenticated users to Keycloak via medinovaiOS
+# auth-response-headers: forwarded to upstream services as request headers
+# ─────────────────────────────────────────────────────────────────────────────
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: medinovai-ingress
+  namespace: medinovai-services
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "10"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "60"
+    # ── SSO enforcement ──────────────────────────────────────────────────────
+    nginx.ingress.kubernetes.io/auth-url: "http://medinovaios.medinovai-os.svc.cluster.local:3030/api/sso/validate"
+    nginx.ingress.kubernetes.io/auth-signin: "http://medinovaios.local/api/sso/login?redirect=$escaped_request_uri"
+    nginx.ingress.kubernetes.io/auth-response-headers: "X-User-ID,X-User-Email,X-User-Role,X-Tenant-ID"
+    nginx.ingress.kubernetes.io/auth-cache-duration: "60s 200"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: medinovai.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: api-gateway
+                port:
+                  number: 3000
+          - path: /auth
+            pathType: Prefix
+            backend:
+              service:
+                name: auth-service
+                port:
+                  number: 3000
+          - path: /clinical
+            pathType: Prefix
+            backend:
+              service:
+                name: clinical-engine
+                port:
+                  number: 8080
+          - path: /pipeline
+            pathType: Prefix
+            backend:
+              service:
+                name: data-pipeline
+                port:
+                  number: 8080
+          - path: /notify
+            pathType: Prefix
+            backend:
+              service:
+                name: notification-service
+                port:
+                  number: 3000
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: medinovai-ai-ingress
+  namespace: medinovai-ai
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    # ── SSO enforcement ──────────────────────────────────────────────────────
+    nginx.ingress.kubernetes.io/auth-url: "http://medinovaios.medinovai-os.svc.cluster.local:3030/api/sso/validate"
+    nginx.ingress.kubernetes.io/auth-signin: "http://medinovaios.local/api/sso/login?redirect=$escaped_request_uri"
+    nginx.ingress.kubernetes.io/auth-response-headers: "X-User-ID,X-User-Email,X-User-Role,X-Tenant-ID"
+    nginx.ingress.kubernetes.io/auth-cache-duration: "60s 200"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: medinovai.local
+      http:
+        paths:
+          - path: /ai
+            pathType: Prefix
+            backend:
+              service:
+                name: ai-inference
+                port:
+                  number: 8080
+---
+# medinovaiOS ingress — unified portal accessible at medinovaios.local
+# NO auth_request — this IS the auth portal. Nginx cannot protect the auth
+# provider with itself.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: medinovaios-ingress
+  namespace: medinovai-os
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "60"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "10"
+    # auth_request intentionally OMITTED — medinovaiOS handles its own session check
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: medinovaios.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: medinovaios
+                port:
+                  number: 3030

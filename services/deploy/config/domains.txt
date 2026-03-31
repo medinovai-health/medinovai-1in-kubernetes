@@ -1,0 +1,7 @@
+# Domain certificates to monitor
+# One domain per line. Lines starting with # are comments.
+# Uncomment and add your production domains:
+# app.medinovai.com
+# api.medinovai.com
+# auth.medinovai.com
+# grafana.medinovai.com

@@ -1,0 +1,29 @@
+service:
+    name: medinovai-Deploy
+    version: "1.0.0"
+    tier: 1
+    category: infrastructure
+    health_endpoint: /health
+    port: 8111
+    dependencies:
+        - medinovai-core
+    squad: infrastructure-squad
+
+atlas_os:
+    version: "4.0.0"
+    agent_config: config/atlasos/agents/medinovai-Deploy-agent.yaml
+    heartbeat: config/atlasos/heartbeat/checks.yaml
+    autonomy_level: L2
+    ooda_enabled: true
+    ueaa_enabled: true
+
+observability:
+    log_level: 2
+    sampling_rate: 0.5
+    otel_exporter: otlp
+
+deployment:
+    dockerfile: Dockerfile
+    port: 8111
+    min_replicas: 1
+    canary_enabled: false

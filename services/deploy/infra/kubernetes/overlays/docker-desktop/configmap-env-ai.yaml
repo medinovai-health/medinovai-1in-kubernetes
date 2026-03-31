@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: medinovai-env
+  namespace: medinovai-ai
+  labels:
+    app.kubernetes.io/managed-by: medinovai-deploy
+    environment: docker-desktop
+data:
+  NODE_ENV: "development"
+  LOG_FORMAT: "json"
+  LOG_LEVEL: "debug"
+  DATABASE_URL: "postgresql://medinovai:localdev@host.docker.internal:5432/medinovai"
+  REDIS_URL: "redis://:localdev@host.docker.internal:6379/0"
+  ENVIRONMENT: "docker-desktop"
+  # Ollama — local LLM inference (medinovai-ai-local namespace)
+  OLLAMA_BASE_URL: "http://ollama.medinovai-ai-local.svc.cluster.local:11434"
+  OLLAMA_DEFAULT_MODEL: "qwen2.5:1.5b"
+  # Atlas gateway (deployed in medinovai-system namespace)
+  ATLAS_GATEWAY_URL: "http://atlas.medinovai-system.svc.cluster.local:18789"

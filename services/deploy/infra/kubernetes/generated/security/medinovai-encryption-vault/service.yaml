@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: medinovai-encryption-vault
+  namespace: security
+  labels:
+    app: medinovai-encryption-vault
+    atlasos.io/managed: "true"
+spec:
+  selector:
+    app: medinovai-encryption-vault
+  ports:
+  - port: 5000
+    targetPort: 5000
+    protocol: TCP
+    name: http
+  type: ClusterIP

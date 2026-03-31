@@ -1,0 +1,43 @@
+# Atlas UI — K8s Deployment
+# Atlas UI runs on the HOST via `atlas start` at :3737.
+# This K8s deployment is scaled to 0 — in-cluster access goes via atlas-host ExternalName service.
+# To run in K8s: docker build -f Dockerfile.atlas -t medinovai-atlas-ui:local ~/.medinovai/atlas/ui/
+#                then set replicas: 1 and image: medinovai-atlas-ui:local, imagePullPolicy: Never
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas
+  namespace: medinovai-system
+  labels:
+    app: atlas
+    app.kubernetes.io/name: atlas
+    app.kubernetes.io/component: agent-gateway
+    app.kubernetes.io/part-of: medinovai
+spec:
+  replicas: 0
+  selector:
+    matchLabels:
+      app: atlas
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: atlas
+    spec:
+      containers:
+        - name: atlas-ui
+          image: nginx:alpine
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+              name: http
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi
+      volumes: []

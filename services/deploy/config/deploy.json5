@@ -1,0 +1,246 @@
+// MedinovAI Atlas Gateway Configuration
+// Copy to: ~/.atlas/atlas.json
+// Docs: https://docs.medinovaiatlas.com/config
+//
+// IMPORTANT: Never commit real secrets here.
+// Use environment variables or .env files for tokens/keys.
+{
+  logging: {
+    level: "info",
+    structured: true,
+    trace_id: true,
+    pillars: {
+      traces: true,
+      operational_telemetry: true,
+      cognitive_telemetry: true,
+      contextual_snapshots: true,
+      evaluation_signals: true,
+    },
+    aggregation: {
+      schedule: "heartbeat",
+      output: "state/telemetry/daily.json",
+    },
+    alerts: {
+      error_rate_threshold: 0.10,
+      p95_latency_threshold_ms: 30000,
+      daily_token_budget: 500000,
+    },
+  },
+
+  // ─── Health Probes ──────────────────────────────────────────────────────────
+  health: {
+    enabled: true,
+    path: "/health",
+    readyPath: "/ready",
+  },
+
+  gateway: {
+    port: 18789,
+    bind: "loopback", // Start local-only; put behind tailnet / reverse proxy when ready
+  },
+
+  // ─── Memory ───────────────────────────────────────────────────────────────
+  memory: {
+    enabled: true,
+    retain_after_session: true,
+    recall_top_k: 5,
+    reflect_schedule: "weekly",
+    tenant_scoped: true,
+  },
+
+  // ─── Channels ───────────────────────────────────────────────────────────────
+  channels: {
+    slack: {
+      enabled: true,
+      mode: "socket",
+
+      // Tokens loaded from env vars (set in .env or shell)
+      appToken: "${SLACK_APP_TOKEN}",
+      botToken: "${SLACK_BOT_TOKEN}",
+
+      // DM policy: "pairing" keeps a human in the loop until confidence is high
+      dm: { policy: "pairing" },
+
+      // Channel listening: prefer allowlist to avoid noise
+      groupPolicy: "allowlist",
+
+      channels: {
+        // Replace with your real Slack channel IDs
+        // Format: "channel:<CHANNEL_ID>": { requireMention: true|false }
+        "channel:C_OPS_CHANNEL_ID":     { requireMention: true },
+        "channel:C_EXEC_CHANNEL_ID":    { requireMention: false, users: [] },
+        "channel:C_SALES_CHANNEL_ID":   { requireMention: true },
+        "channel:C_SUPPORT_CHANNEL_ID": { requireMention: true },
+        "channel:C_ENG_CHANNEL_ID":     { requireMention: true },
+        "channel:C_ARENA_CHANNEL_ID":   { requireMention: true },
+        "channel:C_CS_TEAM_CHANNEL_ID": { requireMention: true },
+      },
+    },
+  },
+
+  // ─── Hooks / Webhooks (event-driven automation) ─────────────────────────────
+  hooks: {
+    enabled: true,
+    token: "${HOOKS_TOKEN}",
+    path: "/hooks",
+    defaultSessionKey: "hook:ingress",
+    allowRequestSessionKey: false,
+    allowedSessionKeyPrefixes: ["hook:"],
+    mappings: [
+      // POST /hooks/ticket → Support agent
+      {
+        match: { path: "ticket" },
+        action: "agent",
+        agentId: "support",
+        deliver: true,
+      },
+      // POST /hooks/sales → Sales agent
+      {
+        match: { path: "sales" },
+        action: "agent",
+        agentId: "sales",
+        deliver: true,
+      },
+      // POST /hooks/incident → Ops agent (incident skill)
+      {
+        match: { path: "incident" },
+        action: "agent",
+        agentId: "ops",
+        deliver: true,
+      },
+      // POST /hooks/gmail → Ops agent (email triage)
+      {
+        match: { path: "gmail" },
+        action: "agent",
+        agentId: "ops",
+        deliver: true,
+      },
+      // POST /hooks/invoice → Finance agent (accounting intake)
+      {
+        match: { path: "invoice" },
+        action: "agent",
+        agentId: "finance",
+        deliver: true,
+      },
+      // POST /hooks/payment → Finance agent (payment events)
+      {
+        match: { path: "payment" },
+        action: "agent",
+        agentId: "finance",
+        deliver: true,
+      },
+      // POST /hooks/pr → Eng agent (PR review)
+      {
+        match: { path: "pr" },
+        action: "agent",
+        agentId: "eng",
+        deliver: true,
+      },
+      // POST /hooks/ci → Eng agent (CI monitoring)
+      {
+        match: { path: "ci" },
+        action: "agent",
+        agentId: "eng",
+        deliver: true,
+      },
+      // POST /hooks/arena → Arena agent (training sessions, voice callbacks)
+      {
+        match: { path: "arena" },
+        action: "agent",
+        agentId: "arena",
+        deliver: true,
+      },
+    ],
+  },
+
+  // ─── Cron (precise schedules) ──────────────────────────────────────────────
+  cron: {
+    enabled: true,
+    maxConcurrentRuns: 2,
+    sessionRetention: "24h",
+  },
+
+  // ─── Tools ──────────────────────────────────────────────────────────────────
+  tools: {
+    exec: {
+      host: "sandbox",
+      security: "allowlist",
+      ask: "on-miss",
+      safeBins: ["python3", "node", "bash"],
+    },
+    alsoAllow: ["approval_pipeline", "llm-task"],
+
+    // ─── Circuit Breakers ──────────────────────────────────────────────────
+    circuit_breaker: {
+      ticketing_api: { failureThreshold: 5, windowSeconds: 60, resetTimeout: "5m" },
+      crm_api: { failureThreshold: 3, windowSeconds: 30, resetTimeout: "3m" },
+      calendar_api: { failureThreshold: 3, windowSeconds: 30, resetTimeout: "3m" },
+      gmail_api: { failureThreshold: 3, windowSeconds: 30, resetTimeout: "3m" },
+      accounting_api: { failureThreshold: 3, windowSeconds: 30, resetTimeout: "3m" },
+      github_api: { failureThreshold: 5, windowSeconds: 60, resetTimeout: "5m" },
+      ci_api: { failureThreshold: 5, windowSeconds: 60, resetTimeout: "5m" },
+      elevenlabs_api: { failureThreshold: 3, windowSeconds: 30, resetTimeout: "5m" },
+      openai_realtime_api: { failureThreshold: 3, windowSeconds: 30, resetTimeout: "5m" },
+      threecx_api: { failureThreshold: 3, windowSeconds: 30, resetTimeout: "2m" },
+      whisper_api: { failureThreshold: 3, windowSeconds: 30, resetTimeout: "5m" },
+    },
+
+    // ─── Retry + Dead Letter ───────────────────────────────────────────────
+    retry: {
+      maxRetries: 5,
+      baseDelay: "1s",
+      maxDelay: "60s",
+      jitter: "decorrelated",
+      deadLetter: "state/dead_letter/",
+    },
+  },
+
+  // ─── Agents ─────────────────────────────────────────────────────────────────
+  agents: {
+    defaults: {
+      // LEADER MODEL: Opus handles all primary work — design, research, writing, coding.
+      // Local/smaller models are FOLLOWERS — they execute delegated subtasks with
+      // full detailed instructions generated by the leader. Local models (Qwen, Llama,
+      // DeepSeek) lack current training data (cutoff ~2024) and must not lead decisions.
+      model: "anthropic/claude-opus-4-5",
+      timeoutSeconds: 180,
+
+      heartbeat: {
+        every: "30m",
+        target: "last",
+        // Uncomment to limit heartbeats to business hours:
+        // activeHours: { start: "08:00", end: "20:00" },
+      },
+
+      sandbox: {
+        mode: "non-main", // off | non-main | all
+        scope: "agent",   // session | agent | shared
+      },
+    },
+
+    list: [
+      { id: "ops",        default: true, workspace: "~/.atlas/workspace-ops" },
+      { id: "sales",      workspace: "~/.atlas/workspace-sales" },
+      { id: "support",    workspace: "~/.atlas/workspace-support" },
+      { id: "finance",    workspace: "~/.atlas/workspace-finance" },
+      { id: "eng",        workspace: "~/.atlas/workspace-eng" },
+      { id: "supervisor", workspace: "~/.atlas/workspace-supervisor" },
+      { id: "guardian",   workspace: "~/.atlas/workspace-guardian" },
+      { id: "arena",      workspace: "~/.atlas/workspace-arena" },
+    ],
+  },
+
+  // ─── Routing / Bindings ─────────────────────────────────────────────────────
+  // Routes Slack channels to specific agents.
+  // Replace channel IDs with your real Slack channel IDs.
+  // Generate interactively with: atlas bindings wizard
+  bindings: [
+    { channel: "slack", match: { channelId: "C_SALES_CHANNEL_ID" },   agentId: "sales" },
+    { channel: "slack", match: { channelId: "C_SUPPORT_CHANNEL_ID" }, agentId: "support" },
+    { channel: "slack", match: { channelId: "C_ENG_CHANNEL_ID" },     agentId: "eng" },
+    { channel: "slack", match: { channelId: "C_FINANCE_CHANNEL_ID" }, agentId: "finance" },
+    { channel: "slack", match: { channelId: "C_ARENA_CHANNEL_ID" },   agentId: "arena" },
+    { channel: "slack", match: { channelId: "C_CS_TEAM_CHANNEL_ID" }, agentId: "arena" },
+    // Ops agent handles everything else (it's the default)
+  ],
+}

@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: medinovai-devops-telemetry
+  namespace: platform
+  labels:
+    app: medinovai-devops-telemetry
+    atlasos.io/managed: "true"
+  annotations:
+    atlasos.io/sidecar-enabled: "true"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: medinovai-devops-telemetry
+  template:
+    metadata:
+      labels:
+        app: medinovai-devops-telemetry
+        atlasos.io/managed: "true"
+    spec:
+      containers:
+      - name: medinovai-devops-telemetry
+        image: medinovai-devops-telemetry:latest
+        ports:
+        - containerPort: 3000
+          name: http
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 200m
+            memory: 512Mi
+
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 3000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+
+        volumeMounts:
+        - name: secrets
+          mountPath: /run/secrets/atlasos
+          readOnly: true
+      volumes:
+      - name: secrets
+        secret:
+          secretName: atlasos-infra-secrets
+

@@ -1,0 +1,41 @@
+{
+  "service": "data-pipeline",
+  "version": "0.1.0",
+  "repo": "myonsite-healthcare/medinovai-data-pipeline",
+  "type": "python-service",
+  "tier": "high",
+  "description": "Data ingestion, transformation, and lineage tracking pipeline",
+  "dependencies": {
+    "services": ["auth-service"],
+    "databases": ["postgres-primary", "redis-cache"],
+    "external": []
+  },
+  "health": {
+    "endpoint": "/health",
+    "readiness": "/ready",
+    "startup_timeout_seconds": 45
+  },
+  "deploy": {
+    "strategy": "canary",
+    "canary_percentage": 5,
+    "canary_duration_minutes": 10,
+    "rollback_on_error_rate": 0.01
+  },
+  "resources": {
+    "cpu": { "request": "500m", "limit": "2000m" },
+    "memory": { "request": "512Mi", "limit": "4Gi" },
+    "gpu": false
+  },
+  "scaling": {
+    "min_replicas": 2,
+    "max_replicas": 10,
+    "target_cpu_percent": 70
+  },
+  "governance": {
+    "risk_class": "high",
+    "requires_approval": true,
+    "pii_handling": true,
+    "audit_logging": true,
+    "data_lineage_required": true
+  }
+}

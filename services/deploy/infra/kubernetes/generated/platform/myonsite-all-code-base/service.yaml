@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: myonsite-all-code-base
+  namespace: platform
+  labels:
+    app: myonsite-all-code-base
+    atlasos.io/managed: "true"
+spec:
+  selector:
+    app: myonsite-all-code-base
+  ports:
+  - port: 3000
+    targetPort: 3000
+    protocol: TCP
+    name: http
+  type: ClusterIP

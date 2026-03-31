@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: chatbotv2
+  namespace: platform
+  labels:
+    app: chatbotv2
+    atlasos.io/managed: "true"
+spec:
+  selector:
+    app: chatbotv2
+  ports:
+  - port: 3000
+    targetPort: 3000
+    protocol: TCP
+    name: http
+  type: ClusterIP

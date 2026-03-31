@@ -1,0 +1,452 @@
+# AutonomyOS Domain Event Catalog
+# Deployment Service (medinovai-deploy) — Tier 2
+#
+# Event-driven architecture for the MedinovAI AutonomyOS platform.
+# All events are published to ActiveMQ topics and consumed by registered subscribers.
+# Events follow CloudEvents v1.0 specification.
+
+module: deploy
+version: "1.0.0"
+domain: Deployment Service
+tier: 2
+
+event_defaults:
+  content_type: application/json
+  encoding: utf-8
+  broker: activemq
+  dead_letter_topic: "medinovai.deploy.dlq"
+  retry_policy:
+    max_retries: 3
+    backoff: exponential
+    initial_delay_ms: 1000
+
+events:
+  deploy.deployment.created:
+    description: "Deployment was created"
+    schema:
+      type: object
+      required: [event_id, timestamp, org_id, actor_id, deployment_id]
+      properties:
+        event_id:
+          type: string
+          format: uuid
+        timestamp:
+          type: string
+          format: date-time
+        org_id:
+          type: string
+          format: uuid
+          description: Tenant organization
+        actor_id:
+          type: string
+          format: uuid
+          description: User who triggered the event
+        deployment_id:
+          type: string
+          format: uuid
+        action:
+          type: string
+          enum: [created]
+        correlation_id:
+          type: string
+          format: uuid
+    topic: "medinovai.deploy.deployment.created"
+    retention: 30d
+    consumers:
+      - audit-trail
+      - analytics-pipeline
+
+  deploy.deployment.updated:
+    description: "Deployment was updated"
+    schema:
+      type: object
+      required: [event_id, timestamp, org_id, actor_id, deployment_id]
+      properties:
+        event_id:
+          type: string
+          format: uuid
+        timestamp:
+          type: string
+          format: date-time
+        org_id:
+          type: string
+          format: uuid
+          description: Tenant organization
+        actor_id:
+          type: string
+          format: uuid
+          description: User who triggered the event
+        deployment_id:
+          type: string
+          format: uuid
+        action:
+          type: string
+          enum: [updated]
+        correlation_id:
+          type: string
+          format: uuid
+    topic: "medinovai.deploy.deployment.updated"
+    retention: 30d
+    consumers:
+      - audit-trail
+      - analytics-pipeline
+
+  deploy.deployment.deleted:
+    description: "Deployment was deleted"
+    schema:
+      type: object
+      required: [event_id, timestamp, org_id, actor_id, deployment_id]
+      properties:
+        event_id:
+          type: string
+          format: uuid
+        timestamp:
+          type: string
+          format: date-time
+        org_id:
+          type: string
+          format: uuid
+          description: Tenant organization
+        actor_id:
+          type: string
+          format: uuid
+          description: User who triggered the event
+        deployment_id:
+          type: string
+          format: uuid
+        action:
+          type: string
+          enum: [deleted]
+        correlation_id:
+          type: string
+          format: uuid
+    topic: "medinovai.deploy.deployment.deleted"
+    retention: 30d
+    consumers:
+      - audit-trail
+      - analytics-pipeline
+
+  deploy.release.created:
+    description: "Release was created"
+    schema:
+      type: object
+      required: [event_id, timestamp, org_id, actor_id, release_id]
+      properties:
+        event_id:
+          type: string
+          format: uuid
+        timestamp:
+          type: string
+          format: date-time
+        org_id:
+          type: string
+          format: uuid
+          description: Tenant organization
+        actor_id:
+          type: string
+          format: uuid
+          description: User who triggered the event
+        release_id:
+          type: string
+          format: uuid
+        action:
+          type: string
+          enum: [created]
+        correlation_id:
+          type: string
+          format: uuid
+    topic: "medinovai.deploy.release.created"
+    retention: 30d
+    consumers:
+      - audit-trail
+      - analytics-pipeline
+
+  deploy.release.updated:
+    description: "Release was updated"
+    schema:
+      type: object
+      required: [event_id, timestamp, org_id, actor_id, release_id]
+      properties:
+        event_id:
+          type: string
+          format: uuid
+        timestamp:
+          type: string
+          format: date-time
+        org_id:
+          type: string
+          format: uuid
+          description: Tenant organization
+        actor_id:
+          type: string
+          format: uuid
+          description: User who triggered the event
+        release_id:
+          type: string
+          format: uuid
+        action:
+          type: string
+          enum: [updated]
+        correlation_id:
+          type: string
+          format: uuid
+    topic: "medinovai.deploy.release.updated"
+    retention: 30d
+    consumers:
+      - audit-trail
+      - analytics-pipeline
+
+  deploy.release.deleted:
+    description: "Release was deleted"
+    schema:
+      type: object
+      required: [event_id, timestamp, org_id, actor_id, release_id]
+      properties:
+        event_id:
+          type: string
+          format: uuid
+        timestamp:
+          type: string
+          format: date-time
+        org_id:
+          type: string
+          format: uuid
+          description: Tenant organization
+        actor_id:
+          type: string
+          format: uuid
+          description: User who triggered the event
+        release_id:
+          type: string
+          format: uuid
+        action:
+          type: string
+          enum: [deleted]
+        correlation_id:
+          type: string
+          format: uuid
+    topic: "medinovai.deploy.release.deleted"
+    retention: 30d
+    consumers:
+      - audit-trail
+      - analytics-pipeline
+
+  deploy.rollback.created:
+    description: "Rollback was created"
+    schema:
+      type: object
+      required: [event_id, timestamp, org_id, actor_id, rollback_id]
+      properties:
+        event_id:
+          type: string
+          format: uuid
+        timestamp:
+          type: string
+          format: date-time
+        org_id:
+          type: string
+          format: uuid
+          description: Tenant organization
+        actor_id:
+          type: string
+          format: uuid
+          description: User who triggered the event
+        rollback_id:
+          type: string
+          format: uuid
+        action:
+          type: string
+          enum: [created]
+        correlation_id:
+          type: string
+          format: uuid
+    topic: "medinovai.deploy.rollback.created"
+    retention: 30d
+    consumers:
+      - audit-trail
+      - analytics-pipeline
+
+  deploy.rollback.updated:
+    description: "Rollback was updated"
+    schema:
+      type: object
+      required: [event_id, timestamp, org_id, actor_id, rollback_id]
+      properties:
+        event_id:
+          type: string
+          format: uuid
+        timestamp:
+          type: string
+          format: date-time
+        org_id:
+          type: string
+          format: uuid
+          description: Tenant organization
+        actor_id:
+          type: string
+          format: uuid
+          description: User who triggered the event
+        rollback_id:
+          type: string
+          format: uuid
+        action:
+          type: string
+          enum: [updated]
+        correlation_id:
+          type: string
+          format: uuid
+    topic: "medinovai.deploy.rollback.updated"
+    retention: 30d
+    consumers:
+      - audit-trail
+      - analytics-pipeline
+
+  deploy.rollback.deleted:
+    description: "Rollback was deleted"
+    schema:
+      type: object
+      required: [event_id, timestamp, org_id, actor_id, rollback_id]
+      properties:
+        event_id:
+          type: string
+          format: uuid
+        timestamp:
+          type: string
+          format: date-time
+        org_id:
+          type: string
+          format: uuid
+          description: Tenant organization
+        actor_id:
+          type: string
+          format: uuid
+          description: User who triggered the event
+        rollback_id:
+          type: string
+          format: uuid
+        action:
+          type: string
+          enum: [deleted]
+        correlation_id:
+          type: string
+          format: uuid
+    topic: "medinovai.deploy.rollback.deleted"
+    retention: 30d
+    consumers:
+      - audit-trail
+      - analytics-pipeline
+
+  deploy.config.created:
+    description: "Config was created"
+    schema:
+      type: object
+      required: [event_id, timestamp, org_id, actor_id, config_id]
+      properties:
+        event_id:
+          type: string
+          format: uuid
+        timestamp:
+          type: string
+          format: date-time
+        org_id:
+          type: string
+          format: uuid
+          description: Tenant organization
+        actor_id:
+          type: string
+          format: uuid
+          description: User who triggered the event
+        config_id:
+          type: string
+          format: uuid
+        action:
+          type: string
+          enum: [created]
+        correlation_id:
+          type: string
+          format: uuid
+    topic: "medinovai.deploy.config.created"
+    retention: 30d
+    consumers:
+      - audit-trail
+      - analytics-pipeline
+
+  deploy.config.updated:
+    description: "Config was updated"
+    schema:
+      type: object
+      required: [event_id, timestamp, org_id, actor_id, config_id]
+      properties:
+        event_id:
+          type: string
+          format: uuid
+        timestamp:
+          type: string
+          format: date-time
+        org_id:
+          type: string
+          format: uuid
+          description: Tenant organization
+        actor_id:
+          type: string
+          format: uuid
+          description: User who triggered the event
+        config_id:
+          type: string
+          format: uuid
+        action:
+          type: string
+          enum: [updated]
+        correlation_id:
+          type: string
+          format: uuid
+    topic: "medinovai.deploy.config.updated"
+    retention: 30d
+    consumers:
+      - audit-trail
+      - analytics-pipeline
+
+  deploy.config.deleted:
+    description: "Config was deleted"
+    schema:
+      type: object
+      required: [event_id, timestamp, org_id, actor_id, config_id]
+      properties:
+        event_id:
+          type: string
+          format: uuid
+        timestamp:
+          type: string
+          format: date-time
+        org_id:
+          type: string
+          format: uuid
+          description: Tenant organization
+        actor_id:
+          type: string
+          format: uuid
+          description: User who triggered the event
+        config_id:
+          type: string
+          format: uuid
+        action:
+          type: string
+          enum: [deleted]
+        correlation_id:
+          type: string
+          format: uuid
+    topic: "medinovai.deploy.config.deleted"
+    retention: 30d
+    consumers:
+      - audit-trail
+      - analytics-pipeline
+
+
+subscriptions:
+  # Events this module consumes from other modules
+  - topic: "medinovai.security.auth.*"
+    handler: src/handlers/auth_events
+    description: "Auth events for session tracking"
+  - topic: "medinovai.notification.delivery.*"
+    handler: src/handlers/notification_events
+    description: "Delivery confirmations for notification tracking"

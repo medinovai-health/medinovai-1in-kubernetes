@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: medinovai-multimodal-ui-shell
+  namespace: frontend
+  labels:
+    app: medinovai-multimodal-ui-shell
+    atlasos.io/managed: "true"
+  annotations:
+    atlasos.io/sidecar-enabled: "true"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: medinovai-multimodal-ui-shell
+  template:
+    metadata:
+      labels:
+        app: medinovai-multimodal-ui-shell
+        atlasos.io/managed: "true"
+    spec:
+      containers:
+      - name: medinovai-multimodal-ui-shell
+        image: medinovai-multimodal-ui-shell:latest
+        ports:
+        - containerPort: 3000
+          name: http
+        resources:
+          requests:
+            cpu: 50m
+            memory: 128Mi
+          limits:
+            cpu: 100m
+            memory: 256Mi
+
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 3000
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 3000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+
+        volumeMounts:
+        - name: secrets
+          mountPath: /run/secrets/atlasos
+          readOnly: true
+      volumes:
+      - name: secrets
+        secret:
+          secretName: atlasos-infra-secrets
+

@@ -1,0 +1,76 @@
+name: Infrastructure Request
+description: Request infrastructure changes or new resources
+labels: ["infrastructure", "triage"]
+body:
+  - type: dropdown
+    id: request-type
+    attributes:
+      label: Request Type
+      options:
+        - New resource provisioning
+        - Resource scaling
+        - Configuration change
+        - Network change
+        - Security group change
+        - Cost optimization
+        - Disaster recovery
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Target Environment
+      options:
+        - dev
+        - staging
+        - production
+        - all
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Describe the infrastructure change needed
+      placeholder: |
+        What needs to change?
+        Why is this change needed?
+        What is the expected outcome?
+    validations:
+      required: true
+
+  - type: textarea
+    id: impact
+    attributes:
+      label: Impact Assessment
+      description: Describe the potential impact of this change
+      placeholder: |
+        Affected services:
+        Downtime required: yes/no
+        Cost impact: increase/decrease/neutral
+        Risk level: low/medium/high
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      options:
+        - P1 - Critical (production down)
+        - P2 - High (degraded service)
+        - P3 - Medium (planned change)
+        - P4 - Low (optimization)
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: approvals
+    attributes:
+      label: Required Approvals
+      options:
+        - label: Eng lead approval
+        - label: CTO approval (production/destructive changes)
+        - label: Security review (network/IAM changes)
+        - label: Finance approval (cost impact > 20%)

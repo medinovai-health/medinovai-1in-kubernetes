@@ -1,0 +1,5 @@
+# Data Engineering Conventions
+- Data lineage for all sources and transforms (GOV-07)
+- Idempotent pipelines; checkpointing and backfill safety
+- Schema validation; no PHI in embeddings or analytics without controls
+- Version datasets with model and feature versions

@@ -1,0 +1,24 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: medinovaios
+  namespace: medinovai-os
+  labels:
+    app.kubernetes.io/name: medinovaios
+    app.kubernetes.io/part-of: medinovai
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "60"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "10"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: medinovaios.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: medinovaios
+                port:
+                  number: 3030

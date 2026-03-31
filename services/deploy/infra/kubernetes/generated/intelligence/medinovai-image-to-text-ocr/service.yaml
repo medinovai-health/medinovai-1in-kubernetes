@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: medinovai-image-to-text-ocr
+  namespace: intelligence
+  labels:
+    app: medinovai-image-to-text-ocr
+    atlasos.io/managed: "true"
+spec:
+  selector:
+    app: medinovai-image-to-text-ocr
+  ports:
+  - port: 8000
+    targetPort: 8000
+    protocol: TCP
+    name: http
+  type: ClusterIP

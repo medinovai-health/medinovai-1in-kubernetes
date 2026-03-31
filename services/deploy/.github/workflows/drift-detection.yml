@@ -1,0 +1,30 @@
+name: Drift Detection
+
+on:
+  schedule:
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+jobs:
+  detect:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check K3s drift
+        run: |
+          echo "Checking K8s state vs Git manifests..."
+          for dir in infra/kubernetes/services/*/; do
+            if [ -f "$dir/kustomization.yaml" ]; then
+              ns=$(grep 'namespace:' "$dir/kustomization.yaml" | awk '{print $2}' | head -1)
+              if [ -n "$ns" ]; then
+                echo "--- $dir (namespace: $ns) ---"
+                kustomize build "$dir" | kubectl diff -f - 2>/dev/null || echo "DRIFT DETECTED in $dir"
+              fi
+            fi
+          done
+
+      - name: Check node health
+        run: |
+          kubectl get nodes -o wide
+          kubectl top nodes 2>/dev/null || true
