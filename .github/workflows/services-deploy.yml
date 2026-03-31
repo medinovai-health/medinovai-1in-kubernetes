@@ -1,0 +1,17 @@
+name: deploy
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - "services/deploy/**"
+      - ".github/workflows/services-deploy.yml"
+  pull_request:
+    paths:
+      - "services/deploy/**"
+
+jobs:
+  ci:
+    uses: ./.github/workflows/templates/python-service.yml
+    with:
+      service-path: services/deploy
+      service-name: medinovai-deploy
