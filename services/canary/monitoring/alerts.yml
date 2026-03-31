@@ -1,0 +1,38 @@
+groups:
+- name: application_alerts
+  rules:
+  - alert: HighErrorRate
+    expr: rate(http_requests_total{status=~"5.."}[5m]) > 0.05
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      summary: "High error rate on {{ $labels.instance }}"
+      description: "{{ $labels.instance }} is experiencing a high error rate."
+
+  - alert: HighLatency
+    expr: http_request_duration_seconds_quantile{quantile="0.99"} > 1
+    for: 1m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High latency on {{ $labels.instance }}"
+      description: "{{ $labels.instance }} is experiencing high latency."
+
+  - alert: HighMemoryUsage
+    expr: (process_resident_memory_bytes / 1024 / 1024) > 400
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High memory usage on {{ $labels.instance }}"
+      description: "{{ $labels.instance }} is using over 400MB of memory."
+
+  - alert: LowDiskSpace
+    expr: (node_filesystem_avail_bytes * 100) / node_filesystem_size_bytes < 10
+    for: 5m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Low disk space on {{ $labels.instance }}"
+      description: "{{ $labels.instance }} has less than 10% disk space remaining."

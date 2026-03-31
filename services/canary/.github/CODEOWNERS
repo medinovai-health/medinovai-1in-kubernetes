@@ -1,0 +1,23 @@
+# CODEOWNERS — medinovai-canary-rollout-orchestrator
+# Auto-generated from medinovai-ai-standards/REPO_BOOTSTRAP.md
+# Every PR requires review from at least one platform team member.
+
+# Global ownership
+* @medinovai-health/platform-team
+
+# Standards files — require Senior Engineer review
+CLAUDE.md @medinovai-health/senior-engineers @medinovai-health/platform-team
+medinovai.manifest.yaml @medinovai-health/platform-team
+atlasos.yaml @medinovai-health/platform-team
+
+
+# Security & compliance — require Security team review
+SECURITY.md @medinovai-health/security-team
+
+
+# CI/CD — require DevOps review
+.github/ @medinovai-health/devops-team @medinovai-health/platform-team
+Dockerfile* @medinovai-health/devops-team
+kubernetes/ @medinovai-health/devops-team
+docker-compose*.yml @medinovai-health/devops-team
+

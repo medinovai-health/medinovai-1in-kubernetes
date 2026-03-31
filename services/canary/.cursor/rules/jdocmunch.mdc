@@ -1,0 +1,35 @@
+---
+description: jDocMunch — token-efficient documentation navigation via MCP (replaces reading full docs)
+alwaysApply: true
+---
+
+# Documentation Navigation — jDocMunch MCP (Always Active)
+
+**Never read full documentation files to find information. Use jdocmunch-mcp tools instead.**
+
+jDocMunch is the documentation companion to jCodeMunch. It indexes READMEs, specs, architecture docs, and markdown files for token-efficient retrieval.
+
+## Always Use These Tools
+
+| Instead of... | Use this |
+|---|---|
+| Read a full README | `get_toc_tree: { "path": "README.md" }` then `get_section` for specific parts |
+| Search through docs/ folder | `search_sections: { "query": "deployment" }` |
+| Read a specification file | `get_toc_tree` → `get_section` for the section you need |
+| Index a local doc folder | `index_doc_local: { "path": "./docs" }` |
+
+## Session Start Protocol
+
+1. Docs are automatically indexed alongside code by the jCodeMunch daemon
+2. Use `search_sections` to find relevant documentation without reading entire files
+3. Use `get_section` to retrieve only the section you need
+
+## Only Fall Back to Full File Reads When
+
+- You are about to **edit** a documentation file (need exact content + line numbers)
+- The MCP server is unreachable
+- The file is not markdown/text (images, PDFs, binary)
+
+## Cost Impact
+
+Retrieving a single section instead of a full doc saves ~10,000-50,000 tokens per read.

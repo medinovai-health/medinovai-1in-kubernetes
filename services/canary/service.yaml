@@ -1,0 +1,31 @@
+apiVersion: medinovai.dev/v1
+kind: ServiceManifest
+metadata:
+  id: MED-svc-canary
+  name: medinovai-canary-rollout-orchestrator
+  displayName: "medinovai-canary-rollout-orchestrator"
+  monorepo: medinovai-infrastructure
+  path: services/canary
+  migratedFrom: medinovai-canary-rollout-orchestrator
+  migrationDate: "2026-03-30"
+  ownerSquad: devops
+  tier: "5"
+  complianceTier: "3"
+spec:
+  language: python
+  runtimePort: 8000
+  contracts: []
+  tests:
+    unit: tests/unit
+    integration: tests/integration
+  ci:
+    workflow: .github/workflows/services-canary.yml
+    pathFilters:
+      - "services/canary/**"
+  deployment:
+    chartPath: deploy/charts/canary
+    imageName: medinovai-canary-rollout-orchestrator
+  regulatory:
+    dhfEntry: docs/qms/dhf/DHF_INDEX.md
+    riskClass: "B"
+    soupComponents: []

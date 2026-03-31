@@ -1,0 +1,3 @@
+[submodule "shared/medinovai-core"]
+	path = shared/medinovai-core
+	url = https://github.com/myonsite-healthcare/medinovai-core.git

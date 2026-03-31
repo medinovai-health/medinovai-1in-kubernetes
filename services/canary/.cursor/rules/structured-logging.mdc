@@ -1,0 +1,34 @@
+---
+description: Structured logging standard — ZTA format required for all services.
+alwaysApply: true
+---
+
+# Structured Logging Standard
+
+## Required: ZTA structlog Format
+ALL services MUST use structured JSON logging matching zerotrustaudit format.
+
+### Python (structlog)
+```python
+import structlog
+mos_logger = structlog.get_logger()
+mos_logger.info("event_name", correlation_id=mos_correlationId, tenant_id=mos_tenantId,
+                actor_id=mos_actorId, category="business", phi_safe=True)
+```
+
+### C# (Serilog)
+```csharp
+Log.Information("{@Event}", new { EventName = "event_name", CorrelationId = mosCorrelationId,
+    TenantId = mosTenantId, Category = "business", PhiSafe = true });
+```
+
+## NEVER Do
+- ❌ `print()` or `console.log()` for application logging
+- ❌ `logging.info("Patient name: " + name)` — PHI leak!
+- ❌ Plain text log lines without structure
+- ❌ Log raw PHI/PII values (use IDs/hashes only)
+
+## Log Categories
+- `audit`: Mutations, approvals, access to sensitive data → ALWAYS logged, WORM storage
+- `business`: Business events, workflow transitions → batched, compressed
+- `debug`: Diagnostic info → only when debug mode active, auto-expires 30 min
