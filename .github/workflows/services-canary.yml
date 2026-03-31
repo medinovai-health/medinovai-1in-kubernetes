@@ -1,0 +1,17 @@
+name: canary
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - "services/canary/**"
+      - ".github/workflows/services-canary.yml"
+  pull_request:
+    paths:
+      - "services/canary/**"
+
+jobs:
+  ci:
+    uses: ./.github/workflows/templates/python-service.yml
+    with:
+      service-path: services/canary
+      service-name: medinovai-canary-rollout-orchestrator
