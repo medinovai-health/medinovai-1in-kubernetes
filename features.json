@@ -1,0 +1,14 @@
+{
+  "_schema": "medinovai-harness-2.1",
+  "project": "medinovai-infrastructure",
+  "version": "1.0.0",
+  "tier": 2,
+  "lastUpdated": "2026-04-01",
+  "features": [
+    {"id": "F001", "name": "Harness 2.1 standardization", "description": "CLAUDE.md, features.json, progress.md, init.sh all present and validated", "tier": 2, "passes": true, "completedAt": "2026-04-01"},
+    {"id": "F002", "name": "Module manifest", "description": "module-manifest.yaml listing all 3 services with tier, namespace, port, health endpoint", "tier": 2, "passes": false, "completedAt": null},
+    {"id": "F003", "name": "AutoResearch evaluator", "description": "Infrastructure-domain benchmark tasks for K8s, Terraform, Docker validation", "tier": 2, "passes": false, "completedAt": null},
+    {"id": "F004", "name": "CI/CD per-service workflow", "description": "Path-filtered GitHub Actions for each service in services/", "tier": 2, "passes": false, "completedAt": null},
+    {"id": "F005", "name": "Health endpoints verified", "description": "Every service responds 200 on /health and /ready", "tier": 2, "passes": false, "completedAt": null}
+  ]
+}
