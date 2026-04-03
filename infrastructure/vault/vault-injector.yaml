@@ -1,0 +1,126 @@
+# HashiCorp Vault Agent Injector Configuration
+# Injects secrets directly into pod filesystems at runtime
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: medinovai-vault-sa
+  namespace: medinovai-vault
+  labels:
+    app.kubernetes.io/name: medinovai-vault
+automountServiceAccountToken: true
+
+---
+# Vault Agent Injector Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vault-agent-injector
+  namespace: medinovai-vault
+  labels:
+    app.kubernetes.io/name: vault-agent-injector
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: vault-agent-injector
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: vault-agent-injector
+      annotations:
+        vault.hashicorp.com/agent-inject: "true"
+    spec:
+      serviceAccountName: medinovai-vault-sa
+      containers:
+        - name: sidecar-injector
+          image: hashicorp/vault-k8s:latest
+          env:
+            - name: AGENT_INJECT_VAULT_ADDR
+              value: "http://vault.medinovai-vault:8200"
+            - name: AGENT_INJECT_VAULT_AUTH_PATH
+              value: "auth/kubernetes"
+            - name: AGENT_INJECT_TLS_AUTO
+              value: "medinovai-vault"
+            - name: AGENT_INJECT_LOG_LEVEL
+              value: "info"
+          resources:
+            limits:
+              cpu: "100m"
+              memory: "128Mi"
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+
+---
+# Example: Security Service with Vault Injector
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: medinovai-security-service
+  namespace: medinovai-services
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: security-service
+  template:
+    metadata:
+      labels:
+        app: security-service
+      annotations:
+        # Vault Agent Injector Annotations
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/role: "medinovai-infrastructure"
+        vault.hashicorp.com/auth-path: "auth/kubernetes"
+        # Inject Keycloak secrets
+        vault.hashicorp.com/agent-inject-secret-keycloak-password: "secret/data/medinovai/infrastructure/security-service"
+        vault.hashicorp.com/agent-inject-template-keycloak-password: |
+          {{ with secret "secret/data/medinovai/infrastructure/security-service" -}}
+          export KEYCLOAK_ADMIN_PASSWORD="{{ .data.data.keycloak_admin_password }}"
+          export KEYCLOAK_CLIENT_SECRET="{{ .data.data.keycloak_client_secret }}"
+          export SUPERADMIN_PASSWORD="{{ .data.data.superadmin_password }}"
+          {{- end }}
+        # Inject shared secrets
+        vault.hashicorp.com/agent-inject-secret-shared: "secret/data/medinovai/shared"
+        vault.hashicorp.com/agent-inject-template-shared: |
+          {{ with secret "secret/data/medinovai/shared" -}}
+          export JWT_SECRET="{{ .data.data.jwt_signing_key }}"
+          export ENCRYPTION_KEY="{{ .data.data.encryption_key }}"
+          {{- end }}
+        # Agent configuration
+        vault.hashicorp.com/agent-pre-populate: "true"
+        vault.hashicorp.com/agent-pre-populate-only: "false"
+        vault.hashicorp.com/agent-run-as-user: "65534"
+    spec:
+      serviceAccountName: security-service-sa
+      containers:
+        - name: security-service
+          image: medinovai-security-service:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: security-service-config
+          volumeMounts:
+            - name: vault-secrets
+              mountPath: /vault/secrets
+          command: ["/bin/sh"]
+          args:
+            - "-c"
+            - "source /vault/secrets/keycloak-password && source /vault/secrets/shared && uvicorn app.main:app --host 0.0.0.0 --port 8000"
+      volumes:
+        - name: vault-secrets
+          emptyDir:
+            medium: Memory
+
+---
+# Service Account for Security Service
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: security-service-sa
+  namespace: medinovai-services
+  annotations:
+    vault.hashicorp.com/role: "medinovai-infrastructure"

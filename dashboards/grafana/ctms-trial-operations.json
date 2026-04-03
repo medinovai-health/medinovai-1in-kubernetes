@@ -1,0 +1,65 @@
+{
+  "dashboard": {
+    "title": "CTMS - Trial Operations",
+    "tags": ["ctms", "clinical-trials", "operations"],
+    "timezone": "browser",
+    "schemaVersion": 36,
+    "refresh": "5m",
+    "time": { "from": "now-30d", "to": "now" },
+    "panels": [
+      {
+        "id": 1, "title": "Active Studies", "type": "stat",
+        "targets": [{ "expr": "ctms_active_studies", "refId": "A" }],
+        "gridPos": { "h": 4, "w": 4, "x": 0, "y": 0 }
+      },
+      {
+        "id": 2, "title": "Total Sites", "type": "stat",
+        "targets": [{ "expr": "ctms_total_sites", "refId": "A" }],
+        "gridPos": { "h": 4, "w": 4, "x": 4, "y": 0 }
+      },
+      {
+        "id": 3, "title": "Screened Subjects", "type": "stat",
+        "targets": [{ "expr": "ctms_subjects_screened", "refId": "A" }],
+        "gridPos": { "h": 4, "w": 4, "x": 8, "y": 0 }
+      },
+      {
+        "id": 4, "title": "Enrolled Subjects", "type": "stat",
+        "targets": [{ "expr": "ctms_subjects_enrolled", "refId": "A" }],
+        "gridPos": { "h": 4, "w": 4, "x": 12, "y": 0 }
+      },
+      {
+        "id": 5, "title": "Completed Visits", "type": "stat",
+        "targets": [{ "expr": "ctms_visits_completed", "refId": "A" }],
+        "gridPos": { "h": 4, "w": 4, "x": 16, "y": 0 }
+      },
+      {
+        "id": 6, "title": "Data Queries Open", "type": "stat",
+        "targets": [{ "expr": "ctms_open_queries", "refId": "A" }],
+        "fieldConfig": { "defaults": { "color": { "fixedColor": "orange" } } },
+        "gridPos": { "h": 4, "w": 4, "x": 20, "y": 0 }
+      },
+      {
+        "id": 7, "title": "Enrollment by Study", "type": "timeseries",
+        "targets": [{ "expr": "ctms_enrollment_by_study", "legendFormat": "{{study}}", "refId": "A" }],
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 }
+      },
+      {
+        "id": 8, "title": "Site Performance", "type": "table",
+        "targets": [{ "expr": "ctms_site_metrics", "format": "table", "refId": "A" }],
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 }
+      },
+      {
+        "id": 9, "title": "Subject Status Distribution", "type": "piechart",
+        "targets": [{ "expr": "ctms_subjects_by_status", "legendFormat": "{{status}}", "refId": "A" }],
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 }
+      },
+      {
+        "id": 10, "title": "Visit Completion Rate", "type": "gauge",
+        "targets": [{ "expr": "ctms_visit_completion_rate", "refId": "A" }],
+        "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100 } },
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 }
+      }
+    ]
+  },
+  "overwrite": true
+}

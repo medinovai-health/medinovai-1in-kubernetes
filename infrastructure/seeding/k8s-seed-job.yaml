@@ -1,0 +1,332 @@
+# Deployment-Time Seeding Job
+# Seeds all data, dashboards, and configurations at deployment
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: deployment-seeder
+  namespace: medinovai-services
+  annotations:
+    vault.hashicorp.com/role: "medinovai-infrastructure"
+
+---
+# ClusterRole for seeder to access all resources
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: deployment-seeder-role
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps", "secrets", "services", "pods"]
+    verbs: ["get", "list", "create", "update", "patch"]
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "list"]
+  - apiGroups: ["external-secrets.io"]
+    resources: ["externalsecrets", "secretstores"]
+    verbs: ["get", "list", "create"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: deployment-seeder-binding
+subjects:
+  - kind: ServiceAccount
+    name: deployment-seeder
+    namespace: medinovai-services
+roleRef:
+  kind: ClusterRole
+  name: deployment-seeder-role
+  apiGroup: rbac.authorization.k8s.io
+
+---
+# ConfigMap with seeding scripts
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: seed-scripts
+  namespace: medinovai-services
+data:
+  seed-vault.sh: |
+    #!/bin/bash
+    set -e
+    echo "=== Seeding Vault Secrets ==="
+    
+    # Wait for Vault to be ready
+    until curl -sf http://vault.medinovai-vault:8200/v1/sys/health > /dev/null 2>&1; do
+      echo "Waiting for Vault..."
+      sleep 5
+    done
+    
+    # Authenticate to Vault
+    export VAULT_TOKEN=$(cat /vault/token/root-token)
+    
+    # Seed all secrets
+    vault kv put secret/medinovai/infrastructure/security-service \
+      keycloak_admin_password="${KEYCLOAK_ADMIN_PASSWORD:-$(openssl rand -base64 32)}" \
+      keycloak_client_secret="${KEYCLOAK_CLIENT_SECRET:-$(openssl rand -base64 32)}" \
+      superadmin_password="${SUPERADMIN_PASSWORD:-MedinovAI-Dev-2025!}"
+    
+    vault kv put secret/medinovai/shared \
+      jwt_signing_key="${JWT_SIGNING_KEY:-$(openssl rand -base64 64)}" \
+      encryption_key="${ENCRYPTION_KEY:-$(openssl rand -base64 32)}"
+    
+    vault kv put secret/medinovai/infrastructure/monitoring/grafana \
+      admin_username="admin" \
+      admin_password="${GRAFANA_ADMIN_PASSWORD:-$(openssl rand -base64 24)}" \
+      secret_key="${GRAFANA_SECRET_KEY:-$(openssl rand -base64 32)}"
+    
+    vault kv put secret/medinovai/infrastructure/database/postgres \
+      username="postgres" \
+      password="${POSTGRES_PASSWORD:-$(openssl rand -base64 24)}" \
+      database="medinovai"
+    
+    vault kv put secret/medinovai/infrastructure/cache/redis \
+      password="${REDIS_PASSWORD:-$(openssl rand -base64 24)}"
+    
+    vault kv put secret/medinovai/infrastructure/monitoring/elasticsearch \
+      username="elastic" \
+      password="${ELASTIC_PASSWORD:-$(openssl rand -base64 24)}"
+    
+    echo "✅ Vault secrets seeded successfully"
+  
+  seed-dashboards.sh: |
+    #!/bin/bash
+    set -e
+    echo "=== Seeding Dashboards ==="
+    
+    # Wait for Grafana
+    until curl -sf http://grafana.medinovai-monitoring:3000/api/health > /dev/null 2>&1; do
+      echo "Waiting for Grafana..."
+      sleep 5
+    done
+    
+    # Get Grafana credentials from Vault
+    GRAFANA_USER=$(vault kv get -field=admin_username secret/medinovai/infrastructure/monitoring/grafana)
+    GRAFANA_PASS=$(vault kv get -field=admin_password secret/medinovai/infrastructure/monitoring/grafana)
+    
+    # Import all dashboards
+    for dashboard in /seed-data/dashboards/grafana/*.json; do
+      echo "Importing: $(basename $dashboard)"
+      curl -s -X POST \
+        -u "${GRAFANA_USER}:${GRAFANA_PASS}" \
+        http://grafana.medinovai-monitoring:3000/api/dashboards/db \
+        -H "Content-Type: application/json" \
+        -d "@$dashboard" > /dev/null
+    done
+    
+    echo "✅ Grafana dashboards seeded"
+    
+    # Wait for Kibana
+    until curl -sf http://kibana.medinovai-monitoring:5601/api/status > /dev/null 2>&1; do
+      echo "Waiting for Kibana..."
+      sleep 5
+    done
+    
+    # Import Kibana dashboards
+    for dashboard in /seed-data/dashboards/kibana/*.ndjson; do
+      echo "Importing: $(basename $dashboard)"
+      curl -s -X POST \
+        http://kibana.medinovai-monitoring:5601/api/saved_objects/_import?overwrite=true \
+        -H "kbn-xsrf: true" \
+        --form file=@"$dashboard" > /dev/null
+    done
+    
+    echo "✅ Kibana dashboards seeded"
+  
+  seed-keycloak.sh: |
+    #!/bin/bash
+    set -e
+    echo "=== Seeding Keycloak ==="
+    
+    # Wait for Keycloak
+    until curl -sf http://keycloak.medinovai-data:8080/health/ready > /dev/null 2>&1; do
+      echo "Waiting for Keycloak..."
+      sleep 5
+    done
+    
+    # Get admin password from Vault
+    ADMIN_PASS=$(vault kv get -field=keycloak_admin_password secret/medinovai/infrastructure/security-service)
+    SUPERADMIN_PASS=$(vault kv get -field=superadmin_password secret/medinovai/infrastructure/security-service)
+    
+    # Get admin token
+    TOKEN=$(curl -s -X POST \
+      http://keycloak.medinovai-data:8080/realms/master/protocol/openid-connect/token \
+      -H "Content-Type: application/x-www-form-urlencoded" \
+      -d "username=admin" \
+      -d "password=${ADMIN_PASS}" \
+      -d "grant_type=password" \
+      -d "client_id=admin-cli" | jq -r '.access_token')
+    
+    # Create MedinovAI realm if not exists
+    curl -s -X POST \
+      http://keycloak.medinovai-data:8080/admin/realms \
+      -H "Authorization: Bearer ${TOKEN}" \
+      -H "Content-Type: application/json" \
+      -d '{"realm":"medinovai","enabled":true}' > /dev/null || true
+    
+    # Create superadmin user
+    curl -s -X POST \
+      http://keycloak.medinovai-data:8080/admin/realms/medinovai/users \
+      -H "Authorization: Bearer ${TOKEN}" \
+      -H "Content-Type: application/json" \
+      -d "{
+        \"username\": \"superadmin\",
+        \"enabled\": true,
+        \"emailVerified\": true,
+        \"firstName\": \"Super\",
+        \"lastName\": \"Admin\",
+        \"email\": \"superadmin@medinovai.com\",
+        \"credentials\": [{
+          \"type\": \"password\",
+          \"value\": \"${SUPERADMIN_PASS}\",
+          \"temporary\": false
+        }]
+      }"
+    
+    echo "✅ Keycloak seeded with superadmin user"
+  
+  seed-services.sh: |
+    #!/bin/bash
+    set -e
+    echo "=== Seeding Service Registry ==="
+    
+    # Wait for registry
+    until curl -sf http://medinovai-registry.medinovai:8000/health > /dev/null 2>&1; do
+      echo "Waiting for Registry..."
+      sleep 5
+    done
+    
+    # Register all infrastructure services
+    SERVICES=$(cat /seed-data/services/registry-services.json)
+    
+    echo "$SERVICES" | jq -c '.[]' | while read service; do
+      echo "Registering: $(echo $service | jq -r '.name')"
+      curl -s -X POST \
+        http://medinovai-registry.medinovai:8000/api/v1/modules/register \
+        -H "Content-Type: application/json" \
+        -d "$service" > /dev/null || true
+    done
+    
+    echo "✅ Service registry seeded"
+
+---
+# Main Seeding Job
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: deployment-seeder
+  namespace: medinovai-services
+  annotations:
+    vault.hashicorp.com/agent-inject: "true"
+    vault.hashicorp.com/role: "medinovai-infrastructure"
+spec:
+  template:
+    metadata:
+      annotations:
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/role: "medinovai-infrastructure"
+        vault.hashicorp.com/agent-inject-secret-root-token: "secret/data/medinovai/vault"
+        vault.hashicorp.com/agent-inject-template-root-token: |
+          {{ with secret "secret/data/medinovai/vault" -}}
+          {{ .data.data.root_token }}
+          {{- end }}
+    spec:
+      serviceAccountName: deployment-seeder
+      restartPolicy: OnFailure
+      initContainers:
+        - name: vault-setup
+          image: hashicorp/vault:latest
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              # Copy Vault token for other containers
+              mkdir -p /vault/token
+              cp /vault/secrets/root-token /vault/token/root-token
+              chmod 600 /vault/token/root-token
+          volumeMounts:
+            - name: vault-shared
+              mountPath: /vault/token
+      containers:
+        - name: seed-vault
+          image: hashicorp/vault:latest
+          command: ["/bin/sh", "/seed-scripts/seed-vault.sh"]
+          volumeMounts:
+            - name: seed-scripts
+              mountPath: /seed-scripts
+            - name: vault-shared
+              mountPath: /vault/token
+        
+        - name: seed-keycloak
+          image: curlimages/curl:latest
+          command: ["/bin/sh", "/seed-scripts/seed-keycloak.sh"]
+          volumeMounts:
+            - name: seed-scripts
+              mountPath: /seed-scripts
+            - name: vault-shared
+              mountPath: /vault/token
+      
+        - name: seed-dashboards
+          image: curlimages/curl:latest
+          command: ["/bin/sh", "/seed-scripts/seed-dashboards.sh"]
+          volumeMounts:
+            - name: seed-scripts
+              mountPath: /seed-scripts
+            - name: seed-data
+              mountPath: /seed-data
+            - name: vault-shared
+              mountPath: /vault/token
+        
+        - name: seed-services
+          image: curlimages/curl:latest
+          command: ["/bin/sh", "/seed-scripts/seed-services.sh"]
+          volumeMounts:
+            - name: seed-scripts
+              mountPath: /seed-scripts
+            - name: seed-data
+              mountPath: /seed-data
+            - name: vault-shared
+              mountPath: /vault/token
+      
+      volumes:
+        - name: seed-scripts
+          configMap:
+            name: seed-scripts
+            defaultMode: 0755
+        - name: seed-data
+          configMap:
+            name: seed-data
+        - name: vault-shared
+          emptyDir:
+            medium: Memory
+
+---
+# ConfigMap with seed data (dashboards, services)
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: seed-data
+  namespace: medinovai-services
+data:
+  # Dashboard JSONs are too large for ConfigMap
+  # They will be mounted from persistent volume or downloaded
+  registry-services.json: |
+    [
+      {
+        "module_id": "medinovai-security-service",
+        "name": "Security Service",
+        "version": "1.0.0",
+        "type": "infrastructure",
+        "health_endpoint": "/health",
+        "dependencies": ["keycloak"]
+      },
+      {
+        "module_id": "medinovai-registry",
+        "name": "Service Registry",
+        "version": "1.0.0",
+        "type": "infrastructure",
+        "health_endpoint": "/health",
+        "dependencies": []
+      }
+    ]

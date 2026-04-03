@@ -1,0 +1,86 @@
+{
+  "reports": {
+    "audit_summary": {
+      "title": "Security Audit Summary Report",
+      "description": "Comprehensive audit of all security events and access patterns",
+      "schedule": "daily",
+      "sections": [
+        "authentication_events",
+        "phi_access_summary",
+        "failed_login_attempts",
+        "authorization_failures",
+        "break_glass_usage",
+        "token_validation_stats"
+      ],
+      "recipients": ["security@medinovai.com", "compliance@medinovai.com"]
+    },
+    "compliance_report": {
+      "title": "HIPAA/GDPR Compliance Report",
+      "description": "Compliance metrics and violation tracking",
+      "schedule": "weekly",
+      "sections": [
+        "phi_access_audit",
+        "data_retention_compliance",
+        "consent_tracking",
+        "breach_detection",
+        "access_review"
+      ],
+      "recipients": ["compliance@medinovai.com", "privacy@medinovai.com"]
+    },
+    "user_activity": {
+      "title": "User Activity Analytics",
+      "description": "Detailed user access patterns and behavior analysis",
+      "schedule": "hourly",
+      "sections": [
+        "active_sessions",
+        "login_patterns",
+        "resource_access",
+        "permission_usage",
+        "anomaly_detection"
+      ]
+    },
+    "rbac_report": {
+      "title": "RBAC Configuration and Usage",
+      "description": "Role-based access control analysis",
+      "schedule": "daily",
+      "sections": [
+        "role_assignments",
+        "permission_distribution",
+        "unused_permissions",
+        "role_conflict_detection"
+      ]
+    }
+  },
+  "analytics_endpoints": {
+    "user_behavior": {
+      "path": "/analytics/user-behavior",
+      "method": "GET",
+      "parameters": ["time_range", "user_id", "tenant_id"],
+      "response": "user_behavior_summary"
+    },
+    "access_patterns": {
+      "path": "/analytics/access-patterns",
+      "method": "GET",
+      "parameters": ["resource", "time_range", "aggregation"],
+      "response": "access_pattern_analysis"
+    },
+    "security_trends": {
+      "path": "/analytics/security-trends",
+      "method": "GET",
+      "parameters": ["metric", "time_range", "granularity"],
+      "response": "security_trend_data"
+    },
+    "compliance_score": {
+      "path": "/analytics/compliance-score",
+      "method": "GET",
+      "parameters": ["framework", "tenant_id"],
+      "response": "compliance_score_breakdown"
+    },
+    "threat_detection": {
+      "path": "/analytics/threat-detection",
+      "method": "GET",
+      "parameters": ["severity", "time_range"],
+      "response": "detected_threats"
+    }
+  }
+}

@@ -1,0 +1,151 @@
+{
+  "dashboard": {
+    "title": "Security & Audit Analytics",
+    "tags": ["security", "audit", "compliance", "phi"],
+    "timezone": "browser",
+    "schemaVersion": 36,
+    "refresh": "30s",
+    "time": { "from": "now-24h", "to": "now" },
+    "panels": [
+      {
+        "id": 1,
+        "title": "Authentication Events",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "rate(security_auth_events_total[5m])",
+            "legendFormat": "{{event_type}}",
+            "refId": "A"
+          }
+        ],
+        "gridPos": { "h": 4, "w": 8, "x": 0, "y": 0 }
+      },
+      {
+        "id": 2,
+        "title": "Failed Login Attempts",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "security_failed_logins_total",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": { "mode": "fixed", "fixedColor": "red" }
+          }
+        },
+        "gridPos": { "h": 4, "w": 8, "x": 8, "y": 0 }
+      },
+      {
+        "id": 3,
+        "title": "Active Sessions",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "security_active_sessions",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": { "mode": "fixed", "fixedColor": "blue" }
+          }
+        },
+        "gridPos": { "h": 4, "w": 8, "x": 16, "y": 0 }
+      },
+      {
+        "id": 4,
+        "title": "PHI Access Events",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "rate(audit_phi_access_total[5m])",
+            "legendFormat": "{{resource}} - {{action}}",
+            "refId": "A"
+          }
+        ],
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 }
+      },
+      {
+        "id": 5,
+        "title": "Authorization Failures",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "rate(security_authz_denied_total[5m])",
+            "legendFormat": "{{resource}}",
+            "refId": "A"
+          }
+        ],
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 }
+      },
+      {
+        "id": 6,
+        "title": "Token Validation Rate",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "rate(security_token_validations_total[5m])",
+            "legendFormat": "{{result}}",
+            "refId": "A"
+          }
+        ],
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 }
+      },
+      {
+        "id": 7,
+        "title": "Break-Glass Access Usage",
+        "type": "table",
+        "targets": [
+          {
+            "expr": "security_breakglass_events",
+            "format": "table",
+            "refId": "A"
+          }
+        ],
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 }
+      },
+      {
+        "id": 8,
+        "title": "Role Assignment Distribution",
+        "type": "piechart",
+        "targets": [
+          {
+            "expr": "security_role_assignments",
+            "legendFormat": "{{role}}",
+            "refId": "A"
+          }
+        ],
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 20 }
+      },
+      {
+        "id": 9,
+        "title": "Compliance Audit Score",
+        "type": "gauge",
+        "targets": [
+          {
+            "expr": "security_compliance_score",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "min": 0,
+            "max": 100,
+            "unit": "percent",
+            "thresholds": {
+              "steps": [
+                { "color": "red", "value": 0 },
+                { "color": "yellow", "value": 70 },
+                { "color": "green", "value": 90 }
+              ]
+            }
+          }
+        },
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 20 }
+      }
+    ]
+  },
+  "overwrite": true
+}

@@ -1,0 +1,222 @@
+groups:
+  # Critical Infrastructure Alerts
+  - name: critical-infrastructure
+    interval: 30s
+    rules:
+      - alert: ServiceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+          category: infrastructure
+        annotations:
+          summary: "Service {{ $labels.job }} is down"
+          description: "Service {{ $labels.job }} in {{ $labels.namespace }} has been down for more than 1 minute."
+          
+      - alert: HighErrorRate
+        expr: infra:error_rate:ratio > 0.05
+        for: 2m
+        labels:
+          severity: warning
+          category: infrastructure
+        annotations:
+          summary: "High error rate on {{ $labels.service }}"
+          description: "Error rate is {{ $value | humanizePercentage }} for service {{ $labels.service }}."
+          
+      - alert: HighLatency
+        expr: infra:latency:p95 > 2
+        for: 3m
+        labels:
+          severity: warning
+          category: infrastructure
+        annotations:
+          summary: "High latency on {{ $labels.service }}"
+          description: "p95 latency is {{ $value }}s for service {{ $labels.service }}."
+          
+      - alert: DiskFull
+        expr: infra:disk_utilization:percent > 85
+        for: 5m
+        labels:
+          severity: critical
+          category: infrastructure
+        annotations:
+          summary: "Disk full on {{ $labels.pod }}"
+          description: "Disk usage is {{ $value | humanizePercentage }} on pod {{ $labels.pod }}."
+          
+      - alert: MemoryHigh
+        expr: infra:memory_utilization:percent > 80
+        for: 5m
+        labels:
+          severity: warning
+          category: infrastructure
+        annotations:
+          summary: "High memory usage on {{ $labels.pod }}"
+          description: "Memory usage is {{ $value | humanizePercentage }} on pod {{ $labels.pod }}."
+
+  # Healthcare Clinical Alerts
+  - name: healthcare-clinical
+    interval: 1m
+    rules:
+      - alert: HighLabTurnaroundTime
+        expr: healthcare:lab_turnaround:avg_hours > 48
+        for: 10m
+        labels:
+          severity: warning
+          category: clinical
+        annotations:
+          summary: "Lab turnaround time exceeding SLA"
+          description: "Average lab turnaround time is {{ $value }} hours."
+          
+      - alert: CriticalSAEUnreported
+        expr: saes_critical_unreported > 0
+        for: 0s
+        labels:
+          severity: critical
+          category: clinical
+          hipaa: "true"
+        annotations:
+          summary: "Critical SAE requires immediate reporting"
+          description: "There are {{ $value }} critical SAEs that require immediate reporting."
+          
+      - alert: LowEnrollmentRate
+        expr: healthcare:enrollment_rate:per_hour < 0.5
+        for: 1h
+        labels:
+          severity: warning
+          category: clinical
+        annotations:
+          summary: "Low patient enrollment rate"
+          description: "Enrollment rate is {{ $value }} patients/hour."
+          
+      - alert: ConsentWithdrawalSpike
+        expr: |
+          (
+            rate(econsent_withdrawals_total[1h])
+            /
+            rate(econsent_completions_total[1h])
+          ) > 0.1
+        for: 30m
+        labels:
+          severity: warning
+          category: clinical
+        annotations:
+          summary: "High consent withdrawal rate"
+          description: "Consent withdrawal rate is {{ $value | humanizePercentage }}."
+
+  # Security & Compliance Alerts
+  - name: security-compliance
+    interval: 30s
+    rules:
+      - alert: HighFailedLogins
+        expr: security:failed_login_rate:per_minute > 10
+        for: 2m
+        labels:
+          severity: warning
+          category: security
+        annotations:
+          summary: "High rate of failed login attempts"
+          description: "{{ $value }} failed logins per minute detected."
+          
+      - alert: UnauthorizedPHIAccess
+        expr: |
+          rate(audit_phi_access_total{authorized="false"}[5m]) > 0
+        for: 0s
+        labels:
+          severity: critical
+          category: security
+          hipaa: "true"
+        annotations:
+          summary: "Unauthorized PHI access detected"
+          description: "Unauthorized PHI access attempts detected."
+          
+      - alert: BreakGlassAccessUsed
+        expr: |
+          rate(security_breakglass_events[5m]) > 0
+        for: 0s
+        labels:
+          severity: warning
+          category: security
+        annotations:
+          summary: "Break-glass access initiated"
+          description: "Break-glass emergency access has been used."
+          
+      - alert: TokenValidationFailures
+        expr: |
+          (
+            rate(security_token_validations_total{result="failed"}[5m])
+            /
+            rate(security_token_validations_total[5m])
+          ) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          category: security
+        annotations:
+          summary: "High token validation failure rate"
+          description: "{{ $value | humanizePercentage }} of token validations are failing."
+
+  # AI Factory Alerts
+  - name: ai-factory
+    interval: 30s
+    rules:
+      - alert: ModelInferenceFailures
+        expr: |
+          (
+            rate(aifactory_inference_errors_total[5m])
+            /
+            rate(aifactory_inference_total[5m])
+          ) > 0.05
+        for: 3m
+        labels:
+          severity: warning
+          category: ai
+        annotations:
+          summary: "High model inference failure rate"
+          description: "Inference failure rate is {{ $value | humanizePercentage }}."
+          
+      - alert: ModelQueueBacklog
+        expr: ai:queue_depth:avg > 100
+        for: 5m
+        labels:
+          severity: warning
+          category: ai
+        annotations:
+          summary: "Model inference queue backlog"
+          description: "Queue depth is {{ $value }} requests."
+          
+      - alert: GPUOverheating
+        expr: aifactory_gpu_temperature > 85
+        for: 2m
+        labels:
+          severity: critical
+          category: ai
+        annotations:
+          summary: "GPU overheating detected"
+          description: "GPU temperature is {{ $value }}°C."
+
+  # Stream Bus Alerts
+  - name: stream-bus
+    interval: 30s
+    rules:
+      - alert: ConsumerLagHigh
+        expr: bus:consumer_lag:avg > 10000
+        for: 5m
+        labels:
+          severity: warning
+          category: messaging
+        annotations:
+          summary: "High consumer lag in Stream Bus"
+          description: "Average consumer lag is {{ $value }} messages."
+          
+      - alert: MessageProcessingStalled
+        expr: |
+          rate(stream_bus_messages_total[5m]) == 0
+          and
+          stream_bus_active_topics > 0
+        for: 2m
+        labels:
+          severity: critical
+          category: messaging
+        annotations:
+          summary: "Message processing stalled"
+          description: "No messages being processed despite active topics."

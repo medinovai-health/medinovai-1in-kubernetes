@@ -1,0 +1,76 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: medinovai-security-service-policy
+  namespace: medinovai-services
+spec:
+  podSelector:
+    matchLabels:
+      app: medinovai-security-service
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Allow from medinovai-services namespace (other services)
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: medinovai-services
+      ports:
+        - protocol: TCP
+          port: 8000
+    # Allow from medinovai namespace (registry, etc.)
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: medinovai
+      ports:
+        - protocol: TCP
+          port: 8000
+    # Allow from medinovai-security namespace (Keycloak)
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: medinovai-security
+      ports:
+        - protocol: TCP
+          port: 8000
+  egress:
+    # Allow to Keycloak
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: medinovai-security
+      ports:
+        - protocol: TCP
+          port: 8080
+    # Allow to Registry
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: medinovai
+      ports:
+        - protocol: TCP
+          port: 8000
+    # Allow to Postgres
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: medinovai
+      ports:
+        - protocol: TCP
+          port: 5432
+    # Allow to Redis
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: medinovai
+      ports:
+        - protocol: TCP
+          port: 6379
+    # Allow DNS
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - protocol: UDP
+          port: 53

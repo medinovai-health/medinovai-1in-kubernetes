@@ -1,0 +1,74 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: medinovai-security-service-seed
+  namespace: medinovai-services
+  labels:
+    app: medinovai-security-service
+    task: seed
+spec:
+  template:
+    metadata:
+      labels:
+        app: medinovai-security-service
+        task: seed
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: seed
+          image: medinovai-security-service:latest
+          imagePullPolicy: Never
+          command:
+            - python
+            - -c
+            - |
+              import asyncio
+              import httpx
+              import sys
+              
+              async def seed():
+                  # Wait for security service to be ready
+                  print("Waiting for security service...")
+                  for i in range(30):
+                      try:
+                          async with httpx.AsyncClient(timeout=5) as client:
+                              resp = await client.get("http://medinovai-security-service:8000/health")
+                              if resp.status_code == 200:
+                                  print("Security service is ready")
+                                  break
+                      except:
+                          pass
+                      await asyncio.sleep(2)
+                  
+                  # Call seed endpoint
+                  print("Seeding initial data...")
+                  async with httpx.AsyncClient(timeout=30) as client:
+                      resp = await client.post(
+                          "http://medinovai-security-service:8000/seed/initialize",
+                          json={
+                              "tenant_id": "default",
+                              "admin_email": "admin@medinovai.com",
+                              "admin_username": "superadmin",
+                              "admin_password": "MedinovAI-Dev-2025!"
+                          }
+                      )
+                      if resp.status_code == 200:
+                          result = resp.json()
+                          print(f"✓ Seeding complete: {result}")
+                          return 0
+                      else:
+                          print(f"✗ Seeding failed: {resp.status_code} - {resp.text}")
+                          return 1
+              
+              result = asyncio.run(seed())
+              sys.exit(result)
+          envFrom:
+            - configMapRef:
+                name: medinovai-security-service-config
+          env:
+            - name: KEYCLOAK_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: medinovai-security-service-secrets
+                  key: KEYCLOAK_ADMIN_PASSWORD
+  backoffLimit: 3

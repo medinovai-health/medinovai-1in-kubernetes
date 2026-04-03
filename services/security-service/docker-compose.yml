@@ -1,0 +1,148 @@
+version: "3.8"
+
+services:
+  # PostgreSQL Database for Security Service
+  postgres:
+    image: postgres:15-alpine
+    container_name: medinovai-security-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-security}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres123}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_PORT:-5433}:5432"
+    networks:
+      - medinovai-security
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis for caching and sessions
+  redis:
+    image: redis:7-alpine
+    container_name: medinovai-security-redis
+    command: redis-server --requirepass ${REDIS_PASSWORD:-redis123}
+    ports:
+      - "${REDIS_PORT:-6380}:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - medinovai-security
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Keycloak (simplified - no custom theme for local dev)
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0
+    container_name: medinovai-security-keycloak
+    command: start-dev
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-security}
+      KC_DB_USERNAME: ${POSTGRES_USER:-postgres}
+      KC_DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres123}
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin123}
+      KC_HOSTNAME_STRICT: "false"
+      KC_HOSTNAME_STRICT_HTTPS: "false"
+      KC_HTTP_ENABLED: "true"
+      KC_HEALTH_ENABLED: "true"
+    ports:
+      - "${KEYCLOAK_HTTP_PORT:-8081}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - medinovai-security
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/8080 && echo -e 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\n\\r\\n' >&3 && cat <&3 | grep -q '200 OK' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+
+  # MedinovAI Security Service
+  security-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: medinovai-security-service
+    environment:
+      # Database
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres123}@postgres:5432/${POSTGRES_DB:-security}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-redis123}@redis:6379/0
+
+      # Keycloak - use local docker-compose keycloak
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: ${KEYCLOAK_REALM:-medinovai}
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin123}
+
+      # Ollama - Tailscale network only (no external AI APIs)
+      AIFACTORY_URL: ${AIFACTORY_URL:-http://100.106.54.9:8082/v1}
+      USE_LOCAL_OLLAMA_ONLY: "true"
+
+      # Service config
+      SERVICE_NAME: medinovai-security-service
+      PORT: "8000"
+      DEBUG: "false"
+    ports:
+      - "${SECURITY_SERVICE_PORT:-8300}:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+    networks:
+      - medinovai-security
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  # Infrastructure Portal (medinovaios) - optional for full stack testing
+  medinovaios:
+    build:
+      context: ../deploy/services/medinovaios
+      dockerfile: Dockerfile
+    container_name: medinovai-infrastructure-portal
+    environment:
+      # Connect to security service for SSO
+      SECURITY_SERVICE_URL: http://security-service:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: ${KEYCLOAK_REALM:-medinovai}
+      KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID:-medinovai-infrastructure}
+      KEYCLOAK_REDIRECT_URI: http://localhost:3000/api/sso/callback
+
+      # Infrastructure services for health checks
+      REGISTRY_INTERNAL_URL: http://host.docker.internal:4200
+      GRAFANA_INTERNAL_URL: http://host.docker.internal:4250
+      KIBANA_INTERNAL_URL: http://host.docker.internal:4251
+      PROMETHEUS_INTERNAL_URL: http://host.docker.internal:4252
+    ports:
+      - "3000:3000"
+    depends_on:
+      - security-service
+    networks:
+      - medinovai-security
+    profiles:
+      - fullstack
+
+networks:
+  medinovai-security:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:

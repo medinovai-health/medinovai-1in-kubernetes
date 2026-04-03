@@ -22,25 +22,47 @@ interface ServiceEndpoint {
 // Overridable per service via env vars: HEALTH_<SERVICE_ID_UPPER>=http://host/path
 function buildEndpoints(): ServiceEndpoint[] {
   const defaults: ServiceEndpoint[] = [
-    { id: 'postgres',      internalUrl: 'http://medinovai-postgres:5432',             healthPath: '/' },
-    { id: 'redis',         internalUrl: 'http://medinovai-redis:6379',                healthPath: '/' },
-    { id: 'prometheus',    internalUrl: 'http://medinovai-prometheus:9090',           healthPath: '/-/healthy' },
-    { id: 'grafana',       internalUrl: 'http://medinovai-grafana:3000',              healthPath: '/api/health' },
-    { id: 'mailhog',       internalUrl: 'http://medinovai-mailhog:8025',              healthPath: '/' },
-    { id: 'localstack',    internalUrl: 'http://medinovai-localstack:4566',           healthPath: '/_localstack/health' },
-    { id: 'ollama',        internalUrl: 'http://medinovai-ollama:11434',              healthPath: '/api/tags' },
-    { id: 'openwebui',     internalUrl: 'http://medinovai-open-webui:8080',           healthPath: '/health' },
-    { id: 'lis',           internalUrl: process.env.LIS_INTERNAL_URL      ?? 'http://medinovai-lis:3000',         healthPath: '/health' },
-    { id: 'cortex',        internalUrl: process.env.CORTEX_INTERNAL_URL   ?? 'http://medinovai-cortex:3100',      healthPath: '/health' },
-    { id: 'etmf',          internalUrl: process.env.ETMF_INTERNAL_URL     ?? 'http://medinovai-etmf:3000',        healthPath: '/health' },
-    { id: 'sales',         internalUrl: process.env.SALES_INTERNAL_URL    ?? 'http://medinovai-sales:3000',       healthPath: '/health' },
-    { id: 'atlas',         internalUrl: process.env.ATLAS_INTERNAL_URL    ?? 'http://atlas-agent:18789',          healthPath: '/health' },
-    { id: 'healthllm',     internalUrl: process.env.HEALTHLLM_INTERNAL_URL ?? 'http://medinovai-healthllm:8000', healthPath: '/health' },
-    { id: 'aifactory',     internalUrl: process.env.AIFACTORY_INTERNAL_URL ?? 'http://medinovai-aifactory:8080', healthPath: '/health' },
-    { id: 'api-gateway',   internalUrl: process.env.API_GW_INTERNAL_URL   ?? 'http://api-gateway.medinovai-services:3000', healthPath: '/ready' },
-    { id: 'auth-service',  internalUrl: process.env.AUTH_INTERNAL_URL     ?? 'http://auth-service.medinovai-services:3000', healthPath: '/ready' },
-    { id: 'consent',       internalUrl: process.env.CONSENT_INTERNAL_URL  ?? 'http://medinovai-consent-preference:3000',   healthPath: '/health' },
-    { id: 'audit-trail',   internalUrl: process.env.AUDIT_INTERNAL_URL    ?? 'http://medinovai-audit-trail-explorer:3000', healthPath: '/health' },
+    // Infrastructure Services
+    { id: 'security-service', internalUrl: 'http://medinovai-security-service.medinovai-services:8000', healthPath: '/health' },
+    { id: 'registry',         internalUrl: 'http://medinovai-registry.medinovai:8000',                  healthPath: '/health' },
+    { id: 'stream-bus',       internalUrl: 'http://medinovai-real-time-stream-bus.medinovai:8000',      healthPath: '/health' },
+    { id: 'ctms',             internalUrl: 'http://medinovai-ctms.medinovai-services:8000',             healthPath: '/health' },
+    { id: 'lis',              internalUrl: 'http://medinovai-lis.medinovai-services:8000',              healthPath: '/health' },
+    { id: 'econsent',         internalUrl: 'http://medinovai-econsent.medinovai-services:3000',         healthPath: '/health' },
+    { id: 'epro',             internalUrl: 'http://medinovai-epro.medinovai-services:8000',            healthPath: '/health' },
+    { id: 'hipaa-guard',      internalUrl: 'http://medinovai-hipaa-gdpr-guard.medinovai-services:8000', healthPath: '/health' },
+    { id: 'saes',             internalUrl: 'http://medinovai-saes.medinovai-services:8000',             healthPath: '/' },
+    { id: 'data-services',    internalUrl: 'http://medinovai-data-services.medinovai-data:8000',       healthPath: '/health' },
+
+    // Monitoring Services
+    { id: 'prometheus',       internalUrl: 'http://prometheus.medinovai-monitoring:9090',                healthPath: '/-/healthy' },
+    { id: 'grafana',          internalUrl: 'http://grafana.medinovai-monitoring:3000',                   healthPath: '/api/health' },
+    { id: 'kibana',           internalUrl: 'http://kibana.medinovai-monitoring:5601',                    healthPath: '/api/status' },
+    { id: 'elasticsearch',    internalUrl: 'http://elasticsearch.medinovai-monitoring:9200',             healthPath: '/_cluster/health' },
+
+    // Data Stores
+    { id: 'postgres',         internalUrl: 'http://registry-postgres.medinovai:5432',                    healthPath: '/' },
+    { id: 'redis',            internalUrl: 'http://registry-redis.medinovai:6379',                        healthPath: '/' },
+
+    // Dev Tools & Other
+    { id: 'mailhog',          internalUrl: 'http://medinovai-mailhog:8025',                               healthPath: '/' },
+    { id: 'localstack',       internalUrl: 'http://medinovai-localstack:4566',                           healthPath: '/_localstack/health' },
+    { id: 'ollama',           internalUrl: 'http://medinovai-ollama:11434',                                healthPath: '/api/tags' },
+    { id: 'openwebui',        internalUrl: 'http://medinovai-open-webui:8080',                           healthPath: '/health' },
+
+    // Products (via env overrides)
+    { id: 'cortex',           internalUrl: process.env.CORTEX_INTERNAL_URL   ?? 'http://medinovai-cortex:3100',      healthPath: '/health' },
+    { id: 'etmf',             internalUrl: process.env.ETMF_INTERNAL_URL     ?? 'http://medinovai-etmf:3000',        healthPath: '/health' },
+    { id: 'sales',            internalUrl: process.env.SALES_INTERNAL_URL    ?? 'http://medinovai-sales:3000',       healthPath: '/health' },
+    { id: 'atlas',            internalUrl: process.env.ATLAS_INTERNAL_URL    ?? 'http://atlas-agent:18789',          healthPath: '/health' },
+    { id: 'healthllm',        internalUrl: process.env.HEALTHLLM_INTERNAL_URL ?? 'http://medinovai-healthllm:8000', healthPath: '/health' },
+    { id: 'aifactory',        internalUrl: process.env.AIFACTORY_INTERNAL_URL ?? 'http://medinovai-aifactory:8080', healthPath: '/health' },
+
+    // Platform Services (via env overrides)
+    { id: 'api-gateway',      internalUrl: process.env.API_GW_INTERNAL_URL   ?? 'http://api-gateway.medinovai-services:3000', healthPath: '/ready' },
+    { id: 'auth-service',     internalUrl: process.env.AUTH_INTERNAL_URL     ?? 'http://auth-service.medinovai-services:3000', healthPath: '/ready' },
+    { id: 'consent',          internalUrl: process.env.CONSENT_INTERNAL_URL  ?? 'http://medinovai-consent-preference:3000',   healthPath: '/health' },
+    { id: 'audit-trail',      internalUrl: process.env.AUDIT_INTERNAL_URL    ?? 'http://medinovai-audit-trail-explorer:3000', healthPath: '/health' },
   ];
   return defaults;
 }

@@ -1,0 +1,51 @@
+{
+  "views": {
+    "service_grid": {
+      "title": "Service Grid View",
+      "description": "Visual grid of all registered services with health status",
+      "columns": ["name", "namespace", "health", "version", "tier", "uptime"],
+      "filters": ["namespace", "tier", "health_status"],
+      "sortable": true
+    },
+    "topology_map": {
+      "title": "Service Topology Map",
+      "description": "Graph visualization of service dependencies and connections",
+      "layout": "force_directed",
+      "node_types": ["service", "database", "cache", "external"],
+      "edge_types": ["http", "grpc", "database", "cache"]
+    },
+    "health_timeline": {
+      "title": "Service Health Timeline",
+      "description": "Historical health status of all services",
+      "time_ranges": ["1h", "6h", "24h", "7d", "30d"],
+      "metrics": ["availability", "latency", "error_rate"]
+    },
+    "dependency_tree": {
+      "title": "Service Dependency Tree",
+      "description": "Hierarchical view of service dependencies",
+      "expandable": true,
+      "show_versions": true,
+      "impact_analysis": true
+    },
+    "capacity_planning": {
+      "title": "Capacity Planning Dashboard",
+      "description": "Resource utilization and scaling recommendations",
+      "metrics": ["cpu", "memory", "disk", "network"],
+      "projections": ["7d", "30d", "90d"]
+    }
+  },
+  "analytics": {
+    "service_usage": {
+      "query": "SELECT service_id, COUNT(*) as calls, AVG(duration) as avg_latency FROM registry_logs WHERE timestamp > NOW() - INTERVAL 24 HOUR GROUP BY service_id",
+      "refresh_interval": "5m"
+    },
+    "health_trends": {
+      "query": "SELECT service_id, health_status, COUNT(*) as changes FROM health_checks WHERE timestamp > NOW() - INTERVAL 7 DAY GROUP BY service_id, health_status",
+      "refresh_interval": "15m"
+    },
+    "dependency_impact": {
+      "query": "SELECT source_service, target_service, failure_impact_score FROM dependency_graph WHERE status = 'active'",
+      "refresh_interval": "1h"
+    }
+  }
+}

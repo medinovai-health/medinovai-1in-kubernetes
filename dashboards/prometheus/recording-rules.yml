@@ -1,0 +1,140 @@
+groups:
+  # Infrastructure Health Recording Rules
+  - name: infrastructure-health
+    interval: 30s
+    rules:
+      - record: infra:service_availability:ratio
+        expr: avg_over_time(up[5m])
+        
+      - record: infra:request_rate:per_service
+        expr: sum by (service) (rate(http_requests_total[5m]))
+        
+      - record: infra:error_rate:ratio
+        expr: |
+          sum by (service) (rate(http_requests_total{status=~"5.."}[5m]))
+          /
+          sum by (service) (rate(http_requests_total[5m]))
+          
+      - record: infra:latency:p95
+        expr: |
+          histogram_quantile(0.95, 
+            sum by (le, service) (rate(http_request_duration_seconds_bucket[5m]))
+          )
+          
+      - record: infra:latency:p99
+        expr: |
+          histogram_quantile(0.99, 
+            sum by (le, service) (rate(http_request_duration_seconds_bucket[5m]))
+          )
+          
+      - record: infra:cpu_utilization:percent
+        expr: |
+          100 * rate(container_cpu_usage_seconds_total[5m])
+          
+      - record: infra:memory_utilization:percent
+        expr: |
+          100 * container_memory_usage_bytes
+          /
+          container_spec_memory_limit_bytes
+          
+      - record: infra:disk_utilization:percent
+        expr: |
+          100 * container_fs_usage_bytes
+          /
+          container_fs_limit_bytes
+
+  # Healthcare Clinical Metrics
+  - name: healthcare-clinical
+    interval: 1m
+    rules:
+      - record: healthcare:enrollment_rate:per_hour
+        expr: |
+          rate(ctms_enrolled_patients_total[1h])
+          
+      - record: healthcare:lab_turnaround:avg_hours
+        expr: |
+          avg(lis_avg_turnaround_hours)
+          
+      - record: healthcare:samples_processed:per_hour
+        expr: |
+          rate(lis_samples_processed_total[1h])
+          
+      - record: healthcare:sae_reporting_rate
+        expr: |
+          rate(saes_reports_total[1h])
+          
+      - record: healthcare:consent_completion:ratio
+        expr: |
+          econsent_completed / econsent_total
+          
+      - record: healthcare:epro_completion:ratio
+        expr: |
+          epro_completed / epro_total
+
+  # Security & Audit Metrics
+  - name: security-audit
+    interval: 30s
+    rules:
+      - record: security:auth_success_rate
+        expr: |
+          rate(security_auth_events_total{result="success"}[5m])
+          /
+          rate(security_auth_events_total[5m])
+          
+      - record: security:failed_login_rate:per_minute
+        expr: |
+          rate(security_failed_logins_total[1m])
+          
+      - record: security:phi_access_rate:per_minute
+        expr: |
+          rate(audit_phi_access_total[1m])
+          
+      - record: security:token_validation_latency:p95
+        expr: |
+          histogram_quantile(0.95,
+            sum by (le) (rate(security_token_validation_duration_seconds_bucket[5m]))
+          )
+          
+      - record: security:session_duration:avg
+        expr: |
+          avg(security_session_duration_seconds)
+
+  # AI Factory Metrics
+  - name: ai-factory
+    interval: 30s
+    rules:
+      - record: ai:inference_rate:per_second
+        expr: |
+          rate(aifactory_inference_total[1m])
+          
+      - record: ai:token_generation_rate:per_second
+        expr: |
+          rate(aifactory_tokens_generated_total[1m])
+          
+      - record: ai:queue_depth:avg
+        expr: |
+          avg(aifactory_queue_depth)
+          
+      - record: ai:gpu_utilization:percent
+        expr: |
+          avg(aifactory_gpu_utilization)
+          
+      - record: ai:model_load_latency:seconds
+        expr: |
+          avg(aifactory_model_load_seconds)
+
+  # Stream Bus Metrics
+  - name: stream-bus
+    interval: 30s
+    rules:
+      - record: bus:message_rate:per_second
+        expr: |
+          rate(stream_bus_messages_total[1m])
+          
+      - record: bus:consumer_lag:avg
+        expr: |
+          avg(stream_bus_consumer_lag)
+          
+      - record: bus:throughput:bytes_per_second
+        expr: |
+          rate(stream_bus_network_sent_bytes[1m])

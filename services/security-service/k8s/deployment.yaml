@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: medinovai-security-service
+  namespace: medinovai-services
+  labels:
+    app: medinovai-security-service
+    tier: platform
+    managed-by: medinovai-smart-deploy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: medinovai-security-service
+  template:
+    metadata:
+      labels:
+        app: medinovai-security-service
+        tier: platform
+    spec:
+      containers:
+        - name: medinovai-security-service
+          image: medinovai-security-service:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8000
+              name: http
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: medinovai-security-service-config
+          env:
+            - name: KEYCLOAK_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: medinovai-security-service-secrets
+                  key: KEYCLOAK_ADMIN_PASSWORD
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: medinovai-security-service-secrets
+                  key: POSTGRES_PASSWORD
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: medinovai-security-service-secrets
+                  key: REDIS_PASSWORD
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 45
+            periodSeconds: 15
+            failureThreshold: 3
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            failureThreshold: 2
+            timeoutSeconds: 3
+          startupProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            failureThreshold: 30
+            timeoutSeconds: 3

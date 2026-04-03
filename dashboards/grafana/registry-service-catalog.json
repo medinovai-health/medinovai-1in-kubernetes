@@ -1,0 +1,80 @@
+{
+  "dashboard": {
+    "title": "Service Registry Catalog",
+    "tags": ["registry", "services", "catalog", "microservices"],
+    "timezone": "browser",
+    "schemaVersion": 36,
+    "refresh": "30s",
+    "time": { "from": "now-1h", "to": "now" },
+    "panels": [
+      {
+        "id": 1,
+        "title": "Total Registered Services",
+        "type": "stat",
+        "targets": [{ "expr": "registry_services_total", "refId": "A" }],
+        "fieldConfig": { "defaults": { "color": { "mode": "fixed", "fixedColor": "blue" } } },
+        "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 }
+      },
+      {
+        "id": 2,
+        "title": "Healthy Services",
+        "type": "stat",
+        "targets": [{ "expr": "registry_healthy_services", "refId": "A" }],
+        "fieldConfig": { "defaults": { "color": { "mode": "fixed", "fixedColor": "green" } } },
+        "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 }
+      },
+      {
+        "id": 3,
+        "title": "Degraded Services",
+        "type": "stat",
+        "targets": [{ "expr": "registry_degraded_services", "refId": "A" }],
+        "fieldConfig": { "defaults": { "color": { "mode": "fixed", "fixedColor": "yellow" } } },
+        "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 }
+      },
+      {
+        "id": 4,
+        "title": "Offline Services",
+        "type": "stat",
+        "targets": [{ "expr": "registry_offline_services", "refId": "A" }],
+        "fieldConfig": { "defaults": { "color": { "mode": "fixed", "fixedColor": "red" } } },
+        "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 }
+      },
+      {
+        "id": 5,
+        "title": "Services by Namespace",
+        "type": "piechart",
+        "targets": [{ "expr": "count(registry_service_info) by (namespace)", "legendFormat": "{{namespace}}", "refId": "A" }],
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 }
+      },
+      {
+        "id": 6,
+        "title": "Services by Tier",
+        "type": "piechart",
+        "targets": [{ "expr": "count(registry_service_info) by (tier)", "legendFormat": "{{tier}}", "refId": "A" }],
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 }
+      },
+      {
+        "id": 7,
+        "title": "Service Registration Rate",
+        "type": "timeseries",
+        "targets": [{ "expr": "rate(registry_registration_events_total[5m])", "legendFormat": "{{event_type}}", "refId": "A" }],
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 }
+      },
+      {
+        "id": 8,
+        "title": "Health Check Latency",
+        "type": "timeseries",
+        "targets": [{ "expr": "registry_health_check_duration_seconds", "legendFormat": "{{service}}", "refId": "A" }],
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 }
+      },
+      {
+        "id": 9,
+        "title": "Service Dependencies Graph",
+        "type": "nodeGraph",
+        "targets": [{ "expr": "registry_service_dependencies", "format": "table", "refId": "A" }],
+        "gridPos": { "h": 12, "w": 24, "x": 0, "y": 20 }
+      }
+    ]
+  },
+  "overwrite": true
+}

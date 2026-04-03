@@ -77,8 +77,8 @@ export function Dashboard({ onLogout }: Props) {
               </div>
               <div style={{ textAlign: 'right', flexShrink: 0 }}>
                 <div style={{ fontSize: 11, color: '#334155', marginBottom: 4 }}>Quick links</div>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  {['lis', 'atlas', 'grafana'].map((id) => {
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  {['security-service', 'registry', 'grafana', 'kibana', 'prometheus'].map((id) => {
                     const s = getServiceById(id);
                     if (!s) return null;
                     return (

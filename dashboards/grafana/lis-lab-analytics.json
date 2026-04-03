@@ -1,0 +1,62 @@
+{
+  "dashboard": {
+    "title": "LIS - Laboratory Analytics",
+    "tags": ["lis", "lab", "samples", "analytics"],
+    "timezone": "browser",
+    "schemaVersion": 36,
+    "refresh": "1m",
+    "time": { "from": "now-24h", "to": "now" },
+    "panels": [
+      {
+        "id": 1, "title": "Samples Today", "type": "stat",
+        "targets": [{ "expr": "lis_samples_today_total", "refId": "A" }],
+        "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 }
+      },
+      {
+        "id": 2, "title": "Pending Results", "type": "stat",
+        "targets": [{ "expr": "lis_pending_results", "refId": "A" }],
+        "fieldConfig": { "defaults": { "color": { "fixedColor": "yellow" } } },
+        "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 }
+      },
+      {
+        "id": 3, "title": "Critical Alerts", "type": "stat",
+        "targets": [{ "expr": "lis_critical_alerts", "refId": "A" }],
+        "fieldConfig": { "defaults": { "color": { "fixedColor": "red" } } },
+        "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 }
+      },
+      {
+        "id": 4, "title": "Instruments Online", "type": "stat",
+        "targets": [{ "expr": "lis_instruments_online", "refId": "A" }],
+        "fieldConfig": { "defaults": { "color": { "fixedColor": "green" } } },
+        "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 }
+      },
+      {
+        "id": 5, "title": "Sample Volume by Type", "type": "piechart",
+        "targets": [{ "expr": "lis_samples_by_type", "legendFormat": "{{type}}", "refId": "A" }],
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 }
+      },
+      {
+        "id": 6, "title": "Test Orders by Priority", "type": "piechart",
+        "targets": [{ "expr": "lis_orders_by_priority", "legendFormat": "{{priority}}", "refId": "A" }],
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 }
+      },
+      {
+        "id": 7, "title": "Turnaround Time Trend", "type": "timeseries",
+        "targets": [{ "expr": "lis_turnaround_time_minutes", "legendFormat": "{{test_type}}", "refId": "A" }],
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 }
+      },
+      {
+        "id": 8, "title": "QC Metrics", "type": "timeseries",
+        "targets": [{ "expr": "lis_qc_failures_total", "legendFormat": "{{qc_type}}", "refId": "A" }],
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 }
+      },
+      {
+        "id": 9, "title": "Instrument Utilization", "type": "gauge",
+        "targets": [{ "expr": "lis_instrument_utilization", "legendFormat": "{{instrument}}", "refId": "A" }],
+        "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100 } },
+        "gridPos": { "h": 8, "w": 24, "x": 0, "y": 20 }
+      }
+    ]
+  },
+  "overwrite": true
+}

@@ -1,0 +1,62 @@
+{
+  "dashboard": {
+    "title": "Stream Bus - Event Analytics",
+    "tags": ["stream-bus", "kafka", "events", "messaging"],
+    "timezone": "browser",
+    "schemaVersion": 36,
+    "refresh": "30s",
+    "time": { "from": "now-1h", "to": "now" },
+    "panels": [
+      {
+        "id": 1, "title": "Messages/sec", "type": "stat",
+        "targets": [{ "expr": "rate(stream_bus_messages_total[1m])", "refId": "A" }],
+        "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 }
+      },
+      {
+        "id": 2, "title": "Consumer Lag", "type": "stat",
+        "targets": [{ "expr": "stream_bus_consumer_lag", "refId": "A" }],
+        "fieldConfig": { "defaults": { "color": { "fixedColor": "yellow" } } },
+        "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 }
+      },
+      {
+        "id": 3, "title": "Active Topics", "type": "stat",
+        "targets": [{ "expr": "stream_bus_active_topics", "refId": "A" }],
+        "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 }
+      },
+      {
+        "id": 4, "title": "Consumer Groups", "type": "stat",
+        "targets": [{ "expr": "stream_bus_consumer_groups", "refId": "A" }],
+        "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 }
+      },
+      {
+        "id": 5, "title": "Messages by Topic", "type": "timeseries",
+        "targets": [{ "expr": "rate(stream_bus_topic_messages[5m])", "legendFormat": "{{topic}}", "refId": "A" }],
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 }
+      },
+      {
+        "id": 6, "title": "Broker Network I/O", "type": "timeseries",
+        "targets": [
+          { "expr": "rate(stream_bus_network_received_bytes[5m])", "legendFormat": "RX", "refId": "A" },
+          { "expr": "rate(stream_bus_network_sent_bytes[5m])", "legendFormat": "TX", "refId": "B" }
+        ],
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 }
+      },
+      {
+        "id": 7, "title": "Partition Distribution", "type": "piechart",
+        "targets": [{ "expr": "stream_bus_partition_count", "legendFormat": "{{topic}}", "refId": "A" }],
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 }
+      },
+      {
+        "id": 8, "title": "Replication Lag", "type": "timeseries",
+        "targets": [{ "expr": "stream_bus_replication_lag", "legendFormat": "{{partition}}", "refId": "A" }],
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 }
+      },
+      {
+        "id": 9, "title": "Event Type Distribution", "type": "table",
+        "targets": [{ "expr": "count(stream_bus_events) by (event_type)", "format": "table", "refId": "A" }],
+        "gridPos": { "h": 8, "w": 24, "x": 0, "y": 20 }
+      }
+    ]
+  },
+  "overwrite": true
+}

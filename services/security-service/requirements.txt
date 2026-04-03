@@ -1,0 +1,33 @@
+# MedinovAI Security Service - Python Dependencies
+# Install with: pip install -r requirements.txt
+
+# Core FastAPI dependencies
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+httpx>=0.26.0
+pydantic-settings>=2.1.0
+
+# HTTP requests for API testing
+requests>=2.31.0
+
+# For JWT token parsing in test scripts
+python-jose[cryptography]>=3.3.0
+
+# For color output in scripts (cross-platform)
+colorama>=0.4.6
+
+# For better CLI output
+rich>=13.7.0
+
+# Optional: For advanced testing
+pytest>=7.4.3
+pytest-asyncio>=0.21.1
+
+# Optional: For Keycloak admin operations
+python-keycloak>=3.7.0
+
+# Optional: For async operations
+aiohttp>=3.9.1
+
+# Optional: For data validation
+pydantic>=2.5.0

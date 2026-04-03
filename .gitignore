@@ -20,3 +20,16 @@ node_modules/
 .DS_Store
 .idea/
 .vscode/
+
+# Vault and sensitive data
+.vault-init.json
+.credentials.env
+*.pem
+*.key
+*.crt
+vault-token
+root-token
+
+# Kubernetes secrets (actual values)
+*secret-values.yaml
+*secrets-decoded.yaml

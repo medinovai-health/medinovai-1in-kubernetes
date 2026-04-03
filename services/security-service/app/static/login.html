@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MedinovAI Infrastructure Login</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .login-container {
+            background: #1e293b;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            width: 100%;
+            max-width: 400px;
+            border: 1px solid #334155;
+        }
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .logo h1 {
+            color: #38bdf8;
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+        .logo p {
+            color: #94a3b8;
+            font-size: 14px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #e2e8f0;
+            font-weight: 500;
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #334155;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+            background: #0f172a;
+            color: #e2e8f0;
+        }
+        input:focus {
+            outline: none;
+            border-color: #38bdf8;
+        }
+        button {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(56, 189, 248, 0.3);
+        }
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .error {
+            color: #f87171;
+            background: rgba(248, 113, 113, 0.1);
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+            border: 1px solid rgba(248, 113, 113, 0.3);
+        }
+        .success {
+            color: #4ade80;
+            background: rgba(74, 222, 128, 0.1);
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+            border: 1px solid rgba(74, 222, 128, 0.3);
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            color: #94a3b8;
+        }
+        .spinner {
+            border: 3px solid #334155;
+            border-top: 3px solid #38bdf8;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .infra-badge {
+            display: inline-block;
+            background: rgba(56, 189, 248, 0.2);
+            color: #38bdf8;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            margin-top: 10px;
+            border: 1px solid rgba(56, 189, 248, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="logo">
+            <h1>MedinovAI</h1>
+            <p>Infrastructure Portal</p>
+            <span class="infra-badge">SSO Enabled</span>
+        </div>
+        <div id="error" class="error"></div>
+        <div id="success" class="success"></div>
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" required placeholder="Enter your username">
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required placeholder="Enter your password">
+            </div>
+            <button type="submit" id="submitBtn">
+                Sign In
+            </button>
+            <div id="loading" class="loading">
+                <span class="spinner"></span>
+                Authenticating...
+            </div>
+        </form>
+    </div>
+
+    <script>
+        const form = document.getElementById('loginForm');
+        const errorDiv = document.getElementById('error');
+        const successDiv = document.getElementById('success');
+        const loadingDiv = document.getElementById('loading');
+        const submitBtn = document.getElementById('submitBtn');
+
+        // Get redirect URL from query params
+        const urlParams = new URLSearchParams(window.location.search);
+        const redirectUrl = urlParams.get('redirect') || '/';
+        const service = urlParams.get('service') || 'medinovai-infrastructure';
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            // Hide previous messages
+            errorDiv.style.display = 'none';
+            successDiv.style.display = 'none';
+            
+            // Show loading
+            loadingDiv.style.display = 'block';
+            submitBtn.disabled = true;
+
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                const response = await fetch('/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        username: username,
+                        password: password,
+                        client_id: service
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Store tokens
+                    localStorage.setItem('access_token', data.access_token);
+                    localStorage.setItem('refresh_token', data.refresh_token);
+                    
+                    successDiv.textContent = 'Login successful! Redirecting...';
+                    successDiv.style.display = 'block';
+                    
+                    // Redirect after short delay
+                    setTimeout(() => {
+                        window.location.href = redirectUrl;
+                    }, 1000);
+                } else {
+                    throw new Error(data.detail || 'Authentication failed');
+                }
+            } catch (err) {
+                errorDiv.textContent = err.message || 'Login failed. Please try again.';
+                errorDiv.style.display = 'block';
+                loadingDiv.style.display = 'none';
+                submitBtn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,80 @@
+{
+  "health_reports": {
+    "infrastructure_health": {
+      "title": "Infrastructure Health Scorecard",
+      "description": "Overall infrastructure health across all services",
+      "frequency": "5m",
+      "components": {
+        "core_platform": {
+          "weight": 30,
+          "services": ["registry", "stream-bus", "security-service"],
+          "thresholds": { "healthy": 99, "degraded": 95, "critical": 90 }
+        },
+        "infrastructure_services": {
+          "weight": 40,
+          "services": ["ctms", "lis", "econsent", "epro", "hipaa-guard", "saes", "data-services"],
+          "thresholds": { "healthy": 98, "degraded": 93, "critical": 85 }
+        },
+        "monitoring_stack": {
+          "weight": 15,
+          "services": ["grafana", "kibana", "prometheus", "elasticsearch"],
+          "thresholds": { "healthy": 99, "degraded": 95, "critical": 90 }
+        },
+        "ai_platform": {
+          "weight": 15,
+          "services": ["ollama", "openwebui", "aifactory"],
+          "thresholds": { "healthy": 97, "degraded": 92, "critical": 85 }
+        }
+      },
+      "scoring_algorithm": "weighted_average"
+    },
+    "sla_compliance": {
+      "title": "SLA Compliance Report",
+      "description": "Service level agreement compliance tracking",
+      "slas": {
+        "availability": { "target": 99.9, "measurement": "uptime_percentage" },
+        "latency": { "target": 200, "unit": "ms", "percentile": 95 },
+        "error_rate": { "target": 0.1, "unit": "percent" },
+        "recovery_time": { "target": 15, "unit": "minutes" }
+      }
+    },
+    "cost_analysis": {
+      "title": "Infrastructure Cost Analysis",
+      "description": "Resource usage and cost breakdown by service",
+      "metrics": [
+        "compute_cost",
+        "storage_cost",
+        "network_cost",
+        "license_cost"
+      ],
+      "group_by": ["namespace", "service", "tier"]
+    },
+    "capacity_forecast": {
+      "title": "Capacity Planning Forecast",
+      "description": "Predictive capacity planning based on usage trends",
+      "forecast_horizon": "90d",
+      "models": ["linear_regression", "seasonal_arima"],
+      "alerts": {
+        "cpu_threshold": 80,
+        "memory_threshold": 85,
+        "disk_threshold": 75
+      }
+    }
+  },
+  "diagnostic_tools": {
+    "connectivity_matrix": {
+      "description": "Service-to-service connectivity health matrix",
+      "test_types": ["ping", "http_health", "tcp_connect"],
+      "interval": "1m"
+    },
+    "performance_profiler": {
+      "description": "End-to-end request profiling",
+      "traces": ["http", "grpc", "database"],
+      "sampling_rate": 0.1
+    },
+    "chaos_dashboard": {
+      "description": "Chaos engineering experiment results",
+      "experiments": ["pod_failure", "network_partition", "latency_injection"]
+    }
+  }
+}

@@ -1,0 +1,126 @@
+# Kustomization for MedinovAI Infrastructure Deployment
+# Deploys entire infrastructure stack with Vault, SSO, and seeding
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: medinovai-services
+
+namePrefix: medinovai-
+
+# Namespace creation first
+resources:
+  # 1. Vault infrastructure (secrets management)
+  - vault/vault-secrets.yaml
+  - vault/vault-injector.yaml
+  
+  # 2. SSO Gateway (all access goes through medinovaiOS)
+  - sso/sso-gateway.yaml
+  
+  # 3. Seeding job (runs after services are ready)
+  - seeding/k8s-seed-job.yaml
+
+# ConfigMap generator for dashboard data
+configMapGenerator:
+  - name: grafana-dashboards
+    namespace: medinovai-monitoring
+    files:
+      - dashboards/grafana/infrastructure-overview.json
+      - dashboards/grafana/healthcare-clinical-metrics.json
+      - dashboards/grafana/security-audit-dashboard.json
+      - dashboards/grafana/ai-factory-metrics.json
+      - dashboards/grafana/kubernetes-cluster-health.json
+      - dashboards/grafana/registry-service-catalog.json
+      - dashboards/grafana/lis-lab-analytics.json
+      - dashboards/grafana/ctms-trial-operations.json
+      - dashboards/grafana/stream-bus-analytics.json
+    options:
+      disableNameSuffixHash: true
+  
+  - name: kibana-dashboards
+    namespace: medinovai-monitoring
+    files:
+      - dashboards/kibana/security-audit-dashboard.ndjson
+      - dashboards/kibana/infrastructure-logs-dashboard.ndjson
+      - dashboards/kibana/clinical-data-analytics.ndjson
+      - dashboards/kibana/ai-factory-logs.ndjson
+      - dashboards/kibana/stream-bus-events.ndjson
+      - dashboards/kibana/error-analytics.ndjson
+      - dashboards/kibana/registry-service-analytics.ndjson
+      - dashboards/kibana/lis-lab-operations.ndjson
+    options:
+      disableNameSuffixHash: true
+
+# Secret generator for sensitive data (references Vault)
+secretGenerator:
+  - name: vault-root-token
+    namespace: medinovai-vault
+    literals:
+      - token=VAULT_ROOT_TOKEN_PLACEHOLDER
+    options:
+      disableNameSuffixHash: true
+
+# Common labels for all resources
+commonLabels:
+  app.kubernetes.io/part-of: medinovai-infrastructure
+  app.kubernetes.io/managed-by: kustomize
+  medinovai.io/tier: "infrastructure"
+  medinovai.io/sso-required: "true"
+
+# Annotations
+commonAnnotations:
+  medinovai.io/vault-integrated: "true"
+  medinovai.io/seeding-enabled: "true"
+  medinovai.io/sso-gateway: "enabled"
+
+# Images configuration
+images:
+  - name: medinovai-security-service
+    newName: medinovai-security-service
+    newTag: latest
+
+# Patches for specific configurations
+patches:
+  # Ensure seeding job runs after Vault is ready
+  - target:
+      kind: Job
+      name: deployment-seeder
+    patch: |
+      - op: add
+        path: /spec/template/spec/initContainers
+        value:
+          - name: wait-for-vault
+            image: busybox:latest
+            command:
+              - sh
+              - -c
+              - |
+                until nc -z vault.medinovai-vault 8200; do
+                  echo "Waiting for Vault..."
+                  sleep 2
+                done
+                echo "Vault is ready"
+
+  # Add Vault annotations to all deployments
+  - target:
+      kind: Deployment
+    patch: |
+      - op: add
+        path: /spec/template/metadata/annotations/vault.hashicorp.com~1agent-inject
+        value: "true"
+      - op: add
+        path: /spec/template/metadata/annotations/vault.hashicorp.com~1role
+        value: "medinovai-infrastructure"
+
+# Replacements for dynamic values
+replacements:
+  - source:
+      kind: ConfigMap
+      name: grafana-dashboards
+      fieldPath: metadata.namespace
+    targets:
+      - select:
+          kind: Job
+          name: deployment-seeder
+        fieldPaths:
+          - spec.template.spec.volumes.[name=seed-data].configMap.name

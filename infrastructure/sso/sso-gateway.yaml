@@ -1,0 +1,152 @@
+# SSO Gateway Configuration
+# All access to infrastructure services must go through medinovaiOS
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: medinovaios-ingress
+  namespace: medinovai-services
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/auth-url: "http://medinovai-security-service.medinovai-services:8000/auth/validate"
+    nginx.ingress.kubernetes.io/auth-signin: "http://medinovai-security-service.medinovai-services:8000/login"
+    nginx.ingress.kubernetes.io/auth-response-headers: "X-User-ID,X-User-Email,X-User-Roles"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: medinovaios.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: medinovaios
+                port:
+                  number: 3000
+
+---
+# Network Policy: Block direct access to services
+# Only allow traffic from medinovaiOS and security-service
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: sso-only-access
+  namespace: medinovai-services
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+  ingress:
+    # Allow from medinovaiOS portal
+    - from:
+        - podSelector:
+            matchLabels:
+              app: medinovaios
+      ports:
+        - protocol: TCP
+          port: 8000
+        - protocol: TCP
+          port: 3000
+    # Allow from security-service (SSO provider)
+    - from:
+        - podSelector:
+            matchLabels:
+              app: security-service
+      ports:
+        - protocol: TCP
+          port: 8000
+    # Allow from monitoring namespace (Prometheus scraping)
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: medinovai-monitoring
+      ports:
+        - protocol: TCP
+          port: 8000
+
+---
+# OAuth2 Proxy for additional services
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: oauth2-proxy
+  namespace: medinovai-services
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: oauth2-proxy
+  template:
+    metadata:
+      labels:
+        app: oauth2-proxy
+      annotations:
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/role: "medinovai-infrastructure"
+        vault.hashicorp.com/agent-inject-secret-oauth2: "secret/data/medinovai/infrastructure/oauth2"
+        vault.hashicorp.com/agent-inject-template-oauth2: |
+          {{ with secret "secret/data/medinovai/infrastructure/oauth2" -}}
+          OAUTH2_PROXY_CLIENT_ID={{ .data.data.client_id }}
+          OAUTH2_PROXY_CLIENT_SECRET={{ .data.data.client_secret }}
+          OAUTH2_PROXY_COOKIE_SECRET={{ .data.data.cookie_secret }}
+          {{- end }}
+    spec:
+      serviceAccountName: oauth2-proxy-sa
+      containers:
+        - name: oauth2-proxy
+          image: quay.io/oauth2-proxy/oauth2-proxy:latest
+          ports:
+            - containerPort: 4180
+          env:
+            - name: OAUTH2_PROXY_PROVIDER
+              value: "keycloak-oidc"
+            - name: OAUTH2_PROXY_OIDC_ISSUER_URL
+              value: "http://keycloak.medinovai-data:8080/realms/medinovai"
+            - name: OAUTH2_PROXY_REDIRECT_URL
+              value: "http://medinovaios.local/oauth2/callback"
+            - name: OAUTH2_PROXY_UPSTREAMS
+              value: "http://medinovaios.medinovai-services:3000"
+            - name: OAUTH2_PROXY_HTTP_ADDRESS
+              value: "0.0.0.0:4180"
+            - name: OAUTH2_PROXY_SCOPE
+              value: "openid email profile"
+            - name: OAUTH2_PROXY_COOKIE_SECURE
+              value: "false"
+            - name: OAUTH2_PROXY_COOKIE_DOMAINS
+              value: ".local"
+          volumeMounts:
+            - name: oauth2-secrets
+              mountPath: /vault/secrets
+          command: ["/bin/sh"]
+          args:
+            - "-c"
+            - "source /vault/secrets/oauth2 && /bin/oauth2-proxy"
+      volumes:
+        - name: oauth2-secrets
+          emptyDir:
+            medium: Memory
+
+---
+# Service for OAuth2 Proxy
+apiVersion: v1
+kind: Service
+metadata:
+  name: oauth2-proxy
+  namespace: medinovai-services
+spec:
+  selector:
+    app: oauth2-proxy
+  ports:
+    - port: 4180
+      targetPort: 4180
+
+---
+# Service Account for OAuth2 Proxy
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: oauth2-proxy-sa
+  namespace: medinovai-services
+  annotations:
+    vault.hashicorp.com/role: "medinovai-infrastructure"
