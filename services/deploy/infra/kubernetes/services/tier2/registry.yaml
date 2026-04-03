@@ -24,31 +24,39 @@ spec:
           image: medinovai-registry:latest
           imagePullPolicy: Never
           ports:
-            - containerPort: 8080
+            - containerPort: 8000
           env:
             - name: SERVICE_NAME
               value: medinovai-registry
             - name: PORT
-              value: "8080"
+              value: "8000"
             - name: REGISTRY_URL
-              value: http://medinovai-registry.medinovai-services:8080
+              value: http://medinovai-registry.medinovai-services:8000
             - name: DATABASE_URL
-              value: postgresql://medinovai:medinovai_dev@postgres-primary.medinovai-data:5432/medinovai_main
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: DATABASE_URL
+                  optional: true
             - name: REDIS_URL
-              value: redis://:medinovai_dev@redis.medinovai-data:6379
+              valueFrom:
+                secretKeyRef:
+                  name: redis-credentials
+                  key: REDIS_URL
+                  optional: true
             - name: SECURITY_SERVICE_URL
-              value: http://medinovai-security.medinovai-security:9000
+              value: http://medinovai-security.medinovai-security:8000
           readinessProbe:
             httpGet:
               path: /health
-              port: 8080
+              port: 8000
             initialDelaySeconds: 15
             periodSeconds: 10
             failureThreshold: 2
           livenessProbe:
             httpGet:
               path: /health
-              port: 8080
+              port: 8000
             initialDelaySeconds: 45
             periodSeconds: 15
             failureThreshold: 3
@@ -73,7 +81,8 @@ spec:
   selector:
     app: medinovai-registry
   ports:
-    - port: 8080
-      targetPort: 8080
+    - port: 8000
+      targetPort: 8000
       protocol: TCP
       name: http
+  type: NodePort

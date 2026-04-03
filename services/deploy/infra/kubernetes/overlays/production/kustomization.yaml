@@ -1,20 +1,56 @@
-# Production overlay: increased replicas, PDB enforcement
+# Production overlay: Full MedinovAI platform deployment
+# Includes all tiers (0-6) for complete 190+ module production environment
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
+  # Base infrastructure
   - ../../base
+  
+  # Tier 0: Bare Infrastructure (Postgres, Redis, Kafka, MongoDB, Vault, etc.)
+  - ../../services/tier0
+  
+  # Tier 1: Security Foundation (SSO, RBAC, Secrets, HIPAA Guard, etc.)
+  - ../../services/tier1
+  
+  # Tier 2: Platform Core (Registry, Data Services, Stream Bus, etc.)
+  - ../../services/tier2
+  
+  # Tier 3: AI/ML & Clinical Foundation (HealthLLM, AIFactory, LIS, Cortex)
+  - ../../services/tier3
+  
+  # Tier 4: Domain Services (Clinical, Diagnostic, etc.)
+  - ../../services/tier4
+  
+  # Tier 5: Integration Services
+  - ../../services/tier5
+  
+  # Tier 6: UI Shell & Master Menu
+  - ../../services/tier6
+  
+  # Additional core services
   - ../../services/api-gateway
   - ../../services/auth-service
   - ../../services/clinical-engine
   - ../../services/data-pipeline
   - ../../services/ai-inference
   - ../../services/notification-service
+  
+  # AtlasOS services
+  - ../../services/atlasos
+  - ../../services/atlasos-node-agent
+  - ../../services/atlasos-cluster-brain
+  
+  # Generated manifests (190+ modules)
+  - ../../generated
+  
+  # Ingress and monitoring
   - ../../ingress
   - ../../monitoring/prometheus
   - ../../monitoring/grafana
   - ../../monitoring/alertmanager
   - ../../monitoring/loki
   - ../../jobs
+
 replicas:
   - name: api-gateway
     count: 3
@@ -28,5 +64,23 @@ replicas:
     count: 2
   - name: notification-service
     count: 2
+  # High availability for core services
+  - name: medinovai-registry
+    count: 2
+  - name: medinovai-data-services
+    count: 2
+  - name: medinovai-universal-sign-on
+    count: 2
+  - name: medinovai-security-service
+    count: 2
+
 patches:
   - path: production-pdb-enforcement.yaml
+
+commonLabels:
+  environment: production
+  medinovai.io/overlay: production
+  medinovai.io/ha: "true"
+
+# Production namespace
+namespace: medinovai-services

@@ -6,6 +6,26 @@
 **Created:** 2026-03-30
 **Description:** Infrastructure - Helm, Terraform, deploy engine, monitoring, DevOps tooling
 
+## Deployment Note (IMPORTANT)
+
+**This repository is deployed BY medinovai-Deploy. Do NOT deploy this repository directly.**
+
+Instead, deploy from medinovai-Deploy (myonsite-healthcare org):
+
+```bash
+cd ~/medinovai-all-repos/medinovai-Deploy
+./cursor-deploy.sh
+# OR
+make deploy-everything
+```
+
+Deploy will:
+1. Build and deploy this infrastructure service (port 8500)
+2. Deploy medinovai-registry (port 8800)
+3. Deploy all 190+ platform modules
+
+**Repository**: `git@github.com:myonsite-healthcare/medinovai-infrastructure.git`
+
 ## Structure
 
 ```

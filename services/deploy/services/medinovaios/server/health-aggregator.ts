@@ -24,7 +24,7 @@ function buildEndpoints(): ServiceEndpoint[] {
   const defaults: ServiceEndpoint[] = [
     // Infrastructure Services
     { id: 'security-service', internalUrl: 'http://medinovai-security-service.medinovai-services:8000', healthPath: '/health' },
-    { id: 'registry',         internalUrl: 'http://medinovai-registry.medinovai:8000',                  healthPath: '/health' },
+    { id: 'registry',         internalUrl: 'http://medinovai-registry.medinovai-services:8000',         healthPath: '/health' },
     { id: 'stream-bus',       internalUrl: 'http://medinovai-real-time-stream-bus.medinovai:8000',      healthPath: '/health' },
     { id: 'ctms',             internalUrl: 'http://medinovai-ctms.medinovai-services:8000',             healthPath: '/health' },
     { id: 'lis',              internalUrl: 'http://medinovai-lis.medinovai-services:8000',              healthPath: '/health' },

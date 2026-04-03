@@ -1,0 +1,88 @@
+# Kustomization for all generated MedinovAI service manifests
+# This wires the 213+ generated deployment manifests into the Kustomize build
+# Generated from the 200-repo deployment bulk generation
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Resources are loaded from all subdirectories
+# Each subdirectory contains deployment.yaml and optionally service.yaml
+resources:
+  # Platform services (core MedinovAI platform)
+  - platform/medinovai-registry/deployment.yaml
+  - platform/medinovai-registry/service.yaml
+  - platform/medinovai-infrastructure/deployment.yaml
+  - platform/medinovai-infrastructure/service.yaml
+  - platform/medinovai-deploy/deployment.yaml
+  - platform/medinovai-deploy/service.yaml
+  - platform/medinovai-real-time-stream-bus/deployment.yaml
+  - platform/medinovai-real-time-stream-bus/service.yaml
+  - platform/medinovai-cortex/deployment.yaml
+  - platform/medinovai-cortex/service.yaml
+  - platform/medinovai-core/deployment.yaml
+  - platform/medinovai-core/service.yaml
+  - platform/medinovai-atlasos/deployment.yaml
+  - platform/medinovai-atlasos/service.yaml
+  - platform/medinovai-atlas-engine/deployment.yaml
+  - platform/medinovai-atlas-engine/service.yaml
+  - platform/medinovai-api/deployment.yaml
+  - platform/medinovai-api/service.yaml
+  - platform/medinovai-sales/deployment.yaml
+  - platform/medinovai-sales/service.yaml
+  - platform/medinovai-saes/deployment.yaml
+  - platform/medinovai-saes/service.yaml
+  - platform/medinovai-canary-rollout-orchestrator/deployment.yaml
+  - platform/medinovai-canary-rollout-orchestrator/service.yaml
+  - platform/medinovai-policy-diff-watcher/deployment.yaml
+  - platform/medinovai-policy-diff-watcher/service.yaml
+  - platform/medinovai-notification-center/deployment.yaml
+  - platform/medinovai-notification-center/service.yaml
+  - platform/medinovai-media/deployment.yaml
+  - platform/medinovai-media/service.yaml
+  - platform/medinovai-mail/deployment.yaml
+  - platform/medinovai-mail/service.yaml
+  - platform/medinovai-email-service/deployment.yaml
+  - platform/medinovai-email-service/service.yaml
+  - platform/medinovai-edge-cache-cdn/deployment.yaml
+  - platform/medinovai-edge-cache-cdn/service.yaml
+  - platform/medinovai-devops-telemetry/deployment.yaml
+  - platform/medinovai-devops-telemetry/service.yaml
+
+  # Security services (Tier 1)
+  - security/medinovai-universal-sign-on/deployment.yaml
+  - security/medinovai-universal-sign-on/service.yaml
+  - security/medinovai-security/deployment.yaml
+  - security/medinovai-security/service.yaml
+  - security/medinovai-security-service/deployment.yaml
+  - security/medinovai-security-service/service.yaml
+  - security/medinovai-secrets-manager-bridge/deployment.yaml
+  - security/medinovai-secrets-manager-bridge/service.yaml
+  - security/medinovai-role-based-permissions/deployment.yaml
+  - security/medinovai-role-based-permissions/service.yaml
+  - security/medinovai-hipaa-gdpr-guard/deployment.yaml
+  - security/medinovai-hipaa-gdpr-guard/service.yaml
+  - security/medinovai-encryption-vault/deployment.yaml
+  - security/medinovai-encryption-vault/service.yaml
+
+# Note: To include ALL 213+ generated manifests, you can also use:
+# 1. A script to auto-generate this list: scripts/generate-kustomization.py
+# 2. kubectl kustomize with recursive globs (Kustomize v4+)
+#
+# For now, the core platform and security services are explicitly listed above.
+# Additional services can be added by extending this list or using:
+#
+#   kubectl apply -f generated/platform/ --recursive
+#   kubectl apply -f generated/security/ --recursive
+
+commonLabels:
+  app.kubernetes.io/managed-by: medinovai-deploy
+  app.kubernetes.io/part-of: medinovai-platform
+  medinovai.io/generated: "true"
+
+# Common annotations for all generated resources
+commonAnnotations:
+  medinovai.io/deployment-source: "generated-manifests"
+  medinovai.io/port-authority: "config/port-registry.json"
+
+# Namespace for all generated resources
+namespace: medinovai-services
