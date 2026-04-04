@@ -1,0 +1,62 @@
+name: CD — Deploy to MacStudio AIFactory
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Tailscale
+        uses: tailscale/github-action@v2
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
+
+      - name: Pre-Flight Check — Ollama Health
+        run: |
+          echo "Checking Ollama health on MacStudio over Tailscale..."
+          curl -sf http://${{ secrets.MACSTUDIO_TS_IP }}:11434/api/tags \
+            || (echo "❌ CRITICAL: Ollama is unreachable on MacStudio Tailscale IP" && exit 1)
+          echo "✅ Ollama is healthy and responding."
+
+      - name: Deploy via SSH to MacStudio
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.MACSTUDIO_TS_IP }}
+          username: ${{ secrets.MACSTUDIO_USER }}
+          key: ${{ secrets.MACSTUDIO_SSH_KEY }}
+          script: |
+            # Create deployment directory
+            mkdir -p ~/AIFactory/deployments/${{ github.event.repository.name }}
+            cd ~/AIFactory/deployments/${{ github.event.repository.name }}
+            
+            # Pull latest code
+            if [ -d .git ]; then
+              git pull origin main
+            else
+              git clone https://github.com/${{ github.repository }}.git .
+            fi
+            
+            # Find docker-compose file and deploy
+            COMPOSE_FILE=$(find . -maxdepth 3 -name "docker-compose*.yml" | head -n 1)
+            if [ -z "$COMPOSE_FILE" ]; then
+              echo "❌ No docker-compose file found."
+              exit 1
+            fi
+            
+            echo "Deploying $COMPOSE_FILE..."
+            docker compose -f $COMPOSE_FILE up -d --build --remove-orphans
+            
+            # Prune old images to save disk space
+            docker image prune -f
+            
+            echo "✅ Deployment successful."
