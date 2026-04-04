@@ -10,7 +10,7 @@ metadata:
   # The canonical service name from port-registry.json
   name: "<service-name>"
   # The monorepo this service belongs to (e.g., medinovai-clinical-research)
-  monorepo: "medinovai-infrastructure"
+  monorepo: "<monorepo-name>"
   # The path within the monorepo (e.g., services/lis-platform)
   path: "<services|libs>/<service-name>"
   version: "1.0.0"
