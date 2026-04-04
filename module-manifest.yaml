@@ -1,0 +1,67 @@
+# module-manifest.yaml — MedinovAI Platform Standard v2.1
+# This file is REQUIRED in every service directory.
+# It is the machine-readable identity card for the service.
+# Source of truth: medinovai-Developer/docs/MONOREPO_MIGRATION_GUIDE.md
+# (c) 2026 Copyright MedinovAI. All Rights Reserved.
+
+apiVersion: medinovai.io/v1
+kind: ServiceManifest
+metadata:
+  # The canonical service name from port-registry.json
+  name: "<service-name>"
+  # The monorepo this service belongs to (e.g., medinovai-clinical-research)
+  monorepo: "medinovai-infrastructure"
+  # The path within the monorepo (e.g., services/lis-platform)
+  path: "<services|libs>/<service-name>"
+  version: "1.0.0"
+
+spec:
+  # --- Identity ---
+  domain: "<platform|security|data|clinical|experience|infrastructure>"
+  description: "<One-sentence description of what this service does>"
+  owner: "<team-name>"  # e.g., clinical-squad, platform-squad
+
+  # --- Compliance ---
+  # Tier 1 = HIPAA/FDA 21 CFR Part 11/ISO 13485 (PHI data, clinical records)
+  # Tier 2 = HIPAA/FDA Class II (regulated but not direct PHI)
+  # Tier 3 = HIPAA (business logic, no direct PHI)
+  # Tier 4 = Standard (no PHI, no regulatory requirement)
+  compliance_tier: "<Tier 1|Tier 2|Tier 3|Tier 4>"
+  phi_safe: <true|false>          # true = no PHI in logs or responses
+  audit_required: <true|false>    # true = audit_logger.log() on all state changes
+  risk_classification: "<high|medium|low>"
+
+  # --- Port Authority ---
+  # Source from: medinovai-deploy/config/port-registry.json
+  # NEVER hardcode. Always reference the registry.
+  port_registry_key: "<medinovai-Xab-service-name>"  # key in port-registry.json
+  internal_port: <8000|3000>  # Python=8000, Node=3000
+
+  # --- Runtime ---
+  language: "<python|typescript|csharp>"
+  framework: "<fastapi|express|dotnet>"
+  database: "<postgres|mongo|none>"
+  cache: "<redis|none>"
+  message_bus: "<kafka|none>"
+
+  # --- Dependencies ---
+  # List services this service calls at startup (affects ArgoCD sync wave)
+  startup_dependencies:
+    - "<medinovai-registry>"   # Always first
+    - "<other-service>"
+
+  # --- ArgoCD Sync Wave ---
+  # 0=infra, 1=registry, 2=security, 3=platform, 4=data, 5=clinical, 6=experience
+  sync_wave: <0-6>
+
+  # --- Testing ---
+  test_coverage_minimum: 85  # percent
+  integration_tests: <true|false>
+  contract_tests: <true|false>  # Pact tests with consumers
+
+  # --- Migration Status ---
+  # pending = not yet migrated from legacy repo
+  # in-progress = migration underway
+  # migrated = fully migrated, legacy repo archived
+  migration_status: "<pending|in-progress|migrated>"
+  legacy_repo: "<MedinovAI-health/original-repo-name>"  # if applicable
