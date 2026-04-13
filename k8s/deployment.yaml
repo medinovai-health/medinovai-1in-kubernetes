@@ -1,68 +1,31 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: medinovai-infrastructure
-  namespace: medinovai-services
+  name: medinovai-1in-kubernetes
+  namespace: medinovai-prod
   labels:
-    app: medinovai-infrastructure
-    managed-by: medinovai-smart-deploy
+    app: medinovai-1in-kubernetes
+    tier: tier2
 spec:
-  replicas: 1
+  replicas: 3
   selector:
     matchLabels:
-      app: medinovai-infrastructure
+      app: medinovai-1in-kubernetes
   template:
     metadata:
       labels:
-        app: medinovai-infrastructure
+        app: medinovai-1in-kubernetes
+        tier: tier2
+      annotations:
+        sidecar.istio.io/inject: "true"
     spec:
       containers:
-      - name: medinovai-infrastructure
-        image: medinovai-infrastructure:latest
-        imagePullPolicy: Never
+      - name: medinovai-1in-kubernetes
+        image: registry.medinovai.health/medinovai-1in-kubernetes:v3.0.0-alpha
         ports:
-        - containerPort: 8000
-          name: http
+        - containerPort: 8080
         env:
-        - name: SERVICE_NAME
-          value: "medinovai-infrastructure"
-        - name: REGISTRY_URL
-          value: "http://medinovai-registry.medinovai:8000"
-        - name: PORT
-          value: "8000"
-        resources:
-          requests:
-            memory: "64Mi"
-            cpu: "50m"
-          limits:
-            memory: "512Mi"
-            cpu: "500m"
-        livenessProbe:
-          httpGet:
-            path: /health
-            port: 8000
-          initialDelaySeconds: 45
-          periodSeconds: 15
-          failureThreshold: 3
-        readinessProbe:
-          httpGet:
-            path: /health
-            port: 8000
-          initialDelaySeconds: 15
-          periodSeconds: 10
-          failureThreshold: 2
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: medinovai-infrastructure
-  namespace: medinovai-services
-spec:
-  type: ClusterIP
-  ports:
-  - port: 8000
-    targetPort: 8000
-    protocol: TCP
-    name: http
-  selector:
-    app: medinovai-infrastructure
+        - name: ATLAS_OS_GATEWAY_URL
+          value: "http://atlas-gateway.medinovai-prod.svc.cluster.local:8000"
+        - name: ZTA_AUDIT_ENABLED
+          value: "true"
