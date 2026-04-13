@@ -1,0 +1,10 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: medinovai-1in-kubernetes-pdb
+  namespace: medinovai-prod
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: medinovai-1in-kubernetes
