@@ -1,0 +1,19 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: medinovai-1in-kubernetes-vs
+  namespace: medinovai-prod
+spec:
+  hosts:
+  - "medinovai-1in-kubernetes.medinovai.health"
+  gateways:
+  - atlas-gateway
+  http:
+  - match:
+    - uri:
+        prefix: "/"
+    route:
+    - destination:
+        host: medinovai-1in-kubernetes
+        port:
+          number: 80
