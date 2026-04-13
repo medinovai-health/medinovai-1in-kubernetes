@@ -1,0 +1,19 @@
+{
+  "repo": "medinovai-1in-kubernetes",
+  "tier": 2,
+  "status": "active",
+  "features": [
+    {
+      "id": "F001",
+      "name": "Harness 2.1 Compliance Uplift",
+      "status": "complete",
+      "description": "Add features.json, progress.md, and update CLAUDE.md to Harness 2.1 standards."
+    },
+    {
+      "id": "F002",
+      "name": "AtlasOS v4 Registration",
+      "status": "complete",
+      "description": "Self-register on startup with 30-second heartbeats."
+    }
+  ]
+}

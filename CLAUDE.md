@@ -1,40 +1,15 @@
-# CLAUDE.md - medinovai-infrastructure
+# medinovai-1in-kubernetes
 
-## Purpose
+Tier 2 repository.
+Strict adherence to Harness 2.1 required.
 
-Infrastructure - Helm, Terraform, deploy engine, monitoring, DevOps tooling
+## Commands
+- Run tests: `pytest tests/`
+- Run lint: `flake8 src/`
 
-## Compliance Tier
-
-- **Platform Tier:** Varies by service
-- **Compliance Tier:** Varies by service (check each service.yaml)
-
-## Repo Identity
-
-| Field | Value |
-|-------|-------|
-| Repo | medinovai-infrastructure |
-| Type | Monorepo |
-| Domain | infrastructure |
-| Language | Mixed (Python, TypeScript, C#) |
-| Platform Standard | v2.1 |
-
-## How to Run Tests
-
-```bash
-# Per-service tests
-cd services/<service-name>
-pytest  # Python
-npm test  # Node.js
-dotnet test  # C#
-```
-
-## Coding Conventions
-
-- Constants: `E_VARIABLE` (uppercase, E_ prefix)
-- Variables: `mos_variableName` (lowerCamelCase, mos_ prefix)
-- Methods: max 40 lines
-- Docstrings: Google-style on all public functions
-- Type hints on ALL function parameters and returns
-- Logging: structlog ZTA format (structured JSON)
-- Encoding: UTF-8 everywhere
+## Coding Standards
+- E_ prefix for constants
+- mos_ prefix for variables
+- Max 40 lines per method
+- No hardcoded secrets
+- No n8n
