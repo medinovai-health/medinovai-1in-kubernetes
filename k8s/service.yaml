@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: medinovai-1in-kubernetes
+  namespace: medinovai-prod
+  labels:
+    app: medinovai-1in-kubernetes
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: 8080
+    name: http
+  selector:
+    app: medinovai-1in-kubernetes
