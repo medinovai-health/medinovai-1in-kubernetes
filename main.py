@@ -2,7 +2,22 @@
 # Build: 20260413.2600.001 | © 2026 DescartesBio / MedinovAI Health.
 import os
 import time
-from fastapi import FastAPI, Request, Response
+
+from opentelemetry import trace
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
+
+# Initialize tracing
+trace.set_tracer_provider(TracerProvider())
+tracer = trace.get_tracer(__name__)
+trace.get_tracer_provider().add_span_processor(BatchSpanProcessor(ConsoleSpanExporter()))
+
+from src import models, router
+from src.database import engine
+models.Base.metadata.create_all(bind=engine)
+\nfrom fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from prometheus_client import make_asgi_app, Counter, Histogram
 import httpx
@@ -14,7 +29,12 @@ app = FastAPI(
 )
 
 # CORS
-app.add_middleware(
+
+FastAPIInstrumentor.instrument_app(app)
+SQLAlchemyInstrumentor().instrument(engine=engine)
+
+app.include_router(router.router)
+\napp.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
     allow_credentials=True,
