@@ -1,22 +1,30 @@
-# Dockerfile — medinovai-1in-kubernetes
-# Build: 20260413.2500.001 | © 2026 DescartesBio / MedinovAI Health.
-# Multi-stage build for minimal production image
-
-FROM python:3.11-slim AS builder
+# =============================================================================
+# MedinovAI Production Dockerfile
+# Sprint 5: Dockerfile Optimization & Production Hardening
+# =============================================================================
+FROM node:20-alpine AS builder
 WORKDIR /app
-COPY requirements.txt* ./
-RUN pip install --no-cache-dir -r requirements.txt 2>/dev/null || true
+COPY package*.json pnpm-lock.yaml* yarn.lock* ./
+RUN corepack enable && \
+    if [ -f pnpm-lock.yaml ]; then pnpm install --frozen-lockfile; \
+    elif [ -f yarn.lock ]; then yarn install --frozen-lockfile; \
+    elif [ -f package-lock.json ]; then npm ci; \
+    else npm install; fi
 COPY . .
+RUN if [ -f "tsconfig.json" ]; then npm run build 2>/dev/null || echo "No build script"; fi
 
-FROM python:3.11-slim AS runtime
+FROM node:20-alpine AS production
+RUN addgroup -g 1001 -S medinovai && adduser -S medinovai -u 1001 -G medinovai
 WORKDIR /app
-COPY --from=builder /app .
-ENV NODE_ENV=production \
-    ATLAS_OS_GATEWAY_URL=http://atlas-gateway:8000 \
-    ZTA_AUDIT_ENABLED=true \
-    MODULE_NAME=medinovai-1in-kubernetes \
-    BUILD=20260413.2500.001
-EXPOSE 8080
-HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
-  CMD curl -f http://localhost:8080/health || exit 1
-CMD ["python3", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
+COPY --from=builder --chown=medinovai:medinovai /app/package*.json ./
+COPY --from=builder --chown=medinovai:medinovai /app/node_modules ./node_modules
+COPY --from=builder --chown=medinovai:medinovai /app/dist ./dist
+COPY --from=builder --chown=medinovai:medinovai /app/src ./src
+RUN apk add --no-cache dumb-init curl && apk upgrade --no-cache && rm -rf /var/cache/apk/* /tmp/* /root/.npm
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 CMD curl -f http://localhost:${PORT:-3000}/health || exit 1
+LABEL org.opencontainers.image.source="https://github.com/medinovai-health"
+LABEL org.opencontainers.image.vendor="MedinovAI"
+USER medinovai
+EXPOSE ${PORT:-3000}
+ENTRYPOINT ["dumb-init", "--"]
+CMD ["node", "dist/index.js"]
