@@ -1,19 +1,43 @@
-version: '3.8'
-# medinovai-1in-kubernetes — Docker Compose
-# Build: 20260413.2400.001 | © 2026 DescartesBio / MedinovAI Health.
+version: "3.8"
 services:
   app:
-    build: .
-    image: medinovai/medinovai-1in-kubernetes:latest
-    container_name: medinovai-1in-kubernetes-app
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: ${COMPOSE_PROJECT_NAME:-medinovai}-app
+    restart: unless-stopped
     ports:
-      - "8080:8080"
+      - "${PORT:-3000}:${PORT:-3000}"
     environment:
       - NODE_ENV=production
-      - ATLAS_OS_GATEWAY_URL=http://atlas-gateway:8000
-      - ZTA_AUDIT_ENABLED=true
+      - PORT=${PORT:-3000}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${PORT:-3000}/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+        reservations:
+          cpus: "0.25"
+          memory: 128M
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:size=64M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     networks:
-      - medinovai-mesh
+      - medinovai-net
 networks:
-  medinovai-mesh:
-    external: true
+  medinovai-net:
+    driver: bridge
