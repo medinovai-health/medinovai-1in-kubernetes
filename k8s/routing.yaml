@@ -1,0 +1,40 @@
+# routing.yaml — medinovai-1in-kubernetes
+# Build: 20260413.3100.001 | © 2026 DescartesBio / MedinovAI Health.
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: 1in-kubernetes-route
+  namespace: medinovai-prod
+spec:
+  hosts:
+  - "1in-kubernetes.tailnet.medinovai"
+  - "1in-kubernetes.medinovai.health"
+  gateways:
+  - atlasos-gateway
+  http:
+  - match:
+    - uri:
+        prefix: /api/v1/1in-kubernetes
+    rewrite:
+      uri: /api/v1
+    route:
+    - destination:
+        host: 1in-kubernetes-service.medinovai-prod.svc.cluster.local
+        port:
+          number: 8000
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: 1in-kubernetes-destination
+  namespace: medinovai-prod
+spec:
+  host: 1in-kubernetes-service.medinovai-prod.svc.cluster.local
+  trafficPolicy:
+    loadBalancer:
+      simple: ROUND_ROBIN
+    outlierDetection:
+      consecutive5xxErrors: 3
+      interval: 10s
+      baseEjectionTime: 30s
+      maxEjectionPercent: 50
