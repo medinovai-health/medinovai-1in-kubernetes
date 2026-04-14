@@ -33,3 +33,16 @@ root-token
 # Kubernetes secrets (actual values)
 *secret-values.yaml
 *secrets-decoded.yaml
+
+# Sprint 9: Security - Never commit secrets
+*.pem
+*.key
+*.p12
+*.pfx
+.env
+.env.*
+!.env.example
+secrets.yaml
+secrets.yml
+**/secrets/**
+!**/secrets/.gitkeep
