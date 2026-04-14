@@ -1,0 +1,38 @@
+# API Gateway Configuration for medinovai-1in-kubernetes
+# Sprint 7: API Gateway & Service Mesh
+# Language: Shell
+
+## Service Configuration
+
+service:
+  name: medinovai-1in-kubernetes
+  version: "1.0.0"
+  
+## Rate Limiting
+rate_limit:
+  window: 60s
+  max_requests: 100
+  
+## Circuit Breaker
+circuit_breaker:
+  failure_threshold: 5
+  recovery_timeout: 30s
+  
+## Health Check
+health:
+  endpoint: /health
+  interval: 30s
+  timeout: 5s
+  
+## API Versioning
+api:
+  version: v1
+  prefix: /api/v1
+  
+## Service Mesh
+mesh:
+  protocol: HTTP/2
+  tls: mutual
+  retry:
+    max_attempts: 3
+    backoff: exponential
