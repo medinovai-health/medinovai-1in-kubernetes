@@ -1,0 +1,22 @@
+groups:
+- name: medinovai-1in-kubernetes_alerts
+  rules:
+  - alert: HighErrorRate
+    expr: sum(rate(fastapi_requests_total{app="medinovai-1in-kubernetes", status=~"5.."}[5m])) / sum(rate(fastapi_requests_total{app="medinovai-1in-kubernetes"}[5m])) > 0.05
+    for: 5m
+    labels:
+      severity: critical
+      service: medinovai-1in-kubernetes
+    annotations:
+      summary: "High error rate detected in medinovai-1in-kubernetes"
+      description: "Error rate is above 5% for the last 5 minutes."
+      
+  - alert: HighLatency
+    expr: histogram_quantile(0.99, sum(rate(fastapi_requests_duration_seconds_bucket{app="medinovai-1in-kubernetes"}[5m])) by (le)) > 2.0
+    for: 5m
+    labels:
+      severity: warning
+      service: medinovai-1in-kubernetes
+    annotations:
+      summary: "High latency detected in medinovai-1in-kubernetes"
+      description: "P99 latency is above 2 seconds for the last 5 minutes."
