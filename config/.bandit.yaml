@@ -1,0 +1,18 @@
+# .bandit.yaml - Security Scanner Configuration
+# Sprint 9: Security Hardening & Secrets Management
+
+skips:
+  - B101  # assert_used (acceptable in tests)
+
+targets:
+  - src/
+  - app/
+  - lib/
+
+exclude_dirs:
+  - tests/
+  - venv/
+  - .venv/
+
+severity: medium
+confidence: medium
