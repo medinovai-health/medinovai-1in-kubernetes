@@ -1,0 +1,105 @@
+# docker-compose.yml — MedinovAI Command Center
+# (c) 2026 Copyright MedinovAI. All Rights Reserved.
+#
+# Deployment: AIFactory MacStudio via Tailscale webhook handler
+# Port:       9443 (HTTPS-equivalent on AIFactory internal network)
+# URL:        https://dev.medinovai.com:9443
+#
+# Version: 3.0.0 | Build: 20260414.1 | Release: GA
+#
+# Usage (AIFactory webhook handler runs this automatically):
+#   docker compose up -d --build --remove-orphans
+#
+# Manual usage:
+#   cp ui/.env.example ui/.env.local  # fill in secrets
+#   docker compose up -d --build
+
+version: "3.8"
+
+services:
+
+  # ── Command Center UI (Next.js 15) ────────────────────────────────────────
+  command-center:
+    build:
+      context: ./ui
+      dockerfile: ../Dockerfile
+      target: production
+      args:
+        NEXT_PUBLIC_ENVIRONMENT:  "${NEXT_PUBLIC_ENVIRONMENT:-production}"
+        NEXT_PUBLIC_BASE_URL:     "${NEXT_PUBLIC_BASE_URL:-https://dev.medinovai.com:9443}"
+        NEXT_PUBLIC_COMMIT_SHA:   "${NEXT_PUBLIC_COMMIT_SHA:-local}"
+        NEXT_TELEMETRY_DISABLED:  "1"
+    image: medinovai/command-center:${IMAGE_TAG:-latest}
+    container_name: medinovai-command-center
+    restart: unless-stopped
+
+    ports:
+      - "${PORT:-9443}:9443"
+
+    environment:
+      - NODE_ENV=production
+      - PORT=9443
+      - NEXT_PUBLIC_ENVIRONMENT=${NEXT_PUBLIC_ENVIRONMENT:-production}
+      - NEXT_PUBLIC_BASE_URL=${NEXT_PUBLIC_BASE_URL:-https://dev.medinovai.com:9443}
+      - NEXT_PUBLIC_COMMIT_SHA=${NEXT_PUBLIC_COMMIT_SHA:-local}
+      - NEXT_TELEMETRY_DISABLED=1
+      # Agent secrets (set in .env.local on AIFactory)
+      - GITHUB_TOKEN=${GITHUB_TOKEN:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - REDIS_URL=${REDIS_URL:-redis://medinovai-redis:6379/9}
+      - NEXTAUTH_URL=${NEXTAUTH_URL:-https://dev.medinovai.com:9443}
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET:-}
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9443/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 1G
+        reservations:
+          cpus: "0.5"
+          memory: 256M
+
+    security_opt:
+      - no-new-privileges:true
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "5"
+        labels: "service=command-center,version=3.0.0"
+
+    labels:
+      medinovai.service:    "command-center"
+      medinovai.version:    "3.0.0"
+      medinovai.build:      "20260414.1"
+      medinovai.tier:       "2"
+      medinovai.domain:     "platform"
+      medinovai.port:       "9443"
+      medinovai.url:        "https://dev.medinovai.com:9443"
+      medinovai.managed-by: "aifactory-webhook"
+
+    networks:
+      - medinovai-mesh
+
+  # ── Nexus Agent Memory Volume ─────────────────────────────────────────────
+  # (Nexus agent runs inside command-center container, uses this volume)
+
+volumes:
+  nexus-memory:
+    name: medinovai-nexus-memory
+    labels:
+      medinovai.service: "command-center"
+      medinovai.purpose: "nexus-agent-memory"
+
+networks:
+  medinovai-mesh:
+    external: true
+    name: medinovai-mesh
