@@ -1,0 +1,47 @@
+###############################################################################
+# Command Center — Superman Deploy Caller
+# Deploys services/command-center to AIFactory on port 9443
+# Auto-triggered on push to main when command-center files change
+###############################################################################
+
+name: Deploy Command Center
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'services/command-center/**'
+      - '.github/workflows/deploy-command-center.yml'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'dev'
+        type: choice
+        options: [dev, staging, production]
+      deploy_target:
+        description: 'Deploy target'
+        required: true
+        default: 'aifactory'
+        type: choice
+        options: [aifactory, aws, both]
+
+concurrency:
+  group: deploy-command-center-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    uses: medinovai-health/medinovai-deploy/.github/workflows/reusable/superman-deploy.yml@main
+    with:
+      service_name: medinovai-infrastructure
+      deploy_target: ${{ github.event.inputs.deploy_target || 'aifactory' }}
+      environment: ${{ github.event.inputs.environment || 'dev' }}
+      compose_file: services/command-center/docker-compose.yml
+      health_port: '9443'
+      health_endpoint: /api/health
+      startup_wait: 45
+      notify_slack: true
+      create_release: false
+    secrets: inherit
