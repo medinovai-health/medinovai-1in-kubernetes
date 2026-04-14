@@ -2,7 +2,7 @@
 # MedinovAI Production Dockerfile
 # Sprint 5: Dockerfile Optimization & Production Hardening
 # =============================================================================
-FROM node:20-alpine AS builder
+FROM node:25-alpine AS builder
 WORKDIR /app
 COPY package*.json pnpm-lock.yaml* yarn.lock* ./
 RUN corepack enable && \
@@ -13,7 +13,7 @@ RUN corepack enable && \
 COPY . .
 RUN if [ -f "tsconfig.json" ]; then npm run build 2>/dev/null || echo "No build script"; fi
 
-FROM node:20-alpine AS production
+FROM node:25-alpine AS production
 RUN addgroup -g 1001 -S medinovai && adduser -S medinovai -u 1001 -G medinovai
 WORKDIR /app
 COPY --from=builder --chown=medinovai:medinovai /app/package*.json ./
