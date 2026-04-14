@@ -1,0 +1,151 @@
+# values.yaml — MedinovAI Command Center Helm Chart
+# (c) 2026 Copyright MedinovAI. All Rights Reserved.
+# Override these values per environment in values-dev.yaml, values-staging.yaml, values-prod.yaml
+
+replicaCount: 1
+
+image:
+  repository: ghcr.io/medinovai-health/command-center
+  pullPolicy: Always
+  tag: "3.0.0"
+
+imagePullSecrets:
+  - name: ghcr-credentials
+
+nameOverride: ""
+fullnameOverride: "command-center"
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: "command-center"
+
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "9445"
+  prometheus.io/path: "/api/metrics"
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1001
+  runAsGroup: 1001
+  fsGroup: 1001
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+      - ALL
+
+service:
+  type: ClusterIP
+  port: 9443
+  metricsPort: 9445
+  agentPort: 9447
+
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+  hosts:
+    - host: command-center.medinovai.health
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: command-center-tls
+      hosts:
+        - command-center.medinovai.health
+
+resources:
+  limits:
+    cpu: 2000m
+    memory: 2Gi
+  requests:
+    cpu: 500m
+    memory: 512Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 80
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# Environment variables (non-secret)
+env:
+  NEXT_PUBLIC_ENVIRONMENT: "production"
+  NEXT_PUBLIC_COMMAND_CENTER_VERSION: "3.0.0"
+  NODE_ENV: "production"
+  PORT: "9443"
+
+# Secret references (values from Vault via External Secrets Operator)
+secretEnv:
+  - name: GITHUB_TOKEN
+    secretName: command-center-secrets
+    secretKey: github-token
+  - name: OPENAI_API_KEY
+    secretName: command-center-secrets
+    secretKey: openai-api-key
+  - name: ATLASOS_GATEWAY_URL
+    secretName: command-center-secrets
+    secretKey: atlasos-gateway-url
+  - name: OLLAMA_HOST
+    secretName: command-center-secrets
+    secretKey: ollama-host
+  - name: GITHUB_WEBHOOK_SECRET
+    secretName: command-center-secrets
+    secretKey: github-webhook-secret
+
+# Liveness and readiness probes
+livenessProbe:
+  httpGet:
+    path: /api/health
+    port: 9443
+  initialDelaySeconds: 60
+  periodSeconds: 30
+  timeoutSeconds: 10
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /api/health
+    port: 9443
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+# Persistent storage for Nexus agent memory
+persistence:
+  enabled: true
+  storageClass: "local-path"
+  accessMode: ReadWriteOnce
+  size: 5Gi
+  mountPath: /app/agent/memory
+
+# Network policy — restrict ingress to known sources only
+networkPolicy:
+  enabled: true
+  ingressRules:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: ingress-nginx
+        - podSelector:
+            matchLabels:
+              app: atlasos-gateway
+
+# Pod disruption budget
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
