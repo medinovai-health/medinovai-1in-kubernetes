@@ -1,0 +1,23 @@
+apiVersion: v2
+name: command-center
+description: MedinovAI Command Center — Unified Control Plane
+type: application
+version: 3.0.0
+appVersion: "3.0.0"
+home: https://github.com/medinovai-health/medinovai-infrastructure
+sources:
+  - https://github.com/medinovai-health/medinovai-infrastructure
+maintainers:
+  - name: MedinovAI Platform Infrastructure Squad
+    email: platform@medinovai.health
+keywords:
+  - medinovai
+  - command-center
+  - observability
+  - control-plane
+  - nexus-agent
+annotations:
+  medinovai.health/tier: "2"
+  medinovai.health/compliance: "hipaa,gdpr"
+  medinovai.health/migrated-from: "medinovai-2pl-atlas-os/ui"
+  medinovai.health/migration-date: "2026-04-14"
