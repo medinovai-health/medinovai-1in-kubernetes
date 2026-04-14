@@ -17,12 +17,12 @@ trace.get_tracer_provider().add_span_processor(BatchSpanProcessor(ConsoleSpanExp
 from src import models, router
 from src.database import engine
 models.Base.metadata.create_all(bind=engine)
-\nfrom fastapi import FastAPI, Request, Response
+\nfrom src.tracing import setup_tracing\nfrom fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from prometheus_client import make_asgi_app, Counter, Histogram
 import httpx
 
-app = FastAPI(
+app = FastAPI(\n
     title="medinovai-1in-kubernetes",
     version="v4.0.0",
     description="MedinovAI Service: medinovai-1in-kubernetes"
@@ -34,7 +34,7 @@ FastAPIInstrumentor.instrument_app(app)
 SQLAlchemyInstrumentor().instrument(engine=engine)
 
 app.include_router(router.router)
-\napp.add_middleware(
+\n\n# Initialize Jaeger Tracing\nsetup_tracing(app)\n\napp.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
     allow_credentials=True,
