@@ -1,0 +1,35 @@
+# .github/release.yml
+# Sprint 10: Release Configuration
+# Auto-generated for medinovai-1in-kubernetes
+changelog:
+  exclude:
+    labels:
+      - ignore-for-release
+      - chore
+    authors:
+      - dependabot
+  categories:
+    - title: "🚀 Features"
+      labels:
+        - feature
+        - enhancement
+    - title: "🐛 Bug Fixes"
+      labels:
+        - fix
+        - bugfix
+    - title: "🔒 Security"
+      labels:
+        - security
+    - title: "📚 Documentation"
+      labels:
+        - documentation
+    - title: "🏗️ Infrastructure"
+      labels:
+        - infrastructure
+        - ci/cd
+    - title: "🧪 Testing"
+      labels:
+        - testing
+    - title: "📦 Dependencies"
+      labels:
+        - dependencies
