@@ -1,0 +1,127 @@
+/* globals.css — MedinovAI Command Center v3.0 */
+/* Apple Liquid Glass aesthetic — translucent panels, blur, oklch tokens */
+/* (c) 2026 Copyright MedinovAI. All Rights Reserved. */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── oklch Color Tokens ──────────────────────────────────────────────────── */
+:root {
+  --mos-primary: oklch(0.65 0.22 265);
+  --mos-primary-glow: oklch(0.65 0.22 265 / 0.3);
+  --mos-secondary: oklch(0.55 0.18 195);
+  --mos-accent: oklch(0.75 0.25 145);
+  --mos-danger: oklch(0.65 0.25 25);
+  --mos-warning: oklch(0.75 0.2 75);
+  --mos-success: oklch(0.7 0.2 145);
+  --mos-surface: oklch(0.12 0.02 265 / 0.85);
+  --mos-surface-hover: oklch(0.15 0.02 265 / 0.9);
+  --mos-border: oklch(0.3 0.05 265 / 0.5);
+  --mos-text: oklch(0.95 0.01 265);
+  --mos-text-muted: oklch(0.65 0.02 265);
+  --mos-glass-blur: blur(20px);
+  --mos-glass-saturate: saturate(180%);
+}
+
+/* ── Apple Liquid Glass Components ──────────────────────────────────────── */
+@layer components {
+  /* Glass panel — primary surface */
+  .mos-glass {
+    @apply relative overflow-hidden rounded-2xl border;
+    background: var(--mos-surface);
+    backdrop-filter: var(--mos-glass-blur) var(--mos-glass-saturate);
+    -webkit-backdrop-filter: var(--mos-glass-blur) var(--mos-glass-saturate);
+    border-color: var(--mos-border);
+    box-shadow: 
+      0 0 0 1px oklch(1 0 0 / 0.05) inset,
+      0 8px 32px oklch(0 0 0 / 0.4),
+      0 0 64px var(--mos-primary-glow);
+  }
+
+  /* Glass panel hover state */
+  .mos-glass:hover {
+    background: var(--mos-surface-hover);
+    box-shadow:
+      0 0 0 1px oklch(1 0 0 / 0.08) inset,
+      0 8px 48px oklch(0 0 0 / 0.5),
+      0 0 80px var(--mos-primary-glow);
+  }
+
+  /* Bento grid layout */
+  .mos-bento {
+    @apply grid gap-4;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  }
+
+  /* Status indicators */
+  .mos-status-healthy {
+    @apply inline-flex items-center gap-1.5 text-sm font-medium;
+    color: var(--mos-success);
+  }
+  .mos-status-degraded {
+    @apply inline-flex items-center gap-1.5 text-sm font-medium;
+    color: var(--mos-warning);
+  }
+  .mos-status-unhealthy {
+    @apply inline-flex items-center gap-1.5 text-sm font-medium;
+    color: var(--mos-danger);
+  }
+
+  /* Pulse dot for live indicators */
+  .mos-pulse {
+    @apply relative inline-flex h-2 w-2;
+  }
+  .mos-pulse::before {
+    content: '';
+    @apply absolute inline-flex h-full w-full rounded-full opacity-75 animate-ping;
+    background: currentColor;
+  }
+  .mos-pulse::after {
+    content: '';
+    @apply relative inline-flex rounded-full h-2 w-2;
+    background: currentColor;
+  }
+
+  /* Nexus agent chat bubble */
+  .mos-nexus-bubble {
+    @apply mos-glass p-4 max-w-2xl;
+    border-color: var(--mos-primary-glow);
+  }
+
+  /* Command input */
+  .mos-command-input {
+    @apply w-full bg-transparent border-0 border-b text-sm outline-none py-2 px-0;
+    border-color: var(--mos-border);
+    color: var(--mos-text);
+  }
+  .mos-command-input:focus {
+    border-color: var(--mos-primary);
+  }
+  .mos-command-input::placeholder {
+    color: var(--mos-text-muted);
+  }
+}
+
+/* ── Scrollbar Styling ───────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--mos-border);
+  border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--mos-primary); }
+
+/* ── Animations ──────────────────────────────────────────────────────────── */
+@keyframes mos-glow-pulse {
+  0%, 100% { box-shadow: 0 0 20px var(--mos-primary-glow); }
+  50% { box-shadow: 0 0 40px var(--mos-primary-glow), 0 0 80px var(--mos-primary-glow); }
+}
+
+@keyframes mos-slide-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.mos-animate-glow { animation: mos-glow-pulse 3s ease-in-out infinite; }
+.mos-animate-in { animation: mos-slide-in 0.2s ease-out; }
