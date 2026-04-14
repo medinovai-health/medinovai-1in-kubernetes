@@ -1,0 +1,57 @@
+# MedinovAI Command Center — .gitignore
+# (c) 2026 Copyright MedinovAI. All Rights Reserved.
+
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Next.js build
+ui/.next/
+ui/out/
+ui/build/
+
+# Environment files — NEVER commit these
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+ui/.env
+ui/.env.local
+ui/.env.development.local
+ui/.env.test.local
+ui/.env.production.local
+
+# Debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# TypeScript
+*.tsbuildinfo
+ui/tsconfig.tsbuildinfo
+
+# Helm
+helm/charts/
+helm/*.lock
+
+# Docker
+*.tar
+
+# Agent memory (persisted in volume, not git)
+agent/memory/
