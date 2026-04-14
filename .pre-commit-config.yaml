@@ -1,0 +1,24 @@
+# .pre-commit-config.yaml
+# Sprint 9: Security Pre-commit Hooks
+
+repos:
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.4.0
+    hooks:
+      - id: detect-secrets
+        args: ['--baseline', '.secrets.baseline']
+        exclude: 'tests/.*|.*test.*'
+
+  - repo: https://github.com/PyCQA/bandit
+    rev: '1.7.7'
+    hooks:
+      - id: bandit
+        args: ['-c', '.bandit.yaml', '-r', '.']
+        exclude: 'tests/.*'
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: detect-private-key
+      - id: check-added-large-files
+        args: ['--maxkb=500']
