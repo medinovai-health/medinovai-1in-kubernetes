@@ -1,0 +1,93 @@
+---
+# module-manifest.yaml — MedinovAI Platform Standard v2.1
+# (c) 2026 Copyright MedinovAI. All Rights Reserved.
+
+id: command-center
+name: MedinovAI Command Center
+version: "3.0.0"
+description: >
+  The MedinovAI Command Center is the unified control plane for all Dev/QA/Staging/Prod
+  environments. It provides total observability, governance, autonomous remediation,
+  and self-learning AI agent management across the entire MedinovAI platform.
+
+tier: 2
+compliance:
+  hipaa: true
+  gdpr: true
+  fda_21_cfr_part_11: false
+  iso_13485: false
+  iec_62304: false
+  phi_safe: true
+  audit_required: true
+  risk_classification: high
+
+team:
+  primary_owner: platform-infra-squad
+  security_review: security-compliance-squad
+  infrastructure_review: infrastructure-squad
+
+ports:
+  primary: 9443
+  health: 9444
+  metrics: 9445
+  websocket: 9446
+  agent_api: 9447
+  grpc: 9448
+port_authority: medinovai-health/medinovai-Deploy/config/port-registry.json
+
+source_of_truth:
+  migrated_from: medinovai-health/medinovai-2pl-atlas-os/ui
+  migration_date: "2026-04-14"
+  migration_reason: >
+    Architectural separation: AtlasOS is the operating system (agents, SOUL, hierarchy).
+    Command Center is the control plane that observes AtlasOS. Observer must be
+    architecturally separate from the observed to prevent circular dependencies.
+    Moved to medinovai-infrastructure for deployment lockstep with Helm/Terraform.
+
+dependencies:
+  required:
+    - medinovai-platform-brain
+    - medinovai-Deploy
+    - medinovai-2pl-atlas-os  # observes but does not depend on
+  optional:
+    - medinovai-intelligence-layer
+    - zeroTouchMarketing
+    - medinovai-developer-portal
+
+sync_sources:
+  - repo: medinovai-health/medinovai-platform-brain
+    path: agent-knowledge/
+    schedule: "*/5 * * * *"  # every 5 minutes
+  - repo: medinovai-health/medinovai-Deploy
+    path: config/port-registry.json
+    schedule: "*/15 * * * *"
+  - repo: medinovai-health/medinovai-2pl-atlas-os
+    path: features.json
+    schedule: "*/10 * * * *"
+
+ai_agent:
+  name: Nexus
+  model: ollama/llama3.2:latest
+  fallback_model: gpt-4.1-mini
+  memory_backend: chromadb
+  self_learning: true
+  self_improving: true
+  training_corpus: medinovai-platform-brain/agent-knowledge/
+  capabilities:
+    - deployment_management
+    - incident_response
+    - compliance_enforcement
+    - performance_optimization
+    - security_monitoring
+    - self_healing
+    - knowledge_synthesis
+
+hardening_version: "1.0.0"
+hardening_points_implemented: 50
+blind_spots_addressed: 50
+
+labels:
+  app: command-center
+  tier: "2"
+  domain: infrastructure
+  environment: "{{ .Values.environment }}"
