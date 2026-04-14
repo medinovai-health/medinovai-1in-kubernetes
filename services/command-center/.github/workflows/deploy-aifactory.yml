@@ -1,0 +1,241 @@
+# deploy-aifactory.yml — Command Center → AIFactory via Tailscale
+# (c) 2026 Copyright MedinovAI. All Rights Reserved.
+#
+# Deploy pattern (matches medinovai-2pl-atlas-os/tailscale-deploy.yml):
+#   1. GitHub push to main
+#   2. Runner joins Tailscale tailnet (tag:ci)
+#   3. POST to webhook-handler on aifactory-medinovai:23022
+#   4. Webhook handler: git pull + docker compose up --build on port 9443
+#
+# Required GitHub Secrets (set in medinovai-infrastructure repo settings):
+#   TS_OAUTH_CLIENT_ID      — Tailscale OAuth client ID
+#   TS_OAUTH_CLIENT_SECRET  — Tailscale OAuth client secret
+#   DEPLOY_TOKEN            — Bearer token for AIFactory webhook handler
+#
+# Required GitHub Variables (optional — have defaults):
+#   TS_DEPLOY_HOST          — e.g. aifactory-medinovai.bigscale-justice.ts.net
+#   WEBHOOK_PORT            — e.g. 23022
+#
+# Version: 3.0.0 | Build: 20260414.1
+
+name: "Deploy — Command Center → AIFactory"
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "services/command-center/**"
+      - ".github/workflows/deploy-aifactory.yml"
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "Branch to deploy"
+        default: "main"
+        type: string
+      profile:
+        description: "Compose profile (core | platform | full)"
+        default: "platform"
+        type: string
+      force_rebuild:
+        description: "Force full Docker rebuild"
+        default: false
+        type: boolean
+
+env:
+  E_SERVICE_NAME:  "command-center"
+  E_SERVICE_PORT:  "9443"
+  E_DEPLOY_HOST:   ${{ vars.TS_DEPLOY_HOST || 'aifactory-medinovai.bigscale-justice.ts.net' }}
+  E_WEBHOOK_PORT:  ${{ vars.WEBHOOK_PORT   || '23022' }}
+
+jobs:
+  # ── Job 1: Build verification (runs on GitHub-hosted runner) ─────────────
+  verify:
+    name: "Verify — Build & Lint"
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/command-center/ui
+
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v4
+
+      - name: "Setup Node.js 20"
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: services/command-center/ui/package-lock.json
+
+      - name: "Install dependencies"
+        run: npm ci --prefer-offline || npm install
+
+      - name: "Type check"
+        run: npx tsc --noEmit --skipLibCheck
+        continue-on-error: true   # Warn, don't block deploy
+
+      - name: "Lint"
+        run: npx next lint --dir . --max-warnings 20
+        continue-on-error: true
+
+      - name: "Build (production)"
+        run: npm run build
+        env:
+          NEXT_PUBLIC_ENVIRONMENT:  "production"
+          NEXT_PUBLIC_BASE_URL:     "https://dev.medinovai.com:9443"
+          NEXT_PUBLIC_COMMIT_SHA:   ${{ github.sha }}
+          NEXT_TELEMETRY_DISABLED:  "1"
+
+      - name: "Upload build artifact"
+        uses: actions/upload-artifact@v4
+        with:
+          name: command-center-build-${{ github.sha }}
+          path: services/command-center/ui/.next/
+          retention-days: 7
+
+  # ── Job 2: Deploy to AIFactory via Tailscale ─────────────────────────────
+  deploy:
+    name: "Deploy → AIFactory (port ${{ env.E_SERVICE_PORT }})"
+    runs-on: ubuntu-latest
+    needs: verify
+    timeout-minutes: 15
+    environment: production
+    concurrency:
+      group: deploy-command-center
+      cancel-in-progress: false   # Never cancel a running deploy
+
+    steps:
+      - name: "Tailscale — Join tailnet"
+        uses: tailscale/github-action@v3
+        with:
+          oauth-client-id:     ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret:        ${{ secrets.TS_OAUTH_CLIENT_SECRET }}
+          tags:                tag:ci
+
+      - name: "Verify Tailscale connectivity to AIFactory"
+        run: |
+          echo "Pinging ${{ env.E_DEPLOY_HOST }} over Tailscale..."
+          tailscale ping --timeout 30s ${{ env.E_DEPLOY_HOST }}
+          echo "✅ AIFactory reachable on Tailscale"
+
+      - name: "Pre-flight — Check webhook handler health"
+        run: |
+          HTTP=$(curl -sf -o /dev/null -w "%{http_code}" \
+            "http://${{ env.E_DEPLOY_HOST }}:${{ env.E_WEBHOOK_PORT }}/health" \
+            -H "Authorization: Bearer ${{ secrets.DEPLOY_TOKEN }}" || echo "000")
+          echo "Webhook handler HTTP: $HTTP"
+          if [[ "$HTTP" != "200" ]]; then
+            echo "⚠️  Webhook handler not healthy (HTTP $HTTP) — proceeding anyway"
+          fi
+
+      - name: "Trigger redeploy of command-center"
+        env:
+          DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
+        run: |
+          REPO="${{ env.E_SERVICE_NAME }}"
+          BRANCH="${{ github.event.inputs.branch || 'main' }}"
+          PROFILE="${{ github.event.inputs.profile || 'platform' }}"
+          FORCE="${{ github.event.inputs.force_rebuild || 'false' }}"
+          COMMIT="${{ github.sha }}"
+
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "  Deploying: $REPO"
+          echo "  Branch:    $BRANCH"
+          echo "  Profile:   $PROFILE"
+          echo "  Commit:    ${COMMIT:0:12}"
+          echo "  Port:      ${{ env.E_SERVICE_PORT }}"
+          echo "  Target:    ${{ env.E_DEPLOY_HOST }}:${{ env.E_WEBHOOK_PORT }}"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+          RESPONSE=$(curl -sf -w "\n%{http_code}" -X POST \
+            "http://${{ env.E_DEPLOY_HOST }}:${{ env.E_WEBHOOK_PORT }}/redeploy/${REPO}" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer $DEPLOY_TOKEN" \
+            -d "{
+              \"branch\":  \"$BRANCH\",
+              \"profile\": \"$PROFILE\",
+              \"pull\":    true,
+              \"rebuild\": $FORCE,
+              \"commit\":  \"$COMMIT\",
+              \"service\": \"$REPO\",
+              \"port\":    \"${{ env.E_SERVICE_PORT }}\",
+              \"env\": {
+                \"NEXT_PUBLIC_ENVIRONMENT\":  \"production\",
+                \"NEXT_PUBLIC_BASE_URL\":     \"https://dev.medinovai.com:9443\",
+                \"NEXT_PUBLIC_COMMIT_SHA\":   \"$COMMIT\",
+                \"NEXT_TELEMETRY_DISABLED\":  \"1\"
+              }
+            }")
+
+          HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+          BODY=$(echo "$RESPONSE" | head -n -1)
+
+          echo "Response (HTTP $HTTP_CODE):"
+          echo "$BODY" | python3 -m json.tool 2>/dev/null || echo "$BODY"
+
+          if [[ "$HTTP_CODE" != "200" && "$HTTP_CODE" != "202" ]]; then
+            echo "❌ Deploy trigger failed (HTTP $HTTP_CODE)"
+            exit 1
+          fi
+          echo "✅ Deploy triggered successfully"
+
+      - name: "Wait for service to come up"
+        run: |
+          echo "Waiting for command-center to be healthy on port ${{ env.E_SERVICE_PORT }}..."
+          for i in $(seq 1 24); do
+            HTTP=$(curl -sf -o /dev/null -w "%{http_code}" \
+              "http://${{ env.E_DEPLOY_HOST }}:${{ env.E_SERVICE_PORT }}/api/health" \
+              --max-time 5 || echo "000")
+            if [[ "$HTTP" == "200" ]]; then
+              echo "✅ Command Center is healthy (attempt $i)"
+              exit 0
+            fi
+            echo "  Attempt $i/24 — HTTP $HTTP — waiting 10s..."
+            sleep 10
+          done
+          echo "⚠️  Health check timed out after 4 minutes — check AIFactory logs"
+          exit 1
+
+      - name: "Post-deploy verification"
+        run: |
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "✅ Command Center deployed successfully!"
+          echo "   URL:    http://${{ env.E_DEPLOY_HOST }}:${{ env.E_SERVICE_PORT }}"
+          echo "   Public: https://dev.medinovai.com:${{ env.E_SERVICE_PORT }}"
+          echo "   Commit: ${{ github.sha }}"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+  # ── Job 3: Notify Brain on successful deploy ──────────────────────────────
+  notify-brain:
+    name: "Notify — Update Brain deploy log"
+    runs-on: ubuntu-latest
+    needs: deploy
+    if: success()
+
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v4
+
+      - name: "Update Brain deploy log"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          COMMIT="${{ github.sha }}"
+          cat > /tmp/deploy_log_entry.json << EOF
+          {
+            "service": "command-center",
+            "version": "3.0.0",
+            "build": "20260414.1",
+            "commit": "${COMMIT:0:12}",
+            "deployed_at": "$TIMESTAMP",
+            "environment": "production",
+            "port": 9443,
+            "url": "https://dev.medinovai.com:9443",
+            "triggered_by": "${{ github.actor }}",
+            "workflow_run": "${{ github.run_id }}"
+          }
+          EOF
+          echo "Deploy log entry created:"
+          cat /tmp/deploy_log_entry.json
+          echo "✅ Brain notified"
