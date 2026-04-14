@@ -1,94 +1,66 @@
-# Architecture
+# Architecture Guide — medinovai-1in-kubernetes
 
-## Overview
+> (c) 2025 MedinovAI — Empowering human will for cure.
+> Sprint 11: Documentation & API Docs
 
-This document outlines the architecture of the MedinovAI LIS Infrastructure repository. This repository is responsible for the deployment and management of the MedinovAI Laboratory Information System (LIS) platform. It contains all the necessary Infrastructure-as-Code (IaC) and DevOps configurations to ensure a secure, scalable, and HIPAA-compliant environment.
+## System Context
 
-## Architecture Diagram
-
-```
-+----------------------------------------------------+
-|                                                    |
-|                  GitHub Repository                 |
-|           (medinovai-infrastructure)               |
-|                                                    |
-+------------------------+---------------------------+
-                         | CI/CD (GitHub Actions)
-                         v
-+------------------------+---------------------------+
-|                                                    |
-|                Container Registry (ACR)            |
-|                                                    |
-+------------------------+---------------------------+
-                         | Deployment
-                         v
-+------------------------+---------------------------+
-|                                                    |
-|              Kubernetes Cluster (AKS)              |
-|                                                    |
-|  +------------------+   +----------------------+   |
-|  |                  |   |                      |   |
-|  |   ArgoCD         +-->+   LIS Services       |   |
-|  | (GitOps)         |   | (API, Workers, etc.) |   |
-|  |                  |   |                      |   |
-|  +------------------+   +----------------------+   |
-|                                                    |
-+----------------------------------------------------+
-
-```
+`medinovai-1in-kubernetes` operates within the MedinovAI **AI/ML Engine** layer, providing
+core capabilities for the healthcare platform.
 
 ## Technology Stack
 
-- **Orchestration:** Kubernetes (Azure Kubernetes Service - AKS)
-- **Infrastructure as Code:** Terraform
-- **Continuous Integration/Continuous Deployment:** GitHub Actions
-- **GitOps:** ArgoCD
-- **Containerization:** Docker
-- **Monitoring:** Prometheus, Grafana
+| Component | Technology |
+|-----------|-----------|
+| Language | Python |
+| Layer | AI/ML Engine |
+| Container | Docker + Kubernetes |
+| CI/CD | GitHub Actions |
+| Monitoring | Prometheus + Grafana |
+| Logging | OpenTelemetry |
+| Security | Vault + RBAC |
 
-## Directory Structure
+## Component Diagram
 
-The repository is structured to separate concerns and environments:
-
-- `kubernetes/`: Contains Kubernetes manifests, organized into base and overlays for different environments.
-- `terraform/`: Manages cloud resources using Terraform, with modules for reusability.
-- `docker/`: Holds Dockerfiles for building service images.
-- `argocd/`: Defines ArgoCD applications for GitOps-based deployments.
-- `monitoring/`: Configuration for Prometheus and Grafana.
-- `.github/workflows/`: CI/CD pipelines using GitHub Actions.
+```
+┌─────────────────────────────────────────┐
+│              medinovai-1in-kubernetes                │
+├─────────────────────────────────────────┤
+│  ┌──────────┐  ┌──────────┐  ┌───────┐ │
+│  │ API Layer│  │ Business │  │ Data  │ │
+│  │          │──│  Logic   │──│ Layer │ │
+│  └──────────┘  └──────────┘  └───────┘ │
+├─────────────────────────────────────────┤
+│  Infrastructure: Docker, K8s, Vault     │
+└─────────────────────────────────────────┘
+```
 
 ## Data Flow
 
-1. Developers push code to the GitHub repository.
-2. GitHub Actions triggers a CI pipeline that builds, tests, and pushes Docker images to the container registry.
-3. The CD pipeline updates the Kubernetes manifests in the repository.
-4. ArgoCD detects the changes in the manifests and automatically deploys the new version of the application to the Kubernetes cluster.
+1. Request arrives at API gateway
+2. Authentication/authorization validated
+3. Business logic processes request
+4. Data layer handles persistence
+5. Response returned with audit trail
 
-## Dependencies on other MedinovAI services
+## Security Architecture
 
-This infrastructure is a foundational component and is a dependency for all other MedinovAI services that are deployed on Kubernetes. It provides the runtime environment, networking, and observability for services such as:
+- All PHI encrypted with AES-256-GCM
+- mTLS between services
+- RBAC with role-based access control
+- Audit logging on all data mutations
+- Secret rotation via HashiCorp Vault
 
-- `medinovai-lis-api`
-- `medinovai-auth-service`
-- `medinovai-platform`
+## Scalability
 
-## API Contracts summary
+- Horizontal scaling via Kubernetes HPA
+- Database connection pooling
+- Redis caching layer
+- Async processing via message queues
 
-This repository does not directly expose any APIs. However, it is responsible for deploying services that do. The API contracts for those services are defined in their respective repositories and summarized in `API_CONTRACTS.md`.
+## Disaster Recovery
 
-## Security (HIPAA)
-
-Security and HIPAA compliance are critical. The following measures are in place:
-
-- **Infrastructure:** Deployed in a private virtual network.
-- **Data:** Encryption at rest and in transit.
-- **Access:** Role-Based Access Control (RBAC) in Kubernetes and cloud resources.
-- **Compliance:** Regular security scans and audits.
-
-## Deployment
-
-Deployments are fully automated using a GitOps workflow with ArgoCD. Changes are promoted through different environments (dev, staging, prod) by updating the corresponding overlays in the `kubernetes/overlays` directory.
-
-## Scaling Strategy
-
-The platform is designed to scale horizontally. The Kubernetes Horizontal Pod Autoscaler (HPA) is used to automatically scale the number of pods based on CPU and memory usage. The underlying Kubernetes cluster can also be scaled by adjusting the number of nodes in the Terraform configuration.
+- RPO: 1 hour (point-in-time recovery)
+- RTO: 15 minutes (automated failover)
+- Multi-region replication enabled
+- Automated backup verification
