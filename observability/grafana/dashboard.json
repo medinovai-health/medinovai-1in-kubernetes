@@ -1,0 +1,41 @@
+{
+  "title": "1In-Kubernetes Service Dashboard",
+  "uid": "1in-kubernetes-dash",
+  "tags": ["medinovai", "service", "auto-generated"],
+  "timezone": "browser",
+  "panels": [
+    {
+      "title": "Request Rate",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "expr": "sum(rate(fastapi_requests_total{app=\"medinovai-1in-kubernetes\"}[5m])) by (method, endpoint)",
+          "legendFormat": "{{method}} {{endpoint}}"
+        }
+      ]
+    },
+    {
+      "title": "Error Rate (5xx)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "targets": [
+        {
+          "expr": "sum(rate(fastapi_requests_total{app=\"medinovai-1in-kubernetes\", status=~\"5..\"}[5m]))",
+          "legendFormat": "5xx Errors"
+        }
+      ]
+    },
+    {
+      "title": "P99 Latency",
+      "type": "gauge",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(fastapi_requests_duration_seconds_bucket{app=\"medinovai-1in-kubernetes\"}[5m])) by (le))",
+          "legendFormat": "P99 Latency (s)"
+        }
+      ]
+    }
+  ]
+}
