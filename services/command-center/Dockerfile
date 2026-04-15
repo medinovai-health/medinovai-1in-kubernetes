@@ -8,8 +8,8 @@ RUN apk add --no-cache libc6-compat
 WORKDIR /app
 # Context is ./ui, so package.json is at root of context
 COPY package.json ./
-# Install ALL dependencies (including devDeps needed for Next.js build)
-RUN npm install --ignore-scripts
+# Use --legacy-peer-deps to handle React 19 peer dependency conflicts
+RUN npm install --legacy-peer-deps
 COPY . .
 # Ensure public directory exists for Next.js standalone
 RUN mkdir -p public
