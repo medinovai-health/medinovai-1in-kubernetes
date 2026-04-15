@@ -1,10 +1,4 @@
-###############################################################################
-# Command Center — Superman Deploy Caller
-# Deploys services/command-center to AIFactory on port 9443
-# Auto-triggered on push to main when command-center files change
-###############################################################################
-
-name: Deploy Command Center
+name: Deploy Command Center to AIFactory
 
 on:
   push:
@@ -13,35 +7,107 @@ on:
       - 'services/command-center/**'
       - '.github/workflows/deploy-command-center.yml'
   workflow_dispatch:
-    inputs:
-      environment:
-        description: 'Target environment'
-        required: true
-        default: 'dev'
-        type: choice
-        options: [dev, staging, production]
-      deploy_target:
-        description: 'Deploy target'
-        required: true
-        default: 'aifactory'
-        type: choice
-        options: [aifactory, aws, both]
 
 concurrency:
-  group: deploy-command-center-${{ github.ref }}
+  group: command-center-deploy-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
   deploy:
-    uses: medinovai-health/medinovai-deploy/.github/workflows/reusable/superman-deploy.yml@main
-    with:
-      service_name: medinovai-infrastructure
-      deploy_target: ${{ github.event.inputs.deploy_target || 'aifactory' }}
-      environment: ${{ github.event.inputs.environment || 'dev' }}
-      compose_file: services/command-center/docker-compose.yml
-      health_port: '9443'
-      health_endpoint: /api/health
-      startup_wait: 45
-      notify_slack: true
-      create_release: false
-    secrets: inherit
+    name: Deploy Command Center → AIFactory-medinovai
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set build metadata
+        id: meta
+        run: |
+          VERSION=$(cat services/command-center/ui/package.json | python3 -c 'import json,sys; print(json.load(sys.stdin)["version"])' 2>/dev/null || echo "3.0.0")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "build=$(date +%Y%m%d).${GITHUB_RUN_NUMBER}" >> $GITHUB_OUTPUT
+          echo "sha=${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
+
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v2
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_CLIENT_SECRET }}
+          tags: tag:ci
+
+      - name: Deploy via SSH to AIFactory
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.MACSTUDIO_TS_IP }}
+          username: ${{ secrets.MACSTUDIO_USER }}
+          key: ${{ secrets.MACSTUDIO_SSH_KEY }}
+          port: 22
+          timeout: 60s
+          command_timeout: 20m
+          script: |
+            set -e
+            echo "=== Connected to AIFactory as $(whoami) on $(hostname) ==="
+            echo "=== Deploying Command Center v${{ steps.meta.outputs.version }} ==="
+
+            DEPLOY_DIR="$HOME/aifactory/deployments/medinovai-infrastructure"
+            mkdir -p "$DEPLOY_DIR"
+
+            if [ -d "$DEPLOY_DIR/.git" ]; then
+              echo "Pulling latest code..."
+              cd "$DEPLOY_DIR"
+              git remote set-url origin "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/medinovai-health/medinovai-infrastructure.git"
+              git fetch origin
+              git reset --hard origin/main
+            else
+              echo "Cloning repo for first time..."
+              git clone "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/medinovai-health/medinovai-infrastructure.git" "$DEPLOY_DIR"
+              cd "$DEPLOY_DIR"
+            fi
+
+            cd "$DEPLOY_DIR/services/command-center"
+
+            echo "=== Stopping any existing container ==="
+            docker compose down 2>/dev/null || true
+
+            echo "=== Building and starting container ==="
+            docker compose up -d --build --remove-orphans 2>&1
+
+            echo "=== Container status immediately after start ==="
+            sleep 5
+            docker compose ps
+            docker compose logs --tail=50 2>&1 || true
+
+            echo "=== Waiting for app to be ready ==="
+            for i in $(seq 1 24); do
+              echo "  Attempt $i/24..."
+              if curl -sf http://localhost:9443/api/health > /dev/null 2>&1 || wget -qO- http://localhost:9443/api/health > /dev/null 2>&1; then
+                echo "✓ Command Center is healthy on port 9443"
+                docker compose ps
+                exit 0
+              fi
+              STATUS=$(docker compose ps --format json 2>/dev/null | python3 -c "import json,sys; data=sys.stdin.read().strip(); items=json.loads(data) if data.startswith('[') else [json.loads(l) for l in data.split('\n') if l]; print(items[0].get('State','unknown') if items else 'none')" 2>/dev/null || echo "unknown")
+              if [ "$STATUS" = "exited" ] || [ "$STATUS" = "dead" ]; then
+                echo "Container crashed! Logs:"
+                docker compose logs --tail=100 2>&1
+                exit 1
+              fi
+              sleep 5
+            done
+            echo "=== Health check timed out — final logs ==="
+            docker compose logs --tail=100 2>&1
+            docker compose ps
+            exit 1
+
+      - name: Write deployment summary
+        if: always()
+        run: |
+          echo "## Command Center Deployment" >> $GITHUB_STEP_SUMMARY
+          echo "| Field | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Version | \`${{ steps.meta.outputs.version }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build | \`${{ steps.meta.outputs.build }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Commit | \`${{ steps.meta.outputs.sha }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Port | :9443 |" >> $GITHUB_STEP_SUMMARY
+          echo "| URL | http://${{ secrets.MACSTUDIO_TS_IP }}:9443 |" >> $GITHUB_STEP_SUMMARY
