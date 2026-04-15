@@ -8,24 +8,10 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import type { Deployment } from '../../../lib/types';
 
 const E_APPROVAL_REQUIRED_ENVS = ['staging', 'production'];
 const E_ALLOWED_ENVIRONMENTS = ['dev', 'qa', 'staging', 'production'];
-
-export type Deployment = {
-  id: string;
-  service: string;
-  version: string;
-  environment: string;
-  status: 'pending_approval' | 'approved' | 'in_progress' | 'success' | 'failed' | 'rolled_back';
-  requestedBy: string;
-  approvedBy?: string;
-  startedAt?: string;
-  completedAt?: string;
-  rollbackVersion?: string;
-  nexusRecommendation?: string;
-  createdAt: string;
-};
 
 // In-memory store — replace with DB in production
 const mos_deploymentStore = new Map<string, Deployment>();
