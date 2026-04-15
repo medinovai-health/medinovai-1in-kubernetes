@@ -10,8 +10,8 @@ version: "3.8"
 services:
   command-center:
     build:
-      context: ./ui
-      dockerfile: ../Dockerfile
+      context: .
+      dockerfile: Dockerfile
       target: production
       args:
         NEXT_PUBLIC_ENVIRONMENT:  "${NEXT_PUBLIC_ENVIRONMENT:-production}"
