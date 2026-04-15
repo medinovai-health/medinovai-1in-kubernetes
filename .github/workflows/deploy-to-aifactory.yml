@@ -22,7 +22,7 @@
 #   AIFACTORY_SSH_USER    — SSH username (e.g. medinovai)
 #   AIFACTORY_SSH_KEY     — SSH private key (PEM format)
 #   AIFACTORY_DEPLOY_PATH — Base deploy path (e.g. /opt/medinovai)
-#   GITHUB_PAT            — GitHub PAT with repo + workflow scopes
+#   GH_PAT                — GitHub PAT with repo + workflow scopes
 #
 # FMEA Protections built in:
 #   FMEA-DOCKER-001: Creates medinovai-net network if missing
@@ -92,7 +92,11 @@ on:
         required: true
       AIFACTORY_DEPLOY_PATH:
         required: true
-      GITHUB_PAT:
+      GH_PAT:
+        required: false
+      TS_OAUTH_CLIENT_ID:
+        required: false
+      TS_OAUTH_CLIENT_SECRET:
         required: false
 
 jobs:
@@ -127,7 +131,7 @@ jobs:
         uses: tailscale/github-action@v2
         with:
           oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
-          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          oauth-secret: ${{ secrets.TS_OAUTH_CLIENT_SECRET }}
           tags: tag:ci
         continue-on-error: true  # Proceed if Tailscale not configured (direct SSH fallback)
 
@@ -173,7 +177,7 @@ jobs:
           BUILD_NUMBER: ${{ github.run_number }}
           COMMIT_SHA: ${{ github.sha }}
           ENVIRONMENT: production
-          GITHUB_PAT: ${{ secrets.GITHUB_PAT }}
+          GITHUB_PAT: ${{ secrets.GH_PAT }}
         run: |
           ssh -i ~/.ssh/aifactory_key \
               -o ConnectTimeout=15 \
