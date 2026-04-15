@@ -1,0 +1,194 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Reusable Workflow: Deploy to AIFactory (MacStudio)
+# MedinovAI Platform Infrastructure
+# (c) 2026 Copyright MedinovAI. All Rights Reserved.
+#
+# USAGE — Add to any repo's .github/workflows/cd.yml:
+#
+#   jobs:
+#     deploy:
+#       uses: medinovai-health/medinovai-infrastructure/.github/workflows/deploy-to-aifactory.yml@main
+#       with:
+#         service_name: my-service-name
+#         port: 8080
+#         deploy_dir: medinovai-my-repo
+#       secrets: inherit
+#
+# REQUIRED ORG SECRETS (set in medinovai-health org settings):
+#   TS_OAUTH_CLIENT_ID, TS_OAUTH_CLIENT_SECRET
+#   MACSTUDIO_TS_IP, MACSTUDIO_USER, MACSTUDIO_SSH_KEY
+# ─────────────────────────────────────────────────────────────────────────────
+
+name: Deploy to AIFactory (Reusable)
+
+on:
+  workflow_call:
+    inputs:
+      service_name:
+        description: 'Human-readable service name (e.g. "HealthLLM")'
+        required: true
+        type: string
+      port:
+        description: 'Port the service runs on (e.g. 8080)'
+        required: true
+        type: number
+      deploy_dir:
+        description: 'Directory name under ~/aifactory/deployments/ (defaults to repo name)'
+        required: false
+        type: string
+        default: ''
+      health_path:
+        description: 'Health check path (default: /api/health)'
+        required: false
+        type: string
+        default: '/api/health'
+      compose_file:
+        description: 'Docker Compose file to use (default: docker-compose.yml)'
+        required: false
+        type: string
+        default: 'docker-compose.yml'
+      timeout_minutes:
+        description: 'Deployment timeout in minutes'
+        required: false
+        type: number
+        default: 30
+    secrets:
+      TS_OAUTH_CLIENT_ID:
+        required: true
+      TS_OAUTH_CLIENT_SECRET:
+        required: true
+      MACSTUDIO_TS_IP:
+        required: true
+      MACSTUDIO_USER:
+        required: true
+      MACSTUDIO_SSH_KEY:
+        required: true
+
+jobs:
+  deploy-to-aifactory:
+    name: Deploy ${{ inputs.service_name }} → AIFactory
+    runs-on: ubuntu-latest
+    timeout-minutes: ${{ inputs.timeout_minutes }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set build metadata
+        id: meta
+        run: |
+          # Try to read version from package.json, pyproject.toml, or Cargo.toml
+          VERSION=""
+          if [ -f "ui/package.json" ]; then
+            VERSION=$(python3 -c 'import json,sys; print(json.load(sys.stdin)["version"])' < ui/package.json 2>/dev/null || echo "")
+          fi
+          if [ -z "$VERSION" ] && [ -f "package.json" ]; then
+            VERSION=$(python3 -c 'import json,sys; print(json.load(sys.stdin)["version"])' < package.json 2>/dev/null || echo "")
+          fi
+          if [ -z "$VERSION" ] && [ -f "pyproject.toml" ]; then
+            VERSION=$(grep '^version' pyproject.toml | head -1 | sed 's/version = "//;s/"//' || echo "")
+          fi
+          VERSION="${VERSION:-1.0.0}"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "build=$(date +%Y%m%d).${GITHUB_RUN_NUMBER}" >> $GITHUB_OUTPUT
+          echo "sha=${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
+          echo "repo=${GITHUB_REPOSITORY##*/}" >> $GITHUB_OUTPUT
+
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v2
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_CLIENT_SECRET }}
+          tags: tag:ci
+
+      - name: Deploy via SSH to AIFactory
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          GITHUB_TOKEN_PASS: ${{ github.token }}
+        with:
+          host: ${{ secrets.MACSTUDIO_TS_IP }}
+          username: ${{ secrets.MACSTUDIO_USER }}
+          key: ${{ secrets.MACSTUDIO_SSH_KEY }}
+          port: 22
+          timeout: 60s
+          command_timeout: ${{ inputs.timeout_minutes }}m
+          envs: GITHUB_TOKEN_PASS
+          script: |
+            set -e
+            REPO_NAME="${{ steps.meta.outputs.repo }}"
+            DEPLOY_DIR_NAME="${{ inputs.deploy_dir }}"
+            if [ -z "$DEPLOY_DIR_NAME" ]; then
+              DEPLOY_DIR_NAME="$REPO_NAME"
+            fi
+            DEPLOY_DIR="$HOME/aifactory/deployments/$DEPLOY_DIR_NAME"
+            COMPOSE_FILE="${{ inputs.compose_file }}"
+            PORT="${{ inputs.port }}"
+            HEALTH_PATH="${{ inputs.health_path }}"
+            SERVICE_NAME="${{ inputs.service_name }}"
+            VERSION="${{ steps.meta.outputs.version }}"
+            BUILD="${{ steps.meta.outputs.build }}"
+
+            echo "=== AIFactory Deploy: $SERVICE_NAME v$VERSION build $BUILD ==="
+            echo "=== Target: $DEPLOY_DIR | Port: $PORT ==="
+
+            mkdir -p "$DEPLOY_DIR"
+
+            if [ -d "$DEPLOY_DIR/.git" ]; then
+              echo "Pulling latest code..."
+              cd "$DEPLOY_DIR"
+              git remote set-url origin "https://x-access-token:${GITHUB_TOKEN_PASS}@github.com/${{ github.repository }}.git"
+              git fetch origin
+              git reset --hard origin/${{ github.ref_name }}
+            else
+              echo "Cloning repo..."
+              git clone "https://x-access-token:${GITHUB_TOKEN_PASS}@github.com/${{ github.repository }}.git" "$DEPLOY_DIR"
+              cd "$DEPLOY_DIR"
+            fi
+
+            cd "$DEPLOY_DIR"
+
+            # Export env vars for docker-compose
+            export APP_VERSION="$VERSION"
+            export BUILD_NUMBER="$BUILD"
+            export COMMIT_SHA="${{ steps.meta.outputs.sha }}"
+            export ENVIRONMENT="production"
+            export GITHUB_PAT="${GITHUB_TOKEN_PASS}"
+
+            echo "Building and starting containers..."
+            docker compose -f "$COMPOSE_FILE" pull 2>/dev/null || true
+            docker compose -f "$COMPOSE_FILE" up -d --build --remove-orphans
+
+            echo "Waiting for service to start (30s)..."
+            sleep 30
+
+            echo "Container status:"
+            docker compose -f "$COMPOSE_FILE" ps
+
+            echo "Health check on port $PORT..."
+            for i in $(seq 1 18); do
+              if curl -sf "http://localhost:${PORT}${HEALTH_PATH}" > /dev/null 2>&1; then
+                echo "✓ $SERVICE_NAME is healthy on port $PORT"
+                exit 0
+              fi
+              echo "  Attempt $i/18 — waiting 10s..."
+              sleep 10
+            done
+
+            echo "Health check timed out after 3 minutes — logs:"
+            docker compose -f "$COMPOSE_FILE" logs --tail=100
+            exit 1
+
+      - name: Write deployment summary
+        if: always()
+        run: |
+          STATUS="${{ job.status }}"
+          echo "## ${{ inputs.service_name }} → AIFactory" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Field | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Status | $STATUS |" >> $GITHUB_STEP_SUMMARY
+          echo "| Version | \`${{ steps.meta.outputs.version }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build | \`${{ steps.meta.outputs.build }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Commit | \`${{ steps.meta.outputs.sha }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Port | :${{ inputs.port }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Repo | ${{ github.repository }} |" >> $GITHUB_STEP_SUMMARY
