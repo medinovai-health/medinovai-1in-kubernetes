@@ -11,8 +11,9 @@ LABEL org.opencontainers.image.version="3.0.0"
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 # Context is ./ui, so package.json is at root of context
-COPY package.json package-lock.json* ./
-RUN npm ci --only=production --ignore-scripts && npm cache clean --force
+COPY package.json ./
+# Use npm install (no package-lock.json required)
+RUN npm install --only=production --ignore-scripts && npm cache clean --force
 # ── Stage 2: Builder ───────────────────────────────────────────────────────
 FROM node:20-alpine AS builder
 WORKDIR /app
@@ -34,7 +35,7 @@ ENV NEXT_PUBLIC_BUILD_ID=${NEXT_PUBLIC_BUILD_ID}
 ENV NEXT_PUBLIC_ENVIRONMENT=${NEXT_PUBLIC_ENVIRONMENT}
 ENV NEXT_PUBLIC_BASE_URL=${NEXT_PUBLIC_BASE_URL}
 ENV NEXT_PUBLIC_COMMIT_SHA=${NEXT_PUBLIC_COMMIT_SHA}
-RUN npm run build
+RUN npm install --ignore-scripts && npm run build
 # ── Stage 3: Production Runner (hardened) ─────────────────────────────────
 FROM node:20-alpine AS production
 WORKDIR /app
