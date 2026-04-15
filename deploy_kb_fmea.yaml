@@ -1,0 +1,70 @@
+# MedinovAI FMEA Knowledge Base v3.0
+# 128 failure modes across 16 categories
+# Used by MIL (medinovai-intelligence-layer) for autonomous remediation
+# Last updated: 2026-04-14 by Manus AI Agent
+
+metadata:
+  version: "3.0.0"
+  total_modes: 128
+  categories:
+    - Docker (20 modes)
+    - Kubernetes (10 modes)
+    - Terraform (10 modes)
+    - GitHub Actions (10 modes)
+    - SSH (5 modes)
+    - DNS/SSL (5 modes)
+    - Database (8 modes)
+    - AWS (10 modes)
+    - Node.js/Next.js (10 modes)
+    - Go (4 modes)
+    - Python (3 modes)
+    - Tailscale (4 modes)
+    - System/OS (8 modes)
+    - Security/Compliance (8 modes)
+    - Monitoring/Observability (10 modes)
+    - Vidur Event Bus (3 modes)
+
+# Source of truth: medinovai-2ag-deploy/lib/fmea-engine.ts
+# The TypeScript file contains the full structured data with:
+#   - id, category, mode, effect
+#   - severity (1-10), detection (1-10), occurrence (1-10)
+#   - rpn (risk priority number = S*D*O)
+#   - capa (corrective/preventive action)
+#   - automatable (boolean)
+#   - commands (shell commands for auto-remediation)
+
+# High-risk modes (RPN >= 200) — require immediate attention:
+high_risk_modes:
+  - id: D005
+    mode: "Docker daemon not running"
+    rpn: 30  # 10*1*3
+    capa: "sudo systemctl restart docker"
+    automatable: true
+  - id: SYS001
+    mode: "Disk full"
+    rpn: 80  # 10*2*4
+    capa: "docker system prune -af --volumes"
+    automatable: true
+  - id: DB003
+    mode: "RDS instance stopped"
+    rpn: 20  # 10*1*2
+    capa: "aws rds start-db-instance --db-instance-identifier <id>"
+    automatable: true
+  - id: SEC001
+    mode: "Secret exposed in git history"
+    rpn: 120  # 10*4*3
+    capa: "Rotate secret immediately; BFG to clean history"
+    automatable: false
+  - id: G005
+    mode: "SSH connection refused to MacStudio"
+    rpn: 54  # 9*2*3
+    capa: "Check Tailscale; verify SSH key; check firewall"
+    automatable: false
+
+# MIL Integration:
+# POST ws://100.106.54.9:9876/ws
+# {
+#   "type": "fmea_query",
+#   "mode_id": "D005",
+#   "context": { "host": "macstudio", "service": "astra" }
+# }
