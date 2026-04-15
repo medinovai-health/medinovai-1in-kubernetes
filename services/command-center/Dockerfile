@@ -1,24 +1,15 @@
 # Dockerfile — MedinovAI Command Center v3.0
 # (c) 2026 Copyright MedinovAI. All Rights Reserved.
-# Multi-stage hardened build: minimal attack surface, non-root
+# Multi-stage build: builder → production
 # Build context: services/command-center/ui/ (set in docker-compose.yml)
-# ── Stage 1: Dependencies ──────────────────────────────────────────────────
-FROM node:20-alpine AS deps
-LABEL org.opencontainers.image.source="https://github.com/medinovai-health/medinovai-infrastructure"
-LABEL org.opencontainers.image.vendor="MedinovAI"
-LABEL org.opencontainers.image.title="MedinovAI Command Center"
-LABEL org.opencontainers.image.version="3.0.0"
+# ── Stage 1: Builder (install all deps + build) ───────────────────────────
+FROM node:20-alpine AS builder
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 # Context is ./ui, so package.json is at root of context
 COPY package.json ./
-# Use npm install (no package-lock.json required)
-RUN npm install --only=production --ignore-scripts && npm cache clean --force
-# ── Stage 2: Builder ───────────────────────────────────────────────────────
-FROM node:20-alpine AS builder
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
-# Context is ./ui, so copy all ui files
+# Install ALL dependencies (including devDeps needed for Next.js build)
+RUN npm install --ignore-scripts
 COPY . .
 # Ensure public directory exists for Next.js standalone
 RUN mkdir -p public
@@ -35,11 +26,10 @@ ENV NEXT_PUBLIC_BUILD_ID=${NEXT_PUBLIC_BUILD_ID}
 ENV NEXT_PUBLIC_ENVIRONMENT=${NEXT_PUBLIC_ENVIRONMENT}
 ENV NEXT_PUBLIC_BASE_URL=${NEXT_PUBLIC_BASE_URL}
 ENV NEXT_PUBLIC_COMMIT_SHA=${NEXT_PUBLIC_COMMIT_SHA}
-RUN npm install --ignore-scripts && npm run build
-# ── Stage 3: Production Runner (hardened) ─────────────────────────────────
+RUN npm run build
+# ── Stage 2: Production Runner (hardened) ─────────────────────────────────
 FROM node:20-alpine AS production
 WORKDIR /app
-# Security hardening
 RUN apk add --no-cache wget tini && \
     addgroup --system --gid 1001 medinovai && \
     adduser --system --uid 1001 --ingroup medinovai --no-create-home command-center
@@ -52,10 +42,8 @@ RUN mkdir -p ./public
 COPY --from=builder --chown=command-center:medinovai /app/public ./public
 COPY --from=builder --chown=command-center:medinovai /app/.next/standalone ./
 COPY --from=builder --chown=command-center:medinovai /app/.next/static ./.next/static
-# Non-root execution
 USER command-center
 EXPOSE 9443
-# Use tini as PID 1 for proper signal handling
 ENTRYPOINT ["/sbin/tini", "--"]
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
   CMD wget -qO- http://localhost:9443/api/health || exit 1
