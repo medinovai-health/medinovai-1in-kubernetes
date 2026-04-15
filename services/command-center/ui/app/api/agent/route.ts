@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
   }
 
   // ── Rate Limiting ────────────────────────────────────────────────────────
-  const mos_clientId = req.headers.get('x-forwarded-for') || req.ip || 'unknown';
+  const mos_clientId = req.headers.get('x-forwarded-for') || (req.headers.get('x-forwarded-for')?.split(',')[0] || req.headers.get('x-real-ip') || '') || 'unknown';
   if (!checkRateLimit(mos_clientId)) {
     return NextResponse.json(
       { error: 'Rate limit exceeded. Please wait before sending more requests.' },
