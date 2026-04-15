@@ -1,6 +1,7 @@
 # Dockerfile — MedinovAI Command Center v3.0
 # (c) 2026 Copyright MedinovAI. All Rights Reserved.
 # Multi-stage hardened build: minimal attack surface, non-root
+# Build context: services/command-center/ui/ (set in docker-compose.yml)
 # ── Stage 1: Dependencies ──────────────────────────────────────────────────
 FROM node:20-alpine AS deps
 LABEL org.opencontainers.image.source="https://github.com/medinovai-health/medinovai-infrastructure"
@@ -9,13 +10,15 @@ LABEL org.opencontainers.image.title="MedinovAI Command Center"
 LABEL org.opencontainers.image.version="3.0.0"
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
-COPY ui/package.json ui/package-lock.json* ./
+# Context is ./ui, so package.json is at root of context
+COPY package.json package-lock.json* ./
 RUN npm ci --only=production --ignore-scripts && npm cache clean --force
 # ── Stage 2: Builder ───────────────────────────────────────────────────────
 FROM node:20-alpine AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
-COPY ui/ .
+# Context is ./ui, so copy all ui files
+COPY . .
 # Ensure public directory exists for Next.js standalone
 RUN mkdir -p public
 # Build args for environment injection
