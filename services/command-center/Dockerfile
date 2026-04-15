@@ -5,16 +5,18 @@
 # ── Stage 1: Builder (install all deps + build) ───────────────────────────
 FROM node:20-alpine AS builder
 RUN apk add --no-cache libc6-compat
+# Set up workspace with both ui/ and agent/ accessible
 WORKDIR /app
-# Copy package.json from ui/ subdirectory
+# Copy agent source first (needed for cross-package imports)
+COPY agent/ ./agent/
+# Now set up the ui workspace
+WORKDIR /app/ui
+# Copy package.json and install dependencies here (node_modules at /app/ui/node_modules)
 COPY ui/package.json ./
 # Use --legacy-peer-deps to handle React 19 peer dependency conflicts
 RUN npm install --legacy-peer-deps
-# Copy all source files (ui/ and agent/ so imports resolve correctly)
-COPY ui/ ./ui/
-COPY agent/ ./agent/
-# Move into the ui directory for the build
-WORKDIR /app/ui
+# Copy all UI source files
+COPY ui/ ./
 # Ensure public directory exists for Next.js standalone
 RUN mkdir -p public
 # Build args for environment injection
@@ -30,6 +32,7 @@ ENV NEXT_PUBLIC_BUILD_ID=${NEXT_PUBLIC_BUILD_ID}
 ENV NEXT_PUBLIC_ENVIRONMENT=${NEXT_PUBLIC_ENVIRONMENT}
 ENV NEXT_PUBLIC_BASE_URL=${NEXT_PUBLIC_BASE_URL}
 ENV NEXT_PUBLIC_COMMIT_SHA=${NEXT_PUBLIC_COMMIT_SHA}
+# Build from /app/ui — resolves ../../agent/src/nexus-agent → /app/agent/src/nexus-agent
 RUN npm run build
 # ── Stage 2: Production Runner (hardened) ─────────────────────────────────
 FROM node:20-alpine AS production
