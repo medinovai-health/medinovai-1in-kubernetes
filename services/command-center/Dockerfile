@@ -1,16 +1,20 @@
 # Dockerfile — MedinovAI Command Center v3.0
 # (c) 2026 Copyright MedinovAI. All Rights Reserved.
 # Multi-stage build: builder → production
-# Build context: services/command-center/ui/ (set in docker-compose.yml)
+# Build context: services/command-center/ (includes ui/ and agent/)
 # ── Stage 1: Builder (install all deps + build) ───────────────────────────
 FROM node:20-alpine AS builder
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
-# Context is ./ui, so package.json is at root of context
-COPY package.json ./
+# Copy package.json from ui/ subdirectory
+COPY ui/package.json ./
 # Use --legacy-peer-deps to handle React 19 peer dependency conflicts
 RUN npm install --legacy-peer-deps
-COPY . .
+# Copy all source files (ui/ and agent/ so imports resolve correctly)
+COPY ui/ ./ui/
+COPY agent/ ./agent/
+# Move into the ui directory for the build
+WORKDIR /app/ui
 # Ensure public directory exists for Next.js standalone
 RUN mkdir -p public
 # Build args for environment injection
@@ -39,9 +43,9 @@ ENV PORT=9443
 ENV HOSTNAME=0.0.0.0
 # Copy only what's needed from builder
 RUN mkdir -p ./public
-COPY --from=builder --chown=command-center:medinovai /app/public ./public
-COPY --from=builder --chown=command-center:medinovai /app/.next/standalone ./
-COPY --from=builder --chown=command-center:medinovai /app/.next/static ./.next/static
+COPY --from=builder --chown=command-center:medinovai /app/ui/public ./public
+COPY --from=builder --chown=command-center:medinovai /app/ui/.next/standalone ./
+COPY --from=builder --chown=command-center:medinovai /app/ui/.next/static ./.next/static
 USER command-center
 EXPOSE 9443
 ENTRYPOINT ["/sbin/tini", "--"]
