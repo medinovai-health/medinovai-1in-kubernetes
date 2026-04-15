@@ -8,20 +8,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-
-export type Alert = {
-  id: string;
-  severity: 'critical' | 'high' | 'medium' | 'low';
-  title: string;
-  description: string;
-  service: string;
-  environment: string;
-  timestamp: string;
-  acknowledged: boolean;
-  acknowledgedBy?: string;
-  resolvedAt?: string;
-  nexusTriaged: boolean;
-};
+import type { Alert } from '../../../lib/types';
 
 // In-memory store — replace with Redis/DB in production
 const mos_alertStore = new Map<string, Alert>();
