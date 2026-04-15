@@ -2,42 +2,19 @@
  * /api/metrics — Prometheus Metrics Endpoint
  * MedinovAI Command Center v3.0
  * (c) 2026 Copyright MedinovAI. All Rights Reserved.
- *
- * Hardening Points 31-35: Observability & Monitoring
- * Exposes metrics in Prometheus text format for scraping.
- * Only accessible from within the cluster (network policy enforced).
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { mos_metrics } from '../../../lib/metrics-store';
 
 const E_VERSION = '3.0.0';
 const E_START_TIME = Date.now();
 
-// Simple in-memory metrics store
-// In production: replace with prom-client or OpenTelemetry
-const mos_metrics = {
-  http_requests_total: 0,
-  http_errors_total: 0,
-  nexus_queries_total: 0,
-  nexus_actions_approved: 0,
-  nexus_actions_rejected: 0,
-  brain_syncs_total: 0,
-  brain_sync_failures: 0,
-  active_sessions: 0,
-  memory_usage_bytes: 0,
-};
-
-export function incrementMetric(key: keyof typeof mos_metrics, value = 1) {
-  mos_metrics[key] += value;
-}
-
 export async function GET(req: NextRequest) {
-  // Hardening Point 22: Restrict metrics to internal cluster access
   const mos_forwarded = req.headers.get('x-forwarded-for');
   const mos_realIp = req.headers.get('x-real-ip');
   const mos_ip = mos_forwarded?.split(',')[0] || mos_realIp || '';
 
-  // Allow only internal IPs (10.x.x.x, 172.16-31.x.x, 192.168.x.x, localhost)
   const mos_isInternal = /^(10\.|172\.(1[6-9]|2[0-9]|3[01])\.|192\.168\.|127\.|::1$|localhost)/.test(mos_ip);
   const mos_prometheusHeader = req.headers.get('x-prometheus-scrape') === 'true';
 
@@ -45,12 +22,9 @@ export async function GET(req: NextRequest) {
     return new NextResponse('Forbidden', { status: 403 });
   }
 
-  // Update memory metrics
   mos_metrics.memory_usage_bytes = process.memoryUsage().heapUsed;
-
   const mos_uptime = Math.floor((Date.now() - E_START_TIME) / 1000);
 
-  // Build Prometheus text format
   const mos_output = [
     `# HELP command_center_info Command Center version info`,
     `# TYPE command_center_info gauge`,
