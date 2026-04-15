@@ -7,7 +7,7 @@
  * Uses Node.js global to survive hot-module reloads in dev.
  */
 
-import { NexusAgent } from '../../agent/src/nexus-agent';
+import { NexusAgent } from './nexus-agent';
 
 // Use global to survive Next.js HMR in development
 const mos_globalKey = '__medinovai_nexus_agent__';
