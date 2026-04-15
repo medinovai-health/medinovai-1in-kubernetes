@@ -1,32 +1,29 @@
 # Dockerfile — MedinovAI Command Center v3.0
 # (c) 2026 Copyright MedinovAI. All Rights Reserved.
-# Multi-stage hardened build: minimal attack surface, non-root, read-only FS
-
+# Multi-stage hardened build: minimal attack surface, non-root
 # ── Stage 1: Dependencies ──────────────────────────────────────────────────
 FROM node:20-alpine AS deps
 LABEL org.opencontainers.image.source="https://github.com/medinovai-health/medinovai-infrastructure"
 LABEL org.opencontainers.image.vendor="MedinovAI"
 LABEL org.opencontainers.image.title="MedinovAI Command Center"
 LABEL org.opencontainers.image.version="3.0.0"
-
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 COPY ui/package.json ui/package-lock.json* ./
 RUN npm ci --only=production --ignore-scripts && npm cache clean --force
-
 # ── Stage 2: Builder ───────────────────────────────────────────────────────
 FROM node:20-alpine AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY ui/ .
-
+# Ensure public directory exists for Next.js standalone
+RUN mkdir -p public
 # Build args for environment injection
 ARG NEXT_PUBLIC_COMMAND_CENTER_VERSION=3.0.0
-ARG NEXT_PUBLIC_BUILD_ID=20260414.1
+ARG NEXT_PUBLIC_BUILD_ID=20260415.1
 ARG NEXT_PUBLIC_ENVIRONMENT=production
-ARG NEXT_PUBLIC_BASE_URL=https://dev.medinovai.com:9443
+ARG NEXT_PUBLIC_BASE_URL=http://localhost:9443
 ARG NEXT_PUBLIC_COMMIT_SHA=local
-
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 ENV NEXT_PUBLIC_COMMAND_CENTER_VERSION=${NEXT_PUBLIC_COMMAND_CENTER_VERSION}
@@ -34,40 +31,28 @@ ENV NEXT_PUBLIC_BUILD_ID=${NEXT_PUBLIC_BUILD_ID}
 ENV NEXT_PUBLIC_ENVIRONMENT=${NEXT_PUBLIC_ENVIRONMENT}
 ENV NEXT_PUBLIC_BASE_URL=${NEXT_PUBLIC_BASE_URL}
 ENV NEXT_PUBLIC_COMMIT_SHA=${NEXT_PUBLIC_COMMIT_SHA}
-
 RUN npm run build
-
-# ── Stage 3: Runner (hardened) ─────────────────────────────────────────────
-FROM node:20-alpine AS runner
+# ── Stage 3: Production Runner (hardened) ─────────────────────────────────
+FROM node:20-alpine AS production
 WORKDIR /app
-
 # Security hardening
-RUN apk add --no-cache curl tini && \
+RUN apk add --no-cache wget tini && \
     addgroup --system --gid 1001 medinovai && \
     adduser --system --uid 1001 --ingroup medinovai --no-create-home command-center
-
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=9443
 ENV HOSTNAME=0.0.0.0
-
-# Copy only what's needed
+# Copy only what's needed from builder
+RUN mkdir -p ./public
 COPY --from=builder --chown=command-center:medinovai /app/public ./public
 COPY --from=builder --chown=command-center:medinovai /app/.next/standalone ./
 COPY --from=builder --chown=command-center:medinovai /app/.next/static ./.next/static
-
-# Copy the Nexus AI Agent
-COPY --chown=command-center:medinovai agent/ ./agent/
-
 # Non-root execution
 USER command-center
-
 EXPOSE 9443
-
 # Use tini as PID 1 for proper signal handling
 ENTRYPOINT ["/sbin/tini", "--"]
-
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-  CMD curl -f http://localhost:9443/api/health || exit 1
-
+  CMD wget -qO- http://localhost:9443/api/health || exit 1
 CMD ["node", "server.js"]
