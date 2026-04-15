@@ -213,7 +213,7 @@ jobs:
           fi
 
           # Set Colima Docker context
-          export DOCKER_HOST="unix://${HOME}/.colima/medinovai/docker.sock"
+          export DOCKER_HOST="unix://${HOME}/.colima/default/docker.sock"
 
           # FMEA-DOCKER-001: Ensure medinovai-net network exists
           if ! docker network ls --format '{{.Name}}' | grep -q '^medinovai-net$'; then
