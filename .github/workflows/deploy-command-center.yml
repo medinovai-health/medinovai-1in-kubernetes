@@ -15,7 +15,7 @@ concurrency:
 jobs:
   deploy:
     name: Deploy Command Center → AIFactory-medinovai
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, aifactory]
     timeout-minutes: 30
 
     steps:

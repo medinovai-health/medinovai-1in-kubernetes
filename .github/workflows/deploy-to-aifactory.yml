@@ -26,7 +26,7 @@
 #
 # FMEA Protections built in:
 #   FMEA-DOCKER-001: Creates medinovai-net network if missing
-#   FMEA-GH-001:     Runs on ubuntu-latest (not self-hosted)
+#   FMEA-GH-001:     Runs on self-hosted (not self-hosted)
 #   FMEA-SSH-001:    Retries SSH connection up to 3 times
 #   FMEA-HEALTH-001: Waits for health endpoint before declaring success
 #
@@ -103,7 +103,7 @@ on:
 jobs:
   deploy:
     name: Deploy ${{ inputs.service_name }} to AIFactory
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, aifactory]
     timeout-minutes: 20
 
     steps:
