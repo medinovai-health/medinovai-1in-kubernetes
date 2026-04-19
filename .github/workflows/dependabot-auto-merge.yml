@@ -1,0 +1,58 @@
+name: Dependabot auto-merge
+
+# Org-wide Dependabot policy:
+#   - GitHub Actions bumps        → auto-merge after CI passes
+#   - Docker base image bumps     → auto-merge after CI passes
+#   - Patch + minor lib bumps     → auto-merge after CI passes
+#   - Major lib bumps             → leave open for human review
+#
+# Auto-merge requires:
+#   - "Allow auto-merge" enabled in repo Settings → General → Pull Requests
+#   - Branch protection on main with required status checks (recommended)
+#
+# To install in a new repo, copy this file to .github/workflows/dependabot-auto-merge.yml.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-merge:
+    if: github.actor == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch Dependabot PR metadata
+        id: meta
+        uses: dependabot/fetch-metadata@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Approve safe Dependabot PR
+        if: |
+          steps.meta.outputs.update-type == 'version-update:semver-patch' ||
+          steps.meta.outputs.update-type == 'version-update:semver-minor' ||
+          steps.meta.outputs.dependency-type == 'direct:development' ||
+          contains(steps.meta.outputs.dependency-names, 'actions/') ||
+          contains(steps.meta.outputs.dependency-names, 'docker/') ||
+          contains(steps.meta.outputs.dependency-names, 'github/codeql-action')
+        run: gh pr review --approve "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Enable auto-merge for safe Dependabot PR
+        if: |
+          steps.meta.outputs.update-type == 'version-update:semver-patch' ||
+          steps.meta.outputs.update-type == 'version-update:semver-minor' ||
+          steps.meta.outputs.dependency-type == 'direct:development' ||
+          contains(steps.meta.outputs.dependency-names, 'actions/') ||
+          contains(steps.meta.outputs.dependency-names, 'docker/') ||
+          contains(steps.meta.outputs.dependency-names, 'github/codeql-action')
+        run: gh pr merge --auto --squash "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
