@@ -23,7 +23,7 @@ jobs:
     name: Lint & Format
     runs-on: [self-hosted, aifactory]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Setup environment
         uses: actions/setup-python@v5
         with:
@@ -38,7 +38,7 @@ jobs:
     runs-on: [self-hosted, aifactory]
     needs: lint
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Setup environment
         uses: actions/setup-python@v5
         with:
@@ -59,7 +59,7 @@ jobs:
     runs-on: [self-hosted, aifactory]
     needs: lint
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
@@ -79,7 +79,7 @@ jobs:
     needs: [test, security]
     if: github.ref == 'refs/heads/main'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Setup environment
         uses: actions/setup-python@v5
         with:
